@@ -1,0 +1,6 @@
+# File: configfile.cfg
+@include "defaults.cfg";
+url = "http://mysite.com";
+file = "main.exe";
+true_false = "true";
+somenumber="1e-3";

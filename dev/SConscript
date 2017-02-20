@@ -1,0 +1,15 @@
+# SConstruct initializing
+import os
+Import('env')
+
+# Programs
+#env.Program('dev','dev.cpp',LIBS=['sem','coordinate'],LIBPATH=['../build'])
+#env.Program('input','input.cpp',LIBS=['file','system','coordinate'],LIBPATH=['../build'])
+#env.Program('sem','sem.cpp',LIBS=['sem1d','file','coordinate'],LIBPATH=['../build'])
+#env.Program('sem2ddev','sem2ddev.cpp',LIBS=['sem','sem2d','file','system','coordinate'],LIBPATH=['../build'])
+
+
+#env.Program('testcpu','testcpu.cpp',LIBS=['sem','sem2d','file','system','coordinate'],LIBPATH=['../build'])
+#env.Program('sem3d','sem3d.cpp',LIBS=['sem','sem3d','system','coordinate'],LIBPATH=['../build'])
+
+

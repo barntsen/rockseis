@@ -1,0 +1,32 @@
+# SConstruct initializing
+import os
+Import('env')
+
+# Cloning compile environment
+config4cpp = env.Clone()
+
+# Setup
+prefix = env['program_prefix']
+srcdir = './src/'
+libdir = './lib/'
+bindir = './bin/'
+
+libdir = '../lib/'
+
+#  Library
+config4cpp_lib = 'ConfigItem.cpp ConfigLex.cpp ConfigParser.cpp ConfigScope.cpp ConfigScopeEntry.cpp Configuration.cpp ConfigurationException.cpp ConfigurationImpl.cpp DefaultSecurityConfiguration.cpp DefaultSecurity.cpp LexBase.cpp LexToken.cpp MBChar.cpp platform.cpp SchemaLex.cpp SchemaParser.cpp SchemaTypeBoolean.cpp SchemaType.cpp SchemaTypeDurationMicroseconds.cpp SchemaTypeDurationMilliseconds.cpp SchemaTypeDurationSeconds.cpp SchemaTypeEnum.cpp SchemaTypeFloat.cpp SchemaTypeFloatWithUnits.cpp SchemaTypeInt.cpp SchemaTypeIntWithUnits.cpp SchemaTypeList.cpp SchemaTypeMemorySizeBytes.cpp SchemaTypeMemorySizeKB.cpp SchemaTypeMemorySizeMB.cpp SchemaTypeScope.cpp SchemaTypeString.cpp SchemaTypeTable.cpp SchemaTypeTuple.cpp SchemaTypeTypedef.cpp SchemaTypeUnitsWithFloat.cpp SchemaTypeUnitsWithInt.cpp SchemaValidator.cpp StringBuffer.cpp StringVector.cpp UidIdentifierProcessor.cpp util.cpp'
+libmains = Split(config4cpp_lib)
+
+env.Library(libdir + 'config4cpp', libmains)
+
+# Where are the files 
+config4cpp.Append(CPPPATH=['./src', './include/config4cpp'])
+
+config4cpp_exe = env.Program('config4cpp','config4cpp.cpp', LIBS=['config4cpp'], LIBPATH=libdir)
+env.Install('../bin/',config4cpp_exe)
+
+#config2cpp_exe = env.Program('config2cpp','config2cpp-main.cpp', LIBS=['config4cpp'], LIBPATH=libdir)
+#env.Install('../bin/',config2cpp_exe)
+
+#config2cpp_nocheck_exe = env.Program('config2cpp-nocheck','config2cpp-nocheck-main.cpp', LIBS=['config4cpp'], LIBPATH=libdir)
+#env.Install('../bin/',config2cpp_nocheck_exe)

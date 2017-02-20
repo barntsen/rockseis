@@ -1,0 +1,26 @@
+# SConstruct initializing
+import os
+Import('env')
+	
+# Cloning environments for different compilers
+mpi = env.Clone(CC='mpicc', CXX='mpicxx')
+
+builddir = '../build/'
+
+# Library
+file = env.Library(builddir + 'file','file.cpp')
+model = env.Library(builddir + 'model','model.cpp')
+pml = env.Library(builddir + 'pml','pml.cpp')
+der = env.Library(builddir + 'der','der.cpp')
+waves = env.Library(builddir + 'waves','waves.cpp')
+utils = env.Library(builddir + 'utils','utils.cpp')
+data = env.Library(builddir + 'data',['data.cpp','file.cpp'])
+geometry = env.Library(builddir + 'geometry','geometry.cpp')
+modelling = env.Library(builddir + 'modelling','modelling.cpp')
+
+
+
+parallel = mpi.Library(builddir + 'parallel','parallel.cpp')
+
+
+

@@ -1,0 +1,24 @@
+# SConstruct initializing
+import os
+Import('env')
+
+# Cloning compile environment
+gui = env.Clone()
+
+# Setup
+prefix = env['program_prefix']
+srcdir = './src/'
+libdir = './lib/'
+bindir = './bin/'
+
+
+if(env['WX']):
+	# Getting platform dependent flags using wx-config
+	gui.ParseConfig('wx-config --cxxflags --libs')
+
+	# Where are the files 
+	gui.Append(CPPPATH=['./lib', './include'])
+
+	guiprg = gui.Program(prefix + 'gui',[srcdir + 'gui.cpp',libdir + 'mainframe.cpp'])
+	gui.Install(bindir,guiprg)
+

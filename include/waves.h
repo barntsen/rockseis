@@ -1,0 +1,245 @@
+#ifndef WAVES_H
+#define WAVES_H
+
+// Include statements
+#include <iostream>
+#include <vector>
+#include <string>
+#include <memory>
+#include "model.h"
+#include "pml.h"
+#include "der.h"
+#include "geometry.h"
+#include "model.h"
+#include "utils.h"
+#include "data.h"
+#include "file.h"
+
+namespace rockseis {
+/** The abstract waves class
+ *
+ */
+template<typename T>
+class Waves {
+public:
+    Waves();		///< Constructor
+    Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
+    virtual ~Waves();	///< Destructor
+    
+    // Get functions
+    int getDim() { return dim; }		///< Get dimension
+    int getNx() { return geometry->getN(1); }	///< Get Nx
+    int getNy() { return geometry->getN(2); }	///< Get Ny
+    int getNz() { return geometry->getN(3); }	///< Get Nz
+    int getNt() { return geometry->getN(4); }	///< Get Nt
+    int getLpml() { return lpml; }		///< Get lpml
+    T getDx() { return geometry->getD(1); }	///< Get Dx
+    T getDy() { return geometry->getD(2); }	///< Get Dy
+    T getDz() { return geometry->getD(3); }	///< Get Dz
+    T getDt() { return geometry->getD(4); }	///< Get Dt
+    T getOx() { return geometry->getO(1); }	///< Get Ox
+    T getOy() { return geometry->getO(2); }	///< Get Oy
+    T getOz() { return geometry->getO(3); }	///< Get Oz
+    T getOt() { return geometry->getO(4); }	///< Get Ot
+    
+    // Set functions
+    void setNx(const int _nx) { geometry->setN(1, _nx); }///< Set Nx
+    void setNy(const int _ny) { geometry->setN(2, _ny); }///< Set Ny
+    void setNz(const int _nz) { geometry->setN(3, _nz); }///< Set Nz
+    void setNt(const int _nt) { geometry->setN(4, _nt); }///< Set Nt
+    void setLpml(const int _lpml) { lpml = _lpml; }	///< Set lpml
+    void setDx(const T _dx) { geometry->setD(1, _dx); }	///< Set Dx
+    void setDy(const T _dy) { geometry->setD(2, _dy); }	///< Set Dy
+    void setDz(const T _dz) { geometry->setD(3, _dz); }	///< Set Dz
+    void setDt(const T _dt) { geometry->setD(4, _dt); }	///< Set Dt
+    void setOx(const T _ox) { geometry->setO(1, _ox); }	///< Set Ox
+    void setOy(const T _oy) { geometry->setO(2, _oy); }	///< Set Oy
+    void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
+    void setOt(const T _ot) { geometry->setO(4, _ot); }	///< Set Ot
+    void setDim(const int _dim) { dim = _dim; }		///< Set the dimension
+private:
+    int dim;
+    std::shared_ptr<Geometry<T>> geometry; // regular geometry
+    int lpml; // PML boundary size
+};
+
+/** The 2D Acoustic WAVES class
+ *
+ */
+template<typename T>
+class WavesAcoustic2D: public Waves<T> {
+public:
+    WavesAcoustic2D();					///< Constructor
+    WavesAcoustic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
+    WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    ~WavesAcoustic2D();					///< Destructor
+    
+    // Time stepping
+    void forwardstepAcceleration(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with acceleration
+    void forwardstepStress(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with stress
+
+    // Get functions
+    std::shared_ptr<PmlAcoustic2D<T>> getPml() { return Pml; } ///< Get pml
+    T * getP2() { return P2; }  ///< Get advanced stress
+
+    void computeABC() { Pml->callcompABC(); } ///< Compute the PML decay constants (needed if changes are made to the Amax, Kmax and Smax)
+    void roll();  ///< Roll the pressure pointers
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, int sourcetype, int maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+
+    // Record data at receivers functions
+    void recordData(std::shared_ptr<rockseis::Data2D<T>> data, int recordtype, int maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
+
+private:
+    T *P1; // Pressure at time t
+    T *P2; // Pressure at time t+1
+    T *Ax; // Acceleration component at time t
+    T *Az; // Acceleration component at time t
+    std::shared_ptr<PmlAcoustic2D<T>> Pml; // Associated PML class
+};
+
+/** The 2D Acoustic Snapshot class
+ *
+*/
+template<typename T>
+class SnapshotAcoustic2D: public Waves<T> {
+public:
+    SnapshotAcoustic2D();					///< Constructor
+    SnapshotAcoustic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
+    SnapshotAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    ~SnapshotAcoustic2D();					///< Destructor
+    
+    // Take snapshot from WavesAcoustic2D
+    void getSnap(std::shared_ptr<WavesAcoustic2D<T>> Waves, int which); ///< Take snapshot from WavesAcoustic2D
+    void readSnapno(size_t snapno); ///< Read a snapshot from file
+
+    // Get functions
+    T * getP2() { return P2; }  ///< Get advanced stress
+    T * getP1() { return P1; }  ///< Get current stress
+    T * getAx() { return Ax; }  ///< Get Acceleration-x
+    T * getAz() { return Az; }  ///< Get Acceleration-z
+
+private:
+    T *P1; // Pressure at time t
+    T *P2; // Pressure at time t+1
+    T *Ax; // Acceleration component at time t
+    T *Az; // Acceleration component at time t
+    std::shared_ptr<File> snapfile;
+};
+
+/** The 3D Acoustic WAVES class
+ *
+ */
+template<typename T>
+class WavesAcoustic3D: public Waves<T> {
+public:
+    WavesAcoustic3D();	///< Constructor
+    WavesAcoustic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
+    WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    ~WavesAcoustic3D();	///< Destructor
+
+    // Get functions
+    std::shared_ptr<PmlAcoustic3D<T>> getPml() { return Pml; }  ///< Get pml
+    T * getP2() { return P2; }  ///< Get advanced stress
+
+    // Time stepping functions
+    void forwardstepAcceleration(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with acceleration
+    void forwardstepStress(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with stress
+    
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, int sourcetype, int maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+
+    // Record data at receivers functions
+    void recordData(std::shared_ptr<rockseis::Data3D<T>> data, int recordtype, int maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
+
+    void computeABC() { Pml->callcompABC(); } ///< Compute the PML decay constants (needed if changes are made to the Amax, Kmax and Smax)
+    void roll();  // Roll the pressure pointers
+private:
+    T *P1; // Pressure at time t
+    T *P2; // Pressure at time t+1
+    T *Ax; // Acceleration component at time t
+    T *Ay; // Acceleration component at time t
+    T *Az; // Acceleration component at time t
+    std::shared_ptr<PmlAcoustic3D<T>> Pml; // Associated Pml class
+};
+
+/** The 2D Elastic WAVES class
+ *
+ */
+template<typename T>
+class WavesElastic2D: public Waves<T> {
+public:
+    WavesElastic2D();	///< Constructor
+    ~WavesElastic2D();	///< Destructor
+    WavesElastic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
+    WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+
+    // Get functions
+    std::shared_ptr<PmlElastic2D<T>> getPml() { return Pml; } ///< Get Pml 
+    T * getSxx() { return Sxx; }  ///< Get Stress component at time t+1
+    T * getSzz() { return Szz; }  ///< Get Stress component at time t+1
+
+    // Time stepping functions
+    void forwardstepVelocity(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with particle velocity 
+    void forwardstepStress(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with Stress
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, int sourcetype, int maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+    
+private:
+    T *Sxx;  // Stress component at time t+1
+    T *Szz; // Stress component at time t+1
+    T *Sxz; // Stress component at time t+1
+    T *Vx; // Velocity component at time t+1/2
+    T *Vz; // Velocity component at time t+1/2
+    std::shared_ptr<PmlElastic2D<T>> Pml; // Associated Pml class
+};
+
+/** The 3D Elastic WAVES class
+ *
+ */
+template<typename T>
+class WavesElastic3D: public Waves<T> {
+public:
+    WavesElastic3D();	///< Constructor
+    WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
+    WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    ~WavesElastic3D();	///< Destructor
+
+
+    // Get functions
+    std::shared_ptr<PmlElastic3D<T>> getPml() { return Pml; }
+    T * getSxx() { return Sxx; }    ///< Get Stress component at time t+1
+    T * getSyy() { return Syy; }    ///< Get Stress component at time t+1
+    T * getSzz() { return Szz; }    ///< Get Stress component at time t+1
+
+    // Time stepping functions
+    void forwardstepVelocity(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity 
+    void forwardstepStress(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity 
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, int sourcetype, int maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+    
+private:
+    T *Sxx;  // Stress component at time t+1
+    T *Syy;  // Stress component at time t+1
+    T *Szz;  // Stress component at time t+1
+    T *Sxz;  // Stress component at time t+1
+    T *Syz;  // Stress component at time t+1
+    T *Sxy;  // Stress component at time t+1
+    
+    T *Vx; // Velocity component at time t+1/2
+    T *Vy; // Velocity component at time t+1/2
+    T *Vz; // Velocity component at time t+1/2
+    std::shared_ptr<PmlElastic3D<T>> Pml; // Associated Pml class
+};
+
+// =============== INITIALIZING TEMPLATE CLASSES =============== //
+template class WavesAcoustic2D<float>;
+template class WavesAcoustic3D<float>;
+template class WavesElastic2D<float>;
+template class WavesElastic3D<float>;
+}
+
+#endif //WAVES_H
