@@ -5,6 +5,7 @@
 *.exe
 *.com
 !(*.*)
+*.bin
 
 # Compressed files
 *.7z
@@ -20,3 +21,6 @@
 *.rss
 *.rsf
 
+# Swap and backup files
+*.*~
+*.swp
