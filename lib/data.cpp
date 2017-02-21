@@ -57,11 +57,11 @@ Data2D<T>::Data2D(const int _ntrace, const int _nt, const T _dt): Data<T>(_ntrac
 template<typename T>
 bool Data2D<T>::readfloatData(std::shared_ptr<File> Fin)
 {
-    bool status;
     size_t nt = Fin->getN(1);
     int ntrace = Fin->getN(2);
     size_t Nheader = Fin->getNheader();
 
+    bool status = FILE_OK;
     if ( Fin->is_open()  && (Nheader == 4) )
     {
         // Create geometry
@@ -92,6 +92,7 @@ bool Data2D<T>::readfloatCoords(std::shared_ptr<File> Fin)
     int ntrace = Fin->getN(2);
     size_t Nheader = Fin->getNheader();
 
+    status = FILE_OK;
     if ( Fin->is_open()  && (Nheader == 4) )
     {
         // Create geometry
@@ -189,6 +190,7 @@ bool Data3D<T>::readfloatData(std::shared_ptr<File> Fin)
     int ntrace = Fin->getN(2);
     size_t Nheader = Fin->getNheader();
 
+    status = FILE_OK;
     if ( Fin->is_open()  && (Nheader == 6) )
     {
         // Create geometry
@@ -221,6 +223,7 @@ bool Data3D<T>::readfloatCoords(std::shared_ptr<File> Fin)
     int ntrace = Fin->getN(2);
     size_t Nheader = Fin->getNheader();
 
+    status = FILE_OK;
     if ( Fin->is_open()  && (Nheader == 4) )
     {
         // Create geometry
@@ -295,6 +298,11 @@ Data3D<T>::~Data3D() {
     // Freeing all variables
     free(data);
 }
+
+// =============== INITIALIZING TEMPLATE CLASSES =============== //
+template class Data<float>;
+template class Data2D<float>;
+template class Data3D<float>;
 
 }
 

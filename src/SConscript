@@ -1,9 +1,13 @@
 # SConstruct initializing
 import os
+import sys
 Import('env')
 
 # Cloning environments for different compilers
-mpi = env.Clone(CC='mpicc', CXX='mpicxx')
+if sys.platform == 'darwin' :    # Mac
+    mpi = env.Clone(CC='mpicc', CXX='mpicc')
+else:
+    mpi = env.Clone(CC='mpicc', CXX='mpicxx')
 
 # Setup
 prefix = env['program_prefix']
@@ -24,8 +28,8 @@ env.Install('../bin/',hello3d_acoustic)
 hello3d_elastic = env.Program(prefix + 'hello3d_elastic','hello3d_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data'],LIBPATH=['../build'])
 env.Install('../bin/',hello3d_elastic)
 
-mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel'],LIBPATH=['../build'])
-mpi.Install('../bin/',mpidbg)
+#mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel'],LIBPATH=['../build'])
+#mpi.Install('../bin/',mpidbg)
 
 hello_mada = env.Program(prefix + 'hello_mada','hello_mada.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp', 'rsfcpp', 'rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
 env.Install('../bin/',hello_mada)
@@ -35,8 +39,6 @@ env.Install('../bin/',rsf2rss)
 
 info = env.Program(prefix + 'info','info.cpp',LIBS=['file', 'geometry'],LIBPATH=['../build'])
 env.Install('../bin/',info)
-
-
 
 hello_parser = env.Program(prefix + 'hello_parser','hello_parser.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello_parser)

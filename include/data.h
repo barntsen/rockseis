@@ -104,11 +104,6 @@ private:
     T *data; // Data array 
 };
 
-// =============== INITIALIZING TEMPLATE CLASSES =============== //
-template class Data<float>;
-template class Data2D<float>;
-template class Data3D<float>;
 }
-
 
 #endif //DATA_H

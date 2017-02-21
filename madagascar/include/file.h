@@ -19,7 +19,7 @@
 
 
 #define SF_MAX_DIM 9
-#define RSF_VERSION 1.7
+#define RSF_VERSION "1.7"
 
 
 typedef struct sf_File *sf_file;
