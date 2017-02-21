@@ -197,12 +197,6 @@ public:
     T *Vyy_back;
 };
 
-// =============== INITIALIZING TEMPLATE CLASSES =============== //
-template class PmlAcoustic2D<float>;
-template class PmlAcoustic3D<float>;
-template class PmlElastic2D<float>;
-template class PmlElastic3D<float>;
-
 }
 
 #endif //PML_H

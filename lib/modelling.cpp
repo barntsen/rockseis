@@ -81,4 +81,8 @@ Modelling<T>::~Modelling() {
     // Nothing here
 }
 
+
+// =============== INITIALIZING TEMPLATE CLASSES =============== //
+template class Modelling<float>;
+
 }

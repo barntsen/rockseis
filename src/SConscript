@@ -12,7 +12,6 @@ prefix = env['program_prefix']
 hello_models = env.Program(prefix + 'hello_models','hello_models.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling'],LIBPATH=['../build'])
 env.Install('../bin/',hello_models)
 
-
 hello_acoustic = env.Program(prefix + 'hello_acoustic','hello_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello_acoustic)
 
@@ -28,10 +27,10 @@ env.Install('../bin/',hello3d_elastic)
 mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel'],LIBPATH=['../build'])
 mpi.Install('../bin/',mpidbg)
 
-hello_mada = env.Program(prefix + 'hello_mada','hello_mada.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp', 'rsfcpp'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
+hello_mada = env.Program(prefix + 'hello_mada','hello_mada.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp', 'rsfcpp', 'rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
 env.Install('../bin/',hello_mada)
 
-rsf2rss = env.Program(prefix + 'rsf2rss','rsf2rss.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp', 'rsfcpp'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
+rsf2rss = env.Program(prefix + 'rsf2rss','rsf2rss.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp', 'rsfcpp','rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
 env.Install('../bin/',rsf2rss)
 
 info = env.Program(prefix + 'info','info.cpp',LIBS=['file', 'geometry'],LIBPATH=['../build'])

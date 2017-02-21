@@ -235,6 +235,11 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 
 }
 
+// =============== INITIALIZING TEMPLATE CLASSES =============== //
+template class Geometry<float>;
+template class Geometry<double>;
+template class Geometry2D<float>;
+template class Geometry3D<float>;
 }
 
 

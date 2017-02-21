@@ -41,8 +41,6 @@ private:
     int order;  ///< Order of the FD stencil 
 };
 
-// =============== INITIALIZING TEMPLATE CLASSES =============== //
-template class Modelling<float>;
 
 }
 #endif //MODELLING_H

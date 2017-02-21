@@ -2,10 +2,16 @@
 import os
 Import('env')
 	
-# Cloning environments for different compilers
-mpi = env.Clone(CC='mpicc', CXX='mpicxx')
-
 builddir = '../build/'
 
+
+#-- Objective C environment
+envc = Environment(ENV=os.environ, CC = 'gcc', CXX='g++') 
+envc.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
+#envc.Append(CPPFLAGS=' -g -Wall' ) # For debugging
+#
+envc.Append(CPPPATH=['../include'])
+
 # Library
-env.Library(builddir + 'rsfcpp', ['rsf.cpp','file.c','getpar.c', 'alloc.c', 'error.c', 'simtab.c', 'komplex.c', 'c99.c', 'kiss_fft.c'])
+rsfc = envc.Library(builddir + 'rsfc', ['file.c','getpar.c', 'alloc.c', 'error.c', 'simtab.c', 'komplex.c', 'c99.c', 'kiss_fft.c'])
+rsfcpp = env.Library(builddir + 'rsfcpp', ['rsf.cpp'], LIBS=['rsfc'])

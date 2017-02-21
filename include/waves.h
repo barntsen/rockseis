@@ -235,11 +235,6 @@ private:
     std::shared_ptr<PmlElastic3D<T>> Pml; // Associated Pml class
 };
 
-// =============== INITIALIZING TEMPLATE CLASSES =============== //
-template class WavesAcoustic2D<float>;
-template class WavesAcoustic3D<float>;
-template class WavesElastic2D<float>;
-template class WavesElastic3D<float>;
 }
 
 #endif //WAVES_H

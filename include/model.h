@@ -253,12 +253,5 @@ private:
 };
 
 
-
-// =============== INITIALIZING TEMPLATE CLASSES =============== //
-template class ModelAcoustic2D<float>;
-template class ModelAcoustic3D<float>;
-template class ModelElastic2D<float>;
-template class ModelElastic3D<float>;
-
 }
 #endif //MODEL_H

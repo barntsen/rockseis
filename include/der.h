@@ -54,7 +54,5 @@ private:
 };
 
 
-// =============== INITIALIZING TEMPLATE CLASSES =============== //
-template class Der<float>;
 }
 #endif //DER_H

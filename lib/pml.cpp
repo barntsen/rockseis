@@ -362,4 +362,11 @@ PmlElastic3D<T>::~PmlElastic3D() {
 }
 
 
+// =============== INITIALIZING TEMPLATE CLASSES =============== //
+template class Pml<float>;
+template class PmlAcoustic2D<float>;
+template class PmlAcoustic3D<float>;
+template class PmlElastic2D<float>;
+template class PmlElastic3D<float>;
+
 }

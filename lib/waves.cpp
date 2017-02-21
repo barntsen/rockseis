@@ -1991,6 +1991,12 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
     }
 }
 
+// =============== INITIALIZING TEMPLATE CLASSES =============== //
+template class WavesAcoustic2D<float>;
+template class WavesAcoustic3D<float>;
+template class WavesElastic2D<float>;
+template class WavesElastic3D<float>;
+
 }
 
 

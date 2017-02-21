@@ -15,7 +15,7 @@ devdir = os.path.join(root,'dev')
 if sys.platform == 'darwin' :    # Mac
     env = Environment(ENV=os.environ,LINKFLAGS='-lgcc_s.1',CPPFLAGS='-std=c++11') 
 else:
-    env = Environment(ENV=os.environ,CPPFLAGS='-std=c++11',)
+    env = Environment(ENV=os.environ,CPPFLAGS='-std=c++11')
 
 
 # Setup

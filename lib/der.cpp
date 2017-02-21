@@ -442,4 +442,6 @@ void Der<T>::ddz_bw(T *f){
     
 }
 
+// =============== INITIALIZING TEMPLATE CLASSES =============== //
+template class Der<float>;
 }

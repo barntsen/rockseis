@@ -86,20 +86,21 @@ int main(int argc, char* argv[])
 
     out->setData_format(esize);
     out->writeHeader();
+    out->seekp(out->getStartofdata());
     for (int i=0; i < ntot; i++) {
         switch(filetype)
         {
             case 2:
                 in >> inttrace;
-                out->intwrite(&(inttrace[0]), inttrace.size(), 0);
+                out->intwrite(&(inttrace[0]), inttrace.size());
                 break;
             case 3:
                 in >> floattrace;
-                out->floatwrite(&(floattrace[0]), floattrace.size(), 0);
+                out->floatwrite(&(floattrace[0]), floattrace.size());
                 break;
             default:
                 in >> floattrace;
-                out->floatwrite((float *) &(floattrace[0]), floattrace.size(), 0);
+                out->floatwrite((float *) &(floattrace[0]), floattrace.size());
                 break;
         }
 

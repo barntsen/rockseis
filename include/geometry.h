@@ -98,11 +98,6 @@ private:
     rockseis::Point3D<int> *gmap;              ///< Map of the coordinates (i,j,k) to the regular geometry grid of the receiver coordinates
 };
 
-// Initialize template classes
-template class Geometry<float>;
-template class Geometry<double>;
-template class Geometry2D<float>;
-template class Geometry3D<float>;
 }
 
 #endif //GEOMETRY_H
