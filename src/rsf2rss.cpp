@@ -100,12 +100,13 @@ int main(int argc, char* argv[])
                 break;
             default:
                 in >> floattrace;
-                out->floatwrite((float *) &(floattrace[0]), floattrace.size());
+                out->floatwrite(&(floattrace[0]), floattrace.size());
                 break;
         }
 
     }
     out->close();
+
 
     exit (0);
 }

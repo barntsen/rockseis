@@ -46,9 +46,21 @@ int Modelling<T>::Acoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model,std::shar
 
 
     // Output snapshots to a binary file
-    std::fstream myFile;
-    myFile.open ("data.bin", std::ios::out | std::ios::binary);
-    
+    std::shared_ptr<rockseis::File> Fsnap (new rockseis::File());
+    Fsnap->output("snaps.rss");
+    Fsnap->setN(1,nx+2*lpml);
+    Fsnap->setD(1,dx);
+    Fsnap->setO(1,ox);
+    Fsnap->setN(3,nz+2*lpml);
+    Fsnap->setD(3,dz);
+    Fsnap->setO(3,oz);
+    Fsnap->setN(4,nt);
+    Fsnap->setD(4,dt);
+    Fsnap->setO(4,ot);
+    Fsnap->setData_format(sizeof(float));
+    Fsnap->writeHeader();
+    Fsnap->seekp(Fsnap->getStartofdata());
+
     float *Szz;
     Szz = waves->getP2();
     // Loop over time
@@ -65,12 +77,12 @@ int Modelling<T>::Acoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model,std::shar
     	waves->recordData(recP, 0, 1, it);
     
     	//Writting out results to binary file
-    	myFile.write (reinterpret_cast<char *> (Szz), (nx+2*lpml) * (nz+2*lpml) * sizeof(float));
+    	Fsnap->floatwrite(Szz, (nx+2*lpml) * (nz+2*lpml));
     	
     	// Roll the pointers P1 and P2
     	waves->roll();
     }	
-    myFile.close();
+    Fsnap->close();
     
     result=MOD_OK;
     return result;

@@ -88,6 +88,7 @@ int main()
 	Fmod->setD(3,dz);
 	Fmod->setO(1,ox);
 	Fmod->setO(3,oz);
+	Fmod->setData_format(sizeof(float));
 	Fmod->writeHeader();
 	Fmod->floatwrite(Vp2d, nx*nz,0);
 	Fmod->close();
@@ -114,6 +115,7 @@ int main()
 	Fmod->setO(1,ox);
 	Fmod->setO(2,oy);
 	Fmod->setO(3,oz);
+	Fmod->setData_format(sizeof(float));
 	Fmod->writeHeader();
 	Fmod->floatwrite(Vp3d, nx*ny*nz,0);
 	Fmod->close();

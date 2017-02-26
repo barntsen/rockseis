@@ -1,6 +1,7 @@
 ../bin/rshello_models
-../bin/rshello_acoustic
-echo data_format=float in=data.bin | sfput d1=10 d2=10 n1=77 n2=73 n3=501 d3=1e-3 o1=0 o2=0 o3=0 out=stdout > data.rsf
+valgrind ../bin/rshello_acoustic
+#echo data_format=float in=data.bin | sfput d1=10 d2=10 n1=77 n2=73 n3=501 d3=1e-3 o1=0 o2=0 o3=0 out=stdout > data.rsf
+valgrind ../bin/rsrss2rsf <snaps.rss out=stdout > data.rsf
 
 #../bin/rshello_elastic
 #echo data_format=float in=data.bin | sfput d1=10 d2=10 n1=77 n2=73 n3=501 d3=1e-3 o1=0 o2=0 o3=0 out=stdout > data.rsf
