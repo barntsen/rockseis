@@ -42,24 +42,24 @@ public:
 	void writeHeader(); ///< Output header to file
 	void seekp(size_t pos) { fstream.seekp(pos); }
 	void seekg(size_t pos) { fstream.seekg(pos); }
-	void floatwrite(float *buffer, size_t n); ///< Writes n floats to file
-	void floatwrite(float *buffer, size_t n, size_t pos); ///< Writes n floats to file starting from pos
-	void doublewrite(double *buffer, size_t n); ///< Writes n doubles to file
-	void doublewrite(double *buffer, size_t n, size_t pos); ///< Writes n doubles to file
-	void intwrite(int *buffer, size_t n); ///< Writes n ints to file
-	void intwrite(int *buffer, size_t n, size_t pos); ///< Writes n ints to file starting from pos
+	void write(float *buffer, size_t n); ///< Writes n floats to file
+	void write(float *buffer, size_t n, size_t pos); ///< Writes n floats to file starting from pos
+	void write(double *buffer, size_t n); ///< Writes n doubles to file
+	void write(double *buffer, size_t n, size_t pos); ///< Writes n doubles to file
+	void write(int *buffer, size_t n); ///< Writes n ints to file
+	void write(int *buffer, size_t n, size_t pos); ///< Writes n ints to file starting from pos
 	bool is_open() { return fstream.is_open(); } ///< Checkes if file is open
 
 	// Read functions
-	void floatread(float *buffer, size_t n); ///< Reads n floats from file
-	void floatread(float *buffer, size_t n, size_t pos); ///< Reads n floats from file starting from pos
-	void doubleread(double *buffer, size_t n); ///< Reads n doubles from file
-	void doubleread(double *buffer, size_t n, size_t pos); ///< Reads n doubles from file starting from pos
-	void intread(int *buffer, size_t n); ///< Reads n ints from file
-	void intread(int *buffer, size_t n, size_t pos); ///< Reads n ints from file starting from pos
+	void read(float *buffer, size_t n); ///< Reads n floats from file
+	void read(float *buffer, size_t n, size_t pos); ///< Reads n floats from file starting from pos
+	void read(double *buffer, size_t n); ///< Reads n doubles from file
+	void read(double *buffer, size_t n, size_t pos); ///< Reads n doubles from file starting from pos
+	void read(int *buffer, size_t n); ///< Reads n ints from file
+	void read(int *buffer, size_t n, size_t pos); ///< Reads n ints from file starting from pos
 
 	// Get geometry
-	std::shared_ptr<Geometry<double>> GetGeom() { return geometry; }
+	std::shared_ptr<Geometry<double>> getGeom() { return geometry; }
 	size_t getN(int dim) { return geometry->getN(dim); }  ///< Get dimension size
 	double getD(int dim) { return geometry->getD(dim); }	///< Get sampling interval
 	double getO(int dim) { return geometry->getO(dim); }	///< Get origin
@@ -67,6 +67,7 @@ public:
 	// Other geometry functions
 	void printGeometry() { geometry->print(); }
 	void clearGeometry() { geometry->clear(); }
+	bool compareGeometry(std::shared_ptr<File> other) {return geometry->compare(other->getGeom()); }
 
 	// Set geometry
         void setN(int dim, size_t val) { geometry->setN(dim, val); }	///< Set dimension size
@@ -78,7 +79,6 @@ public:
 	void setData_format(int val) { data_format = val; } ///< set data format 
 	void setHeader_format(int val) { header_format = val; } ///< set header format 
 	void setType(datatype val) { type = val; } ///< set datatype
-
 
 	// Get functions
 	size_t getNheader() { return Nheader; } ///< get number of header values

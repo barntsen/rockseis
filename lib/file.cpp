@@ -168,68 +168,68 @@ void File::readHeader()
 }
 
 // Write functions
-void File::floatwrite(float *buffer, size_t n)
+void File::write(float *buffer, size_t n)
 {
 	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(float));
 }
 
-void File::floatwrite(float *buffer, size_t n, size_t pos)
+void File::write(float *buffer, size_t n, size_t pos)
 {
 	fstream.seekp(pos + startofdata);
 	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(float));
 }
 
-void File::doublewrite(double *buffer, size_t n)
+void File::write(double *buffer, size_t n)
 {
 	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(double));
 }
 
-void File::doublewrite(double *buffer, size_t n, size_t pos)
+void File::write(double *buffer, size_t n, size_t pos)
 {
 	fstream.seekp(pos + startofdata);
 	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(double));
 }
 
-void File::intwrite(int *buffer, size_t n)
+void File::write(int *buffer, size_t n)
 {
 	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(int));
 }
 
-void File::intwrite(int *buffer, size_t n, size_t pos)
+void File::write(int *buffer, size_t n, size_t pos)
 {
 	fstream.seekp(pos + startofdata);
 	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(int));
 }
 
 //Read functions
-void File::floatread(float *buffer, size_t n)
+void File::read(float *buffer, size_t n)
 {
 	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(float));
 }
 
-void File::floatread(float *buffer, size_t n, size_t pos)
+void File::read(float *buffer, size_t n, size_t pos)
 {
 	fstream.seekg(pos + startofdata);
 	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(float));
 }
 
-void File::doubleread(double *buffer, size_t n)
+void File::read(double *buffer, size_t n)
 {
 	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(double));
 }
 
-void File::doubleread(double *buffer, size_t n, size_t pos)
+void File::read(double *buffer, size_t n, size_t pos)
 {
 	fstream.seekg(pos + startofdata);
 	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(double));
 }
 
-void File::intread(int *buffer, size_t n)
+void File::read(int *buffer, size_t n)
 {
 	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(int));
 }
 
-void File::intread(int *buffer, size_t n, size_t pos)
+void File::read(int *buffer, size_t n, size_t pos)
 {
 	fstream.seekg(pos + startofdata);
 	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(int));

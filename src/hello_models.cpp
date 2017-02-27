@@ -90,17 +90,17 @@ int main()
 	Fmod->setO(3,oz);
 	Fmod->setData_format(sizeof(float));
 	Fmod->writeHeader();
-	Fmod->floatwrite(Vp2d, nx*nz,0);
+	Fmod->write(Vp2d, nx*nz,0);
 	Fmod->close();
 
 	Fmod->output("Vs2d.rss");
 	Fmod->writeHeader();
-	Fmod->floatwrite(Vs2d, nx*nz,0);
+	Fmod->write(Vs2d, nx*nz,0);
 	Fmod->close();
 
 	Fmod->output("Rho2d.rss");
 	Fmod->writeHeader();
-	Fmod->floatwrite(R2d, nx*nz,0);
+	Fmod->write(R2d, nx*nz,0);
 	Fmod->close();
 
 	// Output 3d models
@@ -117,17 +117,17 @@ int main()
 	Fmod->setO(3,oz);
 	Fmod->setData_format(sizeof(float));
 	Fmod->writeHeader();
-	Fmod->floatwrite(Vp3d, nx*ny*nz,0);
+	Fmod->write(Vp3d, nx*ny*nz,0);
 	Fmod->close();
 
 	Fmod->output("Vs3d.rss");
 	Fmod->writeHeader();
-	Fmod->floatwrite(Vs3d, nx*ny*nz,0);
+	Fmod->write(Vs3d, nx*ny*nz,0);
 	Fmod->close();
 
 	Fmod->output("Rho3d.rss");
 	Fmod->writeHeader();
-	Fmod->floatwrite(R3d, nx*ny*nz,0);
+	Fmod->write(R3d, nx*ny*nz,0);
 	Fmod->close();
 	
 	// Setup a 2d Wavelet 
@@ -151,14 +151,11 @@ int main()
 	scoords2d[0].y = 200; 
 
 	//Output the wavelet
-	std::shared_ptr<rockseis::File> Fwav (new rockseis::File());
-	Fwav->output("Wav2d.rss");
-	Fwav->clearGeometry();
-	status = source2d->writefloatData(Fwav);
+	source2d->setFile("Wav2d.rss");
+	status = source2d->write();
 	if(status == FILE_ERR){
 		std::cout << "Failed to write wavelet file. \n";
 	}
-	Fwav->close();
 
 	// Setup a 3d Wavelet 
 	std::shared_ptr<rockseis::Data3D<float>> source3d (new rockseis::Data3D<float>(1, nt, dt));
@@ -177,15 +174,11 @@ int main()
 	scoords3d[0].z = 200; 
 
 	//Output the wavelet
-	Fwav->output("Wav3d.rss");
-	Fwav->clearGeometry();
-	status = source3d->writefloatData(Fwav);
+	source3d->setFile("Wav3d.rss");
+	status = source3d->write();
 	if(status == FILE_ERR){
 		std::cout << "Failed to write wavelet file. \n";
 	}
-	Fwav->close();
-
-
 
 	// Setup a 2d record
 	std::shared_ptr<rockseis::Data2D<float>> record2d (new rockseis::Data2D<float>(nx, 1, dt));
@@ -199,13 +192,11 @@ int main()
         scoords2d[i].x = 220;
         scoords2d[i].y = 200;
     }
-	Fwav->output("Geom2d.rss");
-	Fwav->clearGeometry();
-	status = record2d->writefloatData(Fwav);
+	record2d->setFile("Geom2d.rss");
+	status = record2d->write();
 	if(status == FILE_ERR){
 		std::cout << "Failed to write record2d file. \n";
 	}
-	Fwav->close();
 
 	// Setup a 3d record
 	std::shared_ptr<rockseis::Data3D<float>> record3d (new rockseis::Data3D<float>(nx*ny, 1, dt));
@@ -224,13 +215,10 @@ int main()
             scoords3d[j*ny + i].z = 200;
         }
     }
-    Fwav->output("Geom3d.rss");
-	Fwav->clearGeometry();
-	status = record3d->writefloatData(Fwav);
+	record3d->setFile("Geom3d.rss");
+	status = record3d->write();
 	if(status == FILE_ERR){
 		std::cout << "Failed to write record3d file. \n";
 	}
-	Fwav->close();
-
 	return 0;
 }

@@ -139,12 +139,12 @@ int main()
 	Vp = model->getVp();
 	// Read vp model
 	status = file->input("Vp3d.rss");
-	file->floatread(Vp, nx*ny*nz);
+	file->read(Vp, nx*ny*nz);
 	file->close();
 
 	// Read rho model
 	status = file->input("Rho3d.rss");
-	file->floatread(R, nx*ny*nz);
+	file->read(R, nx*ny*nz);
 	file->close();
 
 	// Stagger model
@@ -182,7 +182,7 @@ int main()
 
 	// Load wavelet from file 
 	status = file->input("Wav3d.rss");
-	source->readfloatData(file);
+	source->readData();
 	file->close();
 	source->makeMap(model->getGeom());
 

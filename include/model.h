@@ -30,6 +30,9 @@ public:
     int getNy() { return geometry->getN(2); }		///< Get Ny
     int getNz() { return geometry->getN(3); }		///< Get Nz
     int getLpml() { return lpml; }		///< Get Lpml
+    int getNx_pml() { return geometry->getN(1) + 2 * lpml; }	///< Nx_pml = Nx + 2*lpml 
+    int getNy_pml() { return geometry->getN(2) + 2 * lpml; }	///< Ny_pml = Ny + 2*lpml 
+    int getNz_pml() { return geometry->getN(3) + 2 * lpml; }	///< Nz_pml = Nz + 2*lpml 
     bool getFs() { return fs; }		///< Get fs
     T getDx() { return geometry->getD(1); }		///< Get Dx
     T getDy() { return geometry->getD(2); }		///< Get Dy
@@ -57,8 +60,8 @@ public:
     void setDim(const int _dim) { dim = _dim; } 	///< Set the dimension
     
     // I/O functions
-    virtual void readModel(std::shared_ptr<File> Fin) = 0;	///< Read model (virtual)
-    virtual void writeModel(std::shared_ptr<File> Fout) = 0;	///< write model (virtual)
+    virtual void readModel() = 0;	///< Read model (virtual)
+    virtual void writeModel() = 0;	///< write model (virtual)
     // PADDING AND STAGGERING FUNCTIONS 
     /** Pads 2-D model.
      * Pads the model by copying the edges over the padded area.  
@@ -104,17 +107,20 @@ class ModelAcoustic2D: public Model<T> {
 public:
     ModelAcoustic2D();	///< Constructor
     ModelAcoustic2D(const int _nx, const int _nz, const int lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs);	///< Constructor
+    ModelAcoustic2D(std::string _Vpfile, std::string _Rfile, const int lpml, const bool _fs);	///< Constructor
     ~ModelAcoustic2D();	///< Destructor
     
     // I/O functions
-    void readModel(std::shared_ptr<File> Fin);	 ///< Read a model from file
-    void writeModel(std::shared_ptr<File> Fout); ///< Write a model to file
+    void readModel();	 ///< Read a model from file
+    void writeModel(); ///< Write a model to file
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp
     T *getR() { return R; }		///< Get R
     T *getRx() { return Rx; }		///< Get Rx
     T *getRz() { return Rz; }		///< Get Rz
     T *getL() { return L; }		///< Get L
+    std::string getVpfile() { return Vpfile; }
+    std::string getRfile() { return Rfile; }
     
     /** Stagger model functions. 
     It creates the padded Rx, Rz and L from the non-padded models R and Vp. 
@@ -127,6 +133,9 @@ private:
     T *L;   ///< Bulk modulus
     T *Rx;  ///< Staggered inverse of density in x
     T *Rz;  ///< Staggered inverse of density in z
+    std::string Vpfile; ///< Filename to vp model
+    std::string Rfile; ///< Filename to density model
+
 };
 
 // =============== 3D ACOUSTIC MODEL CLASS =============== //
@@ -138,11 +147,12 @@ class ModelAcoustic3D: public Model<T> {
 public:
     ModelAcoustic3D();	///< Default constructor (Not to be used)
     ModelAcoustic3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const bool _fs); ///< Constructor
+    ModelAcoustic3D(std::string _Vpfile, std::string _Rfile, const int lpml, const bool _fs);	///< Constructor
     ~ModelAcoustic3D();	///< Destructor
     
     // I/O functions
-    void readModel(std::shared_ptr<File> Fin);	///< Read a model from file
-    void writeModel(std::shared_ptr<File> Fout);	///< NOT IMPLEMENTED
+    void readModel();	///< Read a model from file
+    void writeModel();	///< NOT IMPLEMENTED
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp
     T *getR() { return R; }		///< Get R
@@ -150,6 +160,8 @@ public:
     T *getRy() { return Ry; }		///< Get Ry
     T *getRz() { return Rz; }		///< Get Rz
     T *getL() { return L; }		///< Get L
+    std::string getVpfile() { return Vpfile; }
+    std::string getRfile() { return Rfile; }
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz and L from the non-padded models R and Vp. 
@@ -163,6 +175,8 @@ private:
     T *Rx;  ///< Staggered inverse of density in x
     T *Ry;  ///< Staggered inverse of density in y
     T *Rz;  ///< Staggered inverse of density in z
+    std::string Vpfile; ///< Filename to vp model
+    std::string Rfile; ///< Filename to density model
 };
 
 // =============== 2D ELASTIC MODEL CLASS =============== //
@@ -174,11 +188,12 @@ class ModelElastic2D: public Model<T> {
 public:
     ModelElastic2D();	///< Constructor
     ModelElastic2D(const int _nx, const int _nz, const int lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs);	///< Constructor
+    ModelElastic2D(std::string _Vpfile, std::string _Vsfile, std::string _Rfile, const int lpml, const bool _fs);	///< Constructor
     ~ModelElastic2D();	///< Destructor
     
     // I/O functions
-    void readModel(std::shared_ptr<File> Fin);	///< Read a model from file
-    void writeModel(std::shared_ptr<File> Fout);	///< NOT IMPLEMENTED
+    void readModel();	///< Read a model from file
+    void writeModel();	///< NOT IMPLEMENTED
 
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp
@@ -189,6 +204,9 @@ public:
     T *getM() { return M; }		///< Get M
     T *getRx() { return Rx; }		///< Get Rx
     T *getRz() { return Rz; }		///< Get Rz
+    std::string getVpfile() { return Vpfile; }
+    std::string getVsfile() { return Vsfile; }
+    std::string getRfile() { return Rfile; }
 
     /** Stagger model functions. 
     It creates the padded Rx, Rz, L, L2M and M from the non-padded models R, Vp and Vs. 
@@ -204,6 +222,9 @@ private:
     T *M;   // Lame Mu  (padded)
     T *Rx;  // Staggered inverse of density in x (padded)
     T *Rz;  // Staggered inverse of density in z (padded)
+    std::string Vpfile; ///< Filename to vp model
+    std::string Vsfile; ///< Filename to vs model
+    std::string Rfile; ///< Filename to density model
 };
 
 // =============== 3D ELASTIC MODEL CLASS =============== //
@@ -215,11 +236,13 @@ class ModelElastic3D: public Model<T> {
 public:
     ModelElastic3D();	///< Constructor
     ModelElastic3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const bool _fs); ///< Constructor
+    ModelElastic3D(std::string _Vpfile, std::string _Vsfile, std::string _Rfile, const int lpml, const bool _fs);	///< Constructor
     ~ModelElastic3D();	///< Destructor
     
     // I/O functions
-    void readModel(std::shared_ptr<File> Fin);	///< Read a model from file
-    void writeModel(std::shared_ptr<File> Fout);	///< NOT IMPLEMENTED
+    void readModel();	///< Read a model from files
+    void writeModel();	///< Write a to files
+
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp
     T *getVs() { return Vs; }	///< Get Vs
@@ -232,6 +255,9 @@ public:
     T *getRx() { return Rx; }		///< Get Rx
     T *getRy() { return Ry; }		///< Get Ry
     T *getRz() { return Rz; }		///< Get Rz
+    std::string getVpfile() { return Vpfile; }
+    std::string getVsfile() { return Vsfile; }
+    std::string getRfile() { return Rfile; }
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, Vp and Vs. 
@@ -250,6 +276,9 @@ private:
     T *Rx;  ///< Staggered inverse of density in x (padded)
     T *Ry;  ///< Staggered inverse of density in y (padded)
     T *Rz;  ///< Staggered inverse of density in z (padded)
+    std::string Vpfile; ///< Filename to vp model
+    std::string Vsfile; ///< Filename to vs model
+    std::string Rfile; ///< Filename to density model
 };
 
 

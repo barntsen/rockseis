@@ -39,6 +39,9 @@ public:
     // Clear geometry 
     void clear(); ///< Zeroes out the geometry
 
+    // Compare geometry
+    bool compare(std::shared_ptr<Geometry<T>> other);  ///< Returns 0 if non-zero entries in two geometries are equal
+
 private:
     size_t n[MAXDIMS];	// Dimension sizes
     T d[MAXDIMS];	// Sampling interval

@@ -65,41 +65,24 @@ int main()
         return 1;
     }
 
-	std::shared_ptr<rockseis::File> file (new rockseis::File());
-	// Get model geometry variables from Vp file
-	status = file->input("Vp2d.rss");
-	if(status == FILE_ERR){
-		std::cout << "Error reading from Vp file. \n";
-		exit(1);
-	}
-	file->close();
-	file->printGeometry();
+    std::shared_ptr<rockseis::File> file (new rockseis::File());
 
-	// Parameters from file
-	int nx = file->getN(1);
-	int nz = file->getN(3);
-	float dx = (float) file->getD(1);
-	float dz = (float) file->getD(3);
-	float ox = (float) file->getO(1);
-	float oz = (float) file->getO(3);
-
-	// Get time variables from wav file
-	int nt;
-	float dt;
-	float ot;
-	int nsou;
-	status = file->input("Wav2d.rss");
-	if(status == FILE_ERR){
-		std::cout << "Error reading from wavelet file. \n";
-		exit(1);
-	}
-	file->close();
-	nsou = file->getN(2);
-	nt = file->getN(1);
-	dt = file->getD(1);
-	ot = file->getO(1);
-
-	file->printGeometry();
+//    // Get time variables from wav file
+//    int nt;
+//    float dt;
+//    float ot;
+//    int nsou;
+//    status = file->input("Wav2d.rss");
+//    if(status == FILE_ERR){
+//	    std::cout << "Error reading from wavelet file. \n";
+//	    exit(1);
+//    }
+//    file->close();
+//    nsou = file->getN(2);
+//    nt = file->getN(1);
+//    dt = file->getD(1);
+//    ot = file->getO(1);
+//
 
     //Get information from data geometry file
 	status = file->input("Geom2d.rss");
@@ -111,51 +94,30 @@ int main()
     file->close();
 
 	// Create the classes 
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> model (new rockseis::ModelAcoustic2D<float>(nx, nz, lpml, dx, dz, ox, oz, fs));
+	std::shared_ptr<rockseis::ModelAcoustic2D<float>> model (new rockseis::ModelAcoustic2D<float>("Vp2d.rss", "Rho2d.rss", lpml ,fs));
 	std::shared_ptr<rockseis::Modelling<float>> modelling (new rockseis::Modelling<float>(order));
-	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(nsou, nt, dt));
-	std::shared_ptr<rockseis::Data2D<float>> record (new rockseis::Data2D<float>(nrec, nt, dt));
+	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>("Wav2d.rss"));
+	std::shared_ptr<rockseis::Data2D<float>> record (new rockseis::Data2D<float>(nrec, source->getNt(), source->getDt()));
 
-	// Read an acoustic model
-	float *R, *Vp;
-	R = model->getR();
-	Vp = model->getVp();
-
-	// Read vp model
-	std::shared_ptr<rockseis::File> FVp (new rockseis::File());
-	status = FVp->input("Vp2d.rss");
-	if(status == FILE_ERR){
-		std::cout << "Error reading from Vp file. \n";
-		exit(1);
-	}
-	FVp->floatread(Vp, nx*nz);
-	FVp->close();
-
-	// Read rho model
-	status = file->input("Rho2d.rss");
-	if(status == FILE_ERR){
-		std::cout << "Error reading from Rho file. \n";
-		exit(1);
-	}
-	file->floatread(R, nx*nz);
-	file->close();
+	// Read acoustic model
+	model->readModel();
 
 	// Stagger model
 	model->staggerModels();
 
 	// Load wavelet from file
-	status = file->input("Wav2d.rss");
-	if(status == FILE_ERR){
-		std::cout << "Error reading from Wav file. \n";
-		exit(1);
-	}
-	source->readfloatData(file);
-	file->close();
+//	status = file->input("Wav2d.rss");
+//	if(status == FILE_ERR){
+//		std::cout << "Error reading from Wav file. \n";
+//		exit(1);
+//	}
+	source->readData();
+//	file->close();
 	source->makeMap(model->getGeom());
 
 	// Load data geometry from file
-	status = file->input("Geom2d.rss");
-    record->readfloatCoords(file);
+	record->setFile("Geom2d.rss");
+        record->readCoords();
 	record->makeMap(model->getGeom());
 	//rockseis::Point2D<float> *scoords2d = (record->getGeom())->getScoords();
 	//rockseis::Point2D<float> *gcoords2d = (record->getGeom())->getGcoords();

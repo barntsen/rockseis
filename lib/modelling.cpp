@@ -77,7 +77,7 @@ int Modelling<T>::Acoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model,std::shar
     	waves->recordData(recP, 0, 1, it);
     
     	//Writting out results to binary file
-    	Fsnap->floatwrite(Szz, (nx+2*lpml) * (nz+2*lpml));
+    	Fsnap->write(Szz, (nx+2*lpml) * (nz+2*lpml));
     	
     	// Roll the pointers P1 and P2
     	waves->roll();

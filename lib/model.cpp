@@ -1,5 +1,6 @@
 // Include statements
 #include "model.h"
+#include "file.h"
 
 namespace rockseis {
 
@@ -228,6 +229,7 @@ ModelAcoustic2D<T>::ModelAcoustic2D(): Model<T>(2) {
     Rz = (T *) malloc(nx_pml*nz_pml*sizeof(T));
     
 }
+
 template<typename T>
 ModelAcoustic2D<T>::ModelAcoustic2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 1.0, _oz, _fs) {
     int nx, nz, nx_pml, nz_pml, lpml;
@@ -246,6 +248,76 @@ ModelAcoustic2D<T>::ModelAcoustic2D(const int _nx, const int _nz, const int _lpm
 }
 
 template<typename T>
+ModelAcoustic2D<T>::ModelAcoustic2D(std::string _Vpfile, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(2) {
+    bool status;
+    int nx, nz, nx_pml, nz_pml;
+    T dx, dz;
+    T ox, oz;
+    Vpfile = _Vpfile;
+    Rfile = _Rfile;
+
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelAcoustic2D::Error reading from Vp file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+        std::cerr << "ModelAcoustic2D::Error reading from density file. \n";
+        exit(1);
+    }
+
+    // Compare geometry in the two files
+    if(Fvp->compareGeometry(Frho) != 0)
+    {
+        std::cerr << "ModelAcoustic2D::Geometries in Vp and Density model files do not match.\n";
+        exit(1);
+    }
+
+    if(Fvp->getData_format() != Frho->getData_format())
+    {
+        std::cerr << "ModelAcoustic2D::Numerical precision mismatch in Vp and Density model files.\n";
+        exit(1);
+    }
+    
+    // Read geometry from file
+    nx = Fvp->getN(1);
+    dx = (T) Fvp->getD(1);
+    ox = (T) Fvp->getO(1);
+    nz = Fvp->getN(3);
+    dz = (T) Fvp->getD(3);
+    oz = (T) Fvp->getO(3);
+    
+    // Close files
+    Fvp->close();
+    Frho->close();
+
+    // Store geometry in model class
+    this->setNx(nx);
+    this->setDx(dx);
+    this->setOx(ox);
+
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(_fs);
+
+    nx_pml = this->getNx_pml();
+    nz_pml = this->getNz_pml();
+    
+    /* Allocate variables */
+    Vp = (T *) calloc(nx*nz,sizeof(T));
+    R = (T *) calloc(nx*nz,sizeof(T));
+    L = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Rx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Rz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+}
+
+template<typename T>
 ModelAcoustic2D<T>::~ModelAcoustic2D() {
     // Freeing all variables
     free(Vp);
@@ -256,13 +328,80 @@ ModelAcoustic2D<T>::~ModelAcoustic2D() {
 }
 
 template<typename T>
-void ModelAcoustic2D<T>::readModel(std::shared_ptr<File> Fin) {
-    // Not implemented
+void ModelAcoustic2D<T>::readModel() {
+    bool status;
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Rfile = this->getRfile();
+    // Open files for reading
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelAcoustic2D::readModel : Error reading from Vp file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelAcoustic2D::readModel : Error reading from Density file. \n";
+        exit(1);
+    }
+
+    // Read models
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    Vp = this->getVp();
+    Fvp->read(Vp, nx*nz);
+    Fvp->close();
+
+    R = this->getR();
+    Frho->read(R, nx*nz);
+    Frho->close();
 }
 
 template<typename T>
-void ModelAcoustic2D<T>::writeModel(std::shared_ptr<File> Fout) {
-    // Not implemented
+void ModelAcoustic2D<T>::writeModel() {
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    Fvp->output(Vpfile.c_str());
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    Frho->output(Rfile.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Fvp->setN(1,nx);
+    Fvp->setN(3,nz);
+    Fvp->setD(1,dx);
+    Fvp->setD(3,dz);
+    Fvp->setO(1,ox);
+    Fvp->setO(3,oz);
+    Fvp->setData_format(sizeof(T));
+    Fvp->writeHeader();
+    Vp = this->getVp();
+    Fvp->write(Vp, nx*nz);
+    Fvp->close();
+
+    Frho->setN(1,nx);
+    Frho->setN(3,nz);
+    Frho->setD(1,dx);
+    Frho->setD(3,dz);
+    Frho->setO(1,ox);
+    Frho->setO(3,oz);
+    Frho->setData_format(sizeof(T));
+    Frho->writeHeader();
+    R = this->getR();
+    Frho->write(R, nx*nz);
+    Frho->close();
 }
 
 template<typename T>
@@ -273,8 +412,8 @@ void ModelAcoustic2D<T>::staggerModels(){
     nz = this->getNz();
     lpml = this->getLpml();
     
-    nx_pml = nx + 2*lpml;
-    nz_pml = nz + 2*lpml;
+    nx_pml = this->getNx_pml();
+    nz_pml = this->getNz_pml();
     
     Index ind(nx, nz);
     Index ind_pml(nx_pml, nz_pml);
@@ -329,13 +468,170 @@ ModelAcoustic3D<T>::ModelAcoustic3D(const int _nx, const int _ny, const int _nz,
 }
 
 template<typename T>
-void ModelAcoustic3D<T>::readModel(std::shared_ptr<File> Fin) {
-    // Not implemented
+ModelAcoustic3D<T>::ModelAcoustic3D(std::string _Vpfile, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(3) {
+    bool status;
+    int nx, ny, nz, nx_pml, ny_pml, nz_pml;
+    T dx, dy, dz;
+    T ox, oy, oz;
+    Vpfile = _Vpfile;
+    Rfile = _Rfile;
+
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelAcoustic3D::Error reading from Vp file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+        std::cerr << "ModelAcoustic3D::Error reading from density file. \n";
+        exit(1);
+    }
+
+    // Compare geometry in the two files
+    if(Fvp->compareGeometry(Frho) != 0)
+    {
+        std::cerr << "ModelAcoustic3D::Geometries in Vp and Density model files do not match.\n";
+        exit(1);
+    }
+
+    if(Fvp->getData_format() != Frho->getData_format())
+    {
+        std::cerr << "ModelAcoustic3D::Numerical precision mismatch in Vp and Density model files.\n";
+        exit(1);
+    }
+    
+    // Read geometry from file
+    nx = Fvp->getN(1);
+    dx = (T) Fvp->getD(1);
+    ox = (T) Fvp->getO(1);
+    ny = Fvp->getN(2);
+    dy = (T) Fvp->getD(2);
+    oy = (T) Fvp->getO(2);
+    nz = Fvp->getN(3);
+    dz = (T) Fvp->getD(3);
+    oz = (T) Fvp->getO(3);
+    
+    // Close files
+    Fvp->close();
+    Frho->close();
+
+    // Store geometry in model class
+    this->setNx(nx);
+    this->setDx(dx);
+    this->setOx(ox);
+
+    this->setNy(ny);
+    this->setDy(dy);
+    this->setOy(oy);
+
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(_fs);
+
+    nx_pml = this->getNx_pml();
+    ny_pml = this->getNy_pml();
+    nz_pml = this->getNz_pml();
+    
+    /* Allocate variables */
+    Vp = (T *) calloc(nx*ny*nz,sizeof(T));
+    R = (T *) calloc(nx*ny*nz,sizeof(T));
+    L = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Rx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Ry = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Rz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+}
+
+
+template<typename T>
+void ModelAcoustic3D<T>::readModel() {
+    bool status;
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Rfile = this->getRfile();
+    // Open files for reading
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelAcoustic2D::readModel : Error reading from Vp file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelAcoustic2D::readModel : Error reading from Density file. \n";
+        exit(1);
+    }
+
+    // Read models
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    Vp = this->getVp();
+    Fvp->read(Vp, nx*ny*nz);
+    Fvp->close();
+
+    R = this->getR();
+    Frho->read(R, nx*ny*nz);
+    Frho->close();
 }
 
 template<typename T>
-void ModelAcoustic3D<T>::writeModel(std::shared_ptr<File> Fin) {
-    // Not implemented
+void ModelAcoustic3D<T>::writeModel() {
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    Fvp->output(Vpfile.c_str());
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    Frho->output(Rfile.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Fvp->setN(1,nx);
+    Fvp->setN(2,ny);
+    Fvp->setN(3,nz);
+    Fvp->setD(1,dx);
+    Fvp->setD(2,dy);
+    Fvp->setD(3,dz);
+    Fvp->setO(1,ox);
+    Fvp->setO(2,oy);
+    Fvp->setO(3,oz);
+    Fvp->setData_format(sizeof(T));
+    Fvp->writeHeader();
+    Vp = this->getVp();
+    Fvp->write(Vp, nx*ny*nz);
+    Fvp->close();
+
+    Frho->setN(1,nx);
+    Frho->setN(2,ny);
+    Frho->setN(3,nz);
+    Frho->setD(1,dx);
+    Frho->setD(2,dy);
+    Frho->setD(3,dz);
+    Frho->setO(1,ox);
+    Frho->setO(2,oy);
+    Frho->setO(3,oz);
+    Frho->setData_format(sizeof(T));
+    Frho->writeHeader();
+    R = this->getR();
+    Frho->write(R, nx*ny*nz);
+    Frho->close();
 }
 
 template<typename T>
@@ -428,13 +724,201 @@ ModelElastic2D<T>::ModelElastic2D(const int _nx, const int _nz, const int _lpml,
 }
 
 template<typename T>
-void ModelElastic2D<T>::readModel(std::shared_ptr<File> Fin) {
-    // Not implemented
+ModelElastic2D<T>::ModelElastic2D(std::string _Vpfile, std::string _Vsfile, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(2) {
+    bool status;
+    int nx, nz, nx_pml, nz_pml;
+    T dx, dz;
+    T ox, oz;
+    Vpfile = _Vpfile;
+    Vsfile = _Vsfile;
+    Rfile = _Rfile;
+
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelElastic2D::Error reading from Vp file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    status = Fvs->input(Vsfile.c_str());
+    if(status == FILE_ERR){
+        std::cerr << "ModelElastic2D::Error reading from Vs file. \n";
+        exit(1);
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+        std::cerr << "ModelElastic2D::Error reading from density file. \n";
+        exit(1);
+    }
+
+    // Compare geometry in the two files
+    if(Fvp->compareGeometry(Fvs) != 0)
+    {
+        std::cerr << "ModelElastic2D::Geometries in Vp and Vs model files do not match.\n";
+        exit(1);
+    }
+
+    if(Fvp->compareGeometry(Frho) != 0)
+    {
+        std::cerr << "ModelElastic2D::Geometries in Vp and Density model files do not match.\n";
+        exit(1);
+    }
+
+    if(Fvp->getData_format() != Frho->getData_format())
+    {
+        std::cerr << "ModelElastic2D::Numerical precision mismatch in Vp and Density model files.\n";
+        exit(1);
+    }
+    if(Fvp->getData_format() != Fvs->getData_format())
+    {
+        std::cerr << "ModelElastic2D::Numerical precision mismatch in Vp and Vs model files.\n";
+        exit(1);
+    }
+
+    
+    // Read geometry from file
+    nx = Fvp->getN(1);
+    dx = (T) Fvp->getD(1);
+    ox = (T) Fvp->getO(1);
+    nz = Fvp->getN(3);
+    dz = (T) Fvp->getD(3);
+    oz = (T) Fvp->getO(3);
+    
+    // Close files
+    Fvp->close();
+    Fvs->close();
+    Frho->close();
+
+    // Store geometry in model class
+    this->setNx(nx);
+    this->setDx(dx);
+    this->setOx(ox);
+
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(_fs);
+
+    nx_pml = this->getNx_pml();
+    nz_pml = this->getNz_pml();
+    
+    /* Allocate variables */
+    Vp = (T *) calloc(nx*nz,sizeof(T));
+    Vs = (T *) calloc(nx*nz,sizeof(T));
+    R = (T *) calloc(nx*nz,sizeof(T));
+    L = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    L2M = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    M = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Rx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Rz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+}
+
+
+template<typename T>
+void ModelElastic2D<T>::readModel() {
+    bool status;
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Vsfile = this->getVsfile();
+    std::string Rfile = this->getRfile();
+    // Open files for reading
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelElastic2D::readModel : Error reading from Vp file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    status = Fvs->input(Vsfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelElastic2D::readModel : Error reading from Vs file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelElastic2D::readModel : Error reading from Density file. \n";
+        exit(1);
+    }
+
+    // Read models
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    Vp = this->getVp();
+    Fvp->read(Vp, nx*nz);
+    Fvp->close();
+
+    Vs = this->getVs();
+    Fvs->read(Vs, nx*nz);
+    Fvs->close();
+
+    R = this->getR();
+    Frho->read(R, nx*nz);
+    Frho->close();
 }
 
 template<typename T>
-void ModelElastic2D<T>::writeModel(std::shared_ptr<File> Fout) {
-    // Not implemented
+void ModelElastic2D<T>::writeModel() {
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Vsfile = this->getVsfile();
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    Fvp->output(Vpfile.c_str());
+    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    Fvs->output(Vsfile.c_str());
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    Frho->output(Rfile.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Fvp->setN(1,nx);
+    Fvp->setN(3,nz);
+    Fvp->setD(1,dx);
+    Fvp->setD(3,dz);
+    Fvp->setO(1,ox);
+    Fvp->setO(3,oz);
+    Fvp->setData_format(sizeof(T));
+    Fvp->writeHeader();
+    Vp = this->getVp();
+    Fvp->write(Vp, nx*nz);
+    Fvp->close();
+
+    Fvs->setN(1,nx);
+    Fvs->setN(3,nz);
+    Fvs->setD(1,dx);
+    Fvs->setD(3,dz);
+    Fvs->setO(1,ox);
+    Fvs->setO(3,oz);
+    Fvs->setData_format(sizeof(T));
+    Fvs->writeHeader();
+    Vs = this->getVs();
+    Fvs->write(Vs, nx*nz);
+    Fvs->close();
+
+    Frho->setN(1,nx);
+    Frho->setN(3,nz);
+    Frho->setD(1,dx);
+    Frho->setD(3,dz);
+    Frho->setO(1,ox);
+    Frho->setO(3,oz);
+    Frho->setData_format(sizeof(T));
+    Frho->writeHeader();
+    R = this->getR();
+    Frho->write(R, nx*nz);
+    Frho->close();
+
 }
 
 
@@ -533,15 +1017,222 @@ ModelElastic3D<T>::ModelElastic3D(const int _nx, const int _ny, const int _nz, c
 }
 
 template<typename T>
-void ModelElastic3D<T>::readModel(std::shared_ptr<File> Fin) {
-    // Not implemented
+ModelElastic3D<T>::ModelElastic3D(std::string _Vpfile, std::string _Vsfile, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(3) {
+    bool status;
+    int nx, ny, nz, nx_pml, ny_pml, nz_pml;
+    T dx, dy, dz;
+    T ox, oy, oz;
+    Vpfile = _Vpfile;
+    Vsfile = _Vsfile;
+    Rfile = _Rfile;
+
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelElastic3D::Error reading from Vp file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    status = Fvs->input(Vsfile.c_str());
+    if(status == FILE_ERR){
+        std::cerr << "ModelElastic3D::Error reading from Vs file. \n";
+        exit(1);
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+        std::cerr << "ModelElastic3D::Error reading from density file. \n";
+        exit(1);
+    }
+
+    // Compare geometry in the two files
+    if(Fvp->compareGeometry(Fvs) != 0)
+    {
+        std::cerr << "ModelElastic3D::Geometries in Vp and Vs model files do not match.\n";
+        exit(1);
+    }
+
+    if(Fvp->compareGeometry(Frho) != 0)
+    {
+        std::cerr << "ModelElastic3D::Geometries in Vp and Density model files do not match.\n";
+        exit(1);
+    }
+
+    if(Fvp->getData_format() != Frho->getData_format())
+    {
+        std::cerr << "ModelElastic3D::Numerical precision mismatch in Vp and Density model files.\n";
+        exit(1);
+    }
+    if(Fvp->getData_format() != Fvs->getData_format())
+    {
+        std::cerr << "ModelElastic3D::Numerical precision mismatch in Vp and Vs model files.\n";
+        exit(1);
+    }
+
+    // Read geometry from file
+    nx = Fvp->getN(1);
+    dx = (T) Fvp->getD(1);
+    ox = (T) Fvp->getO(1);
+    ny = Fvp->getN(2);
+    dy = (T) Fvp->getD(2);
+    oy = (T) Fvp->getO(2);
+    nz = Fvp->getN(3);
+    dz = (T) Fvp->getD(3);
+    oz = (T) Fvp->getO(3);
+    
+    // Close files
+    Fvp->close();
+    Fvs->close();
+    Frho->close();
+
+    // Store geometry in model class
+    this->setNx(nx);
+    this->setDx(dx);
+    this->setOx(ox);
+
+    this->setNy(ny);
+    this->setDy(dy);
+    this->setOy(oy);
+
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(_fs);
+
+    nx_pml = this->getNx_pml();
+    ny_pml = this->getNy_pml();
+    nz_pml = this->getNz_pml();
+    
+    /* Allocate variables */
+    Vp = (T *) calloc(nx*ny*nz,sizeof(T));
+    Vs = (T *) calloc(nx*ny*nz,sizeof(T));
+    R = (T *) calloc(nx*ny*nz,sizeof(T));
+    L = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    L2M = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    M_xz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    M_yz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    M_xy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Rx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Ry = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Rz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
 }
 
 template<typename T>
-void ModelElastic3D<T>::writeModel(std::shared_ptr<File> Fout) {
-    // Not implemented
+void ModelElastic3D<T>::readModel() {
+    bool status;
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Vsfile = this->getVsfile();
+    std::string Rfile = this->getRfile();
+    // Open files for reading
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelElastic3D::readModel : Error reading from Vp file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    status = Fvs->input(Vsfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelElastic3D::readModel : Error reading from Vs file. \n";
+	    exit(1);
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "ModelElastic3D::readModel : Error reading from Density file. \n";
+        exit(1);
+    }
+
+    // Read models
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    Vp = this->getVp();
+    Fvp->read(Vp, nx*ny*nz);
+    Fvp->close();
+
+    Vs = this->getVs();
+    Fvs->read(Vs, nx*ny*nz);
+    Fvs->close();
+
+    R = this->getR();
+    Frho->read(R, nx*ny*nz);
+    Frho->close();
 }
 
+template<typename T>
+void ModelElastic3D<T>::writeModel() {
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    Fvp->output(Vpfile.c_str());
+    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    Fvs->output(Vsfile.c_str());
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    Frho->output(Rfile.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Fvp->setN(1,nx);
+    Fvp->setN(2,ny);
+    Fvp->setN(3,nz);
+    Fvp->setD(1,dx);
+    Fvp->setD(2,dy);
+    Fvp->setD(3,dz);
+    Fvp->setO(1,ox);
+    Fvp->setO(2,oy);
+    Fvp->setO(3,oz);
+    Fvp->setData_format(sizeof(T));
+    Fvp->writeHeader();
+    Vp = this->getVp();
+    Fvp->write(Vp, nx*ny*nz);
+    Fvp->close();
+
+    Fvs->setN(1,nx);
+    Fvs->setN(2,ny);
+    Fvs->setN(3,nz);
+    Fvs->setD(1,dx);
+    Fvs->setD(2,dy);
+    Fvs->setD(3,dz);
+    Fvs->setO(1,ox);
+    Fvs->setO(2,oy);
+    Fvs->setO(3,oz);
+    Fvs->setData_format(sizeof(T));
+    Fvs->writeHeader();
+    Vs = this->getVs();
+    Fvs->write(Vs, nx*ny*nz);
+    Fvs->close();
+
+    Frho->setN(1,nx);
+    Frho->setN(2,ny);
+    Frho->setN(3,nz);
+    Frho->setD(1,dx);
+    Frho->setD(2,dy);
+    Frho->setD(3,dz);
+    Frho->setO(1,ox);
+    Frho->setO(2,oy);
+    Frho->setO(3,oz);
+    Frho->setData_format(sizeof(T));
+    Frho->writeHeader();
+    R = this->getR();
+    Frho->write(R, nx*ny*nz);
+    Frho->close();
+}
 
 template<typename T>
 void ModelElastic3D<T>::staggerModels(){

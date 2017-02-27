@@ -41,6 +41,22 @@ void Geometry<T>::print(){
     std::cerr << "==================================================\n";
 }
 
+template<typename T>
+bool Geometry<T>::compare(std::shared_ptr<Geometry<T>> other){
+    int i;
+    for(i = 0; i < MAXDIMS; i++)
+    {    
+	    if(n[i] > 0) 
+	    {
+		    if(n[i] != other->getN(i+1)) return 1; 
+		    if(d[i] != other->getD(i+1)) return 1; 
+		    if(o[i] != other->getO(i+1)) return 1; 
+	    }
+    }
+    return 0;
+}
+
+
 
 template<typename T>
 void Geometry<T>::setN(int dim, size_t val) 

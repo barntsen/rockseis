@@ -91,15 +91,15 @@ int main(int argc, char* argv[])
         switch(filetype)
         {
             case 2:
-                in->intread(&(inttrace[0]), inttrace.size());
+                in->read(&(inttrace[0]), inttrace.size());
                 out << inttrace;
                 break;
             case 3:
-                in->floatread(&(floattrace[0]), floattrace.size());
+                in->read(&(floattrace[0]), floattrace.size());
                 out << floattrace;
                 break;
             default:
-                in->floatread(&(floattrace[0]), floattrace.size());
+                in->read(&(floattrace[0]), floattrace.size());
                 out << floattrace;
                 break;
         }

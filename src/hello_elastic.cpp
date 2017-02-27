@@ -9,6 +9,7 @@
 #include <memory>
 #include <fstream>
 #include <math.h>
+#include <config4cpp/Configuration.h>
 
 int main()
 {
@@ -61,17 +62,17 @@ int main()
 
 	// Read vp model
 	status = file->input("Vp2d.rss");
-	file->floatread(Vp, nx*nz);
+	file->read(Vp, nx*nz);
 	file->close();
 
 	// Read vs model
 	status = file->input("Vs2d.rss");
-	file->floatread(Vs, nx*nz);
+	file->read(Vs, nx*nz);
 	file->close();
 
 	// Read rho model
 	status = file->input("Rho2d.rss");
-	file->floatread(R, nx*nz);
+	file->read(R, nx*nz);
 	file->close();
 
 	// Stagger model
@@ -79,7 +80,7 @@ int main()
 
 	// Load wavelet from file
 	status = file->input("Wav2d.rss");
-	source->readfloatData(file);
+	source->readData();
 	file->close();
 	source->makeMap(model->getGeom());
 

@@ -13,8 +13,6 @@ int main(int argc, char* argv[])
 	std::shared_ptr<rockseis::File> out (new rockseis::File());
     out->output();
 
-    bool status;
-
     int n[MAXDIM];
     float d[MAXDIM];
     float o[MAXDIM];
@@ -92,15 +90,15 @@ int main(int argc, char* argv[])
         {
             case 2:
                 in >> inttrace;
-                out->intwrite(&(inttrace[0]), inttrace.size());
+                out->write(&(inttrace[0]), inttrace.size());
                 break;
             case 3:
                 in >> floattrace;
-                out->floatwrite(&(floattrace[0]), floattrace.size());
+                out->write(&(floattrace[0]), floattrace.size());
                 break;
             default:
                 in >> floattrace;
-                out->floatwrite(&(floattrace[0]), floattrace.size());
+                out->write(&(floattrace[0]), floattrace.size());
                 break;
         }
 
