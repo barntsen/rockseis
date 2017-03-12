@@ -81,6 +81,8 @@ public:
     // Get functions
     std::shared_ptr<PmlAcoustic2D<T>> getPml() { return Pml; } ///< Get pml
     T * getP2() { return P2; }  ///< Get advanced stress
+    T * getAx() { return Ax; }  ///< Get x-component of acceleration 
+    T * getAz() { return Az; }  ///< Get z-component of acceleration
 
     void computeABC() { Pml->callcompABC(); } ///< Compute the PML decay constants (needed if changes are made to the Amax, Kmax and Smax)
     void roll();  ///< Roll the pressure pointers

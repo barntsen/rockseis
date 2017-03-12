@@ -96,21 +96,64 @@ Data2D<T>::Data2D(std::string datafile): Data<T>(datafile)
 }
 
 template<typename T>
+Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt): Data<T>(datafile)
+{
+    bool status;
+    size_t ntrace;
+    //Opeing file for reading
+    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
+    status = Fin->input(datafile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "Data2D::Error reading from input file. \n";
+	    exit(1);
+    }
+    if(Fin->getData_format() != sizeof(T))
+    {
+        std::cerr << "Data2D::Numerical precision in " << datafile << " mismatch with data class contructor.\n";
+        exit(1);
+    }
+    if(Fin->getNheader() != 4)
+    {
+        std::cerr << "Data2D:: " << datafile << " is not a 2d data file.\n";
+        exit(1);
+    }
+
+    ntrace = Fin->getN(2);
+
+    // Setting variables
+    this->setNtrace(ntrace);
+    this->setNt(_nt);
+    this->setDt(_dt);
+    this->setOt(0.0);
+
+    // Create a 2D data geometry
+    geometry = std::make_shared<Geometry2D<T>>(ntrace); 
+
+    // Allocate the memory for the data
+    data = (T *) calloc(ntrace*_nt, sizeof(T));
+}
+
+template<typename T>
 bool Data2D<T>::readData()
 {
     bool status;
     std::string datafile = this->getFile();
     if(datafile.empty()){
-	    std::cerr << "Data2D::readData no file assigned. \n";
+	    std::cerr << "Data2D::readData: No file assigned. \n";
 	    exit(1);
     }
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data2D::Error reading from " << datafile <<". \n";
+	    std::cerr << "Data2D::readData: Error reading from " << datafile <<". \n";
 	    exit(1);
     }
     size_t nt = Fin->getN(1);
+    if(nt != this->getNt())
+    {
+	    std::cerr << "Data2D::readData: Nt in " << datafile <<" is different from that allocated during class construction. \n";
+	    exit(1);
+    }
     int ntrace = Fin->getN(2);
     size_t Nheader = Fin->getNheader();
 
@@ -204,6 +247,8 @@ bool Data2D<T>::write()
         Fout->setD(1,dt);
         Fout->setO(1,ot);
         Fout->setN(2,ntrace);
+        Fout->setD(2,1.0);
+        Fout->setO(2,0.0);
         Fout->setNheader(4);
         Fout->setData_format(4);
         Fout->setHeader_format(4);
@@ -303,6 +348,44 @@ Data3D<T>::Data3D(std::string datafile): Data<T>(datafile)
 }
 
 template<typename T>
+Data3D<T>::Data3D(std::string datafile, const int _nt, const T _dt): Data<T>(datafile)
+{
+    bool status;
+    size_t ntrace;
+    //Opeing file for reading
+    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
+    status = Fin->input(datafile.c_str());
+    if(status == FILE_ERR){
+	    std::cerr << "Data3D::Error reading from input file. \n";
+	    exit(1);
+    }
+    if(Fin->getData_format() != sizeof(T))
+    {
+        std::cerr << "Data3D::Numerical precision in " << datafile << " mismatch with data class contructor.\n";
+        exit(1);
+    }
+    if(Fin->getNheader() != 6)
+    {
+        std::cerr << "Data3D:: " << datafile << " is not a 3d data file.\n";
+        exit(1);
+    }
+
+    ntrace = Fin->getN(2);
+
+    // Setting variables
+    this->setNtrace(ntrace);
+    this->setNt(_nt);
+    this->setDt(_dt);
+    this->setOt(0.0);
+
+    // Create a 3D data geometry
+    geometry = std::make_shared<Geometry3D<T>>(ntrace); 
+
+    // Allocate the memory for the data
+    data = (T *) calloc(ntrace*_nt, sizeof(T));
+}
+
+template<typename T>
 bool Data3D<T>::readData()
 {
     bool status;
@@ -319,6 +402,12 @@ bool Data3D<T>::readData()
     }
 
     int nt = Fin->getN(1);
+    if(nt != this->getNt())
+    {
+	    std::cerr << "Data3D::readData: Nt in " << datafile <<" is different from that allocated during class construction. \n";
+	    exit(1);
+    }
+
     int ntrace = Fin->getN(2);
     size_t Nheader = Fin->getNheader();
 
@@ -394,7 +483,7 @@ bool Data3D<T>::write()
     bool status;
     std::string datafile = this->getFile();
     if(datafile.empty()){
-	    std::cerr << "Data2D::writeData: No file assigned. \n";
+	    std::cerr << "Data3D::writeData: No file assigned. \n";
 	    exit(1);
     }
 
@@ -412,6 +501,8 @@ bool Data3D<T>::write()
         Fout->setD(1,dt);
         Fout->setO(1,0.0);
         Fout->setN(2,ntrace);
+        Fout->setD(2,1.0);
+        Fout->setO(2,0.0);
         Fout->setNheader(6);
         Fout->setData_format(4);
         Fout->setHeader_format(4);

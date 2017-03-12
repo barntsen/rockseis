@@ -81,6 +81,7 @@ int main(int argc, char* argv[])
 	    filetype = 3;
 	    type = SF_FLOAT;
     }
+    int Nheader = in->getNheader();
 
     // Make traces for both float and int types
     std::valarray<int> inttrace(n[0]);
@@ -91,14 +92,17 @@ int main(int argc, char* argv[])
         switch(filetype)
         {
             case 2:
+            	in->seekg(in->getStartofdata() + i*(n[0]+Nheader)*sizeof(int) + Nheader*sizeof(int));
                 in->read(&(inttrace[0]), inttrace.size());
                 out << inttrace;
                 break;
             case 3:
+            	in->seekg(in->getStartofdata() + i*(n[0]+Nheader)*sizeof(float) + Nheader*sizeof(float));
                 in->read(&(floattrace[0]), floattrace.size());
                 out << floattrace;
                 break;
             default:
+            	in->seekg(in->getStartofdata() + i*(n[0]+Nheader)*sizeof(float) + Nheader*sizeof(float));
                 in->read(&(floattrace[0]), floattrace.size());
                 out << floattrace;
                 break;
