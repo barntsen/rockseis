@@ -66,7 +66,7 @@ int main()
 	// Create the classes 
 	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>("Wav2d.rss"));
 	std::shared_ptr<rockseis::ModelElastic2D<float>> model (new rockseis::ModelElastic2D<float>("Vp2d.rss", "Vs2d.rss", "Rho2d.rss", lpml, fs));
-	std::shared_ptr<rockseis::WavesElastic2D<float>> waves (new rockseis::WavesElastic2D<float>(model, source->getNt(), source->getDt(), source->getOt()));
+	std::shared_ptr<rockseis::WavesElastic2D<float>> waves (new rockseis::WavesElastic2D<float>(model, source->getNt(), source->getDt(), source->getOt(),1));
 	std::shared_ptr<rockseis::Der<float>> der (new rockseis::Der<float>(model->getNx_pml(), 1, model->getNz_pml(), model->getDx(), 1.0, model->getDz(), order));
 
 	// Get models from files

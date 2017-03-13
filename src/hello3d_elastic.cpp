@@ -67,7 +67,7 @@ int main()
 	// Create the classes 
 	std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>("Wav3d.rss"));
 	std::shared_ptr<rockseis::ModelElastic3D<float>> model (new rockseis::ModelElastic3D<float>("Vp3d.rss", "Vs3d.rss", "Rho3d.rss", lpml, fs));
-	std::shared_ptr<rockseis::WavesElastic3D<float>> waves (new rockseis::WavesElastic3D<float>(model, source->getNt(), source->getDt(), source->getOt()));
+	std::shared_ptr<rockseis::WavesElastic3D<float>> waves (new rockseis::WavesElastic3D<float>(model, source->getNt(), source->getDt(), source->getOt(),1));
 	std::shared_ptr<rockseis::Der<float>> der (new rockseis::Der<float>(model->getNx_pml(), model->getNy_pml(), model->getNz_pml(), model->getDx(), model->getDy(), model->getDz(), order));
 	
 	// Get models from files

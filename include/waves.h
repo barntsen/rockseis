@@ -14,9 +14,18 @@
 #include "utils.h"
 #include "data.h"
 #include "file.h"
-#include "snap.h"
+
+#define WAVES_OK 1;
+#define WAVES_ERR 0;
 
 namespace rockseis {
+
+typedef struct {
+    std::string filename;
+    std::shared_ptr<rockseis::File> Fp;
+    bool open;
+} Snap;
+
 /** The abstract waves class
  *
  */
@@ -24,14 +33,17 @@ template<typename T>
 class Waves {
 public:
     Waves();		///< Constructor
-    Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
+    Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int snapinc);	///< Constructor
     virtual ~Waves();	///< Destructor
     
     // Get functions
     int getDim() { return dim; }		///< Get dimension
     int getNx() { return geometry->getN(1); }	///< Get Nx
+    int getNx_pml() { return geometry->getN(1) + 2*lpml ; }	///< Get Nx padded
     int getNy() { return geometry->getN(2); }	///< Get Ny
+    int getNy_pml() { return geometry->getN(2) + 2*lpml ; }	///< Get Ny padded
     int getNz() { return geometry->getN(3); }	///< Get Nz
+    int getNz_pml() { return geometry->getN(3) + 2*lpml ; }	///< Get Nz padded
     int getNt() { return geometry->getN(4); }	///< Get Nt
     int getLpml() { return lpml; }		///< Get lpml
     T getDx() { return geometry->getD(1); }	///< Get Dx
@@ -42,6 +54,13 @@ public:
     T getOy() { return geometry->getO(2); }	///< Get Oy
     T getOz() { return geometry->getO(3); }	///< Get Oz
     T getOt() { return geometry->getO(4); }	///< Get Ot
+
+    int getSnapnt() { return snapnt; } ///< Get snapnt
+    T getSnapdt() { return snapdt; } ///< Get snapdt
+    T getSnapot() { return snapot; } ///< Get snapdt
+    int getSnapit() { return snapit; } ///< Get snapit
+    int getEnddiff() { return enddiff; } ///< Get enddiff
+    int getSnapinc() { return snapinc; } ///< Get snapinc
     
     // Set functions
     void setNx(const int _nx) { geometry->setN(1, _nx); }///< Set Nx
@@ -58,10 +77,25 @@ public:
     void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
     void setOt(const T _ot) { geometry->setO(4, _ot); }	///< Set Ot
     void setDim(const int _dim) { dim = _dim; }		///< Set the dimension
+
+    void setSnapnt(const int nt) { snapnt = nt; } ///< Set snapnt
+    void setSnapdt(const T dt) { snapdt = dt; } ///< Set snapdt
+    void setSnapot(const T ot) { snapot = ot; } ///< Set snapot
+    void setSnapit(const int it) { snapit = it; } ///< Set snapit
+    void setEnddiff(const int it) { enddiff = it; } ///< Set enddiff
+    void setSnapinc(const int inc); ///< Set snapinc
+
 private:
     int dim;
     std::shared_ptr<Geometry<T>> geometry; // regular geometry
     int lpml; // PML boundary size
+    /* Snap variables */
+    int enddiff;
+    int snapit; 
+    int snapnt;
+    int snapinc;
+    T snapdt;
+    T snapot;
 };
 
 /** The 2D Acoustic WAVES class
@@ -71,8 +105,8 @@ template<typename T>
 class WavesAcoustic2D: public Waves<T> {
 public:
     WavesAcoustic2D();					///< Constructor
-    WavesAcoustic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
-    WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    WavesAcoustic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot, const int snapinc);	///< Constructor
+    WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot, const int snapinc);	///< Constructor
     ~WavesAcoustic2D();					///< Destructor
     
     // Time stepping
@@ -94,41 +128,20 @@ public:
     // Record data at receivers functions
     void recordData(std::shared_ptr<rockseis::Data2D<T>> data, int recordtype, int maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
 
+    // Snapshot functions
+    bool openPsnap(std::string filename);
+    bool createPsnap(std::string filename);
+    void writePsnap(const int it);
+
 private:
     T *P1; // Pressure at time t
     T *P2; // Pressure at time t+1
     T *Ax; // Acceleration component at time t
     T *Az; // Acceleration component at time t
     std::shared_ptr<PmlAcoustic2D<T>> Pml; // Associated PML class
-};
-
-/** The 2D Acoustic Snapshot class
- *
-*/
-template<typename T>
-class SnapshotAcoustic2D: public Waves<T> {
-public:
-    SnapshotAcoustic2D();					///< Constructor
-    SnapshotAcoustic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
-    SnapshotAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
-    ~SnapshotAcoustic2D();					///< Destructor
     
-    // Take snapshot from WavesAcoustic2D
-    void getSnap(std::shared_ptr<WavesAcoustic2D<T>> Waves, int which); ///< Take snapshot from WavesAcoustic2D
-    void readSnapno(size_t snapno); ///< Read a snapshot from file
-
-    // Get functions
-    T * getP2() { return P2; }  ///< Get advanced stress
-    T * getP1() { return P1; }  ///< Get current stress
-    T * getAx() { return Ax; }  ///< Get Acceleration-x
-    T * getAz() { return Az; }  ///< Get Acceleration-z
-
-private:
-    T *P1; // Pressure at time t
-    T *P2; // Pressure at time t+1
-    T *Ax; // Acceleration component at time t
-    T *Az; // Acceleration component at time t
-    std::shared_ptr<File> snapfile;
+    // Snapshot structures
+    Snap Axsnap, Azsnap, Psnap;
 };
 
 /** The 3D Acoustic WAVES class
@@ -138,8 +151,8 @@ template<typename T>
 class WavesAcoustic3D: public Waves<T> {
 public:
     WavesAcoustic3D();	///< Constructor
-    WavesAcoustic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
-    WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    WavesAcoustic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int _snapinc);	///< Constructor
+    WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, int _nt, T _dt, T _ot, const int _snapinc);	///< Constructor
     ~WavesAcoustic3D();	///< Destructor
 
     // Get functions
@@ -175,8 +188,8 @@ class WavesElastic2D: public Waves<T> {
 public:
     WavesElastic2D();	///< Constructor
     ~WavesElastic2D();	///< Destructor
-    WavesElastic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
-    WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    WavesElastic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot, const int snapinc);	///< Constructor
+    WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot, const int snapinc);	///< Constructor
 
     // Get functions
     std::shared_ptr<PmlElastic2D<T>> getPml() { return Pml; } ///< Get Pml 
@@ -206,8 +219,8 @@ template<typename T>
 class WavesElastic3D: public Waves<T> {
 public:
     WavesElastic3D();	///< Constructor
-    WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
-    WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int snapinc);	///< Constructor
+    WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot, const int snapinc);	///< Constructor
     ~WavesElastic3D();	///< Destructor
 
 

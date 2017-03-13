@@ -83,7 +83,7 @@ int main()
 
 
 	// Create the classes 
-	std::shared_ptr<rockseis::WavesAcoustic3D<float>> waves (new rockseis::WavesAcoustic3D<float>(nx, ny, nz, nt, lpml, dx, dy, dz, dt, ox, oy, oz, ot));
+	std::shared_ptr<rockseis::WavesAcoustic3D<float>> waves (new rockseis::WavesAcoustic3D<float>(nx, ny, nz, nt, lpml, dx, dy, dz, dt, ox, oy, oz, ot, 1));
 	std::shared_ptr<rockseis::ModelAcoustic3D<float>> model (new rockseis::ModelAcoustic3D<float>(nx, ny, nz, lpml, dx, dy, dz, ox, oy, oz, fs));
 	std::shared_ptr<rockseis::Der<float>> der (new rockseis::Der<float>(nx+2*lpml, ny+2*lpml, nz+2*lpml, dx, dy, dz, order));
 	std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(1, nt, dt));

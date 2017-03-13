@@ -21,6 +21,11 @@ Waves<T>::Waves() {
     geometry->setO(4, 0.);
     dim=0;
     lpml = 10;
+    snapinc=1;
+    snapnt=1;
+    snapdt=1.;
+    snapot=0.;
+    enddiff=0;
 }
 
 template<typename T>
@@ -29,7 +34,7 @@ Waves<T>::~Waves() {
 }
 
 template<typename T>
-Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt,  const T _ox, const T _oy, const T _oz, const T _ot) {
+Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt,  const T _ox, const T _oy, const T _oz, const T _ot, const int _snapinc) {
     geometry = std::make_shared<Geometry<T>>(); 
     geometry->setN(1, _nx);
     geometry->setN(2, _ny);
@@ -45,6 +50,48 @@ Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, con
     geometry->setO(4, _ot);
     dim = _dim;
     lpml = _lpml;
+
+    // Setting snap time axis
+    if(_snapinc < 1) {
+	    /* Error */ 
+	    std::cerr << "Waves::snapinc must be an integer larger than 0. Setting snapinc to 1\n";
+	    snapinc =1;
+    }
+    if(_snapinc > _nt) {
+	    /* Error */ 
+	    std::cerr << "Waves::snapinc is larger than modelling nt. Setting snapinc to nt\n";
+        snapinc=_nt;
+	    
+    }
+    snapinc = _snapinc;
+    snapnt = _nt/snapinc;
+    snapdt = _dt*snapinc;
+    snapot = _ot;
+    enddiff = (int) rintf((_nt*_dt - snapnt*snapdt)/_dt);
+}
+
+template<typename T>
+void Waves<T>::setSnapinc(const int _snapinc){
+    int nt = this->getNt();
+    T dt = this->getDt();
+    T ot = this->getOt();
+
+    // Setting snap time axis
+    if(_snapinc < 1) {
+	    /* Error */ 
+	    std::cerr << "Waves::Setsnapinc: snapinc must be an integer larger than 0. Setting snapinc to 1\n";
+	    snapinc = 1;
+    }
+    if(_snapinc > nt) {
+	    /* Error */ 
+	    std::cerr << "Waves::Setsnapinc: snapinc is larger than modelling nt. Setting snapinc to nt\n";
+	    
+    }
+    snapinc = _snapinc;
+    snapnt = nt/snapinc;
+    snapdt = dt*snapinc;
+    snapot = ot;
+    enddiff = (int) rintf((nt*dt - snapnt*snapdt)/dt);
 }
 
 // =============== 2D ACOUSTIC MODEL CLASS =============== //
@@ -67,7 +114,7 @@ WavesAcoustic2D<T>::WavesAcoustic2D(){
 }
 
 template<typename T>
-WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot) {
+WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot, const int _snapinc): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot, _snapinc) {
     
     /* Create associated PML class */
     Pml = std::make_shared<PmlAcoustic2D<T>>(_nx, _nz, _lpml, _dt);
@@ -85,7 +132,7 @@ WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt,
 
 
 template<typename T>
-WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot): Waves<T>(){
+WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot, const int _snapinc): Waves<T>(){
 
     int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
@@ -118,6 +165,7 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
     this->setOt(_ot);
     this->setLpml(_lpml);
     this->setDim(_dim);
+    this->setSnapinc(_snapinc);
 
     /* Create associated PML class */
     Pml = std::make_shared<PmlAcoustic2D<T>>(_nx, _nz, _lpml, _dt);
@@ -409,6 +457,60 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, i
 
 }
 
+template<typename T>
+bool WavesAcoustic2D<T>::createPsnap(std::string filename) {
+    if(!filename.empty()){
+        Psnap.filename = filename;
+        Psnap.Fp = std::make_shared<File>();
+        Psnap.Fp->output(Psnap.filename);
+        Psnap.open = true;
+        Psnap.Fp->setN(1,this->getNx());
+        Psnap.Fp->setN(3,this->getNz());
+        Psnap.Fp->setN(4,this->getSnapnt());
+        Psnap.Fp->setD(1,this->getDx());
+        Psnap.Fp->setD(3,this->getDz());
+        Psnap.Fp->setD(4,this->getSnapdt());
+        Psnap.Fp->setO(1,this->getOx());
+        Psnap.Fp->setO(3,this->getOz());
+        Psnap.Fp->setO(4,this->getSnapot());
+        Psnap.Fp->setData_format(sizeof(T));
+        Psnap.Fp->writeHeader();
+        Psnap.Fp->seekp(Psnap.Fp->getStartofdata());
+        this->setSnapit(0);
+    }else{
+        std::cerr << "WavesAcoustic2D::createPsnap: No filename set.\n";
+        exit(1);
+    }
+        return WAVES_OK;
+}
+
+
+// Write Snapshots
+template<typename T>
+void WavesAcoustic2D<T>::writePsnap(int it){
+    int nx = this->getNx();
+    int nz = this->getNz();
+    int nx_pml = this->getNx_pml();
+    int nz_pml = this->getNz_pml();
+    int lpml = this->getLpml();
+    Index I(nx_pml,nz_pml);
+    int i,j;
+    int snapit = this->getSnapit();
+
+    if(Psnap.open){
+       if((it % this->getSnapinc()) == 0){
+           this->setSnapit(snapit + 1); // Increment snap counter
+           //Write snapshot
+           for(j=0; j<nz; j++){
+               for(i=0; i<nx; i++){
+                   Psnap.Fp->write(&P1[I(i+lpml,j+lpml)],1); 
+               }
+           }
+        }
+    }
+}
+
+
 // Roll the pressure pointers
 template<typename T>
 void WavesAcoustic2D<T>::roll()
@@ -426,7 +528,7 @@ WavesAcoustic3D<T>::WavesAcoustic3D(){
 }
 
 template<typename T>
-WavesAcoustic3D<T>::WavesAcoustic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot): Waves<T>(3, _nx, _ny, _nz, _nt, _lpml, _dx, _dy, _dz, _dt, _ox, _oy, _oz, _ot) {
+WavesAcoustic3D<T>::WavesAcoustic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int _snapinc): Waves<T>(3, _nx, _ny, _nz, _nt, _lpml, _dx, _dy, _dz, _dt, _ox, _oy, _oz, _ot, _snapinc) {
     
     /* Create associated PML class */
     Pml =std::make_shared<PmlAcoustic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
@@ -446,7 +548,7 @@ WavesAcoustic3D<T>::WavesAcoustic3D(const int _nx, const int _ny, const int _nz,
 
 
 template<typename T>
-WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, int _nt, T _dt, T _ot): Waves<T>() {
+WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, int _nt, T _dt, T _ot, const int _snapinc): Waves<T>() {
     int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
@@ -478,6 +580,7 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
     this->setOt(_ot);
     this->setLpml(_lpml);
     this->setDim(_dim);
+    this->setSnapinc(_snapinc);
    
     /* Create associated PML class */
     Pml =std::make_shared<PmlAcoustic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
@@ -875,7 +978,7 @@ WavesElastic2D<T>::WavesElastic2D()	///< Constructor
 
 
 template<typename T>
-WavesElastic2D<T>::WavesElastic2D(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot) {
+WavesElastic2D<T>::WavesElastic2D(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot, const int _snapinc): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot, _snapinc) {
     
     /* Create associated PML class */
     Pml = std::make_shared<PmlElastic2D<T>>(_nx, _nz, _lpml, _dt);
@@ -893,7 +996,7 @@ WavesElastic2D<T>::WavesElastic2D(const int _nx, const int _nz, const int _nt, c
 }
 
 template<typename T>
-WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot): Waves<T>() {
+WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot, const int _snapinc): Waves<T>() {
     int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
@@ -925,6 +1028,7 @@ WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> m
     this->setOt(_ot);
     this->setLpml(_lpml);
     this->setDim(_dim);
+    this->setSnapinc(_snapinc);
    
     /* Create associated PML class */
     Pml = std::make_shared<PmlElastic2D<T>>(_nx, _nz, _lpml, _dt);
@@ -1257,7 +1361,7 @@ WavesElastic3D<T>::WavesElastic3D(){
 }
 
 template<typename T>
-WavesElastic3D<T>::WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot): Waves<T>(3, _nx, _ny, _nz, _nt, _lpml, _dx, _dy, _dz, _dt, _ox, _oy, _oz, _ot) {
+WavesElastic3D<T>::WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int _snapinc): Waves<T>(3, _nx, _ny, _nz, _nt, _lpml, _dx, _dy, _dz, _dt, _ox, _oy, _oz, _ot, _snapinc) {
     
     /* Create associated PML class */
     Pml = std::make_shared<PmlElastic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
@@ -1280,7 +1384,7 @@ WavesElastic3D<T>::WavesElastic3D(const int _nx, const int _ny, const int _nz, c
 }
 
 template<typename T>
-WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot): Waves<T>() {
+WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot, const int _snapinc): Waves<T>() {
     int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
@@ -1312,6 +1416,7 @@ WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> m
     this->setOt(_ot);
     this->setLpml(_lpml);
     this->setDim(_dim);
+    this->setSnapinc(_snapinc);
 
     /* Create associated PML class */
     Pml = std::make_shared<PmlElastic3D<T>>(_nx, _ny, _nz, _lpml, _dt);

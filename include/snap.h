@@ -104,6 +104,9 @@ public:
     std::string getAxfile() { return Axfile; } ///< Get Ax snap file
     std::string getAzfile() { return Azfile; } ///< Get Az snap file
     std::string getPfile() { return Pfile; } ///< Get P snap file
+    bool getP() { return P; } ///< Get P flag
+    bool getAx() { return Ax; } ///< Get Ax flag
+    bool getAz() { return Az; } ///< Get Az flag
 
     // Put functions
     void putAzfile(std::string filename); ///< Set Az snap file ond open file for writting

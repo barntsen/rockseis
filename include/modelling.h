@@ -33,12 +33,15 @@ public:
     int Acoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> recP); ///< Runs modelling with parameters (model, data and parameters)
     int getOrder() { return order; } ///< Get order of FD stencil
     void setOrder(int _order) { if(_order > 1 && _order < 9)  order = _order;} ///< Set order of FD stencil
+    int getSnapinc() { return snapinc; } ///< Get snap increment
+    void setSnapinc(int _snapinc) {snapinc = _snapinc;} ///< Set snap increment for recoerding snapshots
 
     ~Modelling();	///< Constructor
 
 
 private:
     int order;  ///< Order of the FD stencil 
+    int snapinc;  ///< Snap interval
 };
 
 

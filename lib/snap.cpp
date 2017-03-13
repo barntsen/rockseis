@@ -91,74 +91,74 @@ SnapAcoustic2D<T>::SnapAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, con
 
 template<typename T>
 void SnapAcoustic2D<T>::putPfile(std::string filename) {
-	if(!filename.empty()){
-		Pfile = filename;
-		FP = std::make_shared<File>();
-		FP->output(Pfile);
-		P = true;
-		FP->setN(1,this->getNx());
-		FP->setN(3,this->getNz());
-		FP->setN(4,this->getNt());
-		FP->setD(1,this->getDx());
-		FP->setD(3,this->getDz());
-		FP->setD(4,this->getDt());
-		FP->setO(1,this->getOx());
-		FP->setO(3,this->getOz());
-		FP->setO(4,this->getOt());
-		FP->setData_format(sizeof(T));
-		FP->writeHeader();
-	}else{
-		std::cerr << "SnapAcoustic2D::PutPfile: No filename set.\n";
-		exit(1);
-	}
+    if(!filename.empty()){
+        Pfile = filename;
+        FP = std::make_shared<File>();
+        FP->output(Pfile);
+        P = true;
+        FP->setN(1,this->getNx());
+        FP->setN(3,this->getNz());
+        FP->setN(4,this->getNt());
+        FP->setD(1,this->getDx());
+        FP->setD(3,this->getDz());
+        FP->setD(4,this->getDt());
+        FP->setO(1,this->getOx());
+        FP->setO(3,this->getOz());
+        FP->setO(4,this->getOt());
+        FP->setData_format(sizeof(T));
+        FP->writeHeader();
+    }else{
+        std::cerr << "SnapAcoustic2D::PutPfile: No filename set.\n";
+        exit(1);
+    }
 }
 
 template<typename T>
 void SnapAcoustic2D<T>::putAxfile(std::string filename) {
-	if(!filename.empty()){
-		Axfile = filename;
-		FAx = std::make_shared<File>();
-		FAx->output(Axfile);
-		Ax = true;
-		FAx->setN(1,this->getNx());
-		FAx->setN(3,this->getNz());
-		FAx->setN(4,this->getNt());
-		FAx->setD(1,this->getDx());
-		FAx->setD(3,this->getDz());
-		FAx->setD(4,this->getDt());
-		FAx->setO(1,this->getOx());
-		FAx->setO(3,this->getOz());
-		FAx->setO(4,this->getOt());
-		FAx->setData_format(sizeof(T));
-		FAx->writeHeader();
-	}else{
-		std::cerr << "SnapAcoustic2D::PutAxfile: No filename set.\n";
-		exit(1);
-	}
+    if(!filename.empty()){
+        Axfile = filename;
+        FAx = std::make_shared<File>();
+        FAx->output(Axfile);
+        Ax = true;
+        FAx->setN(1,this->getNx());
+        FAx->setN(3,this->getNz());
+        FAx->setN(4,this->getNt());
+        FAx->setD(1,this->getDx());
+        FAx->setD(3,this->getDz());
+        FAx->setD(4,this->getDt());
+        FAx->setO(1,this->getOx());
+        FAx->setO(3,this->getOz());
+        FAx->setO(4,this->getOt());
+        FAx->setData_format(sizeof(T));
+        FAx->writeHeader();
+    }else{
+        std::cerr << "SnapAcoustic2D::PutAxfile: No filename set.\n";
+        exit(1);
+    }
 }
 
 template<typename T>
 void SnapAcoustic2D<T>::putAzfile(std::string filename) {
-	if(!filename.empty()){
-		Azfile = filename;
-		FAz = std::make_shared<File>();
-		FAz->output(Azfile);
-		Az = true;
-		FAz->setN(1,this->getNx());
-		FAz->setN(3,this->getNz());
-		FAz->setN(4,this->getNt());
-		FAz->setD(1,this->getDx());
-		FAz->setD(3,this->getDz());
-		FAz->setD(4,this->getDt());
-		FAz->setO(1,this->getOx());
-		FAz->setO(3,this->getOz());
-		FAz->setO(4,this->getOt());
-		FAz->setData_format(sizeof(T));
-		FAz->writeHeader();
-	}else{
-		std::cerr << "SnapAcoustic2D::PutAzfile: No filename set.\n";
-		exit(1);
-	}
+    if(!filename.empty()){
+        Azfile = filename;
+        FAz = std::make_shared<File>();
+        FAz->output(Azfile);
+        Az = true;
+        FAz->setN(1,this->getNx());
+        FAz->setN(3,this->getNz());
+        FAz->setN(4,this->getNt());
+        FAz->setD(1,this->getDx());
+        FAz->setD(3,this->getDz());
+        FAz->setD(4,this->getDt());
+        FAz->setO(1,this->getOx());
+        FAz->setO(3,this->getOz());
+        FAz->setO(4,this->getOt());
+        FAz->setData_format(sizeof(T));
+        FAz->writeHeader();
+    }else{
+        std::cerr << "SnapAcoustic2D::PutAzfile: No filename set.\n";
+        exit(1);
+    }
 }
 
 template<typename T>

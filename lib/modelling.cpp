@@ -40,29 +40,16 @@ int Modelling<T>::Acoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model,std::shar
      // Other parameters
      int lpml = model->getLpml();
 
+     int snap_inc = 3;
+
      // Create the classes 
-     std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot, snap_inc));
      std::shared_ptr<Der<T>> der (new Der<T>(nx+2*lpml, 1, nz+2*lpml, dx, 1.0, dz, this->order));
 
 
-    // Output snapshots to a binary file
-    std::shared_ptr<rockseis::File> Fsnap (new rockseis::File());
-    Fsnap->output("snaps.rss");
-    Fsnap->setN(1,nx+2*lpml);
-    Fsnap->setD(1,dx);
-    Fsnap->setO(1,ox);
-    Fsnap->setN(3,nz+2*lpml);
-    Fsnap->setD(3,dz);
-    Fsnap->setO(3,oz);
-    Fsnap->setN(4,nt);
-    Fsnap->setD(4,dt);
-    Fsnap->setO(4,ot);
-    Fsnap->setData_format(sizeof(float));
-    Fsnap->writeHeader();
-    Fsnap->seekp(Fsnap->getStartofdata());
+    // Create snapshot for pressure
+    waves->createPsnap("snaps.rss");
 
-    float *Szz;
-    Szz = waves->getP2();
     // Loop over time
     for(int it=0; it < nt; it++)
     {
@@ -76,13 +63,13 @@ int Modelling<T>::Acoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model,std::shar
     	// Recording data (Pressure)
     	waves->recordData(recP, 0, 1, it);
     
-    	//Writting out results to binary file
-    	Fsnap->write(Szz, (nx+2*lpml) * (nz+2*lpml));
+    	//Writting out results to snapshot file
+        waves->writePsnap(it);
     	
     	// Roll the pointers P1 and P2
     	waves->roll();
     }	
-    Fsnap->close();
+    //Fsnap->close();
     
     result=MOD_OK;
     return result;
