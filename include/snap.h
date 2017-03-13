@@ -7,7 +7,7 @@
 #include <string>
 #include <memory>
 #include "geometry.h"
-#include "waves.h"
+#include "model.h"
 #include "utils.h"
 #include "file.h"
 
@@ -27,6 +27,8 @@ public:
     int getNx() { return geometry->getN(1); }		///< Get Nx
     int getNy() { return geometry->getN(2); }		///< Get Ny
     int getNz() { return geometry->getN(3); }		///< Get Nz
+    int getNt() { return geometry->getN(4); }		///< Get Nt
+    int getNt_mod() { return nt_mod; }		///< Get modelling nt
     int getLpml() { return lpml; }		///< Get Lpml
     int getNx_pml() { return geometry->getN(1) + 2 * lpml; }	///< Nx_pml = Nx + 2*lpml 
     int getNy_pml() { return geometry->getN(2) + 2 * lpml; }	///< Ny_pml = Ny + 2*lpml 
@@ -34,9 +36,13 @@ public:
     T getDx() { return geometry->getD(1); }		///< Get Dx
     T getDy() { return geometry->getD(2); }		///< Get Dy
     T getDz() { return geometry->getD(3); }		///< Get Dz
+    T getDt() { return geometry->getD(4); }		///< Get Dt
+    T getDt_mod() { return dt_mod; }		///< Get modelling dt
     T getOx() { return geometry->getO(1); }		///< Get Ox
     T getOy() { return geometry->getO(2); }		///< Get Oy
     T getOz() { return geometry->getO(3); }		///< Get Oz
+    T getOt() { return geometry->getO(4); }		///< Get Oz
+    T getOt_mod() { return ot_mod; }		///< Get modelling ot
     int getEnd_diff() { return end_diff; }		///< Get End_diff
     int getSnapit() { return snapit; }		///< Return current snap number
     std::shared_ptr<Geometry<T>> getGeom() { return geometry; } ///< Get geometry
@@ -88,22 +94,30 @@ private:
 template<typename T>
 class SnapAcoustic2D: public Snap<T> {
 public:
-    SnapAcoustic2D(std::shared_ptr<WavesAcoustic2D<T>> waves, const int snap_inc);	///< Constructor
+    SnapAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, const int _nt_mod, T _dt_mod, T _ot_mod, const int snap_inc);	///< Constructor
     ~SnapAcoustic2D();	///< Destructor
     
     // I/O functions
     void readSnap();	 ///< Read a snap from file
     void writeSnap(); ///< Write a snap to file
     // Get functions
-    std::string getAxfile() { return Axfile; } ///<
-    std::string getAzfile() { return Azfile; } ///<
-    std::string getPfile() { return Pfile; } ///<
+    std::string getAxfile() { return Axfile; } ///< Get Ax snap file
+    std::string getAzfile() { return Azfile; } ///< Get Az snap file
+    std::string getPfile() { return Pfile; } ///< Get P snap file
+
+    // Put functions
+    void putAzfile(std::string filename); ///< Set Az snap file ond open file for writting
+    void putAxfile(std::string filename); ///< Set Ax snap file ond open file for writting
+    void putPfile(std::string filename); ///< Set P snap file ond open file for writting
     
 private:
-    std::string Axfile; ///< Filename to x-acceleration snap
-    std::string Azfile; ///< Filename to z-acceleration snap
-    std::string Pfile; ///< Filename to pressure snap
-
+    std::string Axfile; 
+    std::string Azfile; 
+    std::string Pfile; 
+    std::shared_ptr<rockseis::File> FAx;
+    std::shared_ptr<rockseis::File> FAz;
+    std::shared_ptr<rockseis::File> FP;
+    bool Ax, Az, P;
 };
 
 // =============== 3D ACOUSTIC SNAP CLASS =============== //
@@ -113,7 +127,7 @@ private:
 template<typename T>
 class SnapAcoustic3D: public Snap<T> {
 public:
-    SnapAcoustic3D(std::shared_ptr<WavesAcoustic3D<T>> waves, const int snap_inc);	///< Constructor
+    SnapAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model, const int snap_inc);	///< Constructor
     ~SnapAcoustic3D();	///< Destructor
     
     // I/O functions
@@ -126,10 +140,11 @@ public:
     std::string getPfile() { return Pfile; } ///<
 
 private:
-    std::string Axfile; ///< Filename to x-acceleration snap
-    std::string Ayfile; ///< Filename to y-acceleration snap
-    std::string Azfile; ///< Filename to z-acceleration snap
-    std::string Pfile; ///< Filename to pressure snap
+    std::string Axfile; 
+    std::string Ayfile; 
+    std::string Azfile; 
+    std::string Pfile; 
+    bool Ax, Ay, Az, P; 
 };
 
 // =============== 2D ELASTIC SNAP CLASS =============== //
@@ -139,7 +154,7 @@ private:
 template<typename T>
 class SnapElastic2D: public Snap<T> {
 public:
-    SnapElastic2D(std::shared_ptr<WavesElastic2D<T>> waves, const int snap_inc);	///< Constructor
+    SnapElastic2D(std::shared_ptr<ModelElastic2D<T>> model, const int snap_inc);	///< Constructor
     ~SnapElastic2D();	///< Destructor
     
     // I/O functions
@@ -147,18 +162,19 @@ public:
     void writeSnap();	///< Write a snap to file
 
     // Get functions
-    std::string getVxfile() { return Vxfile; } ///<
-    std::string getVzfile() { return Vzfile; } ///<
-    std::string getSxxfile() { return Sxxfile; } ///<
-    std::string getSzzfile() { return Szzfile; } ///<
-    std::string getSxzfile() { return Sxzfile; } ///<
+    std::string getVxfile() { return Vxfile; } ///< Get Vx snap file
+    std::string getVzfile() { return Vzfile; } ///< Get Vx snap file
+    std::string getSxxfile() { return Sxxfile; } ///< Get Sxx snap file
+    std::string getSzzfile() { return Szzfile; } ///< Get Szz snap file
+    std::string getSxzfile() { return Sxzfile; } ///< Get Sxz snap file
 
 private:
-    std::string Sxxfile; ///< Filename to normal stress in x direction
-    std::string Szzfile; ///< Filename to normal stress in z direction
-    std::string Sxzfile; ///< Filename to shear stress 
-    std::string Vxfile; ///< Filename to x-velocity snap
-    std::string Vzfile; ///< Filename to z-velocity snap
+    std::string Sxxfile; 
+    std::string Szzfile; 
+    std::string Sxzfile; 
+    std::string Vxfile; 
+    std::string Vzfile; 
+    bool Vx, Vz, Sxx, Szz, Sxz; 
 };
 
 // =============== 3D ELASTIC SNAP CLASS =============== //
@@ -168,7 +184,7 @@ private:
 template<typename T>
 class SnapElastic3D: public Snap<T> {
 public:
-    SnapElastic3D(std::shared_ptr<WavesElastic3D<T>> waves, const int snap_inc);	///< Constructor
+    SnapElastic3D(std::shared_ptr<ModelElastic3D<T>> model, const int snap_inc);	///< Constructor
     ~SnapElastic3D();	///< Destructor
     
     // I/O functions
@@ -187,15 +203,16 @@ public:
     std::string getVzfile() { return Vzfile; }
 
 private:
-    std::string Vxfile; ///< Filename to x-velocity snap
-    std::string Vyfile; ///< Filename to y-velocity snap
-    std::string Vzfile; ///< Filename to z-velocity snap
-    std::string Sxxfile; ///< Filename to normal stress in x direction
-    std::string Syyfile; ///< Filename to normal stress in y direction
-    std::string Szzfile; ///< Filename to normal stress in z direction
-    std::string Sxzfile; ///< Filename to shear stress 
-    std::string Syzfile; ///< Filename to shear stress 
-    std::string Sxyfile; ///< Filename to shear stress 
+    std::string Vxfile; 
+    std::string Vyfile; 
+    std::string Vzfile; 
+    std::string Sxxfile;
+    std::string Syyfile;
+    std::string Szzfile;
+    std::string Sxzfile;
+    std::string Syzfile;
+    std::string Sxyfile;
+    bool Vx, Vy, Vz, Sxx, Syy, Szz, Sxz, Syz, Sxy; 
 };
 
 }

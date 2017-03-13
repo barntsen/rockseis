@@ -14,6 +14,7 @@
 #include "utils.h"
 #include "data.h"
 #include "file.h"
+#include "snap.h"
 
 namespace rockseis {
 /** The abstract waves class

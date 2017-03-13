@@ -241,7 +241,7 @@ kiss_fft_cpx sf_csqrtf (kiss_fft_cpx c)
 	    s = (0.5 * c.i) / r;
         } else {
 	    s = sqrtf (0.5 * d - 0.5 * c.r);
-	    r = fabsf ((0.5 * c.i) / s);
+	    r = fabs ((0.5 * c.i) / s);
         }
 	v.r = r;
 	v.i = copysignf (s, c.i);

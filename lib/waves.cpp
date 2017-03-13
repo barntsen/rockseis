@@ -344,6 +344,7 @@ template<typename T>
 void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, int field, int maptype, int it){
     Point2D<int> *map;
     T *dataarray; 
+    T *Fielddata;
     int ntrace = data->getNtrace();
     int nt = data->getNt();
     int nx, nz, lpml;
@@ -365,37 +366,42 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, i
     switch(field)
     {
         case 0:
+            Fielddata = this->getP2();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0)
                 {
-                    dataarray[Idat(it,i)] = P2[I(lpml + map[i].x, lpml + map[i].y)];
+                    dataarray[Idat(it,i)] = Fielddata[I(lpml + map[i].x, lpml + map[i].y)];
                 }
             }
+	    break;
         case 1:
+            Fielddata = this->getAx();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0)
                 {
-                    dataarray[Idat(it,i)] = Ax[I(lpml + map[i].x, lpml + map[i].y)];
+                    dataarray[Idat(it,i)] = Fielddata[I(lpml + map[i].x, lpml + map[i].y)];
                 }
             }
             break;
         case 3:
+            Fielddata = this->getAz();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0)
                 {
-                    dataarray[Idat(it,i)] = Az[I(lpml + map[i].x, lpml + map[i].y)];
+                    dataarray[Idat(it,i)] = Fielddata[I(lpml + map[i].x, lpml + map[i].y)];
                 }
             }
             break;
         default:
+            Fielddata = this->getP2();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0)
                 {
-                    dataarray[Idat(it,i)] = P2[I(lpml + map[i].x, lpml + map[i].y)];
+                    dataarray[Idat(it,i)] = Fielddata[I(lpml + map[i].x, lpml + map[i].y)];
                 }
             }
             break;
