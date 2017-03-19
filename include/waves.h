@@ -20,10 +20,14 @@
 
 namespace rockseis {
 
+/** The Snapshot struct
+ *
+ */
 typedef struct {
-    std::string filename;
-    std::shared_ptr<rockseis::File> Fp;
-    bool open;
+    std::string filename; ///< filename
+    std::shared_ptr<rockseis::File> Fp; ///< File handle
+    bool open; ///< flag to see if file is open
+    int field; ///< Integer telling which field to snapshot
 } Snap;
 
 /** The abstract waves class
@@ -115,7 +119,8 @@ public:
 
     // Get functions
     std::shared_ptr<PmlAcoustic2D<T>> getPml() { return Pml; } ///< Get pml
-    T * getP2() { return P2; }  ///< Get advanced stress
+    T * getP2() { return P2; }  ///< Get advanced pressure
+    T * getP1() { return P1; }  ///< Get current pressure
     T * getAx() { return Ax; }  ///< Get x-component of acceleration 
     T * getAz() { return Az; }  ///< Get z-component of acceleration
 
@@ -129,9 +134,12 @@ public:
     void recordData(std::shared_ptr<rockseis::Data2D<T>> data, int recordtype, int maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
 
     // Snapshot functions
-    bool openPsnap(std::string filename);
-    bool createPsnap(std::string filename);
-    void writePsnap(const int it);
+    bool openSnap(std::string filename, Snap *snap); ///< Open a snapshot for reading and writting
+    bool createSnap(std::string filename, Snap *snap); ///< Create a new snapshot file
+    void writeSnap(const int it, Snap *snap); ///< Write to a snapshot
+    Snap *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure snapshot struct
+    Snap *getAxsnap() { return &Axsnap; } ///< Get a pointer to the Ax snapshot struct
+    Snap *getAzsnap() { return &Azsnap; } ///< Get a pointer to the Az snapshot struct
 
 private:
     T *P1; // Pressure at time t
@@ -157,7 +165,8 @@ public:
 
     // Get functions
     std::shared_ptr<PmlAcoustic3D<T>> getPml() { return Pml; }  ///< Get pml
-    T * getP2() { return P2; }  ///< Get advanced stress
+    T * getP2() { return P2; }  ///< Get advanced pressure
+    T * getP1() { return P1; }  ///< Get current pressure
 
     // Time stepping functions
     void forwardstepAcceleration(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with acceleration
@@ -171,6 +180,16 @@ public:
 
     void computeABC() { Pml->callcompABC(); } ///< Compute the PML decay constants (needed if changes are made to the Amax, Kmax and Smax)
     void roll();  // Roll the pressure pointers
+
+    //    // Snapshot functions
+    bool openSnap(std::string filename, Snap *snap); ///< Open a snapshot for reading and writting
+    bool createSnap(std::string filename, Snap *snap); ///< Create a new snapshot file
+    void writeSnap(const int it, Snap *snap); ///< Write to a snapshot
+    Snap *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure snapshot struct
+    Snap *getAxsnap() { return &Axsnap; } ///< Get a pointer to the Ax snapshot struct
+    Snap *getAysnap() { return &Aysnap; } ///< Get a pointer to the Ay snapshot struct
+    Snap *getAzsnap() { return &Azsnap; } ///< Get a pointer to the Az snapshot struct
+
 private:
     T *P1; // Pressure at time t
     T *P2; // Pressure at time t+1
@@ -178,6 +197,10 @@ private:
     T *Ay; // Acceleration component at time t
     T *Az; // Acceleration component at time t
     std::shared_ptr<PmlAcoustic3D<T>> Pml; // Associated Pml class
+
+    // Snapshot structures
+    Snap Axsnap, Aysnap, Azsnap, Psnap;
+
 };
 
 /** The 2D Elastic WAVES class

@@ -192,7 +192,7 @@ int main()
         scoords2d[i].x = 220;
         scoords2d[i].y = 200;
     }
-	record2d->setFile("Geom2d.rss");
+	record2d->setFile("Shot2d.rss");
 	status = record2d->write();
 	if(status == FILE_ERR){
 		std::cout << "Failed to write record2d file. \n";
@@ -215,7 +215,7 @@ int main()
             scoords3d[j*ny + i].z = 200;
         }
     }
-	record3d->setFile("Geom3d.rss");
+	record3d->setFile("Shot3d.rss");
 	status = record3d->write();
 	if(status == FILE_ERR){
 		std::cout << "Failed to write record3d file. \n";

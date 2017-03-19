@@ -1,5 +1,6 @@
 #include <iostream>
 #include "model.h"
+#include "modelling.h"
 #include "pml.h"
 #include "waves.h"
 #include "utils.h"
@@ -9,209 +10,303 @@
 #include <memory>
 #include <fstream>
 #include <math.h>
-
-
+#include <config4cpp/Configuration.h>
 
 int main()
 {
-	// Parameters
-	int lpml = 10;
-	bool fs = 0; 
-	int order=2;
 
-	std::shared_ptr<rockseis::File> file (new rockseis::File());
 	bool status;
-	status = file->input("Vp3d.rss");
-	if(status == FILE_ERR){
-		std::cout << "Error reading from Vp file. \n";
+
+	// Parameters
+	int lpml=0;
+	bool fs=0;
+	int order=0;
+	int snapinc=0;
+    std::string Sourcefile;
+    std::string Vpfile;
+    std::string Rhofile;
+    bool Psnap=0, Precord=0;
+    std::string Psnapfile;
+    std::string Precordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Pdata;
+
+    bool Axsnap=0, Axrecord=0;
+    std::string Axsnapfile;
+    std::string Axrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Axdata;
+
+    bool Aysnap=0, Ayrecord=0;
+    std::string Aysnapfile;
+    std::string Ayrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Aydata;
+
+    bool Azsnap=0, Azrecord=0;
+    std::string Azsnapfile;
+    std::string Azrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Azdata;
+
+	// Parse parameters from file
+	config4cpp::Configuration *  cfg = config4cpp::Configuration::create();
+	const char *     scope = "";
+	const char *     configFile = "mod3d.cfg";
+
+    status = 0;
+    try {
+        cfg->parse(configFile);
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        cfg->destroy();
+        return 1;
+    }
+
+    try {
+        lpml = cfg->lookupInt(scope, "lpml");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+
+    try {
+        order = cfg->lookupInt(scope, "order");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+
+    try {
+        snapinc = cfg->lookupInt(scope, "snapinc");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+
+    try {
+        fs = cfg->lookupBoolean(scope, "freesurface");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    try {
+        Vpfile = cfg->lookupString(scope, "Vp");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+
+    try {
+        Rhofile = cfg->lookupString(scope, "Rho");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    try {
+        Sourcefile = cfg->lookupString(scope, "source");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    try {
+        Psnap = cfg->lookupBoolean(scope, "Psnap");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Psnap){
+        try {
+            Psnapfile = cfg->lookupString(scope, "Psnapfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+    try {
+        Precord = cfg->lookupBoolean(scope, "Precord");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Precord){
+        try {
+            Precordfile = cfg->lookupString(scope, "Precordfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+   try {
+        Axsnap = cfg->lookupBoolean(scope, "Axsnap");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Axsnap){
+        try {
+            Axsnapfile = cfg->lookupString(scope, "Axsnapfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+    try {
+        Axrecord = cfg->lookupBoolean(scope, "Axrecord");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Axrecord){
+        try {
+            Axrecordfile = cfg->lookupString(scope, "Axrecordfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+   }
+   try {
+        Aysnap = cfg->lookupBoolean(scope, "Aysnap");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Aysnap){
+        try {
+            Aysnapfile = cfg->lookupString(scope, "Aysnapfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+    try {
+        Ayrecord = cfg->lookupBoolean(scope, "Ayrecord");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Ayrecord){
+        try {
+            Ayrecordfile = cfg->lookupString(scope, "Ayrecordfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+
+   try {
+        Azsnap = cfg->lookupBoolean(scope, "Azsnap");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Azsnap){
+        try {
+            Azsnapfile = cfg->lookupString(scope, "Azsnapfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+    try {
+        Azrecord = cfg->lookupBoolean(scope, "Azrecord");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Azrecord){
+        try {
+            Azrecordfile = cfg->lookupString(scope, "Azrecordfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+
+	// Destroy cfg
+	cfg->destroy();
+
+	if(status == 1){
+		std::cerr << "Program terminated due to input errors." << std::endl;
+		return 1;
 	}
-	file->close();
-	// Parameters from file
-	int nx = file->getN(1);
-	int ny = file->getN(2);
-	int nz = file->getN(3);
-	float dx = (float) file->getD(1);
-	float dy = (float) file->getD(2);
-	float dz = (float) file->getD(3);
-	float ox = (float) file->getO(1);
-	float oy = (float) file->getO(2);
-	float oz = (float) file->getO(3);
-
-	// Get time variables from wav file
-	int nt;
-	float dt;
-	float ot;
-	status = file->input("Wav3d.rss");
-	if(status == FILE_ERR){
-		std::cout << "Error reading from wavelet file. \n";
-	}
-	file->close();
-	nt = file->getN(1);
-	dt = (float) file->getD(1);
-	ot = (float) file->getO(1);
-
-	/*
-	nx = 45;
-	ny = 11;
-	nz = 41;
-	dx = 10.;
-	dy = 10.;
-	dz = 10.;
-	ox = 0.;
-	oy = 0.;
-	oz = 0.;
-	*/
-
-/*	nt = 501;
-	ot = 0.;
-	dt = 1e-3;
-	*/
-
-	std::cout << "Nt = " << nt << "\n";
-	std::cout << "Dt = " << dt << "\n";
-	std::cout << "Ot = " << ot << "\n";
-
-	std::cout << "Nx = " << nx << "\n";
-	std::cout << "Ny = " << ny << "\n";
-	std::cout << "Nz = " << nz << "\n";
-	std::cout << "Dx = " << dx << "\n";
-	std::cout << "Dy = " << dy << "\n";
-	std::cout << "Dz = " << dz << "\n";
-	std::cout << "Ox = " << ox << "\n";
-	std::cout << "Oy = " << oy << "\n";
-	std::cout << "Oz = " << oz << "\n";
-
 
 	// Create the classes 
-	std::shared_ptr<rockseis::WavesAcoustic3D<float>> waves (new rockseis::WavesAcoustic3D<float>(nx, ny, nz, nt, lpml, dx, dy, dz, dt, ox, oy, oz, ot, 1));
-	std::shared_ptr<rockseis::ModelAcoustic3D<float>> model (new rockseis::ModelAcoustic3D<float>(nx, ny, nz, lpml, dx, dy, dz, ox, oy, oz, fs));
-	std::shared_ptr<rockseis::Der<float>> der (new rockseis::Der<float>(nx+2*lpml, ny+2*lpml, nz+2*lpml, dx, dy, dz, order));
-	std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(1, nt, dt));
+	std::shared_ptr<rockseis::ModelAcoustic3D<float>> model (new rockseis::ModelAcoustic3D<float>(Vpfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(Sourcefile));
+	std::shared_ptr<rockseis::ModellingAcoustic3D<float>> modelling (new rockseis::ModellingAcoustic3D<float>(model, source, order, snapinc));
 
+    // Setting Snapshot file 
+    if(Psnap){
+        modelling->setSnapP(Psnapfile);
+    }
+    if(Axsnap){
+        modelling->setSnapAx(Axsnapfile);
+    }
+    if(Aysnap){
+        modelling->setSnapAy(Aysnapfile);
+    }
+    if(Azsnap){
+        modelling->setSnapAz(Azsnapfile);
+    }
 
-	/*
-	// Make an acoustic model
-	int ix,iy, iz;
-	float *R, *Vp, *Vs;
-	R = model->getR();
-	Vp = model->getVp();
-	Vs = model->getVs();
-	rockseis::Index k1(nx,ny,nz);
-	for(iz=0; iz<nz; iz++){
-		for(iy=0; iy<ny; iy++){
-		for(ix=0; ix<nx; ix++){
-			R[k1(ix,iy,iz)]= 1;
-			Vp[k1(ix,iy,iz)]= 2000;
-			Vs[k1(ix,iy,iz)]= 1100;
-		}
-	}
-	}
+    // Setting Record
+    if(Precord){
+        Pdata = std::make_shared<rockseis::Data3D<float>>(Precordfile, source->getNt(), source->getDt());
+        // Load data geometry from file
+        Pdata->readCoords();
+        Pdata->makeMap(model->getGeom());
+        modelling->setRecP(Pdata);
+    }
+    // Setting Record
+    if(Axrecord){
+        Axdata = std::make_shared<rockseis::Data3D<float>>(Axrecordfile, source->getNt(), source->getDt());
+        // Load data geometry from file
+        Axdata->readCoords();
+        Axdata->makeMap(model->getGeom());
+        modelling->setRecAx(Axdata);
+    }
+    // Setting Record
+    if(Ayrecord){
+        Aydata = std::make_shared<rockseis::Data3D<float>>(Ayrecordfile, source->getNt(), source->getDt());
+        // Load data geometry from file
+        Aydata->readCoords();
+        Aydata->makeMap(model->getGeom());
+        modelling->setRecAy(Aydata);
+    }
+    // Setting Record
+    if(Azrecord){
+        Azdata = std::make_shared<rockseis::Data3D<float>>(Azrecordfile, source->getNt(), source->getDt());
+        // Load data geometry from file
+        Azdata->readCoords();
+        Azdata->makeMap(model->getGeom());
+        modelling->setRecAz(Azdata);
+    }
 
-	file->output("Vp3d.rss");
-	file->setN(1,nx);
-	file->setN(2,ny);
-	file->setN(3,nz);
-	file->setD(1,dx);
-	file->setD(2,dy);
-	file->setD(3,dz);
-	file->setO(1,ox);
-	file->setO(2,oy);
-	file->setO(3,oz);
-	file->writeHeader();
-	file->floatwrite(Vp, nx*ny*nz,0);
-	file->close();
-
-	file->output("Vs3d.rss");
-	file->writeHeader();
-	file->floatwrite(Vs, nx*ny*nz,0);
-	file->close();
-
-	file->output("Rho3d.rss");
-	file->writeHeader();
-	file->floatwrite(R, nx*ny*nz,0);
-	file->close();
-
-	*/
-	
-	// Get models from files
-	float *R, *Vp;
-	R = model->getR();
-	Vp = model->getVp();
-	// Read vp model
-	status = file->input("Vp3d.rss");
-	file->read(Vp, nx*ny*nz);
-	file->close();
-
-	// Read rho model
-	status = file->input("Rho3d.rss");
-	file->read(R, nx*ny*nz);
-	file->close();
+	// Read acoustic model
+	model->readModel();
 
 	// Stagger model
 	model->staggerModels();
 
-	/*
-	// Setup a Wavelet
-	float *wav = source->getData();
-	float f0 = 15;
-	float t0 = 1e-1;
-	float t;
-	float s=-3.1415*3.1415*f0*f0;
-	for(int it=0; it < nt; it ++){
-		// Computing wavelet 
-		t = it * dt - t0;
-		wav[it] = (1.0 + 2.0*s*t*t)*exp(s*t*t); // Ricker function
-		//wav[it] = sin(2*3.1415*f0*t);  // Harmonic function 
-	}
-
- 	// Set source position
-	rockseis::Point3D<float> *coords = (source->getGeom())->getScoords();
-	coords[0].x = 220;
-	coords[0].y = 50; 
-	coords[0].z = 200; 
-	source->makeMap(model->getGeom());
-	rockseis::Point3D<int> *map = (source->getGeom())->getSmap();
-	//Output the wavelet
-	file->output("Wav3d.rss");
-	status = source->writefloatData(file);
-	if(status == FILE_ERR){
-		std::cout << "Failed to write wavelet file. \n";
-	}
-	file->close();
-	*/
-
-	// Load wavelet from file 
-	status = file->input("Wav3d.rss");
+	// Read wavelet data and coordinates and make a map
 	source->readData();
-	file->close();
 	source->makeMap(model->getGeom());
 
-	// Output snapshots to a binary file
-	std::ofstream myFile;
-        myFile.open ("data.bin", std::ios::out | std::ios::binary);
+	// Run modelling 
+	modelling->run();
 
-	// Pointer to one of the Fields
-	float *P;
-	P = waves->getP2();
+	// Output record
+    if(Precord){
+        Pdata->write();
+    }
 
-	// Loop over time
-	for(int it=0; it < nt; it++)
-	{
-		// Time stepping
-		waves->forwardstepAcceleration(model, der);
-		waves->forwardstepStress(model, der);
+    if(Axrecord){
+        Axdata->write();
+    }
+    if(Ayrecord){
+        Aydata->write();
+    }
+    if(Azrecord){
+        Azdata->write();
+    }
 
-		// Inserting source
-		waves->insertSource(model, source, 3, 0, it);
-
-		//Writting out results to binary file
-		myFile.write ((char *) P, (nx+2*lpml) * (ny+2*lpml) * (nz+2*lpml) * sizeof(float));
-		
-		// Roll the pointers P1 and P2
-		waves->roll();
-	}	
-
-//	myFile.close();
 
 	return 0;
 }

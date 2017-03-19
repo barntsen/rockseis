@@ -63,7 +63,7 @@ Data2D<T>::Data2D(std::string datafile): Data<T>(datafile)
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data2D::Error reading from input file. \n";
+	    std::cerr << "Data2D::Error reading from " << datafile <<". \n";
 	    exit(1);
     }
     if(Fin->getData_format() != sizeof(T))
@@ -104,7 +104,7 @@ Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt): Data<T>(dat
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data2D::Error reading from input file. \n";
+	    std::cerr << "Data2D::Error reading from " << datafile <<". \n";
 	    exit(1);
     }
     if(Fin->getData_format() != sizeof(T))
@@ -192,7 +192,7 @@ bool Data2D<T>::readCoords()
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data2D::Error reading from " << datafile <<". \n";
+	    std::cerr << "Data2D::readCoords: Error reading from " << datafile <<". \n";
 	    exit(1);
     }
 
@@ -315,7 +315,7 @@ Data3D<T>::Data3D(std::string datafile): Data<T>(datafile)
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data3D::Error reading from input file. \n";
+	    std::cerr << "Data3D::Error reading from " << datafile <<". \n";
 	    exit(1);
     }
     if(Fin->getData_format() != sizeof(T))
@@ -356,7 +356,7 @@ Data3D<T>::Data3D(std::string datafile, const int _nt, const T _dt): Data<T>(dat
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data3D::Error reading from input file. \n";
+	    std::cerr << "Data3D::Error reading from " << datafile <<". \n";
 	    exit(1);
     }
     if(Fin->getData_format() != sizeof(T))
@@ -444,7 +444,7 @@ bool Data3D<T>::readCoords()
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data3D::readCoords : Error reading from file. \n";
+	    std::cerr << "Data3D::readCoords : Error reading from " << datafile <<". \n";
 	    exit(1);
     }
     size_t nt = Fin->getN(1);

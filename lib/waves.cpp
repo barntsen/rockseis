@@ -64,10 +64,11 @@ Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, con
 	    
     }
     snapinc = _snapinc;
-    snapnt = _nt/snapinc;
+    snapnt = (_nt-1)/snapinc + 1;
     snapdt = _dt*snapinc;
     snapot = _ot;
-    enddiff = (int) rintf((_nt*_dt - snapnt*snapdt)/_dt);
+    enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
+    //std::cerr << "Waves:: Enddiff: " << enddiff << std::endl;
 }
 
 template<typename T>
@@ -88,10 +89,11 @@ void Waves<T>::setSnapinc(const int _snapinc){
 	    
     }
     snapinc = _snapinc;
-    snapnt = nt/snapinc;
+    snapnt = (nt-1)/snapinc + 1;
     snapdt = dt*snapinc;
     snapot = ot;
-    enddiff = (int) rintf((nt*dt - snapnt*snapdt)/dt);
+    enddiff = (int) rintf(((nt-1)*dt - (snapnt-1)*snapdt)/dt);
+    //std::cerr << "Waves::setSnapinc: Enddiff: " << enddiff << std::endl;
 }
 
 // =============== 2D ACOUSTIC MODEL CLASS =============== //
@@ -111,6 +113,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(){
     P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Psnap.field = 0;
+    Axsnap.field = 1;
+    Azsnap.field = 3;
 }
 
 template<typename T>
@@ -128,6 +133,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt,
     P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Psnap.field = 0;
+    Axsnap.field = 1;
+    Azsnap.field = 3;
 }
 
 
@@ -179,6 +187,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
     P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Psnap.field = 0;
+    Axsnap.field = 1;
+    Azsnap.field = 3;
 }
 
 template<typename T>
@@ -414,7 +425,7 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, i
     switch(field)
     {
         case 0:
-            Fielddata = this->getP2();
+            Fielddata = this->getP1();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0)
@@ -444,7 +455,7 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, i
             }
             break;
         default:
-            Fielddata = this->getP2();
+            Fielddata = this->getP1();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0)
@@ -458,36 +469,35 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, i
 }
 
 template<typename T>
-bool WavesAcoustic2D<T>::createPsnap(std::string filename) {
+bool WavesAcoustic2D<T>::createSnap(std::string filename, Snap *Snap) {
     if(!filename.empty()){
-        Psnap.filename = filename;
-        Psnap.Fp = std::make_shared<File>();
-        Psnap.Fp->output(Psnap.filename);
-        Psnap.open = true;
-        Psnap.Fp->setN(1,this->getNx());
-        Psnap.Fp->setN(3,this->getNz());
-        Psnap.Fp->setN(4,this->getSnapnt());
-        Psnap.Fp->setD(1,this->getDx());
-        Psnap.Fp->setD(3,this->getDz());
-        Psnap.Fp->setD(4,this->getSnapdt());
-        Psnap.Fp->setO(1,this->getOx());
-        Psnap.Fp->setO(3,this->getOz());
-        Psnap.Fp->setO(4,this->getSnapot());
-        Psnap.Fp->setData_format(sizeof(T));
-        Psnap.Fp->writeHeader();
-        Psnap.Fp->seekp(Psnap.Fp->getStartofdata());
+        Snap->filename = filename;
+        Snap->Fp = std::make_shared<File>();
+        Snap->Fp->output(Snap->filename);
+        Snap->open = true;
+        Snap->Fp->setN(1,this->getNx());
+        Snap->Fp->setN(3,this->getNz());
+        Snap->Fp->setN(4,this->getSnapnt());
+        Snap->Fp->setD(1,this->getDx());
+        Snap->Fp->setD(3,this->getDz());
+        Snap->Fp->setD(4,this->getSnapdt());
+        Snap->Fp->setO(1,this->getOx());
+        Snap->Fp->setO(3,this->getOz());
+        Snap->Fp->setO(4,this->getSnapot());
+        Snap->Fp->setData_format(sizeof(T));
+        Snap->Fp->writeHeader();
+        Snap->Fp->seekp(Snap->Fp->getStartofdata());
         this->setSnapit(0);
     }else{
-        std::cerr << "WavesAcoustic2D::createPsnap: No filename set.\n";
+        std::cerr << "WavesAcoustic2D::createSnap: No filename set.\n";
         exit(1);
     }
         return WAVES_OK;
 }
 
-
 // Write Snapshots
 template<typename T>
-void WavesAcoustic2D<T>::writePsnap(int it){
+void WavesAcoustic2D<T>::writeSnap(int it, Snap *Snap){
     int nx = this->getNx();
     int nz = this->getNz();
     int nx_pml = this->getNx_pml();
@@ -496,14 +506,26 @@ void WavesAcoustic2D<T>::writePsnap(int it){
     Index I(nx_pml,nz_pml);
     int i,j;
     int snapit = this->getSnapit();
+    T *field;
+    switch(Snap->field){
+        case 0:
+            field = this->P1;
+            break;
+        case 1:
+            field = this->Ax;
+            break;
+        case 3:
+            field = this->Az;
+            break;
+    }
 
-    if(Psnap.open){
+    if(Snap->open){
        if((it % this->getSnapinc()) == 0){
            this->setSnapit(snapit + 1); // Increment snap counter
            //Write snapshot
            for(j=0; j<nz; j++){
                for(i=0; i<nx; i++){
-                   Psnap.Fp->write(&P1[I(i+lpml,j+lpml)],1); 
+                   Snap->Fp->write(&field[I(i+lpml,j+lpml)],1); 
                }
            }
         }
@@ -899,7 +921,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, i
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    dataarray[Idat(it,i)] = P2[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
+                    dataarray[Idat(it,i)] = P1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
                 }
             }
         case 1:
@@ -936,13 +958,86 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, i
 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    dataarray[Idat(it,i)] = P2[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
+                    dataarray[Idat(it,i)] = P1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
                 }
             }
             break;
     }
 }
 
+template<typename T>
+bool WavesAcoustic3D<T>::createSnap(std::string filename, Snap *Snap) {
+    if(!filename.empty()){
+        Snap->filename = filename;
+        Snap->Fp = std::make_shared<File>();
+        Snap->Fp->output(Snap->filename);
+        Snap->open = true;
+        Snap->Fp->setN(1,this->getNx());
+        Snap->Fp->setN(2,this->getNy());
+        Snap->Fp->setN(3,this->getNz());
+        Snap->Fp->setN(4,this->getSnapnt());
+        Snap->Fp->setD(1,this->getDx());
+        Snap->Fp->setD(2,this->getDy());
+        Snap->Fp->setD(3,this->getDz());
+        Snap->Fp->setD(4,this->getSnapdt());
+        Snap->Fp->setO(1,this->getOx());
+        Snap->Fp->setO(2,this->getOy());
+        Snap->Fp->setO(3,this->getOz());
+        Snap->Fp->setO(4,this->getSnapot());
+        Snap->Fp->setData_format(sizeof(T));
+        Snap->Fp->writeHeader();
+        Snap->Fp->seekp(Snap->Fp->getStartofdata());
+        this->setSnapit(0);
+    }else{
+        std::cerr << "WavesAcoustic3D::createSnap: No filename set.\n";
+        exit(1);
+    }
+        return WAVES_OK;
+}
+
+// Write Snapshots
+template<typename T>
+void WavesAcoustic3D<T>::writeSnap(int it, Snap *Snap){
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+    int nx_pml = this->getNx_pml();
+    int ny_pml = this->getNy_pml();
+    int nz_pml = this->getNz_pml();
+    int lpml = this->getLpml();
+    Index I(nx_pml,ny_pml,nz_pml);
+    int i,j,k;
+    int snapit = this->getSnapit();
+    T *field;
+    switch(Snap->field){
+        case 0:
+            field = this->P1;
+            break;
+        case 1:
+            field = this->Ax;
+            break;
+        case 2:
+            field = this->Ay;
+            break;
+        case 3:
+            field = this->Az;
+            break;
+    }
+
+    if(Snap->open){
+       if((it % this->getSnapinc()) == 0){
+           this->setSnapit(snapit + 1); // Increment snap counter
+           //Write snapshot
+           for(k=0; k<nz; k++){
+               for(j=0; j<ny; j++){
+                   for(i=0; i<nx; i++){
+                       Snap->Fp->write(&field[I(i+lpml,j+lpml,k+lpml)],1); 
+                   }
+               }
+           }
+       }
+    }
+}
 
 
 template<typename T>
