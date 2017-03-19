@@ -566,6 +566,10 @@ WavesAcoustic3D<T>::WavesAcoustic3D(const int _nx, const int _ny, const int _nz,
     Ax = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Psnap.field = 0;
+    Axsnap.field = 1;
+    Aysnap.field = 2;
+    Azsnap.field = 3;
 }
 
 
@@ -618,6 +622,10 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
     Ax = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Psnap.field = 0;
+    Axsnap.field = 1;
+    Aysnap.field = 2;
+    Azsnap.field = 3;
 }
 
 template<typename T>

@@ -38,8 +38,8 @@ ModellingAcoustic2D<T>::ModellingAcoustic2D(){
     sourceset = false;
     modelset = false;
     recPset = false;
-    recAzset = false;
     recAxset = false;
+    recAzset = false;
     snapPset = false;
     snapAxset = false;
     snapAzset = false;
@@ -52,8 +52,8 @@ ModellingAcoustic2D<T>::ModellingAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> 
     sourceset = true;
     modelset = true;
     recPset = false;
-    recAzset = false;
     recAxset = false;
+    recAzset = false;
     snapPset = false;
     snapAxset = false;
     snapAzset = false;
@@ -141,10 +141,12 @@ ModellingAcoustic3D<T>::ModellingAcoustic3D(){
     sourceset = false;
     modelset = false;
     recPset = false;
-    recAzset = false;
     recAxset = false;
+    recAyset = false;
+    recAzset = false;
     snapPset = false;
     snapAxset = false;
+    snapAyset = false;
     snapAzset = false;
 }
 
@@ -155,10 +157,12 @@ ModellingAcoustic3D<T>::ModellingAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> 
     sourceset = true;
     modelset = true;
     recPset = false;
-    recAzset = false;
     recAxset = false;
+    recAyset = false;
+    recAzset = false;
     snapPset = false;
     snapAxset = false;
+    snapAyset = false;
     snapAzset = false;
 }
 
