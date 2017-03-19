@@ -932,6 +932,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, i
                     dataarray[Idat(it,i)] = P1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
                 }
             }
+            break;
         case 1:
             for (i=0; i < ntrace; i++) 
             { 

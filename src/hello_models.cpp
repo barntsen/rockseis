@@ -203,16 +203,17 @@ int main()
 	// Set receiver positions
 	scoords3d = (record3d->getGeom())->getGcoords();
 	rockseis::Point3D<float> *gcoords3d = (record3d->getGeom())->getGcoords();
+    rockseis::Index I(nx,ny);
     for(int j=0; j<ny; j++)
     {
         for(int i=0; i<nx; i++)
         {
-            gcoords3d[j*ny + i].x = i*dx;
-            gcoords3d[j*ny + i].y = j*dy; 
-            gcoords3d[j*ny + i].z = 10; 
-            scoords3d[j*ny + i].x = 220; 
-            scoords3d[j*ny + i].y = 50;
-            scoords3d[j*ny + i].z = 200;
+            gcoords3d[I(i,j)].x = i*dx;
+            gcoords3d[I(i,j)].y = j*dy; 
+            gcoords3d[I(i,j)].z = 10; 
+            scoords3d[I(i,j)].x = 220; 
+            scoords3d[I(i,j)].y = 50;
+            scoords3d[I(i,j)].z = 200;
         }
     }
 	record3d->setFile("Shot3d.rss");

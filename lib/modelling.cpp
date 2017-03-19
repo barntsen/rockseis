@@ -203,7 +203,7 @@ int ModellingAcoustic3D<T>::run(){
     	waves->forwardstepStress(model, der);
     
     	// Inserting source (Pressure)
-    	waves->insertSource(model, source, 2, 0, it);
+    	waves->insertSource(model, source, 0, 0, it);
 
         // Recording data (Pressure)
         if(this->recPset){
@@ -215,7 +215,7 @@ int ModellingAcoustic3D<T>::run(){
         }
 
         if(this->recAyset){
-            waves->recordData(this->recAy, 1, 1, it);
+            waves->recordData(this->recAy, 2, 1, it);
         }
 
         if(this->recAzset){
