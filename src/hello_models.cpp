@@ -201,7 +201,7 @@ int main()
 	// Setup a 3d record
 	std::shared_ptr<rockseis::Data3D<float>> record3d (new rockseis::Data3D<float>(nx*ny, 1, dt));
 	// Set receiver positions
-	scoords3d = (record3d->getGeom())->getGcoords();
+	scoords3d = (record3d->getGeom())->getScoords();
 	rockseis::Point3D<float> *gcoords3d = (record3d->getGeom())->getGcoords();
     rockseis::Index I(nx,ny);
     for(int j=0; j<ny; j++)

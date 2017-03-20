@@ -6,6 +6,7 @@ template<typename T>
 Data<T>::Data(const std::string file)
 {
     datafile=file;
+    field = PRESSURE;
 }
 
 template<typename T>
@@ -15,6 +16,7 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt)
     nt = _nt;
     dt = _dt;
     ot = 0.0;
+    field = PRESSURE;
 }
 
 template<typename T>
@@ -24,6 +26,7 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt, const T _ot)
     nt = _nt;
     dt = _dt;
     ot = _ot;
+    field = PRESSURE;
 }
 
 // destructor

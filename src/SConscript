@@ -19,13 +19,13 @@ env.Install('../bin/',hello_models)
 hello_acoustic = env.Program(prefix + 'hello_acoustic','hello_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello_acoustic)
 
-hello_elastic = env.Program(prefix + 'hello_elastic','hello_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+hello_elastic = env.Program(prefix + 'hello_elastic','hello_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello_elastic)
 
 hello3d_acoustic = env.Program(prefix + 'hello3d_acoustic','hello3d_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello3d_acoustic)
 
-hello3d_elastic = env.Program(prefix + 'hello3d_elastic','hello3d_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+hello3d_elastic = env.Program(prefix + 'hello3d_elastic','hello3d_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'modelling', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello3d_elastic)
 
 #mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel'],LIBPATH=['../build'])

@@ -43,7 +43,7 @@ int main()
 	// Parse parameters from file
 	config4cpp::Configuration *  cfg = config4cpp::Configuration::create();
 	const char *     scope = "";
-	const char *     configFile = "mod2d.cfg";
+	const char *     configFile = "acumod2d.cfg";
 
     status = 0;
     try {
@@ -212,6 +212,7 @@ int main()
     // Setting Record
     if(Precord){
         Pdata = std::make_shared<rockseis::Data2D<float>>(Precordfile, source->getNt(), source->getDt());
+        Pdata->setField(rockseis::PRESSURE);
         // Load data geometry from file
         Pdata->readCoords();
         Pdata->makeMap(model->getGeom());
@@ -220,6 +221,7 @@ int main()
     // Setting Record
     if(Axrecord){
         Axdata = std::make_shared<rockseis::Data2D<float>>(Axrecordfile, source->getNt(), source->getDt());
+        Axdata->setField(rockseis::VX);
         // Load data geometry from file
         Axdata->readCoords();
         Axdata->makeMap(model->getGeom());
@@ -228,6 +230,7 @@ int main()
     // Setting Record
     if(Azrecord){
         Azdata = std::make_shared<rockseis::Data2D<float>>(Azrecordfile, source->getNt(), source->getDt());
+        Azdata->setField(rockseis::VZ);
         // Load data geometry from file
         Azdata->readCoords();
         Azdata->makeMap(model->getGeom());

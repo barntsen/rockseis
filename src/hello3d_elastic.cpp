@@ -1,5 +1,6 @@
 #include <iostream>
 #include "model.h"
+#include "modelling.h"
 #include "pml.h"
 #include "waves.h"
 #include "utils.h"
@@ -13,16 +14,42 @@
 
 int main()
 {
-	// Parameters
+
 	bool status;
+
+	// Parameters
 	int lpml=0;
 	bool fs=0;
 	int order=0;
+	int snapinc=0;
+    std::string Sourcefile;
+    std::string Vpfile;
+    std::string Vsfile;
+    std::string Rhofile;
+    bool Psnap=0, Precord=0;
+    std::string Psnapfile;
+    std::string Precordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Pdata;
+
+    bool Vxsnap=0, Vxrecord=0;
+    std::string Vxsnapfile;
+    std::string Vxrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Vxdata;
+
+    bool Vysnap=0, Vyrecord=0;
+    std::string Vysnapfile;
+    std::string Vyrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Vydata;
+
+    bool Vzsnap=0, Vzrecord=0;
+    std::string Vzsnapfile;
+    std::string Vzrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Vzdata;
 
 	// Parse parameters from file
 	config4cpp::Configuration *  cfg = config4cpp::Configuration::create();
 	const char *     scope = "";
-	const char *     configFile = "mod2d.cfg";
+	const char *     configFile = "elamod3d.cfg";
 
     status = 0;
     try {
@@ -48,77 +75,250 @@ int main()
     }
 
     try {
-        fs = cfg->lookupBoolean(scope, "freesurface");
+        snapinc = cfg->lookupInt(scope, "snapinc");
     } catch(const config4cpp::ConfigurationException & ex) {
         std::cerr << ex.c_str() << std::endl;
         status = 1;
     }
 
-    // Destroy cfg
-    cfg->destroy();
-
-    if(status == 1){
-        std::cerr << "Program terminated due to input errors." << std::endl;
-        return 1;
+    try {
+        fs = cfg->lookupBoolean(scope, "freesurface");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    try {
+        Vpfile = cfg->lookupString(scope, "Vp");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    try {
+        Vsfile = cfg->lookupString(scope, "Vs");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    try {
+        Rhofile = cfg->lookupString(scope, "Rho");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    try {
+        Sourcefile = cfg->lookupString(scope, "source");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    try {
+        Psnap = cfg->lookupBoolean(scope, "Psnap");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Psnap){
+        try {
+            Psnapfile = cfg->lookupString(scope, "Psnapfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+    try {
+        Precord = cfg->lookupBoolean(scope, "Precord");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Precord){
+        try {
+            Precordfile = cfg->lookupString(scope, "Precordfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+   try {
+        Vxsnap = cfg->lookupBoolean(scope, "Vxsnap");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Vxsnap){
+        try {
+            Vxsnapfile = cfg->lookupString(scope, "Vxsnapfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+    try {
+        Vxrecord = cfg->lookupBoolean(scope, "Vxrecord");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Vxrecord){
+        try {
+            Vxrecordfile = cfg->lookupString(scope, "Vxrecordfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+   try {
+        Vysnap = cfg->lookupBoolean(scope, "Vysnap");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Vysnap){
+        try {
+            Vysnapfile = cfg->lookupString(scope, "Vysnapfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+    try {
+        Vyrecord = cfg->lookupBoolean(scope, "Vyrecord");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Vyrecord){
+        try {
+            Vyrecordfile = cfg->lookupString(scope, "Vyrecordfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+   try {
+        Vzsnap = cfg->lookupBoolean(scope, "Vzsnap");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Vzsnap){
+        try {
+            Vzsnapfile = cfg->lookupString(scope, "Vzsnapfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
+    }
+    try {
+        Vzrecord = cfg->lookupBoolean(scope, "Vzrecord");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(Vzrecord){
+        try {
+            Vzrecordfile = cfg->lookupString(scope, "Vzrecordfile");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
     }
 
-    std::shared_ptr<rockseis::File> file (new rockseis::File());
+	// Destroy cfg
+	cfg->destroy();
+
+	if(status == 1){
+		std::cerr << "Program terminated due to input errors." << std::endl;
+		return 1;
+	}
 
 	// Create the classes 
-	std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>("Wav3d.rss"));
-	std::shared_ptr<rockseis::ModelElastic3D<float>> model (new rockseis::ModelElastic3D<float>("Vp3d.rss", "Vs3d.rss", "Rho3d.rss", lpml, fs));
-	std::shared_ptr<rockseis::WavesElastic3D<float>> waves (new rockseis::WavesElastic3D<float>(model, source->getNt(), source->getDt(), source->getOt(),1));
-	std::shared_ptr<rockseis::Der<float>> der (new rockseis::Der<float>(model->getNx_pml(), model->getNy_pml(), model->getNz_pml(), model->getDx(), model->getDy(), model->getDz(), order));
-	
-	// Get models from files
-	// Read model
+	std::shared_ptr<rockseis::ModelElastic3D<float>> model (new rockseis::ModelElastic3D<float>(Vpfile, Vsfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(Sourcefile));
+	std::shared_ptr<rockseis::ModellingElastic3D<float>> modelling (new rockseis::ModellingElastic3D<float>(model, source, order, snapinc));
+
+    // Setting Snapshot file 
+    if(Psnap){
+        modelling->setSnapP(Psnapfile);
+    }
+    if(Vxsnap){
+        modelling->setSnapVx(Vxsnapfile);
+    }
+    if(Vysnap){
+        modelling->setSnapVy(Vysnapfile);
+    }
+    if(Vzsnap){
+        modelling->setSnapVz(Vzsnapfile);
+    }
+
+    //Setting sourcetype to VX (x-Force) type
+    source->setField(rockseis::VX);
+
+    // Setting Record
+    if(Precord){
+        Pdata = std::make_shared<rockseis::Data3D<float>>(Precordfile, source->getNt(), source->getDt());
+        Pdata->setField(rockseis::PRESSURE);
+        // Load data geometry from file
+        Pdata->readCoords();
+        Pdata->makeMap(model->getGeom());
+        modelling->setRecP(Pdata);
+    }
+    // Setting Record
+    if(Vxrecord){
+        Vxdata = std::make_shared<rockseis::Data3D<float>>(Vxrecordfile, source->getNt(), source->getDt());
+        Vxdata->setField(rockseis::VX);
+        // Load data geometry from file
+        Vxdata->readCoords();
+        Vxdata->makeMap(model->getGeom());
+        modelling->setRecVx(Vxdata);
+    }
+    if(Vyrecord){
+        Vydata = std::make_shared<rockseis::Data3D<float>>(Vyrecordfile, source->getNt(), source->getDt());
+        Vydata->setField(rockseis::VY);
+        // Load data geometry from file
+        Vydata->readCoords();
+        Vydata->makeMap(model->getGeom());
+        modelling->setRecVy(Vydata);
+    }
+    // Setting Record
+    if(Vzrecord){
+        Vzdata = std::make_shared<rockseis::Data3D<float>>(Vzrecordfile, source->getNt(), source->getDt());
+        Vzdata->setField(rockseis::VZ);
+        // Load data geometry from file
+        Vzdata->readCoords();
+        Vzdata->makeMap(model->getGeom());
+        modelling->setRecVz(Vzdata);
+    }
+
+	// Read acoustic model
 	model->readModel();
 
 	// Stagger model
 	model->staggerModels();
 
-	// Load wavelet from file 
+	// Read wavelet data and coordinates and make a map
 	source->readData();
 	source->makeMap(model->getGeom());
 
-	// Output snapshots to a binary file
-	std::shared_ptr<rockseis::File> Fsnap (new rockseis::File());
-	Fsnap->output("snaps.rss");
-	Fsnap->setN(1,model->getNx_pml());
-	Fsnap->setD(1,model->getDx());
-	Fsnap->setO(1,model->getOx());
-	Fsnap->setN(2,model->getNy_pml());
-	Fsnap->setD(2,model->getDy());
-	Fsnap->setO(2,model->getOy());
-	Fsnap->setN(3,model->getNz_pml());
-	Fsnap->setD(3,model->getDz());
-	Fsnap->setO(3,model->getOz());
-	Fsnap->setN(4,waves->getNt());
-	Fsnap->setD(4,waves->getDt());
-	Fsnap->setO(4,waves->getOt());
-	Fsnap->setData_format(sizeof(float));
-	Fsnap->writeHeader();
-	Fsnap->seekp(Fsnap->getStartofdata());
+	// Run modelling 
+	modelling->run();
 
-	// Pointer to one of the Fields
-	float *Sxx;
-	Sxx = waves->getSxx();
+	// Output records
+    if(Precord){
+        Pdata->write();
+    }
 
-	// Loop over time
-	for(int it=0; it < waves->getNt(); it++)
-	{
-		// Time stepping
-		waves->forwardstepVelocity(model, der);
-		waves->forwardstepStress(model, der);
+    if(Vxrecord){
+        Vxdata->write();
+    }
 
-		// Inserting source
-		waves->insertSource(model, source, 3, 0, it);
+    if(Vyrecord){
+        Vydata->write();
+    }
 
-		//Writting out results to binary file
-		Fsnap->write(Sxx, model->getNx_pml() * model->getNy_pml() * model->getNz_pml());
-	}	
-
-	Fsnap->close();
+    if(Vzrecord){
+        Vzdata->write();
+    }
 
 	return 0;
 }

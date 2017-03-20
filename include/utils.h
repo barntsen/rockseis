@@ -6,6 +6,10 @@
 #include <string>
 
 namespace rockseis {
+
+// =============== ENUMS =============== //
+typedef enum {PRESSURE, VX, VY, VZ, SXX, SYY, SZZ, SYZ, SXZ, SXY} rs_field;
+
 // =============== INDEX CLASS =============== //
 /** The Index class.
  * Index for seeking memory in 2D and 3D arrays.

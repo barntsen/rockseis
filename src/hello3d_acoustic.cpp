@@ -48,7 +48,7 @@ int main()
 	// Parse parameters from file
 	config4cpp::Configuration *  cfg = config4cpp::Configuration::create();
 	const char *     scope = "";
-	const char *     configFile = "mod3d.cfg";
+	const char *     configFile = "acumod3d.cfg";
 
     status = 0;
     try {

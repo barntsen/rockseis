@@ -7,6 +7,7 @@
 #include <memory>
 #include "geometry.h"
 #include "file.h"
+#include "utils.h"
 
 
 namespace rockseis {
@@ -28,14 +29,16 @@ public:
     T getDt() { return dt; }		///< Get dt
     T getOt() { return ot; }		///< Get ot
     int getNtrace() { return ntrace; }	///< Get number of traces
-    std::string getFile() { return datafile; }
+    std::string getFile() { return datafile; } ///< Get filename
+    rs_field getField() { return field; } ///< Get data type
 
     // Set functions
     void setNt(const int _nt) { nt = _nt; }	///< Set Nx
     void setNtrace(const int _ntrace) { ntrace = _ntrace; }	///< Set number of traces
     void setDt(const T _dt) { dt = _dt; }	///< Set sampling interval (dt)
     void setOt(const T _ot) { ot = _ot; }	///< Set origin (ot)
-    void setFile(std::string _datafile) { datafile=_datafile; }
+    void setFile(std::string _datafile) { datafile=_datafile; } ///< Set filename
+    void setField(rs_field _field) { field = _field; } ///< Set data type 
 
 private:
     std::string datafile;
@@ -43,6 +46,7 @@ private:
     int nt;
     T dt;
     T ot;
+    rs_field field;
 };
 
 // =============== 2D DATA CLASS =============== //

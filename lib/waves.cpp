@@ -113,9 +113,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(){
     P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Psnap.field = 0;
-    Axsnap.field = 1;
-    Azsnap.field = 3;
+    Psnap.field = PRESSURE;
+    Axsnap.field = VX;
+    Azsnap.field = VZ;
 }
 
 template<typename T>
@@ -133,9 +133,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt,
     P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Psnap.field = 0;
-    Axsnap.field = 1;
-    Azsnap.field = 3;
+    Psnap.field = PRESSURE;
+    Axsnap.field = VX;
+    Azsnap.field = VZ;
 }
 
 
@@ -187,9 +187,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
     P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Psnap.field = 0;
-    Axsnap.field = 1;
-    Azsnap.field = 3;
+    Psnap.field = PRESSURE;
+    Axsnap.field = VX;
+    Azsnap.field = VZ;
 }
 
 template<typename T>
@@ -330,7 +330,7 @@ void WavesAcoustic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
 }
 
 template<typename T>
-void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, int sourcetype, int maptype, int it){
+void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
     Point2D<int> *map;
     T *wav; 
     int ntrace = source->getNtrace();
@@ -343,12 +343,13 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
     T dt = this->getDt();
 
     // Get correct map (source or receiver mapping)
-    if(maptype == 0) {
+    if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
     }else{
         map = (source->getGeom())->getGmap();
     }
 
+    rs_field sourcetype = source->getField();
     wav = source->getData();
     int i;
     //Indexes 
@@ -356,7 +357,7 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
     Index Idat(nt, ntrace); // Data indexes
     switch(sourcetype)
     {
-        case 0:
+        case VX:
             Mod = model->getRx();
             for (i=0; i < ntrace; i++) 
             {
@@ -366,7 +367,7 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
                 }
             }
             break;
-        case 1:
+        case VZ:
             Mod = model->getRz();
             for (i=0; i < ntrace; i++) 
             {
@@ -376,7 +377,7 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
                 }
             }
             break;
-        case 2:
+        case PRESSURE:
             Mod = model->getL();
             for (i=0; i < ntrace; i++) 
             {
@@ -387,20 +388,12 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
             }
             break;
         default:
-            Mod = model->getL();
-            for (i=0; i < ntrace; i++) 
-            { 
-                if(map[i].x >= 0 && map[i].y >=0)
-                {
-                    P2[I(lpml + map[i].x, lpml + map[i].y)] += dt*dt*Mod[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
-                }
-            }
             break;
     }
 }
 
 template<typename T>
-void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, int field, int maptype, int it){
+void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
     Point2D<int> *map;
     T *dataarray; 
     T *Fielddata;
@@ -412,19 +405,20 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, i
     nz = this->getNz() + 2*lpml;
 
     // Get correct map (data or receiver mapping)
-    if(maptype == 0) {
+    if(maptype == SMAP) {
         map = (data->getGeom())->getSmap();
     }else{
         map = (data->getGeom())->getGmap();
     }
 
+    rs_field field = data->getField();
     dataarray = data->getData();
     int i;
     Index I(nx, nz);
     Index Idat(nt, ntrace);
     switch(field)
     {
-        case 0:
+        case PRESSURE:
             Fielddata = this->getP1();
             for (i=0; i < ntrace; i++) 
             { 
@@ -434,7 +428,7 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, i
                 }
             }
 	    break;
-        case 1:
+        case VX:
             Fielddata = this->getAx();
             for (i=0; i < ntrace; i++) 
             { 
@@ -444,7 +438,7 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, i
                 }
             }
             break;
-        case 3:
+        case VZ:
             Fielddata = this->getAz();
             for (i=0; i < ntrace; i++) 
             { 
@@ -455,14 +449,6 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, i
             }
             break;
         default:
-            Fielddata = this->getP1();
-            for (i=0; i < ntrace; i++) 
-            { 
-                if(map[i].x >= 0 && map[i].y >=0)
-                {
-                    dataarray[Idat(it,i)] = Fielddata[I(lpml + map[i].x, lpml + map[i].y)];
-                }
-            }
             break;
     }
 
@@ -508,14 +494,16 @@ void WavesAcoustic2D<T>::writeSnap(int it, Snap *Snap){
     int snapit = this->getSnapit();
     T *field;
     switch(Snap->field){
-        case 0:
+        case PRESSURE:
             field = this->P1;
             break;
-        case 1:
+        case VX:
             field = this->Ax;
             break;
-        case 3:
+        case VZ:
             field = this->Az;
+            break;
+        default:
             break;
     }
 
@@ -566,10 +554,10 @@ WavesAcoustic3D<T>::WavesAcoustic3D(const int _nx, const int _ny, const int _nz,
     Ax = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Psnap.field = 0;
-    Axsnap.field = 1;
-    Aysnap.field = 2;
-    Azsnap.field = 3;
+    Psnap.field = PRESSURE;
+    Axsnap.field = VX;
+    Aysnap.field = VY;
+    Azsnap.field = VZ;
 }
 
 
@@ -622,10 +610,10 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
     Ax = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Psnap.field = 0;
-    Axsnap.field = 1;
-    Aysnap.field = 2;
-    Azsnap.field = 3;
+    Psnap.field = PRESSURE;
+    Axsnap.field = VX;
+    Aysnap.field = VY;
+    Azsnap.field = VZ;
 }
 
 template<typename T>
@@ -831,7 +819,7 @@ void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
 }
 
 template<typename T>
-void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, int sourcetype, int maptype, int it){
+void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it){
     Point3D<int> *map;
     T *wav; 
     int ntrace = source->getNtrace();
@@ -845,18 +833,19 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
     T dt = this->getDt();
 
     // Get correct map (source or receiver mapping)
-    if(maptype == 0 ) {
+    if(maptype == SMAP ) {
         map = (source->getGeom())->getSmap();
     }else{
         map = (source->getGeom())->getGmap();
     }
+    rs_field sourcetype = source->getField();
     wav = source->getData();
     int i;
     Index I(nx, ny, nz); //Model and Field indexes
     Index Idat(nt, ntrace); // Data indexes
     switch(sourcetype)
     {
-        case 0:
+        case PRESSURE:
             Mod = model->getL();
             for (i=0; i < ntrace; i++) 
             { 
@@ -866,7 +855,7 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
                 }
             }
             break;
-	    case 1:
+	    case VX:
             Mod = model->getRx();
             for (i=0; i < ntrace; i++) 
             { 
@@ -876,7 +865,7 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
                 }
             }
             break;
-        case 2:
+        case VY:
             Mod = model->getRy();
             for (i=0; i < ntrace; i++) 
             { 
@@ -886,7 +875,7 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
                 }
             }
             break;
-        case 3:
+        case VZ:
             Mod = model->getRz();
             for (i=0; i < ntrace; i++) 
             { 
@@ -896,11 +885,13 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
                 }
             }
             break;
+        default:
+            break;
     }
 }
 
 template<typename T>
-void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, int field, int maptype, int it){
+void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it){
     Point3D<int> *map;
     T *dataarray; 
     int ntrace = data->getNtrace();
@@ -912,19 +903,20 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, i
     nz = this->getNz() + 2*lpml;
 
     // Get correct map (data or receiver mapping)
-    if(maptype == 0) {
+    if(maptype == SMAP) {
         map = (data->getGeom())->getSmap();
     }else{
         map = (data->getGeom())->getGmap();
     }
 
+    rs_field field = data->getField();
     dataarray = data->getData();
     int i;
     Index I(nx, ny, nz);
     Index Idat(nt, ntrace);
     switch(field)
     {
-        case 0:
+        case PRESSURE:
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
@@ -933,7 +925,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, i
                 }
             }
             break;
-        case 1:
+        case VX:
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
@@ -942,7 +934,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, i
                 }
             }
             break;
-        case 2:
+        case VY:
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
@@ -952,7 +944,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, i
             }
             break;
 
-        case 3:
+        case VZ:
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
@@ -962,14 +954,6 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, i
             }
             break;
         default:
-            for (i=0; i < ntrace; i++) 
-            { 
-
-                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-                {
-                    dataarray[Idat(it,i)] = P1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
-                }
-            }
             break;
     }
 }
@@ -1019,17 +1003,19 @@ void WavesAcoustic3D<T>::writeSnap(int it, Snap *Snap){
     int snapit = this->getSnapit();
     T *field;
     switch(Snap->field){
-        case 0:
+        case PRESSURE:
             field = this->P1;
             break;
-        case 1:
+        case VX:
             field = this->Ax;
             break;
-        case 2:
+        case VY:
             field = this->Ay;
             break;
-        case 3:
+        case VZ:
             field = this->Az;
+            break;
+        default:
             break;
     }
 
@@ -1097,6 +1083,12 @@ WavesElastic2D<T>::WavesElastic2D(const int _nx, const int _nz, const int _nt, c
     Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Psnap.field = PRESSURE;
+    Vxsnap.field = VX;
+    Vzsnap.field = VZ;
+    Sxxsnap.field = SXX;
+    Szzsnap.field = SZZ;
+    Sxzsnap.field = SXZ;
 }
 
 template<typename T>
@@ -1147,6 +1139,12 @@ WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> m
     Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Psnap.field = PRESSURE;
+    Vxsnap.field = VX;
+    Vzsnap.field = VZ;
+    Sxxsnap.field = SXX;
+    Szzsnap.field = SZZ;
+    Sxzsnap.field = SXZ;
 }
 
 
@@ -1378,7 +1376,7 @@ void WavesElastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
 
 
 template<typename T>
-void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, int sourcetype, int maptype, int it){
+void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
     Point2D<int> *map;
     T *wav; 
     int ntrace = source->getNtrace();
@@ -1391,19 +1389,20 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
     T dt = this->getDt();
 
     // Get correct map (source or receiver mapping)
-    if(maptype == 0) {
+    if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
     }else{
         map = (source->getGeom())->getGmap();
     }
 
+    rs_field sourcetype = source->getField();
     wav = source->getData();
     int i;
     Index I(nx, nz); //Model and Field indexes
     Index Idat(nt, ntrace); // Data indexes
     switch(sourcetype)
     {
-        case 0:
+        case PRESSURE:
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0){
@@ -1412,7 +1411,7 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
                 }
             }
             break;
-	    case 1:
+        case VX:
             Mod = model->getRx();
             for (i=0; i < ntrace; i++) 
             { 
@@ -1421,7 +1420,7 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
                 }
             }
             break;
-        case 3:
+        case VZ:
             Mod = model->getRz();
             for (i=0; i < ntrace; i++) 
             { 
@@ -1431,17 +1430,146 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
             }
             break;
         default:
+            break;
+    }
+}
+
+template<typename T>
+void WavesElastic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
+    Point2D<int> *map;
+    T *dataarray; 
+    T *Fielddata1 = NULL;
+    T *Fielddata2 = NULL;
+    int ntrace = data->getNtrace();
+    int nt = data->getNt();
+    int nx, nz, lpml;
+    lpml = this->getLpml();
+    nx = this->getNx() + 2*lpml;
+    nz = this->getNz() + 2*lpml;
+    rs_field field = data->getField();
+
+    // Get correct map (data or receiver mapping)
+    if(maptype == SMAP) {
+        map = (data->getGeom())->getSmap();
+    }else{
+        map = (data->getGeom())->getGmap();
+    }
+
+    dataarray = data->getData();
+    int i;
+    Index I(nx, nz);
+    Index Idat(nt, ntrace);
+    switch(field)
+    {
+        case PRESSURE:
+            Fielddata1 = this->getSxx();
+            Fielddata2 = this->getSzz();
             for (i=0; i < ntrace; i++) 
             { 
-                if(map[i].x >= 0 && map[i].y >=0){
-                    Sxx[I(lpml + map[i].x, lpml + map[i].y)] += dt*wav[Idat(it,i)]; 
-                    Szz[I(lpml + map[i].x, lpml + map[i].y)] += dt*wav[Idat(it,i)]; 
+                if(map[i].x >= 0 && map[i].y >=0)
+                {
+                    dataarray[Idat(it,i)] = Fielddata1[I(lpml + map[i].x, lpml + map[i].y)];
+                    dataarray[Idat(it,i)] += Fielddata2[I(lpml + map[i].x, lpml + map[i].y)];
+                }
+            }
+	    break;
+        case VX:
+            Fielddata1 = this->getVx();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >=0)
+                {
+                    dataarray[Idat(it,i)] = Fielddata1[I(lpml + map[i].x, lpml + map[i].y)];
                 }
             }
             break;
+        case VZ:
+            Fielddata1 = this->getVz();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >=0)
+                {
+                    dataarray[Idat(it,i)] = Fielddata1[I(lpml + map[i].x, lpml + map[i].y)];
+                }
+            }
+            break;
+        default:
+            break;
     }
 
+}
 
+template<typename T>
+bool WavesElastic2D<T>::createSnap(std::string filename, Snap *Snap) {
+    if(!filename.empty()){
+        Snap->filename = filename;
+        Snap->Fp = std::make_shared<File>();
+        Snap->Fp->output(Snap->filename);
+        Snap->open = true;
+        Snap->Fp->setN(1,this->getNx());
+        Snap->Fp->setN(3,this->getNz());
+        Snap->Fp->setN(4,this->getSnapnt());
+        Snap->Fp->setD(1,this->getDx());
+        Snap->Fp->setD(3,this->getDz());
+        Snap->Fp->setD(4,this->getSnapdt());
+        Snap->Fp->setO(1,this->getOx());
+        Snap->Fp->setO(3,this->getOz());
+        Snap->Fp->setO(4,this->getSnapot());
+        Snap->Fp->setData_format(sizeof(T));
+        Snap->Fp->writeHeader();
+        Snap->Fp->seekp(Snap->Fp->getStartofdata());
+        this->setSnapit(0);
+    }else{
+        std::cerr << "WavesElastic2D::createSnap: No filename set.\n";
+        exit(1);
+    }
+        return WAVES_OK;
+}
+
+// Write Snapshots
+template<typename T>
+void WavesElastic2D<T>::writeSnap(int it, Snap *Snap){
+    int nx = this->getNx();
+    int nz = this->getNz();
+    int nx_pml = this->getNx_pml();
+    int nz_pml = this->getNz_pml();
+    int lpml = this->getLpml();
+    Index I(nx_pml,nz_pml);
+    int i,j;
+    int snapit = this->getSnapit();
+    T *field1 = NULL, *field2 = NULL;
+    T val;
+    switch(Snap->field){
+        case PRESSURE:
+            field1 = this->Sxx;
+            field2 = this->Szz;
+            break;
+        case VX:
+            field1 = this->Vx;
+            break;
+        case VZ:
+            field1 = this->Vz;
+            break;
+        default:
+            break;
+    }
+
+    if(Snap->open){
+       if((it % this->getSnapinc()) == 0){
+           this->setSnapit(snapit + 1); // Increment snap counter
+           //Write snapshot
+           for(j=0; j<nz; j++){
+               for(i=0; i<nx; i++){
+                   if (field2 != NULL){
+                       val = field1[I(i+lpml,j+lpml)] + field2[I(i+lpml,j+lpml)];
+                   }else{
+                       val = field1[I(i+lpml,j+lpml)];
+                   }
+                   Snap->Fp->write(&val,1); 
+               }
+           }
+        }
+    }
 }
 
 template<typename T>
@@ -1485,6 +1613,16 @@ WavesElastic3D<T>::WavesElastic3D(const int _nx, const int _ny, const int _nz, c
     Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Psnap.field = PRESSURE;
+    Vxsnap.field = VX;
+    Vysnap.field = VY;
+    Vzsnap.field = VZ;
+    Sxxsnap.field = SXX;
+    Syysnap.field = SYY;
+    Szzsnap.field = SZZ;
+    Syzsnap.field = SYZ;
+    Sxzsnap.field = SXZ;
+    Sxysnap.field = SXY;
 }
 
 template<typename T>
@@ -1540,6 +1678,16 @@ WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> m
     Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Psnap.field = PRESSURE;
+    Vxsnap.field = VX;
+    Vysnap.field = VY;
+    Vzsnap.field = VZ;
+    Sxxsnap.field = SXX;
+    Syysnap.field = SYY;
+    Szzsnap.field = SZZ;
+    Syzsnap.field = SYZ;
+    Sxzsnap.field = SXZ;
+    Sxysnap.field = SXY;
 }
 
 template<typename T>
@@ -2125,7 +2273,7 @@ void WavesElastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
 }
 
 template<typename T>
-void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, int sourcetype, int maptype, int it){
+void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it){
     Point3D<int> *map;
     T *wav; 
     int ntrace = source->getNtrace();
@@ -2139,18 +2287,19 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
     T dt = this->getDt();
 
     // Get correct map (source or receiver mapping)
-    if(maptype ==0) {
+    if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
     }else{
         map = (source->getGeom())->getGmap();
     }
+    rs_field sourcetype = source->getField();
     wav = source->getData();
     int i;
     Index I(nx, ny, nz); //Model and Field indexes
     Index Idat(nt, ntrace); // Data indexes
     switch(sourcetype)
     {
-        case 0:
+        case PRESSURE:
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
@@ -2161,7 +2310,7 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
                 }
             }
             break;
-	    case 1:
+	    case VX:
             Mod = model->getRx();
             for (i=0; i < ntrace; i++) 
             { 
@@ -2171,7 +2320,7 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
                 }
             }
             break;
-        case 2:
+        case VY:
             Mod = model->getRy();
             for (i=0; i < ntrace; i++) 
             { 
@@ -2181,7 +2330,7 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
                 }
             }
             break;
-        case 3:
+        case VZ:
             Mod = model->getRz();
             for (i=0; i < ntrace; i++) 
             { 
@@ -2192,19 +2341,176 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
             }
             break;
         default:
+            break;
+    }
+}
+
+template<typename T>
+void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it){
+    Point3D<int> *map;
+    T *dataarray; 
+    T *Fielddata1 = NULL;
+    T *Fielddata2 = NULL;
+    T *Fielddata3 = NULL;
+    int ntrace = data->getNtrace();
+    int nt = data->getNt();
+    int nx, ny, nz, lpml;
+    lpml = this->getLpml();
+    nx = this->getNx() + 2*lpml;
+    ny = this->getNy() + 2*lpml;
+    nz = this->getNz() + 2*lpml;
+
+    // Get correct map (data or receiver mapping)
+    if(maptype == SMAP) {
+        map = (data->getGeom())->getSmap();
+    }else{
+        map = (data->getGeom())->getGmap();
+    }
+
+    rs_field field = data->getField();
+    dataarray = data->getData();
+    int i;
+    Index I(nx, ny, nz);
+    Index Idat(nt, ntrace);
+    switch(field)
+    {
+        case PRESSURE:
+            Fielddata1 = this->getSxx();
+            Fielddata2 = this->getSyy();
+            Fielddata3 = this->getSzz();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    Sxx[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)] += dt*wav[Idat(it,i)]; 
-                    Syy[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)] += dt*wav[Idat(it,i)]; 
-                    Szz[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)] += dt*wav[Idat(it,i)]; 
+                    dataarray[Idat(it,i)] = Fielddata1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
+                    dataarray[Idat(it,i)] += Fielddata2[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
+                    dataarray[Idat(it,i)] += Fielddata3[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
+                }
+            }
+            break;
+        case VX:
+            Fielddata1 = this->getVx();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+                {
+                    dataarray[Idat(it,i)] = Fielddata1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
+                }
+            }
+            break;
+        case VY:
+            Fielddata1 = this->getVy();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+                {
+                    dataarray[Idat(it,i)] = Fielddata1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
                 }
             }
             break;
 
+        case VZ:
+            Fielddata1 = this->getVz();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+                {
+                    dataarray[Idat(it,i)] = Fielddata1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
+                }
+            }
+            break;
+        default:
+            break;
     }
 }
+
+
+template<typename T>
+bool WavesElastic3D<T>::createSnap(std::string filename, Snap *Snap) {
+    if(!filename.empty()){
+        Snap->filename = filename;
+        Snap->Fp = std::make_shared<File>();
+        Snap->Fp->output(Snap->filename);
+        Snap->open = true;
+        Snap->Fp->setN(1,this->getNx());
+        Snap->Fp->setN(2,this->getNy());
+        Snap->Fp->setN(3,this->getNz());
+        Snap->Fp->setN(4,this->getSnapnt());
+        Snap->Fp->setD(1,this->getDx());
+        Snap->Fp->setD(2,this->getDy());
+        Snap->Fp->setD(3,this->getDz());
+        Snap->Fp->setD(4,this->getSnapdt());
+        Snap->Fp->setO(1,this->getOx());
+        Snap->Fp->setO(2,this->getOy());
+        Snap->Fp->setO(3,this->getOz());
+        Snap->Fp->setO(4,this->getSnapot());
+        Snap->Fp->setData_format(sizeof(T));
+        Snap->Fp->writeHeader();
+        Snap->Fp->seekp(Snap->Fp->getStartofdata());
+        this->setSnapit(0);
+    }else{
+        std::cerr << "WavesElastic3D::createSnap: No filename set.\n";
+        exit(1);
+    }
+        return WAVES_OK;
+}
+
+// Write Snapshots
+template<typename T>
+void WavesElastic3D<T>::writeSnap(int it, Snap *Snap){
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+    int nx_pml = this->getNx_pml();
+    int ny_pml = this->getNy_pml();
+    int nz_pml = this->getNz_pml();
+    int lpml = this->getLpml();
+    Index I(nx_pml,ny_pml,nz_pml);
+    int i,j,k;
+    int snapit = this->getSnapit();
+    T *field1 = NULL, *field2 = NULL, *field3 = NULL;
+    T val;
+    switch(Snap->field){
+        case PRESSURE:
+            field1 = this->Sxx;
+            field2 = this->Syy;
+            field3 = this->Szz;
+            break;
+        case VX:
+            field1 = this->Vx;
+            break;
+        case VY:
+            field1 = this->Vy;
+            break;
+        case VZ:
+            field1 = this->Vz;
+            break;
+        default:
+            break;
+    }
+
+    if(Snap->open){
+        if((it % this->getSnapinc()) == 0){
+            this->setSnapit(snapit + 1); // Increment snap counter
+            //Write snapshot
+            for(k=0; k<nz; k++){
+                for(j=0; j<ny; j++){
+                    for(i=0; i<nx; i++){
+                        if (field2 != NULL){
+                            val = field1[I(i+lpml,j+lpml,k+lpml)] + 
+                                field2[I(i+lpml,j+lpml,k+lpml)] + 
+                                field3[I(i+lpml,j+lpml,k+lpml)];
+                        }else{
+                            val = field1[I(i+lpml,j+lpml,k+lpml)];
+                        }
+                        Snap->Fp->write(&val,1); 
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class WavesAcoustic2D<float>;
