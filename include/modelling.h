@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <time.h>
 #include "geometry.h"
 #include "utils.h"
 #include "file.h"
@@ -21,6 +22,18 @@
 #define SMAP 0
 
 namespace rockseis {
+
+/** The Progress struct
+ *
+ */
+typedef struct{
+	clock_t previous, current; ///< Time book keeping
+	float persec; ///< Iterations per second 
+	char speed[48]; ///< Iterations per second string
+	char progress[128]; ///< Progress string
+} Progress;
+
+
 // =============== ABSTRACT MODELLING CLASS =============== //
 /** The abstract modelling class
  *
@@ -34,9 +47,16 @@ public:
     
     // Modelling functions
     int getOrder() { return order; } ///< Get order of FD stencil
-    void setOrder(int _order) { if(_order > 1 && _order < 9)  order = _order;} ///< Set order of FD stencil
     int getSnapinc() { return snapinc; } ///< Get snap increment
+    std::string getLogfile() { return logfile; } ///< Get name of logfile
+    void setOrder(int _order) { if(_order > 1 && _order < 9)  order = _order;} ///< Set order of FD stencil
     void setSnapinc(int _snapinc) {snapinc = _snapinc;} ///< Set snap increment for recoerding snapshots
+    void setLogfile(std::string name) { logfile = name; } ///< Set name of logfile
+    bool createLog(std::string name); ///< Set name of logfile and open for writing
+    void writeLog(std::string text);  ///< Write string to log file
+    void writeLog(char * text); ///< Write c_string to log file
+    void writeProgressbar(int x, int n, int r, int w);
+    void writeProgress(int x, int n, int r, int w);
 
     ~Modelling();	///< Destructor
 
@@ -44,6 +64,9 @@ public:
 private:
     int order;  ///< Order of the FD stencil 
     int snapinc;  ///< Snap interval
+    std::string logfile; ///< Log file name
+    std::ofstream Flog; ///< Logfile
+	Progress prog; ///< Progress counter
 };
 
 /** The 2D Acoustic Modelling class
