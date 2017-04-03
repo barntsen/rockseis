@@ -75,6 +75,40 @@ void File::output(std::string filename)
 	fstream.open(filename, std::ios::out | std::ios::binary);
 }
 
+void File::append()
+{
+	fstream.open("/dev/stdout", std::ios::app | std::ios::binary);
+}
+
+bool File::append(std::string filename)
+{
+    bool status;
+    char buffer[MAGIC_NUMBER_LENGTH+1];
+    size_t pos;
+    memset(buffer, 0, sizeof(buffer));
+	fstream.open(filename, std::ios::app | std::ios::binary);
+    if(fstream.fail()){
+        status = FILE_ERR; 
+    }else{
+        //Read header and check if file is of Rockseis format
+        pos = fstream.tellp();
+        fstream.seekp(0);
+        fstream.read(&buffer[0], MAGIC_NUMBER_LENGTH*sizeof(char));
+        if(strcmp(buffer, MAGIC_NUMBER))
+        {
+            // Fail 
+            status = FILE_ERR;
+        }else{
+            //Success
+            status = FILE_OK;	
+            geometry->clear();
+            readHeader();
+            fstream.seekp(pos);
+        }
+    }
+    return status;
+}
+
 void File::close()
 {
 	fstream.close();
@@ -165,9 +199,38 @@ void File::readHeader()
         startofdata += sizeof(double);
         geometry->setO(i+1,val);
     }
+    // Setting type
+    switch(type){
+        case 0:
+            this->setType(GENERIC);
+            break;
+        case 1:
+            this->setType(REGULAR);
+            break;
+        case 2:
+            this->setType(DATA2D);
+            break;
+        case 3:
+            this->setType(DATA3D);
+            break;
+        case 4:
+            this->setType(SNAPSHOT);
+            break;
+    }
 }
 
 // Write functions
+void File::write(char *buffer, size_t n)
+{
+	fstream.write(buffer, n);
+}
+
+void File::write(char *buffer, size_t n, size_t pos)
+{
+	fstream.seekp(pos + startofdata);
+	fstream.write(buffer, n);
+}
+
 void File::write(float *buffer, size_t n)
 {
 	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(float));
@@ -202,6 +265,17 @@ void File::write(int *buffer, size_t n, size_t pos)
 }
 
 //Read functions
+void File::read(char *buffer, size_t n)
+{
+	fstream.read(buffer, n);
+}
+
+void File::read(char *buffer, size_t n, size_t pos)
+{
+	fstream.seekg(pos + startofdata);
+	fstream.read(buffer, n);
+}
+
 void File::read(float *buffer, size_t n)
 {
 	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(float));

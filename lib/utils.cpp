@@ -29,6 +29,12 @@ int Index::operator() (int ix, int iy)
 Index::~Index(){
     /* Do nothing*/
 }
+
+// Fatal error message 
+void rs_error(std::string msg){
+    std::cerr << "Fatal error: " << msg << std::endl;
+    exit(1);
+}
 }
 
 

@@ -40,6 +40,10 @@ env.Install('../bin/',rsf2rss)
 rss2rsf = env.Program(prefix + 'rss2rsf','rss2rsf.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp', 'rsfcpp','rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
 env.Install('../bin/',rss2rsf)
 
+segy2rss = env.Program(prefix + 'segy2rss','segy2rss.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp', 'rsfcpp', 'rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
+env.Install('../bin/',segy2rss)
+
+
 info = env.Program(prefix + 'info','info.cpp',LIBS=['file', 'geometry'],LIBPATH=['../build'])
 env.Install('../bin/',info)
 

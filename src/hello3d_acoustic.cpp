@@ -286,7 +286,7 @@ int main()
 	model->staggerModels();
 
 	// Read wavelet data and coordinates and make a map
-	source->readData();
+	source->read();
 	source->makeMap(model->getGeom());
 
 	// Run modelling 

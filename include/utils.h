@@ -4,11 +4,14 @@
 // Include statements
 #include <vector>
 #include <string>
+#include <iostream>
 
 namespace rockseis {
 
 // =============== ENUMS =============== //
 typedef enum {PRESSURE, VX, VY, VZ, SXX, SYY, SZZ, SYZ, SXZ, SXY} rs_field;
+typedef enum {SOURCE, RECEIVER, CDP} rs_key;
+typedef enum {GENERIC, REGULAR, DATA2D, DATA3D, SNAPSHOT} rs_datatype; ///< Information about the file content (Regular model, 2D data, 3D data, etc.)
 
 // =============== INDEX CLASS =============== //
 /** The Index class.
@@ -47,6 +50,12 @@ struct Point3D {
 	T y; ///< y coordinate
 	T z; ///< z coordinate
 }; 
+
+// =============== Error handling =============== //
+/** A fatal error message
+ * 
+ * */
+void rs_error(std::string);
 
 // =============== INITIALIZING TEMPLATE STRUCTS =============== //
 template struct Point2D<int>;

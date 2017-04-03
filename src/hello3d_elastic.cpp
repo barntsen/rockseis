@@ -252,7 +252,7 @@ int main()
     }
 
     //Setting sourcetype to VX (x-Force) type
-    source->setField(rockseis::VX);
+    source->setField(rockseis::VY);
 
     // Setting Record
     if(Precord){
@@ -297,7 +297,7 @@ int main()
 	model->staggerModels();
 
 	// Read wavelet data and coordinates and make a map
-	source->readData();
+	source->read();
 	source->makeMap(model->getGeom());
 
 	// Run modelling 

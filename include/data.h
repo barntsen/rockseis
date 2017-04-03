@@ -47,6 +47,7 @@ private:
     T dt;
     T ot;
     rs_field field;
+    rs_datatype datatype;
 };
 
 // =============== 2D DATA CLASS =============== //
@@ -72,9 +73,11 @@ public:
 
     // File input/output
     /** Read and write data files */
-    bool readData(); /// Read data and coordinates
+    bool read(); /// Read data and coordinates
     bool readCoords(); /// Read only coordinates
     bool write(); /// Writes data and coordinates
+    bool writeTraceno(int number); /// Writes a trace number
+    bool append(); /// Writes data to end of file
 
 
 private:
@@ -105,9 +108,10 @@ public:
 
     // File input/output
     /** Read and write data files */
-    bool readData(); /// Read data and coordinates
+    bool read(); /// Read data and coordinates
     bool readCoords(); /// Read only coordinates
     bool write(); /// Writes data and coordinates
+    bool append(); /// Writes data to end of file
 
 private:
     std::shared_ptr<Geometry3D<T>> geometry;  // Data geometry 
