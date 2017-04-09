@@ -21,6 +21,7 @@ waves = env.Library(builddir + 'waves',['waves.cpp', 'pml.cpp'])
 snap = env.Library(builddir + 'snap',['snap.cpp'])
 utils = env.Library(builddir + 'utils','utils.cpp')
 data = env.Library(builddir + 'data',['data.cpp','file.cpp'])
+sort = env.Library(builddir + 'sort',['sort.cpp'])
 geometry = env.Library(builddir + 'geometry','geometry.cpp')
 modelling = env.Library(builddir + 'modelling',['modelling.cpp', 'pml.cpp', 'der.cpp', 'waves.cpp'])
 

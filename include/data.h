@@ -28,9 +28,12 @@ public:
     int getNt() { return nt; }		///< Get nt
     T getDt() { return dt; }		///< Get dt
     T getOt() { return ot; }		///< Get ot
+    std::shared_ptr<File> getFdata() { return Fdata; } ///< Get Fdata handle
     int getNtrace() { return ntrace; }	///< Get number of traces
     std::string getFile() { return datafile; } ///< Get filename
     rs_field getField() { return field; } ///< Get data type
+    bool open(std::string flag); ///< Open file. Flags can be "i", "o" or "a".
+    void close();  ///< Close file
 
     // Set functions
     void setNt(const int _nt) { nt = _nt; }	///< Set Nx
@@ -48,6 +51,7 @@ private:
     T ot;
     rs_field field;
     rs_datatype datatype;
+    std::shared_ptr<File> Fdata;
 };
 
 // =============== 2D DATA CLASS =============== //
@@ -76,9 +80,7 @@ public:
     bool read(); /// Read data and coordinates
     bool readCoords(); /// Read only coordinates
     bool write(); /// Writes data and coordinates
-    bool writeTraceno(int number); /// Writes a trace number
-    bool append(); /// Writes data to end of file
-
+    bool writeTraces(); /// Writes data and coordinates to the end of the file
 
 private:
     std::shared_ptr<Geometry2D<T>> geometry; // Data geometry 
@@ -111,7 +113,7 @@ public:
     bool read(); /// Read data and coordinates
     bool readCoords(); /// Read only coordinates
     bool write(); /// Writes data and coordinates
-    bool append(); /// Writes data to end of file
+    bool writeTraces(); /// Writes data and coordinates to the end of the file
 
 private:
     std::shared_ptr<Geometry3D<T>> geometry;  // Data geometry 

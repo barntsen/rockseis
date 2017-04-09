@@ -12,6 +12,7 @@ namespace rockseis {
 typedef enum {PRESSURE, VX, VY, VZ, SXX, SYY, SZZ, SYZ, SXZ, SXY} rs_field;
 typedef enum {SOURCE, RECEIVER, CDP} rs_key;
 typedef enum {GENERIC, REGULAR, DATA2D, DATA3D, SNAPSHOT} rs_datatype; ///< Information about the file content (Regular model, 2D data, 3D data, etc.)
+typedef enum {FINISHED, RUNNING, NOT_STARTED, FAILED} rs_status; ///< Status of a process(ex. modelling, migration, ...)
 
 // =============== INDEX CLASS =============== //
 /** The Index class.

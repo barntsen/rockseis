@@ -73,6 +73,8 @@ public:
 	double getD(int dim) { return geometry->getD(dim); }	///< Get sampling interval
 	double getO(int dim) { return geometry->getO(dim); }	///< Get origin
 
+    bool getHeaderstat() { return headerstat; } ///< Check if we need to write out header
+
 	// Other geometry functions
 	void printGeometry() { geometry->print(); }
 	void clearGeometry() { geometry->clear(); }
@@ -88,6 +90,7 @@ public:
 	void setData_format(int val) { data_format = val; } ///< set data format 
 	void setHeader_format(int val) { header_format = val; } ///< set header format 
 	void setType(rs_datatype val) { type = val; } ///< set datatype
+    void setHeaderstat(bool stat) { headerstat = stat; } ///< Set if header has been modified
 
 	// Get functions
 	size_t getNheader() { return Nheader; } ///< get number of header values
@@ -109,6 +112,7 @@ private:
     rs_datatype type;  ///< Information about the file content (Regular model, 2D data, 3D data, etc.)
 	std::shared_ptr<Geometry<double>> geometry;  ///< regular geometry information from file (n1,n2, ...; d1, d2, ...; o1, o2, ...);
 	size_t startofdata; ///<Position for seeking to start of data
+    bool headerstat;
 
 };
 

@@ -7,6 +7,7 @@ Data<T>::Data(const std::string file)
 {
     datafile=file;
     field = PRESSURE;
+    Fdata = std::make_shared<File>(); 
 }
 
 template<typename T>
@@ -17,6 +18,7 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt)
     dt = _dt;
     ot = 0.0;
     field = PRESSURE;
+    Fdata = std::make_shared<File>(); 
 }
 
 template<typename T>
@@ -27,12 +29,52 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt, const T _ot)
     dt = _dt;
     ot = _ot;
     field = PRESSURE;
+    Fdata = std::make_shared<File>(); 
+}
+
+template<typename T>
+bool Data<T>::open(std::string flag)
+{
+    bool status;
+    std::string datafile = this->getFile();
+    if(datafile.empty()){
+        rs_error("Data::open: No file assigned.");
+    }
+
+    switch ((flag.c_str())[0])
+    {
+        case 'i':
+            status = Fdata->input(datafile);
+            break;
+        case 'o':
+            Fdata->output(datafile);
+            Fdata->writeHeader();
+            Fdata->seekp(Fdata->getStartofdata());
+            status = FILE_OK;
+            break;
+        case 'a':
+            status = Fdata->append(datafile);
+            break;
+        default:
+            status = FILE_ERR;
+            break;
+    }
+    return status;
+}
+
+template<typename T>
+void Data<T>::close()
+{
+    if(Fdata->getHeaderstat()){
+        Fdata->writeHeader();
+    }
+    Fdata->close();
 }
 
 // destructor
 template<typename T>
 Data<T>::~Data(){
-    /* Do nothing*/
+    close();
 }
 
 /// =============== 2D DATA CLASS =============== //
@@ -51,6 +93,18 @@ Data2D<T>::Data2D(const int _ntrace, const int _nt, const T _dt): Data<T>(_ntrac
 
     // Allocate the memory for the data
     data = (T *) calloc(_ntrace*_nt, sizeof(T));
+
+    std::shared_ptr<File> Fdata = this->getFdata();
+    Fdata->setN(1,_nt);
+    Fdata->setD(1,_dt);
+    Fdata->setO(1,0.0);
+    Fdata->setN(2,0);
+    Fdata->setD(2,1);
+    Fdata->setO(2,0);
+    Fdata->setNheader(4);
+    Fdata->setData_format(sizeof(T));
+    Fdata->setHeader_format(sizeof(T));
+    Fdata->setType(rockseis::DATA2D);
 }
 
 template<typename T>
@@ -62,7 +116,7 @@ Data2D<T>::Data2D(std::string datafile): Data<T>(datafile)
     size_t nt;
     T dt;
     T ot;
-    //Opeing file for reading
+    //Opening file for reading
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
@@ -258,8 +312,8 @@ bool Data2D<T>::write()
         Fout->setD(2,1.0);
         Fout->setO(2,0.0);
         Fout->setNheader(4);
-        Fout->setData_format(4);
-        Fout->setHeader_format(4);
+        Fout->setData_format(sizeof(T));
+        Fout->setHeader_format(sizeof(T));
         Fout->setType(DATA2D);
         Fout->writeHeader();
         Fout->seekp(Fout->getStartofdata());
@@ -285,105 +339,35 @@ bool Data2D<T>::write()
 }
 
 template<typename T>
-bool Data2D<T>::writeTraceno(int number)
+bool Data2D<T>::writeTraces()
 {
     bool status;
-    std::string datafile = this->getFile();
-    if(datafile.empty()){
-	    std::cerr << "Data2D::writeTraceno(): No file assigned. \n";
-	    exit(1);
-    }
-
-    size_t nt = this->getNt();
+    int nt = this->getNt();
     int ntrace = this->getNtrace();
-    if(number > (ntrace-1)) {
-        std::cerr << "Data2D::writeTraceno(): number > ntrace - 1. \n";
-        exit(1);
-    }
+    std::shared_ptr<rockseis::File> Fout;
+    Fout = this->getFdata();
 
-    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
-    if(Fout->append(datafile.c_str()) == FILE_OK){
-        if ( Fout->is_open() )
+    if ( Fout->is_open() )
+    {
+        // Update geometry
+        size_t n2 = Fout->getN(2);
+        Fout->setN(2, n2 + ntrace);
+        Fout->setHeaderstat(true);
+        Point2D<T> *scoords = (this->getGeom())->getScoords();
+        Point2D<T> *gcoords = (this->getGeom())->getGcoords();
+        for (int i=0; i < ntrace; i++)
         {
-            // Check if file is of correct type 
-            if (Fout->getType() != DATA2D){
-                std::cerr << "Data2D::writetraceno(): file is not of DATA2D type. \n";
-                exit(1);
-            }
-
-            Point2D<T> *scoords = (this->getGeom())->getScoords();
-            Point2D<T> *gcoords = (this->getGeom())->getGcoords();
-                // Write coordinates to data trace (First source x and y and then receiver x and y
-                Fout->seekp(Fout->getStartofdata() + number*(nt+4)*sizeof(T));
-                Fout->write(&scoords[number].x, 1);
-                Fout->write(&scoords[number].y, 1);
-                Fout->write(&gcoords[number].x, 1);
-                Fout->write(&gcoords[number].y, 1);
-                // Write trace data
-                Fout->write(&data[number*nt], nt);
-            status = FILE_OK;
-        }else{
-            status = FILE_ERR;	
-        }
-    }else{
-        status = FILE_ERR;
-    }
-    return status;
-}
-
-template<typename T>
-bool Data2D<T>::append()
-{
-    bool status;
-    std::string datafile = this->getFile();
-    if(datafile.empty()){
-	    std::cerr << "Data2D::writeTraceno(): No file assigned. \n";
-	    exit(1);
-    }
-
-    size_t nt = this->getNt();
-    int ntrace = this->getNtrace();
-
-    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
-    if(strcmp(datafile.c_str(), "stdout")) {
-        status = Fout->append(datafile.c_str());
-    }else{
-        // Do nothing, file is stdout
+            //Write coordinates to data trace (First source x and y and then receiver x and y
+            Fout->write(&scoords[i].x, 1);
+            Fout->write(&scoords[i].y, 1);
+            Fout->write(&gcoords[i].x, 1);
+            Fout->write(&gcoords[i].y, 1);
+            // Write trace data
+            Fout->write(&data[i*nt], nt);
+        }	
         status = FILE_OK;
-    }
-    if(status == FILE_OK){
-        if ( Fout->is_open() )
-        {
-            // Check if file is of correct type 
-            if (Fout->getType() != DATA2D){
-                std::cerr << "Data2D::writetraceno(): file is not of DATA2D type. \n";
-                exit(1);
-            }
-
-            // Update trace number
-            int file_ntr = Fout->getN(2);
-            Fout->setN(2,(file_ntr + ntrace));
-            Fout->writeHeader();
-
-            Point2D<T> *scoords = (this->getGeom())->getScoords();
-            Point2D<T> *gcoords = (this->getGeom())->getGcoords();
-            // Write coordinates to data trace (First source x and y and then receiver x and y
-            int i;
-            for (i=0; i < ntrace; i++)
-            {
-                Fout->write(&scoords[i].x, 1);
-                Fout->write(&scoords[i].y, 1);
-                Fout->write(&gcoords[i].x, 1);
-                Fout->write(&gcoords[i].y, 1);
-                // Write trace data
-                Fout->write(&data[i*nt], nt);
-            }
-            status = FILE_OK;
-        }else{
-            status = FILE_ERR;	
-        }
     }else{
-        status = FILE_ERR;
+        status = FILE_ERR;	
     }
     return status;
 }
@@ -412,6 +396,17 @@ Data3D<T>::Data3D(const int _ntrace, const int _nt, const T _dt): Data<T>(_ntrac
 
     // Allocate the memory for the data
     data = (T *) calloc(_ntrace*_nt, sizeof(T));
+
+    // Create a geometry for the header
+    std::shared_ptr<File> Fdata = this->getFdata();
+    Fdata->setN(1,_nt);
+    Fdata->setD(1,_dt);
+    Fdata->setO(1,0.0);
+    Fdata->setN(2,0);
+    Fdata->setNheader(6);
+    Fdata->setData_format(sizeof(T));
+    Fdata->setHeader_format(sizeof(T));
+    Fdata->setType(rockseis::DATA3D);
 }
 
 template<typename T>
@@ -621,8 +616,8 @@ bool Data3D<T>::write()
         Fout->setD(2,1.0);
         Fout->setO(2,0.0);
         Fout->setNheader(6);
-        Fout->setData_format(4);
-        Fout->setHeader_format(4);
+        Fout->setData_format(sizeof(T));
+        Fout->setHeader_format(sizeof(T));
         Fout->setType(DATA3D);
         Fout->writeHeader();
         Fout->seekp(Fout->getStartofdata());
@@ -649,64 +644,40 @@ bool Data3D<T>::write()
 }
 
 template<typename T>
-bool Data3D<T>::append()
+bool Data3D<T>::writeTraces()
 {
     bool status;
-    std::string datafile = this->getFile();
-    if(datafile.empty()){
-	    std::cerr << "Data3D::append(): No file assigned. \n";
-	    exit(1);
-    }
-
-    size_t nt = this->getNt();
+    int nt = this->getNt();
     int ntrace = this->getNtrace();
+    std::shared_ptr<rockseis::File> Fout;
+    Fout = this->getFdata();
 
-    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
-    if(strcmp(datafile.c_str(), "stdout")) {
-        status = Fout->append(datafile.c_str());
-    }else{
-        // Do nothing, file is stdout
-        status = FILE_OK;
-    }
-    if(status == FILE_OK){
-        if ( Fout->is_open() )
+    if ( Fout->is_open() )
+    {
+        // Update geometry
+        size_t n2 = Fout->getN(2);
+        Fout->setN(2, n2 + ntrace);
+        Fout->setHeaderstat(true);
+        Point3D<T> *scoords = (this->getGeom())->getScoords();
+        Point3D<T> *gcoords = (this->getGeom())->getGcoords();
+        for (int i=0; i < ntrace; i++)
         {
-            // Check if file is of correct type 
-            if (Fout->getType() != DATA3D){
-                std::cerr << "Data3D::writetraceno(): file is not of DATA3D type. \n";
-                exit(1);
-            }
-
-            // Update trace number
-            int file_ntr = Fout->getN(2);
-            Fout->setN(2,(file_ntr + ntrace));
-            Fout->writeHeader();
-
-            Point3D<T> *scoords = (this->getGeom())->getScoords();
-            Point3D<T> *gcoords = (this->getGeom())->getGcoords();
-            // Write coordinates to data trace (First source x and y and then receiver x and y
-            int i;
-            for (i=0; i < ntrace; i++)
-            {
-                Fout->write(&scoords[i].x, 1);
-                Fout->write(&scoords[i].y, 1);
-                Fout->write(&scoords[i].z, 1);
-                Fout->write(&gcoords[i].x, 1);
-                Fout->write(&gcoords[i].y, 1);
-                Fout->write(&gcoords[i].z, 1);
-                // Write trace data
-                Fout->write(&data[i*nt], nt);
-            }
-            status = FILE_OK;
-        }else{
-            status = FILE_ERR;	
-        }
+            //Write coordinates to data trace (First source x and y and then receiver x and y
+            Fout->write(&scoords[i].x, 1);
+            Fout->write(&scoords[i].y, 1);
+            Fout->write(&scoords[i].z, 1);
+            Fout->write(&gcoords[i].x, 1);
+            Fout->write(&gcoords[i].y, 1);
+            Fout->write(&gcoords[i].z, 1);
+            // Write trace data
+            Fout->write(&data[i*nt], nt);
+        }	
+        status = FILE_OK;
     }else{
-        status = FILE_ERR;
+        status = FILE_ERR;	
     }
     return status;
 }
-
 
 // destructor
 template<typename T>

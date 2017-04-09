@@ -599,30 +599,25 @@ int main(int argc, char* argv[])
     float dt=0.0, t0;
     FILE *file;
     off_t pos, start, nsegy=0;
-
-    std::shared_ptr<rockseis::File> out (new rockseis::File());
-
-    if(argc == 1){
-        rockseis::rs_error("Need to provide a configuration file name.");
-    }
-
-	// Parse parameters from file
-	config4cpp::Configuration *  cfg = config4cpp::Configuration::create();
-	const char *     scope = "";
     bool status = false;
-    try {
-        cfg->parse(argv[1]);
-    } catch(const config4cpp::ConfigurationException & ex) {
-        std::cerr << ex.c_str() << std::endl;
-        cfg->destroy();
-        return 1;
-    }
+
+//    if(argc == 1){
+//        rockseis::rs_error("Need to provide a configuration file name.");
+//    }
+//
+//	// Parse parameters from file
+//	config4cpp::Configuration *  cfg = config4cpp::Configuration::create();
+//	const char *     scope = "";
+//    try {
+//        cfg->parse(argv[1]);
+//    } catch(const config4cpp::ConfigurationException & ex) {
+//        std::cerr << ex.c_str() << std::endl;
+//        cfg->destroy();
+//        return 1;
+//    }
 
     //Using stdin as input 
     file = stdin;
-
-    //Using stdout as output 
-    out->output();
 
     //Determine endian
     endian();
@@ -636,9 +631,6 @@ int main(int argc, char* argv[])
     }else{
         pos=0;
     }
-
-    //DEBUG
-    std::cerr << "Size:  " << pos << std::endl;
 
     if (SF_EBCBYTES != fread(ahead, 1, SF_EBCBYTES, file)){ 
         std::cerr <<  "Error reading ascii/ebcdic header." << std::endl;
@@ -699,25 +691,18 @@ int main(int argc, char* argv[])
     std::shared_ptr<rockseis::Data3D<float>> Bdata;
     Bdata = std::make_shared<rockseis::Data3D<float>>(1, ns, dt);
 
-    // Create geometry
-    out->setN(1,ns);
-    out->setD(1,dt);
-    out->setO(1,t0);
-    out->setN(2,ntr);
-    out->setD(2,1.0);
-    out->setO(2,0.0);
-    out->setNheader(6);
-    out->setData_format(4);
-    out->setHeader_format(4);
-    out->setType(rockseis::DATA3D);
-    out->writeHeader();
-    out->seekp(out->getStartofdata());
+
+    //Using stdout as output 
+    Bdata->setFile("stdout");
+    // Open data for output
+    status = Bdata->open("o");
+    if(status == FILE_ERR) rockseis::rs_error("Error opening file for writting");
 
     rockseis::Point3D<float> *scoords = (Bdata->getGeom())->getScoords();
     rockseis::Point3D<float> *gcoords = (Bdata->getGeom())->getGcoords();
     nsegy = SF_HDRBYTES + ns*4;
     trace = sf_charalloc (nsegy);
-    float *ftrace = sf_floatalloc(ns);
+    float *ftrace = Bdata->getData();
     for (int i=0; i < ntr; i++)
     {
         if(nsegy != fread(trace, 1, nsegy, file)){
@@ -737,19 +722,11 @@ int main(int argc, char* argv[])
         gcoords[0].x = fscalco * gx;
         gcoords[0].y = fscalco * gy;
         gcoords[0].z = fscalel * gz;
-        //Write coordinates to data trace (First source x and y and z then receiver x and y and z
-        out->write(&scoords[0].x, 1);
-        out->write(&scoords[0].y, 1);
-        out->write(&scoords[0].z, 1);
-        out->write(&gcoords[0].x, 1);
-        out->write(&gcoords[0].y, 1);
-        out->write(&gcoords[0].z, 1);
-        // Write trace data
 		segy2trace(trace + SF_HDRBYTES, ftrace, ns, format);
-        out->write(ftrace, ns);
+        Bdata->writeTraces();
     }	
+    Bdata->close();
     free (trace);
-    free (ftrace);
 
     exit (0);
 }

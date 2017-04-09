@@ -13,6 +13,21 @@ File::File()
     header_format = -1;
     type=GENERIC;
     geometry = std::make_shared<Geometry<double>>(); 
+
+
+    //Compute start of data
+	startofdata=0;
+	startofdata += magicnumber.size();
+	startofdata += sizeof(int);
+	startofdata += sizeof(int);
+	startofdata += sizeof(int);
+	startofdata += sizeof(size_t);
+	startofdata += sizeof(size_t);
+	for(int i=0; i<MAXDIMS; i++){
+		startofdata += sizeof(size_t);
+		startofdata += sizeof(double);
+		startofdata += sizeof(double);
+    }
 }
 
 bool File::input()
@@ -45,7 +60,11 @@ bool File::input(std::string filename)
     bool status;
     char buffer[MAGIC_NUMBER_LENGTH+1];
     memset(buffer, 0, sizeof(buffer));
-    fstream.open(filename, std::ios::in | std::ios::binary);
+    if(strcmp(filename.c_str(), "stdin")){
+        fstream.open(filename, std::ios::in | std::ios::binary);
+    }else{
+        fstream.open("/dev/stdin", std::ios::in | std::ios::binary);
+    }
     if(fstream.fail()){
         status = FILE_ERR; 
     }else{
@@ -72,7 +91,11 @@ void File::output()
 
 void File::output(std::string filename)
 {
-	fstream.open(filename, std::ios::out | std::ios::binary);
+    if(strcmp(filename.c_str(), "stdout")){
+        fstream.open(filename, std::ios::out | std::ios::binary);
+    }else{
+        fstream.open("/dev/stdout", std::ios::out | std::ios::binary);
+    }
 }
 
 void File::append()
@@ -124,79 +147,61 @@ void File::writeHeader()
 	fstream.seekp(0);
 
 	//Write header 
-	startofdata=0;
 	fstream.write(magicnumber.c_str(), magicnumber.size());
-	startofdata += magicnumber.size();
 
 	fstream.write(reinterpret_cast<char *> (&data_format), 1*sizeof(int));
-	startofdata += sizeof(int);
 	fstream.write(reinterpret_cast<char *> (&header_format), 1*sizeof(int));
-	startofdata += sizeof(int);
 	fstream.write(reinterpret_cast<char *> (&type), 1*sizeof(int));
-	startofdata += sizeof(int);
 	fstream.write(reinterpret_cast<char *> (&Nheader), 1*sizeof(size_t));
-	startofdata += sizeof(size_t);
 	fstream.write(reinterpret_cast<char *> (&Ndims), 1*sizeof(size_t));
-	startofdata += sizeof(size_t);
 	size_t i;
 	size_t N;
 	for(i=0; i<MAXDIMS; i++){
 		N = geometry->getN(i+1);
 		fstream.write(reinterpret_cast<char *> (&N), 1*sizeof(size_t));
-		startofdata += sizeof(size_t);
 	}
 	double val;
 	for(i=0; i<MAXDIMS; i++){
 		val = geometry->getD(i+1);
 		fstream.write(reinterpret_cast<char *> (&val), 1*sizeof(double));
-		startofdata += sizeof(double);
 	}
 	for(i=0; i<MAXDIMS; i++){
 		val = geometry->getO(i+1);
 		fstream.write(reinterpret_cast<char *> (&val), 1*sizeof(double));
-		startofdata += sizeof(double);
 	}
 
 	// Seek back to current position
 	fstream.seekp(current_pos);
+    // Reset header modification status
+    this->setHeaderstat(false);
 }
 
 void File::readHeader()
 {
     // Record number of bytes before startofdata
-    startofdata=0;
-    startofdata += magicnumber.size();
 
     // Rewind file
     fstream.seekg(magicnumber.size());
 
     //Read header 
     fstream.read(reinterpret_cast<char *> (&data_format), 1*sizeof(int));
-    startofdata += sizeof(int);
     fstream.read(reinterpret_cast<char *> (&header_format), 1*sizeof(int));
-    startofdata += sizeof(int);
     fstream.read(reinterpret_cast<char *> (&type), 1*sizeof(int));
-    startofdata += sizeof(int);
     fstream.read(reinterpret_cast<char *> (&Nheader), 1*sizeof(size_t));
-    startofdata += sizeof(size_t);
     fstream.read(reinterpret_cast<char *> (&Ndims), 1*sizeof(size_t));
-    startofdata += sizeof(size_t);
     size_t i;
     size_t N;
     for(i=0; i<MAXDIMS; i++){
         fstream.read(reinterpret_cast<char *> (&N), 1*sizeof(size_t));
-        startofdata += sizeof(size_t);
         geometry->setN(i+1,N);
     }
     double val;
     for(i=0; i<MAXDIMS; i++){
         fstream.read(reinterpret_cast<char *> (&val), 1*sizeof(double));
-        startofdata += sizeof(double);
         geometry->setD(i+1, val);
     }
     for(i=0; i<MAXDIMS; i++){
         fstream.read(reinterpret_cast<char *> (&val), 1*sizeof(double));
-        startofdata += sizeof(double);
         geometry->setO(i+1,val);
     }
     // Setting type
