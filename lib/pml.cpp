@@ -369,4 +369,11 @@ template class PmlAcoustic3D<float>;
 template class PmlElastic2D<float>;
 template class PmlElastic3D<float>;
 
+template class Pml<double>;
+template class PmlAcoustic2D<double>;
+template class PmlAcoustic3D<double>;
+template class PmlElastic2D<double>;
+template class PmlElastic3D<double>;
+
+
 }

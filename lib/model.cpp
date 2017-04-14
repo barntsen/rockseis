@@ -259,27 +259,28 @@ ModelAcoustic2D<T>::ModelAcoustic2D(std::string _Vpfile, std::string _Rfile, con
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelAcoustic2D::Error reading from Vp file. \n";
-	    exit(1);
+	    rs_error("ModelAcoustic2D::Error reading from Vp file.");
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-        std::cerr << "ModelAcoustic2D::Error reading from density file. \n";
-        exit(1);
+        rs_error("ModelAcoustic2D::Error reading from density file.");
     }
 
     // Compare geometry in the two files
     if(Fvp->compareGeometry(Frho) != 0)
     {
-        std::cerr << "ModelAcoustic2D::Geometries in Vp and Density model files do not match.\n";
-        exit(1);
+        rs_error("ModelAcoustic2D::Geometries in Vp and Density model files do not match.");
     }
 
     if(Fvp->getData_format() != Frho->getData_format())
     {
-        std::cerr << "ModelAcoustic2D::Numerical precision mismatch in Vp and Density model files.\n";
-        exit(1);
+        rs_error("ModelAcoustic2D::Numerical precision mismatch in Vp and Density model files.");
+    }
+
+    if(Fvp->getData_format() != sizeof(T))
+    {
+        rs_error("ModelAcoustic2D::Numerical precision in Vp and Density model files mismatch with constructor.");
     }
     
     // Read geometry from file
@@ -337,14 +338,12 @@ void ModelAcoustic2D<T>::readModel() {
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelAcoustic2D::readModel : Error reading from Vp file. \n";
-	    exit(1);
+	    rs_error("ModelAcoustic2D::readModel : Error reading from Vp file.");
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelAcoustic2D::readModel : Error reading from Density file. \n";
-        exit(1);
+	    rs_error("ModelAcoustic2D::readModel : Error reading from Density file.");
     }
 
     // Read models
@@ -479,28 +478,29 @@ ModelAcoustic3D<T>::ModelAcoustic3D(std::string _Vpfile, std::string _Rfile, con
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelAcoustic3D::Error reading from Vp file. \n";
-	    exit(1);
+	    rs_error("ModelAcoustic3D::Error reading from Vp file.");
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-        std::cerr << "ModelAcoustic3D::Error reading from density file. \n";
-        exit(1);
+        rs_error("ModelAcoustic3D::Error reading from density file.");
     }
 
     // Compare geometry in the two files
     if(Fvp->compareGeometry(Frho) != 0)
     {
-        std::cerr << "ModelAcoustic3D::Geometries in Vp and Density model files do not match.\n";
-        exit(1);
+        rs_error("ModelAcoustic3D::Geometries in Vp and Density model files do not match.");
     }
 
     if(Fvp->getData_format() != Frho->getData_format())
     {
-        std::cerr << "ModelAcoustic3D::Numerical precision mismatch in Vp and Density model files.\n";
-        exit(1);
+        rs_error("ModelAcoustic3D::Numerical precision mismatch in Vp and Density model files.");
     }
+    if(Fvp->getData_format() != sizeof(T))
+    {
+        rs_error("ModelAcoustic3D::Numerical precision in Vp and Density model files mismatch with constructor.");
+    }
+ 
     
     // Read geometry from file
     nx = Fvp->getN(1);
@@ -557,14 +557,12 @@ void ModelAcoustic3D<T>::readModel() {
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelAcoustic2D::readModel : Error reading from Vp file. \n";
-	    exit(1);
+	    rs_error("ModelAcoustic3D::readModel : Error reading from Vp file.");
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelAcoustic2D::readModel : Error reading from Density file. \n";
-        exit(1);
+	    rs_error("ModelAcoustic3D::readModel : Error reading from Density file.");
     }
 
     // Read models
@@ -736,45 +734,45 @@ ModelElastic2D<T>::ModelElastic2D(std::string _Vpfile, std::string _Vsfile, std:
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelElastic2D::Error reading from Vp file. \n";
+	    rs_error("ModelElastic2D::Error reading from Vp file.");
 	    exit(1);
     }
     std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
-        std::cerr << "ModelElastic2D::Error reading from Vs file. \n";
-        exit(1);
+        rs_error("ModelElastic2D::Error reading from Vs file.");
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-        std::cerr << "ModelElastic2D::Error reading from density file. \n";
+        rs_error("ModelElastic2D::Error reading from density file. ");
         exit(1);
     }
 
     // Compare geometry in the two files
     if(Fvp->compareGeometry(Fvs) != 0)
     {
-        std::cerr << "ModelElastic2D::Geometries in Vp and Vs model files do not match.\n";
-        exit(1);
+        rs_error("ModelElastic2D::Geometries in Vp and Vs model files do not match.");
     }
 
     if(Fvp->compareGeometry(Frho) != 0)
     {
-        std::cerr << "ModelElastic2D::Geometries in Vp and Density model files do not match.\n";
-        exit(1);
+        rs_error("ModelElastic2D::Geometries in Vp and Density model files do not match.");
     }
 
     if(Fvp->getData_format() != Frho->getData_format())
     {
-        std::cerr << "ModelElastic2D::Numerical precision mismatch in Vp and Density model files.\n";
-        exit(1);
+        rs_error("ModelElastic2D::Numerical precision mismatch in Vp and Density model files.");
     }
     if(Fvp->getData_format() != Fvs->getData_format())
     {
-        std::cerr << "ModelElastic2D::Numerical precision mismatch in Vp and Vs model files.\n";
-        exit(1);
+        rs_error("ModelElastic2D::Numerical precision mismatch in Vp and Vs model files.");
     }
+    if(Fvp->getData_format() != sizeof(T))
+    {
+        rs_error("ModelElastic2D::Numerical precision in Vp, Vs and Density model files mismatch with constructor.");
+    }
+ 
 
     
     // Read geometry from file
@@ -828,20 +826,17 @@ void ModelElastic2D<T>::readModel() {
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelElastic2D::readModel : Error reading from Vp file. \n";
-	    exit(1);
+	    rs_error("ModelElastic2D::readModel : Error reading from Vp file. ");
     }
     std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelElastic2D::readModel : Error reading from Vs file. \n";
-	    exit(1);
+	    rs_error("ModelElastic2D::readModel : Error reading from Vs file. ");
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelElastic2D::readModel : Error reading from Density file. \n";
-        exit(1);
+	    rs_error("ModelElastic2D::readModel : Error reading from Density file. ");
     }
 
     // Read models
@@ -1029,44 +1024,41 @@ ModelElastic3D<T>::ModelElastic3D(std::string _Vpfile, std::string _Vsfile, std:
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelElastic3D::Error reading from Vp file. \n";
-	    exit(1);
+	    rs_error("ModelElastic3D::Error reading from Vp file. ");
     }
     std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
-        std::cerr << "ModelElastic3D::Error reading from Vs file. \n";
-        exit(1);
+        rs_error("ModelElastic3D::Error reading from Vs file. ");
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-        std::cerr << "ModelElastic3D::Error reading from density file. \n";
-        exit(1);
+        rs_error("ModelElastic3D::Error reading from density file. ");
     }
 
     // Compare geometry in the two files
     if(Fvp->compareGeometry(Fvs) != 0)
     {
-        std::cerr << "ModelElastic3D::Geometries in Vp and Vs model files do not match.\n";
-        exit(1);
+        rs_error("ModelElastic3D::Geometries in Vp and Vs model files do not match.");
     }
 
     if(Fvp->compareGeometry(Frho) != 0)
     {
-        std::cerr << "ModelElastic3D::Geometries in Vp and Density model files do not match.\n";
-        exit(1);
+        rs_error("ModelElastic3D::Geometries in Vp and Density model files do not match.");
     }
 
     if(Fvp->getData_format() != Frho->getData_format())
     {
-        std::cerr << "ModelElastic3D::Numerical precision mismatch in Vp and Density model files.\n";
-        exit(1);
+        rs_error("ModelElastic3D::Numerical precision mismatch in Vp and Density model files.");
     }
     if(Fvp->getData_format() != Fvs->getData_format())
     {
-        std::cerr << "ModelElastic3D::Numerical precision mismatch in Vp and Vs model files.\n";
-        exit(1);
+        rs_error("ModelElastic3D::Numerical precision mismatch in Vp and Vs model files.");
+    }
+    if(Fvp->getData_format() != sizeof(T))
+    {
+        rs_error("ModelElastic3D::Numerical precision in Vp, Vs and Density model files mismatch with constructor.");
     }
 
     // Read geometry from file
@@ -1130,20 +1122,17 @@ void ModelElastic3D<T>::readModel() {
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelElastic3D::readModel : Error reading from Vp file. \n";
-	    exit(1);
+	    rs_error("ModelElastic3D::readModel : Error reading from Vp file. ");
     }
     std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelElastic3D::readModel : Error reading from Vs file. \n";
-	    exit(1);
+	    rs_error("ModelElastic3D::readModel : Error reading from Vs file. ");
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "ModelElastic3D::readModel : Error reading from Density file. \n";
-        exit(1);
+	    rs_error("ModelElastic3D::readModel : Error reading from Density file. ");
     }
 
     // Read models
@@ -1319,5 +1308,11 @@ template class ModelAcoustic2D<float>;
 template class ModelAcoustic3D<float>;
 template class ModelElastic2D<float>;
 template class ModelElastic3D<float>;
+
+template class ModelAcoustic2D<double>;
+template class ModelAcoustic3D<double>;
+template class ModelElastic2D<double>;
+template class ModelElastic3D<double>;
+
 
 }

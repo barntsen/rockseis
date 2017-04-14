@@ -120,18 +120,15 @@ Data2D<T>::Data2D(std::string datafile): Data<T>(datafile)
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data2D::Error reading from " << datafile <<". \n";
-	    exit(1);
+	    rs_error("Data2D::Error reading from ", datafile );
     }
     if(Fin->getData_format() != sizeof(T))
     {
-        std::cerr << "Data2D::Numerical precision in " << datafile << " mismatch with data class contructor.\n";
-        exit(1);
+        rs_error("Data2D::Numerical precision in ", datafile, " mismatch with data class contructor.");
     }
     if(Fin->getNheader() != 4)
     {
-        std::cerr << "Data2D:: " << datafile << " is not a 2d data file.\n";
-        exit(1);
+        rs_error("Data2D:: " , datafile , " is not a 2d data file.");
     }
 
     ntrace = Fin->getN(2);
@@ -161,18 +158,15 @@ Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt): Data<T>(dat
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data2D::Error reading from " << datafile <<". \n";
-	    exit(1);
+	    rs_error("Data2D::Error reading from " , datafile ,". ");
     }
     if(Fin->getData_format() != sizeof(T))
     {
-        std::cerr << "Data2D::Numerical precision in " << datafile << " mismatch with data class contructor.\n";
-        exit(1);
+        rs_error("Data2D::Numerical precision in " , datafile , " mismatch with data class contructor.");
     }
     if(Fin->getNheader() != 4)
     {
-        std::cerr << "Data2D:: " << datafile << " is not a 2d data file.\n";
-        exit(1);
+        rs_error("Data2D:: " , datafile , " is not a 2d data file.");
     }
 
     ntrace = Fin->getN(2);
@@ -196,19 +190,17 @@ bool Data2D<T>::read()
     bool status;
     std::string datafile = this->getFile();
     if(datafile.empty()){
-	    std::cerr << "Data2D::read: No file assigned. \n";
-	    exit(1);
+	    rs_error("Data2D::read: No file assigned. ");
     }
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data2D::read: Error reading from " << datafile <<". \n";
-	    exit(1);
+	    rs_error("Data2D::read: Error reading from " , datafile ,". ");
     }
     size_t nt = Fin->getN(1);
     if(nt != this->getNt())
     {
-	    std::cerr << "Data2D::read: Nt in " << datafile <<" is different from that allocated during class construction. \n";
+	    rs_error("Data2D::read: Nt in " , datafile ," is different from that allocated during class construction. ");
 	    exit(1);
     }
     int ntrace = Fin->getN(2);
@@ -243,14 +235,12 @@ bool Data2D<T>::readCoords()
     bool status;
     std::string datafile = this->getFile();
     if(datafile.empty()){
-	    std::cerr << "Data2D::readCoords: No file assigned. \n";
-	    exit(1);
+	    rs_error("Data2D::readCoords: No file assigned. ");
     }
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data2D::readCoords: Error reading from " << datafile <<". \n";
-	    exit(1);
+	    rs_error("Data2D::readCoords: Error reading from " , datafile ,". ");
     }
 
     size_t nt = Fin->getN(1);
@@ -286,8 +276,7 @@ bool Data2D<T>::write()
     bool status;
     std::string datafile = this->getFile();
     if(datafile.empty()){
-	    std::cerr << "Data2D::writeData: No file assigned. \n";
-	    exit(1);
+	    rs_error("Data2D::writeData: No file assigned. ");
     }
 
     std::shared_ptr<rockseis::File> Fout (new rockseis::File());
@@ -423,18 +412,15 @@ Data3D<T>::Data3D(std::string datafile): Data<T>(datafile)
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data3D::Error reading from " << datafile <<". \n";
-	    exit(1);
+	    rs_error("Data3D::Error reading from " , datafile ,". ");
     }
     if(Fin->getData_format() != sizeof(T))
     {
-        std::cerr << "Data3D::Numerical precision in " << datafile << " mismatch with data class contructor.\n";
-        exit(1);
+        rs_error("Data3D::Numerical precision in " , datafile , " mismatch with data class contructor.");
     }
     if(Fin->getNheader() != 6)
     {
-        std::cerr << "Data3D:: " << datafile << " is not a 3d data file.\n";
-        exit(1);
+        rs_error("Data3D:: " , datafile , " is not a 3d data file.");
     }
 
     ntrace = Fin->getN(2);
@@ -464,18 +450,15 @@ Data3D<T>::Data3D(std::string datafile, const int _nt, const T _dt): Data<T>(dat
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data3D::Error reading from " << datafile <<". \n";
-	    exit(1);
+	    rs_error("Data3D::Error reading from " , datafile ,". ");
     }
     if(Fin->getData_format() != sizeof(T))
     {
-        std::cerr << "Data3D::Numerical precision in " << datafile << " mismatch with data class contructor.\n";
-        exit(1);
+        rs_error("Data3D::Numerical precision in " , datafile , " mismatch with data class contructor.");
     }
     if(Fin->getNheader() != 6)
     {
-        std::cerr << "Data3D:: " << datafile << " is not a 3d data file.\n";
-        exit(1);
+        rs_error("Data3D:: " , datafile , " is not a 3d data file.");
     }
 
     ntrace = Fin->getN(2);
@@ -499,21 +482,18 @@ bool Data3D<T>::read()
     bool status;
     std::string datafile = this->getFile();
     if(datafile.empty()){
-	    std::cerr << "Data3D::read no file assigned. \n";
-	    exit(1);
+	    rs_error("Data3D::read no file assigned. ");
     }
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data3D::Error reading from " << datafile <<". \n";
-	    exit(1);
+	    rs_error("Data3D::Error reading from " , datafile ,". ");
     }
 
     int nt = Fin->getN(1);
     if(nt != this->getNt())
     {
-	    std::cerr << "Data3D::read: Nt in " << datafile <<" is different from that allocated during class construction. \n";
-	    exit(1);
+	    rs_error("Data3D::read: Nt in " , datafile ," is different from that allocated during class construction. ");
     }
 
     int ntrace = Fin->getN(2);
@@ -552,8 +532,7 @@ bool Data3D<T>::readCoords()
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){
-	    std::cerr << "Data3D::readCoords : Error reading from " << datafile <<". \n";
-	    exit(1);
+	    rs_error("Data3D::readCoords : Error reading from " , datafile ,". ");
     }
     size_t nt = Fin->getN(1);
     int ntrace = Fin->getN(2);
@@ -591,8 +570,7 @@ bool Data3D<T>::write()
     bool status;
     std::string datafile = this->getFile();
     if(datafile.empty()){
-	    std::cerr << "Data3D::writeData: No file assigned. \n";
-	    exit(1);
+	    rs_error("Data3D::writeData: No file assigned. ");
     }
 
     std::shared_ptr<rockseis::File> Fout (new rockseis::File());
@@ -691,6 +669,9 @@ template class Data<float>;
 template class Data2D<float>;
 template class Data3D<float>;
 
+template class Data<double>;
+template class Data2D<double>;
+template class Data3D<double>;
 }
 
 

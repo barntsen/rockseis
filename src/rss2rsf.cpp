@@ -67,44 +67,54 @@ int main(int argc, char* argv[])
     }
 
     // Allocate trace for reading RSF data
-    size_t esize;
+    int dsize, hsize;
     int filetype;
     sf_datatype type;
-    esize = in->getData_format();
-    if(esize == sizeof(int))
+    dsize = in->getData_format();
+    hsize = in->getHeader_format();
+    if(dsize == sizeof(int))
     {
 	    filetype = 2;
 	    type = SF_INT;
     }
-    if(esize == sizeof(float))
+    if(dsize == sizeof(float))
     {
 	    filetype = 3;
 	    type = SF_FLOAT;
     }
+    if(dsize == sizeof(double))
+    {
+	    filetype = 4;
+	    type = SF_FLOAT; // We will convert to float on output
+    }
+
     int Nheader = in->getNheader();
 
     // Make traces for both float and int types
     std::valarray<int> inttrace(n[0]);
     std::valarray<float> floattrace(n[0]);
+    std::valarray<double> doubletrace(n[0]);
 
     out.type(type);
     for (int i=0; i < ntot; i++) {
+        in->seekg(in->getStartofdata() + i*(n[0]*dsize+Nheader*hsize) + Nheader*hsize);
         switch(filetype)
         {
             case 2:
-            	in->seekg(in->getStartofdata() + i*(n[0]+Nheader)*sizeof(int) + Nheader*sizeof(int));
                 in->read(&(inttrace[0]), inttrace.size());
                 out << inttrace;
                 break;
             case 3:
-            	in->seekg(in->getStartofdata() + i*(n[0]+Nheader)*sizeof(float) + Nheader*sizeof(float));
                 in->read(&(floattrace[0]), floattrace.size());
                 out << floattrace;
                 break;
-            default:
-            	in->seekg(in->getStartofdata() + i*(n[0]+Nheader)*sizeof(float) + Nheader*sizeof(float));
-                in->read(&(floattrace[0]), floattrace.size());
+            case 4:
+                in->read(&(doubletrace[0]), doubletrace.size());
+                for (int j=0; j < n[0]; j++) floattrace[j] = (float) doubletrace[j];  // Converting from double to float
                 out << floattrace;
+                break;
+            default:
+                rockseis::rs_error("Unknown numerical precision in file.");
                 break;
         }
 

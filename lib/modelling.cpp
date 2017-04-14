@@ -614,9 +614,16 @@ ModellingElastic3D<T>::~ModellingElastic3D() {
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Modelling<float>;
+template class Modelling<double>;
 template class ModellingAcoustic2D<float>;
+template class ModellingAcoustic2D<double>;
 template class ModellingAcoustic3D<float>;
+template class ModellingAcoustic3D<double>;
 template class ModellingElastic2D<float>;
+template class ModellingElastic2D<double>;
 template class ModellingElastic3D<float>;
+template class ModellingElastic3D<double>;
+
+
 
 }

@@ -255,7 +255,9 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 template class Geometry<float>;
 template class Geometry<double>;
 template class Geometry2D<float>;
+template class Geometry2D<double>;
 template class Geometry3D<float>;
+template class Geometry3D<double>;
 }
 
 

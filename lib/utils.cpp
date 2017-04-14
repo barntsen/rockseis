@@ -35,6 +35,15 @@ void rs_error(std::string msg){
     std::cerr << "Fatal error: " << msg << std::endl;
     exit(1);
 }
+void rs_error(std::string msg1, std::string msg2){
+    std::cerr << "Fatal error: " << msg1 << msg2 << std::endl;
+    exit(1);
+}
+void rs_error(std::string msg1, std::string msg2,  std::string msg3){
+    std::cerr << "Fatal error: " << msg1 << msg2 << msg3 << std::endl;
+    exit(1);
+}
+
 }
 
 

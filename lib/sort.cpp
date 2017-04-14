@@ -14,7 +14,6 @@ Sort<T>::Sort()
     sortmap=(size_t *) calloc(1,1);
 }
 
-
 template<typename T>
 Sort<T>::~Sort() {
     free(keymap);
@@ -22,7 +21,7 @@ Sort<T>::~Sort() {
 }
 
 //Sort with x as primary key and y as secondary key 
-int sort_xy_0(void const *a, void const *b)
+int sort_sr_0(void const *a, void const *b)
 {
 	position_t *pa, *pb;
 
@@ -39,7 +38,7 @@ int sort_xy_0(void const *a, void const *b)
 }
 
 //Sort with distance from origin as primary key and y as secondary key
-int sort_xy_1(void const *a, void const *b)
+int sort_sr_1(void const *a, void const *b)
 {
 	position_t *pa, *pb;
 
@@ -56,7 +55,7 @@ int sort_xy_1(void const *a, void const *b)
 }
 
 template<typename T>
-bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
+bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 {
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
@@ -66,7 +65,6 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
     if(datatype != DATA2D && datatype != DATA3D) rs_error("Sort::createSort: Only DATA2D and DATA3D types are supported.");
 
     sortkey = _sortkey; 
-    if(sortkey != SOURCE && sortkey != RECEIVER) rs_error("Sort::createSort: Only SOURCE and RECEIVER sort keys are supported.");
     size_t n1 = Fdata->getN(1);
     size_t n2 = Fdata->getN(2);
 
@@ -76,7 +74,9 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
     int dp = Fdata->getData_format();
     int hp = Fdata->getHeader_format();
     float fbuffer[6];
-    double dbuffer[6];
+	double dbuffer[6];
+	float ftmp;
+	double dtmp;
     position_t *positions, *ensembles;
 
 	positions = (position_t *) calloc(n2,sizeof(position_t));
@@ -98,7 +98,17 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
                         positions[i2].x = fbuffer[2];
                         positions[i2].y = fbuffer[3];
                         break;
+                    case CMP:
+                        positions[i2].x = 0.5*(fbuffer[0]+fbuffer[2]);
+                        positions[i2].y = 0.5*(fbuffer[1]+fbuffer[3]);
+						// Snapping coordinates to bins
+						ftmp=(positions[i2].x)/dx; // Compute index in irregular coordinate
+						positions[i2].x=rintf(ftmp)*dx; // Compute nearest position in regular grid
+						ftmp=(positions[i2].y)/dy; // Compute indey in irregular coordinate
+						positions[i2].y=rintf(ftmp)*dy; // Compute nearest position in regular grid
+						break;
                     default:
+                        rs_error("Sort: sort key invalid.");
                         break;
                 }
                 break;
@@ -113,7 +123,18 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
                         positions[i2].x = dbuffer[2];
                         positions[i2].y = dbuffer[3];
                         break;
+                    case CMP:
+                        positions[i2].x = 0.5*(dbuffer[0]+dbuffer[2]);
+                        positions[i2].y = 0.5*(dbuffer[1]+dbuffer[3]);
+						// Snapping coordinates to bins
+						dtmp=(positions[i2].x)/dx; // Compute index in irregular coordinate
+						positions[i2].x=rintf(dtmp)*dx; // Compute nearest position in regular grid
+						dtmp=(positions[i2].y)/dy; // Compute indey in irregular coordinate
+						positions[i2].y=rintf(dtmp)*dy; // Compute nearest position in regular grid
+						break;
+ 
                     default:
+                        rs_error("Sort: sort key invalid.");
                         break;
                 }
                 break;
@@ -125,7 +146,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
     }
 
 	// Sort list
-	qsort(positions, n2, sizeof(position_t), sort_xy_0);
+	qsort(positions, n2, sizeof(position_t), sort_sr_0);
 
     nensembles = 1;
     int ntraces = 1;
@@ -141,6 +162,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
 
 	// Making a map of the traces 
 	size_t *map = (size_t *) calloc(2*n2,sizeof(size_t));
+    Index I(2,n2);
 
 	for (int i2=1; i2 < n2; i2++) {
 		// Get coordinates
@@ -152,8 +174,8 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
 		}else{
 			ensembles[nensembles].x=dbuffer[0];
 			ensembles[nensembles].y=dbuffer[1];
-			map[2*(nensembles-1)]=oldind;
-			map[2*(nensembles-1)+1]=ntraces;
+			map[I(0,nensembles-1)]=oldind;
+			map[I(1,nensembles-1)]=ntraces;
 			nensembles++;
 			ntraces=1;
 			oldx=dbuffer[0];
@@ -162,8 +184,8 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
 		}
     }
     // Taking the last ensemble into consideration
-	map[2*(nensembles-1)]=oldind;
-	map[2*(nensembles-1)+1]=ntraces;
+	map[I(0,nensembles-1)]=oldind;
+	map[I(1,nensembles-1)]=ntraces;
 
     // Create keymap and sortmap
     free(keymap); free(sortmap);
@@ -171,8 +193,8 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey)
     sortmap = (size_t *) calloc(n2, sizeof(size_t));
 
 	for (int i2=0; i2 < nensembles; i2++) {
-        keymap[i2].i0 = map[2*i2];
-        keymap[i2].n = map[2*i2 + 1];
+        keymap[i2].i0 = map[I(0,i2)];
+        keymap[i2].n = map[I(1,i2)];
         keymap[i2].status = NOT_STARTED;
     }
 

@@ -41,9 +41,10 @@ public:
     virtual ~Sort();	///< Destructor
     void setStatus(size_t key, rs_status status); ///< Set status for a key 
     rs_status getStatus(size_t key) { if(key < nensembles && key >= 0) return keymap[key].status; else rs_error("key out of bounds."); return FAILED;} ///< Set status for a key 
-
     
-    bool createSort(std::string filename, rs_key _sortkey); ///< Create a sort map using a data file
+    bool createShotmap(std::string filename) { return createSort(filename, SOURCE, 0., 0.); } ///< Create a shot map using a data file
+    bool createReceivermap(std::string filename) { return createSort(filename, RECEIVER, 0., 0.); } ///< Create a receiver map using a data file
+    bool createCMPmap(std::string filename, T dx, T dy) { return createSort(filename, CMP, dx, dy); } ///< Create a CMP map using a data file
     ///< Read a keymap to file
     ///< Write a keymap to file
     ///< Read a sortmap to file
@@ -57,6 +58,7 @@ private:
     rs_key sortkey;
     std::string kmapfile;
     std::string smapfile;
+    bool createSort(std::string filename, rs_key _sortkey, T dx, T dy); ///< Create a sort map using a data file
 };
 }
 #endif //SORT_H

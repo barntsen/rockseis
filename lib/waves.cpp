@@ -475,8 +475,7 @@ bool WavesAcoustic2D<T>::createSnap(std::string filename, Snap *Snap) {
         Snap->Fp->seekp(Snap->Fp->getStartofdata());
         this->setSnapit(0);
     }else{
-        std::cerr << "WavesAcoustic2D::createSnap: No filename set.\n";
-        exit(1);
+        rs_error("WavesAcoustic2D::createSnap: No filename set.");
     }
         return WAVES_OK;
 }
@@ -982,8 +981,7 @@ bool WavesAcoustic3D<T>::createSnap(std::string filename, Snap *Snap) {
         Snap->Fp->seekp(Snap->Fp->getStartofdata());
         this->setSnapit(0);
     }else{
-        std::cerr << "WavesAcoustic3D::createSnap: No filename set.\n";
-        exit(1);
+        rs_error("WavesAcoustic3D::createSnap: No filename set.");
     }
         return WAVES_OK;
 }
@@ -2514,9 +2512,14 @@ void WavesElastic3D<T>::writeSnap(int it, Snap *Snap){
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class WavesAcoustic2D<float>;
+template class WavesAcoustic2D<double>;
 template class WavesAcoustic3D<float>;
+template class WavesAcoustic3D<double>;
 template class WavesElastic2D<float>;
+template class WavesElastic2D<double>;
 template class WavesElastic3D<float>;
+template class WavesElastic3D<double>;
+
 
 }
 
