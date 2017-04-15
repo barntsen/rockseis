@@ -5,6 +5,8 @@
 #include "data.h"
 #include "file.h"
 #include "sort.h"
+#include "utils.h"
+#include "geometry.h"
 
 int main()
 {
