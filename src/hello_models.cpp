@@ -131,7 +131,7 @@ int main()
 	Fmod->close();
 	
 	// Setup a 2d Wavelet 
-	std::shared_ptr<rockseis::Data2D<float>> source2d (new rockseis::Data2D<float>(1, nt, dt));
+	std::shared_ptr<rockseis::Data2D<float>> source2d (new rockseis::Data2D<float>(1, nt, dt, 0.0));
 	float *wav = source2d->getData();
 	float f0 = 15;
 	float t0 = 1e-1;
@@ -158,7 +158,7 @@ int main()
 	}
 
 	// Setup a 3d Wavelet 
-	std::shared_ptr<rockseis::Data3D<float>> source3d (new rockseis::Data3D<float>(1, nt, dt));
+	std::shared_ptr<rockseis::Data3D<float>> source3d (new rockseis::Data3D<float>(1, nt, dt, 0.0));
 	wav = source3d->getData();
 	for(int it=0; it < nt; it ++){
 		// Computing wavelet 
@@ -181,7 +181,7 @@ int main()
 	}
 
 	// Setup a 2d record
-	std::shared_ptr<rockseis::Data2D<float>> record2d (new rockseis::Data2D<float>(nx, 1, dt));
+	std::shared_ptr<rockseis::Data2D<float>> record2d (new rockseis::Data2D<float>(nx, 1, dt, 0.0));
 	// Set receiver positions
 	scoords2d = (record2d->getGeom())->getScoords();
 	rockseis::Point2D<float> *gcoords2d = (record2d->getGeom())->getGcoords();
@@ -199,7 +199,7 @@ int main()
 	}
 
 	// Setup a 3d record
-	std::shared_ptr<rockseis::Data3D<float>> record3d (new rockseis::Data3D<float>(nx*ny, 1, dt));
+	std::shared_ptr<rockseis::Data3D<float>> record3d (new rockseis::Data3D<float>(nx*ny, 1, dt, 0.0));
 	// Set receiver positions
 	scoords3d = (record3d->getGeom())->getScoords();
 	rockseis::Point3D<float> *gcoords3d = (record3d->getGeom())->getGcoords();

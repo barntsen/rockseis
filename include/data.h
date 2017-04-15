@@ -61,8 +61,8 @@ private:
 template<typename T>
 class Data2D: public Data<T> {
 public:
-    Data2D(const int _ntrace, const int _nt, const T _dt); 	///< Constructor
-    Data2D(std::string datafile, const int _nt, const T _dt); 	///< Constructor
+    Data2D(const int _ntrace, const int _nt, const T _dt, const T _ot); 	///< Constructor
+    Data2D(std::string datafile, const int _nt, const T _dt, const T _ot); 	///< Constructor
     Data2D(std::string datafile); ///< Constructor
     virtual ~Data2D();       	///< Destructor
 
@@ -94,8 +94,8 @@ private:
 template<typename T>
 class Data3D: public Data<T> {
 public:
-    Data3D(const int _ntrace, const int _nt, const T _dt); 	///< Constructor
-    Data3D(std::string datafile, const int _nt, const T _dt); 	///< Constructor
+    Data3D(const int _ntrace, const int _nt, const T _dt, const T _ot); 	///< Constructor
+    Data3D(std::string datafile, const int _nt, const T _dt, const T _ot); 	///< Constructor
     Data3D(std::string datafile); 	///< Constructor
     virtual ~Data3D();       	///< Destructor
 

@@ -109,13 +109,11 @@ static int convert2(const char* buf);
 static int convert4(const char* buf);
 static float fconvert4(const char* buf);
 static void insert2(int y, char* buf);
-static void insert4(int y, char* buf);
-static void finsert4(float y, char* buf);
 static void swapb(byte *x, byte *y);
 
 /* IBM to IEEE float conversion and back */
 static float ibm2float (const char* num);
-static void float2ibm (float y, char* num);
+//static void float2ibm (float y, char* num);
 
 static void swapb(byte *x, byte *y) 
     /* swap two bytes */
@@ -193,42 +191,6 @@ static float fconvert4(const char* buf)
     return x.s;
 }
 
-static void insert4(int y, char* buf)
-    /* convert 4-byte int to buf */
-{
-    union {
-        byte b[4];
-        int s;
-    } x;
-
-    x.s=y;
-
-    if (little_endian) {
-        swapb(x.b,x.b+3);
-        swapb(x.b+1,x.b+2);
-    }
-
-    memcpy(buf,x.b,4);
-}
-
-static void finsert4(float y, char* buf)
-    /* convert 4-byte float to buf */
-{
-    union {
-        byte b[4];
-        float s;
-    } x;
-
-    x.s=y;
-
-    if (little_endian) {
-        swapb(x.b,x.b+3);
-        swapb(x.b+1,x.b+2);
-    }
-
-    memcpy(buf,x.b,4);
-}
-
 void ebc2asc (int narr, char* arr)
     /*< Convert char array arrr[narr]: EBC to ASCII >*/
 {
@@ -292,57 +254,6 @@ void set_segydt(char* bhead, float dt)
     scale = (dt < 1.0)? 1000000.:1000.;
 
     insert2((int) (scale*dt),bhead+SF_SEGY_DT);
-}
-
-static void float2ibm (float y, char* num)
-    /* floating-point conversion to IBM format */
-{
-    unsigned int x, s, f;
-    int e;
-    const unsigned int fMAXIBM = 0x7FFFFFFF;
-
-    memcpy (&x,&y,4);
-
-    /* check for special case of zero */
-    if ((x & 0x7fffffff) == 0) {
-        insert4(x,num);
-        return; 
-    }
-
-    /* fetch the sign, exponent (removing excess 127), and fraction */
-    s =   x & 0x80000000;
-    e = ((x & 0x7f800000) >> 23) - 127;
-    f =   x & 0x007fffff;
-
-    /* convert 23 bit fraction to 24 bit fraction */
-    f <<= 1; 
-
-    /* restore the '1' preceeded the IEEE binary point */
-    f |= 0x01000000; 
-
-    /* convert scale factor from base-2 to base-16 */
-    if (e >= 0) {
-        f <<= (e & 3); 
-        e >>= 2;
-    } else {
-        f >>= ((-e) & 3); 
-        e = -((-e) >> 2);
-    }
-
-    /* reduce fraction to 24 bits */
-    if (f & 0x0f000000) {
-        f >>= 4;
-        e += 1;
-    }
-
-    /* convert exponent to excess 64 and store the number */
-    if ((e += 64) > 127) {
-        s |= fMAXIBM;
-    } else if (e >= 0) {
-        s |= (e << 24) | f;
-    }
-
-    insert4(s,num);
 }
 
 static float ibm2float (const char* num)
@@ -689,7 +600,7 @@ int main(int argc, char* argv[])
     free(trace);
 
     std::shared_ptr<rockseis::Data3D<float>> Bdata;
-    Bdata = std::make_shared<rockseis::Data3D<float>>(1, ns, dt);
+    Bdata = std::make_shared<rockseis::Data3D<float>>(1, ns, dt, t0);
 
 
     //Using stdout as output 

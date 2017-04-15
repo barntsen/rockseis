@@ -34,6 +34,9 @@ int sort_sr_0(void const *a, void const *b)
 	if( pa->y < pb->y) return -1;
 	if( pa->y > pb->y) return 1;
 
+	if( pa->z < pb->z) return -1;
+	if( pa->z > pb->z) return 1;
+
 	return 0;
 }
 
@@ -51,6 +54,9 @@ int sort_sr_1(void const *a, void const *b)
 	if( pa->y < pb->y) return -1;
 	if( pa->y > pb->y) return 1;
 
+	if( pa->z < pb->z) return -1;
+	if( pa->z > pb->z) return 1;
+
 	return 0;
 }
 
@@ -65,6 +71,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
     if(datatype != DATA2D && datatype != DATA3D) rs_error("Sort::createSort: Only DATA2D and DATA3D types are supported.");
 
     sortkey = _sortkey; 
+    datafile = filename;
     size_t n1 = Fdata->getN(1);
     size_t n2 = Fdata->getN(2);
 
@@ -73,8 +80,8 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
     int nh = Fdata->getNheader();
     int dp = Fdata->getData_format();
     int hp = Fdata->getHeader_format();
-    float fbuffer[6];
-	double dbuffer[6];
+    float fbuffer[NHEAD3D];
+	double dbuffer[NHEAD3D];
 	float ftmp;
 	double dtmp;
     position_t *positions, *ensembles;
@@ -83,25 +90,44 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 	ensembles = (position_t *) calloc(n2,sizeof(position_t));
 
     nensembles = 0;
-    for (int i2=0; i2 < n2; i2++){
+    for (size_t i2=0; i2 < n2; i2++){
         //Read coordinates
-        Fdata->seekg(i2*(n1*dp + nh*hp));
+        Fdata->seekg(i2*(n1*dp + nh*hp) + Fdata->getStartofdata());
         switch (hp){
             case sizeof(float):
                 Fdata->read(fbuffer, nh);
                 switch (sortkey){
                     case SOURCE:
-                        positions[i2].x = fbuffer[0];
-                        positions[i2].y = fbuffer[1];
+                        if(datatype == DATA3D) {
+                            positions[i2].x = fbuffer[0];
+                            positions[i2].y = fbuffer[1];
+                            positions[i2].z = fbuffer[2];
+                        }else{
+                            positions[i2].x = fbuffer[0];
+                            positions[i2].y = 0.0;
+                            positions[i2].z = fbuffer[1];
+                        }
                         break;
                     case RECEIVER:
-                        positions[i2].x = fbuffer[2];
-                        positions[i2].y = fbuffer[3];
+                        if(datatype == DATA3D) {
+                            positions[i2].x = fbuffer[3];
+                            positions[i2].y = fbuffer[4];
+                            positions[i2].z = fbuffer[5];
+                        }else{
+                            positions[i2].x = fbuffer[2];
+                            positions[i2].y = 0.0;
+                            positions[i2].z = fbuffer[3];
+                        }
                         break;
                     case CMP:
-                        positions[i2].x = 0.5*(fbuffer[0]+fbuffer[2]);
-                        positions[i2].y = 0.5*(fbuffer[1]+fbuffer[3]);
-						// Snapping coordinates to bins
+                        if(datatype == DATA3D) {
+                            positions[i2].x = 0.5*(fbuffer[0]+fbuffer[3]);
+                            positions[i2].y = 0.5*(fbuffer[1]+fbuffer[4]);
+                        }else{
+                            positions[i2].x = 0.5*(fbuffer[0]+fbuffer[2]);
+                            positions[i2].y = 0.0;
+                        }
+                        // Snapping coordinates to bins
 						ftmp=(positions[i2].x)/dx; // Compute index in irregular coordinate
 						positions[i2].x=rintf(ftmp)*dx; // Compute nearest position in regular grid
 						ftmp=(positions[i2].y)/dy; // Compute indey in irregular coordinate
@@ -116,23 +142,41 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                 Fdata->read(dbuffer, nh);
                 switch (sortkey){
                     case SOURCE:
-                        positions[i2].x = dbuffer[0];
-                        positions[i2].y = dbuffer[1];
+                        if(datatype == DATA3D) {
+                            positions[i2].x = dbuffer[0];
+                            positions[i2].y = dbuffer[1];
+                            positions[i2].z = dbuffer[2];
+                        }else{
+                            positions[i2].x = dbuffer[0];
+                            positions[i2].y = 0.0;
+                            positions[i2].z = dbuffer[1];
+                        }
                         break;
                     case RECEIVER:
-                        positions[i2].x = dbuffer[2];
-                        positions[i2].y = dbuffer[3];
+                        if(datatype == DATA3D) {
+                            positions[i2].x = dbuffer[3];
+                            positions[i2].y = dbuffer[4];
+                            positions[i2].z = dbuffer[5];
+                        }else{
+                            positions[i2].x = dbuffer[2];
+                            positions[i2].y = 0.0;
+                            positions[i2].z = dbuffer[3];
+                        }
                         break;
                     case CMP:
-                        positions[i2].x = 0.5*(dbuffer[0]+dbuffer[2]);
-                        positions[i2].y = 0.5*(dbuffer[1]+dbuffer[3]);
+                        if(datatype == DATA3D) {
+                            positions[i2].x = 0.5*(dbuffer[0]+dbuffer[3]);
+                            positions[i2].y = 0.5*(dbuffer[1]+dbuffer[4]);
+                        }else{
+                            positions[i2].x = 0.5*(dbuffer[0]+dbuffer[2]);
+                            positions[i2].y = 0.0;
+                        }
 						// Snapping coordinates to bins
 						dtmp=(positions[i2].x)/dx; // Compute index in irregular coordinate
 						positions[i2].x=rintf(dtmp)*dx; // Compute nearest position in regular grid
 						dtmp=(positions[i2].y)/dy; // Compute indey in irregular coordinate
 						positions[i2].y=rintf(dtmp)*dy; // Compute nearest position in regular grid
 						break;
- 
                     default:
                         rs_error("Sort: sort key invalid.");
                         break;
@@ -150,14 +194,16 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 
     nensembles = 1;
     int ntraces = 1;
-    double oldx, oldy;
+    double oldx, oldy, oldz;
     size_t oldind;
 
 	/* Initialize the ensemble list and map */
 	oldx = positions[0].x;
 	oldy = positions[0].y;
+	oldz = positions[0].z;
 	ensembles[0].x=oldx;
 	ensembles[0].y=oldy;
+	ensembles[0].z=oldz;
 	oldind = 0;
 
 	// Making a map of the traces 
@@ -168,18 +214,21 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 		// Get coordinates
 		dbuffer[0] = positions[i2].x;
 		dbuffer[1] = positions[i2].y;
+		dbuffer[2] = positions[i2].z;
 		// If ensemble position is not in the list then add it to the list
-		if((dbuffer[0] == oldx) && (dbuffer[1] == oldy)){
+		if((dbuffer[0] == oldx) && (dbuffer[1] == oldy) && (dbuffer[2] == oldz)){
 			ntraces++;
 		}else{
 			ensembles[nensembles].x=dbuffer[0];
 			ensembles[nensembles].y=dbuffer[1];
+			ensembles[nensembles].z=dbuffer[2];
 			map[I(0,nensembles-1)]=oldind;
 			map[I(1,nensembles-1)]=ntraces;
 			nensembles++;
 			ntraces=1;
 			oldx=dbuffer[0];
 			oldy=dbuffer[1];
+			oldz=dbuffer[2];
 			oldind=i2;
 		}
     }
@@ -209,6 +258,113 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 
     return SORT_OK;
 }
+
+template<typename T>
+bool Sort<T>::getGather(std::shared_ptr<Data2D<T>> gather)
+{
+
+    if(this->nensembles == 0) rs_error("No sort map created.");
+
+    int i;
+    for(i=0; i < this->nensembles; i++)
+    {
+        if(keymap[i].status == NOT_STARTED || keymap[i].status == FAILED)
+        {
+            break;
+        }
+    }
+    if(i < this->nensembles) 
+    {
+        // Found a shot
+        bool status;
+        std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
+        status = Fdata->input(this->datafile);
+        if(status == FILE_ERR) rs_error("Sort::getGather: Error reading input data file.");
+        rs_datatype datatype = Fdata->getType(); 
+        if(datatype != DATA2D) rs_error("Sort::getGather: Datafile must be of type Data2D.");
+        //Get gather size information
+        size_t n1 = Fdata->getN(1);
+        T d1 = Fdata->getD(1);
+        T o1 = Fdata->getO(1);
+        size_t n2 = this->keymap[i].n;
+
+        //Create gather
+        gather = std::make_shared<Data2D<T>>(n2,n1,d1,o1);
+        Point2D<T> *scoords = (gather->getGeom())->getScoords();
+        Point2D<T> *gcoords = (gather->getGeom())->getGcoords();
+        T *data = gather->getData();
+        size_t traceno;
+        for (i=0; i < n2; i++){
+            traceno = this->sortmap[this->keymap[i].i0 + i];
+            Fdata->seekg(Fdata->getStartofdata() + traceno*(n1+NHEAD2D)*sizeof(T));
+            Fdata->read(&scoords[i].x, 1);
+            Fdata->read(&scoords[i].y, 1);
+            Fdata->read(&gcoords[i].x, 1);
+            Fdata->read(&gcoords[i].y, 1);
+            Fdata->read(&data[i*n1], n1);
+        }
+        return SORT_OK;
+    }else{
+        // No shot available
+        return SORT_ERR; 
+    }
+}
+
+template<typename T>
+std::shared_ptr<Data3D<T>> Sort<T>::getGather()
+{
+    if(this->nensembles == 0) rs_error("No sort map created.");
+
+    int i;
+    for(i=0; i < this->nensembles; i++)
+    {
+        if(keymap[i].status == NOT_STARTED || keymap[i].status == FAILED)
+        {
+            break;
+        }
+    }
+    if(i < this->nensembles) 
+    {
+        // Found a shot
+        bool status;
+        std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
+        status = Fdata->input(this->datafile);
+        if(status == FILE_ERR) rs_error("Sort::getGather: Error reading input data file.");
+        rs_datatype datatype = Fdata->getType(); 
+        if(datatype != DATA3D) rs_error("Sort::getGather: Datafile must be of type Data3D.");
+        //Get gather size information
+        size_t n1 = Fdata->getN(1);
+        T d1 = Fdata->getD(1);
+        T o1 = Fdata->getO(1);
+        size_t n2 = this->keymap[i].n;
+
+        //Create gather
+	    std::shared_ptr<rockseis::Data3D<T>> gather;
+        gather = std::make_shared<Data3D<T>>(n2,n1,d1,o1);
+        Point3D<T> *scoords = (gather->getGeom())->getScoords();
+        Point3D<T> *gcoords = (gather->getGeom())->getGcoords();
+        T *data = gather->getData();
+        size_t traceno;
+        for (size_t j=0; j < n2; j++){
+            traceno = this->sortmap[this->keymap[i].i0 + j];
+            Fdata->seekg(Fdata->getStartofdata() + traceno*(n1+NHEAD3D)*sizeof(T));
+            Fdata->read(&scoords[j].x, 1);
+            Fdata->read(&scoords[j].y, 1);
+            Fdata->read(&scoords[j].z, 1);
+            Fdata->read(&gcoords[j].x, 1);
+            Fdata->read(&gcoords[j].y, 1);
+            Fdata->read(&gcoords[j].z, 1);
+            Fdata->read(&data[j*n1], n1);
+        }
+        // Flag shot as running
+        this->keymap[i].status = RUNNING;
+        return gather;
+    }else{
+        // No shot available
+        return nullptr;
+    }
+}
+
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Sort<float>;

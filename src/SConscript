@@ -44,8 +44,11 @@ segy2rss = env.Program(prefix + 'segy2rss','segy2rss.cpp',LIBS=['file', 'model',
 env.Install('../bin/',segy2rss)
 
 
-info = env.Program(prefix + 'info','info.cpp',LIBS=['file', 'geometry'],LIBPATH=['../build'])
+info = env.Program(prefix + 'info','info.cpp',LIBS=['file', 'utils','geometry'],LIBPATH=['../build'])
 env.Install('../bin/',info)
 
 hello_parser = env.Program(prefix + 'hello_parser','hello_parser.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello_parser)
+
+hello_sort = env.Program(prefix + 'hello_sort','hello_sort.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort'],LIBPATH=['../build'])
+env.Install('../bin/',hello_sort)

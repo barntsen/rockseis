@@ -248,7 +248,7 @@ int main()
 
     // Setting Record
     if(Precord){
-        Pdata = std::make_shared<rockseis::Data3D<float>>(Precordfile, source->getNt(), source->getDt());
+        Pdata = std::make_shared<rockseis::Data3D<float>>(Precordfile, source->getNt(), source->getDt(), 0.0);
         // Load data geometry from file
         Pdata->readCoords();
         Pdata->makeMap(model->getGeom());
@@ -256,7 +256,7 @@ int main()
     }
     // Setting Record
     if(Axrecord){
-        Axdata = std::make_shared<rockseis::Data3D<float>>(Axrecordfile, source->getNt(), source->getDt());
+        Axdata = std::make_shared<rockseis::Data3D<float>>(Axrecordfile, source->getNt(), source->getDt(), 0.0);
         // Load data geometry from file
         Axdata->readCoords();
         Axdata->makeMap(model->getGeom());
@@ -264,7 +264,7 @@ int main()
     }
     // Setting Record
     if(Ayrecord){
-        Aydata = std::make_shared<rockseis::Data3D<float>>(Ayrecordfile, source->getNt(), source->getDt());
+        Aydata = std::make_shared<rockseis::Data3D<float>>(Ayrecordfile, source->getNt(), source->getDt(), 0.0);
         // Load data geometry from file
         Aydata->readCoords();
         Aydata->makeMap(model->getGeom());
@@ -272,7 +272,7 @@ int main()
     }
     // Setting Record
     if(Azrecord){
-        Azdata = std::make_shared<rockseis::Data3D<float>>(Azrecordfile, source->getNt(), source->getDt());
+        Azdata = std::make_shared<rockseis::Data3D<float>>(Azrecordfile, source->getNt(), source->getDt(), 0.0);
         // Load data geometry from file
         Azdata->readCoords();
         Azdata->makeMap(model->getGeom());

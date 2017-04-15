@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#define NHEAD2D 4
+#define NHEAD3D 6
 
 namespace rockseis {
 

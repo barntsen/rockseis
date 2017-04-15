@@ -81,13 +81,8 @@ Data<T>::~Data(){
 
 // constructor
 template<typename T>
-Data2D<T>::Data2D(const int _ntrace, const int _nt, const T _dt): Data<T>(_ntrace, _nt, _dt)
+Data2D<T>::Data2D(const int _ntrace, const int _nt, const T _dt, const T _ot): Data<T>(_ntrace, _nt, _dt, _ot)
 {
-    // Setting variables
-    this->setNtrace(_ntrace);
-    this->setNt(_nt);
-    this->setDt(_dt);
-
     // Create a 2D data geometry
     geometry = std::make_shared<Geometry2D<T>>(_ntrace); 
 
@@ -97,11 +92,11 @@ Data2D<T>::Data2D(const int _ntrace, const int _nt, const T _dt): Data<T>(_ntrac
     std::shared_ptr<File> Fdata = this->getFdata();
     Fdata->setN(1,_nt);
     Fdata->setD(1,_dt);
-    Fdata->setO(1,0.0);
+    Fdata->setO(1,_ot);
     Fdata->setN(2,0);
     Fdata->setD(2,1);
     Fdata->setO(2,0);
-    Fdata->setNheader(4);
+    Fdata->setNheader(NHEAD2D);
     Fdata->setData_format(sizeof(T));
     Fdata->setHeader_format(sizeof(T));
     Fdata->setType(rockseis::DATA2D);
@@ -126,7 +121,7 @@ Data2D<T>::Data2D(std::string datafile): Data<T>(datafile)
     {
         rs_error("Data2D::Numerical precision in ", datafile, " mismatch with data class contructor.");
     }
-    if(Fin->getNheader() != 4)
+    if(Fin->getNheader() != NHEAD2D)
     {
         rs_error("Data2D:: " , datafile , " is not a 2d data file.");
     }
@@ -150,7 +145,7 @@ Data2D<T>::Data2D(std::string datafile): Data<T>(datafile)
 }
 
 template<typename T>
-Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt): Data<T>(datafile)
+Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt, const T _ot): Data<T>(datafile)
 {
     bool status;
     size_t ntrace;
@@ -164,7 +159,7 @@ Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt): Data<T>(dat
     {
         rs_error("Data2D::Numerical precision in " , datafile , " mismatch with data class contructor.");
     }
-    if(Fin->getNheader() != 4)
+    if(Fin->getNheader() != NHEAD2D)
     {
         rs_error("Data2D:: " , datafile , " is not a 2d data file.");
     }
@@ -175,7 +170,7 @@ Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt): Data<T>(dat
     this->setNtrace(ntrace);
     this->setNt(_nt);
     this->setDt(_dt);
-    this->setOt(0.0);
+    this->setOt(_ot);
 
     // Create a 2D data geometry
     geometry = std::make_shared<Geometry2D<T>>(ntrace); 
@@ -207,7 +202,7 @@ bool Data2D<T>::read()
     size_t Nheader = Fin->getNheader();
 
     status = FILE_OK;
-    if ( Fin->is_open()  && (Nheader == 4) )
+    if ( Fin->is_open()  && (Nheader == NHEAD2D) )
     {
         // Create geometry
         int i;
@@ -248,7 +243,7 @@ bool Data2D<T>::readCoords()
     size_t Nheader = Fin->getNheader();
 
     status = FILE_OK;
-    if ( Fin->is_open()  && (Nheader == 4) )
+    if ( Fin->is_open()  && (Nheader == NHEAD2D) )
     {
         // Create geometry
         int i;
@@ -257,7 +252,7 @@ bool Data2D<T>::readCoords()
         for (i=0; i < ntrace; i++)
         {
             // Jump over trace data;
-            Fin->seekg(Fin->getStartofdata() + i*(nt+4)*sizeof(T));
+            Fin->seekg(Fin->getStartofdata() + i*(nt+NHEAD2D)*sizeof(T));
             //Read coordinates from data trace (First source x and y and then receiver x and y
             Fin->read(&scoords[i].x, 1);
             Fin->read(&scoords[i].y, 1);
@@ -300,7 +295,7 @@ bool Data2D<T>::write()
         Fout->setN(2,ntrace);
         Fout->setD(2,1.0);
         Fout->setO(2,0.0);
-        Fout->setNheader(4);
+        Fout->setNheader(NHEAD2D);
         Fout->setData_format(sizeof(T));
         Fout->setHeader_format(sizeof(T));
         Fout->setType(DATA2D);
@@ -373,13 +368,8 @@ Data2D<T>::~Data2D() {
 
 // constructor
 template<typename T>
-Data3D<T>::Data3D(const int _ntrace, const int _nt, const T _dt): Data<T>(_ntrace, _nt, _dt)
+Data3D<T>::Data3D(const int _ntrace, const int _nt, const T _dt, const T _ot): Data<T>(_ntrace, _nt, _dt, _ot)
 {
-    // Setting variables
-    this->setNtrace(_ntrace);
-    this->setNt(_nt);
-    this->setDt(_dt);
-
     // Create a 3D data geometry
     geometry =std::make_shared<Geometry3D<T>>(_ntrace); 
 
@@ -392,7 +382,7 @@ Data3D<T>::Data3D(const int _ntrace, const int _nt, const T _dt): Data<T>(_ntrac
     Fdata->setD(1,_dt);
     Fdata->setO(1,0.0);
     Fdata->setN(2,0);
-    Fdata->setNheader(6);
+    Fdata->setNheader(NHEAD3D);
     Fdata->setData_format(sizeof(T));
     Fdata->setHeader_format(sizeof(T));
     Fdata->setType(rockseis::DATA3D);
@@ -418,7 +408,7 @@ Data3D<T>::Data3D(std::string datafile): Data<T>(datafile)
     {
         rs_error("Data3D::Numerical precision in " , datafile , " mismatch with data class contructor.");
     }
-    if(Fin->getNheader() != 6)
+    if(Fin->getNheader() != NHEAD3D)
     {
         rs_error("Data3D:: " , datafile , " is not a 3d data file.");
     }
@@ -442,7 +432,7 @@ Data3D<T>::Data3D(std::string datafile): Data<T>(datafile)
 }
 
 template<typename T>
-Data3D<T>::Data3D(std::string datafile, const int _nt, const T _dt): Data<T>(datafile)
+Data3D<T>::Data3D(std::string datafile, const int _nt, const T _dt, const T _ot): Data<T>(datafile)
 {
     bool status;
     size_t ntrace;
@@ -456,7 +446,7 @@ Data3D<T>::Data3D(std::string datafile, const int _nt, const T _dt): Data<T>(dat
     {
         rs_error("Data3D::Numerical precision in " , datafile , " mismatch with data class contructor.");
     }
-    if(Fin->getNheader() != 6)
+    if(Fin->getNheader() != NHEAD3D)
     {
         rs_error("Data3D:: " , datafile , " is not a 3d data file.");
     }
@@ -467,7 +457,7 @@ Data3D<T>::Data3D(std::string datafile, const int _nt, const T _dt): Data<T>(dat
     this->setNtrace(ntrace);
     this->setNt(_nt);
     this->setDt(_dt);
-    this->setOt(0.0);
+    this->setOt(_ot);
 
     // Create a 3D data geometry
     geometry = std::make_shared<Geometry3D<T>>(ntrace); 
@@ -500,7 +490,7 @@ bool Data3D<T>::read()
     size_t Nheader = Fin->getNheader();
 
     status = FILE_OK;
-    if ( Fin->is_open()  && (Nheader == 6) )
+    if ( Fin->is_open()  && (Nheader == NHEAD3D) )
     {
         // Create geometry
         int i;
@@ -515,7 +505,7 @@ bool Data3D<T>::read()
             Fin->read(&gcoords[i].x, 1);
             Fin->read(&gcoords[i].y, 1);
             Fin->read(&gcoords[i].z, 1);
-            // Write trace data
+            // Read trace data
             Fin->read(&data[i*nt], nt);
         }	
     }else{
@@ -540,7 +530,7 @@ bool Data3D<T>::readCoords()
     int data_format = Fin->getData_format();
 
     status = FILE_OK;
-    if ( Fin->is_open()  && (Nheader == 6) && (data_format == sizeof(T)))
+    if ( Fin->is_open()  && (Nheader == NHEAD3D) && (data_format == sizeof(T)))
     {
         // Create geometry
         int i;
@@ -549,7 +539,7 @@ bool Data3D<T>::readCoords()
         for (i=0; i < ntrace; i++)
         {
             // Jump over trace data;
-            Fin->seekg(Fin->getStartofdata() + i*(nt+6)*sizeof(T));
+            Fin->seekg(Fin->getStartofdata() + i*(nt+NHEAD3D)*sizeof(T));
             //Read coordinates from data trace (First source x and y and then receiver x and y
             Fin->read(&scoords[i].x, 1);
             Fin->read(&scoords[i].y, 1);
@@ -593,7 +583,7 @@ bool Data3D<T>::write()
         Fout->setN(2,ntrace);
         Fout->setD(2,1.0);
         Fout->setO(2,0.0);
-        Fout->setNheader(6);
+        Fout->setNheader(NHEAD3D);
         Fout->setData_format(sizeof(T));
         Fout->setHeader_format(sizeof(T));
         Fout->setType(DATA3D);

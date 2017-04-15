@@ -211,7 +211,7 @@ int main()
 
     // Setting Record
     if(Precord){
-        Pdata = std::make_shared<rockseis::Data2D<float>>(Precordfile, source->getNt(), source->getDt());
+        Pdata = std::make_shared<rockseis::Data2D<float>>(Precordfile, source->getNt(), source->getDt(), 0.0);
         Pdata->setField(rockseis::PRESSURE);
         // Load data geometry from file
         Pdata->readCoords();
@@ -220,7 +220,7 @@ int main()
     }
     // Setting Record
     if(Axrecord){
-        Axdata = std::make_shared<rockseis::Data2D<float>>(Axrecordfile, source->getNt(), source->getDt());
+        Axdata = std::make_shared<rockseis::Data2D<float>>(Axrecordfile, source->getNt(), source->getDt(), 0.0);
         Axdata->setField(rockseis::VX);
         // Load data geometry from file
         Axdata->readCoords();
@@ -229,7 +229,7 @@ int main()
     }
     // Setting Record
     if(Azrecord){
-        Azdata = std::make_shared<rockseis::Data2D<float>>(Azrecordfile, source->getNt(), source->getDt());
+        Azdata = std::make_shared<rockseis::Data2D<float>>(Azrecordfile, source->getNt(), source->getDt(), 0.0);
         Azdata->setField(rockseis::VZ);
         // Load data geometry from file
         Azdata->readCoords();
