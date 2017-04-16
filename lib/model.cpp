@@ -384,6 +384,7 @@ void ModelAcoustic2D<T>::writeModel() {
     Fvp->setD(3,dz);
     Fvp->setO(1,ox);
     Fvp->setO(3,oz);
+    Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
     Vp = this->getVp();
@@ -396,6 +397,7 @@ void ModelAcoustic2D<T>::writeModel() {
     Frho->setD(3,dz);
     Frho->setO(1,ox);
     Frho->setO(3,oz);
+    Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
     R = this->getR();
@@ -610,6 +612,7 @@ void ModelAcoustic3D<T>::writeModel() {
     Fvp->setO(1,ox);
     Fvp->setO(2,oy);
     Fvp->setO(3,oz);
+    Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
     Vp = this->getVp();
@@ -625,6 +628,7 @@ void ModelAcoustic3D<T>::writeModel() {
     Frho->setO(1,ox);
     Frho->setO(2,oy);
     Frho->setO(3,oz);
+    Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
     R = this->getR();
@@ -884,6 +888,7 @@ void ModelElastic2D<T>::writeModel() {
     Fvp->setD(3,dz);
     Fvp->setO(1,ox);
     Fvp->setO(3,oz);
+    Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
     Vp = this->getVp();
@@ -896,6 +901,7 @@ void ModelElastic2D<T>::writeModel() {
     Fvs->setD(3,dz);
     Fvs->setO(1,ox);
     Fvs->setO(3,oz);
+    Fvs->setType(REGULAR);
     Fvs->setData_format(sizeof(T));
     Fvs->writeHeader();
     Vs = this->getVs();
@@ -908,6 +914,7 @@ void ModelElastic2D<T>::writeModel() {
     Frho->setD(3,dz);
     Frho->setO(1,ox);
     Frho->setO(3,oz);
+    Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
     R = this->getR();
@@ -1186,6 +1193,7 @@ void ModelElastic3D<T>::writeModel() {
     Fvp->setO(1,ox);
     Fvp->setO(2,oy);
     Fvp->setO(3,oz);
+    Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
     Vp = this->getVp();
@@ -1201,6 +1209,7 @@ void ModelElastic3D<T>::writeModel() {
     Fvs->setO(1,ox);
     Fvs->setO(2,oy);
     Fvs->setO(3,oz);
+    Fvs->setType(REGULAR);
     Fvs->setData_format(sizeof(T));
     Fvs->writeHeader();
     Vs = this->getVs();
@@ -1216,6 +1225,7 @@ void ModelElastic3D<T>::writeModel() {
     Frho->setO(1,ox);
     Frho->setO(2,oy);
     Frho->setO(3,oz);
+    Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
     R = this->getR();

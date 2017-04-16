@@ -87,20 +87,25 @@ bool File::input(std::string filename)
 void File::output()
 {
 	fstream.open("/dev/stdout", std::ios::out | std::ios::binary);
+    if(!fstream.is_open() || fstream.fail()) rs_error("Error opening standard output (stdout) for writting.");
 }
 
 void File::output(std::string filename)
 {
     if(strcmp(filename.c_str(), "stdout")){
         fstream.open(filename, std::ios::out | std::ios::binary);
+        if(!fstream.is_open() || fstream.fail()) rs_error("Error opening ", filename, " for writting.");
     }else{
         fstream.open("/dev/stdout", std::ios::out | std::ios::binary);
+        if(!fstream.is_open() || fstream.fail()) rs_error("Error opening standard output (stdout) for writting.");
     }
+
 }
 
 void File::append()
 {
-	fstream.open("/dev/stdout", std::ios::app | std::ios::binary);
+    fstream.open("/dev/stdout", std::ios::app | std::ios::binary);
+    if(!fstream.is_open() || fstream.fail()) rs_error("Error opening standard output (stdout) for appending.");
 }
 
 bool File::append(std::string filename)
@@ -110,7 +115,7 @@ bool File::append(std::string filename)
     size_t pos;
     memset(buffer, 0, sizeof(buffer));
 	fstream.open(filename, std::ios::app | std::ios::binary);
-    if(fstream.fail()){
+    if(fstream.fail() || !fstream.is_open()){
         status = FILE_ERR; 
     }else{
         //Read header and check if file is of Rockseis format
@@ -205,23 +210,8 @@ void File::readHeader()
         geometry->setO(i+1,val);
     }
     // Setting type
-    switch(type){
-        case 0:
-            this->setType(GENERIC);
-            break;
-        case 1:
-            this->setType(REGULAR);
-            break;
-        case 2:
-            this->setType(DATA2D);
-            break;
-        case 3:
-            this->setType(DATA3D);
-            break;
-        case 4:
-            this->setType(SNAPSHOT);
-            break;
-    }
+    this->setType(static_cast<rockseis::rs_datatype>(type));
+
 }
 
 // Write functions
@@ -269,6 +259,17 @@ void File::write(int *buffer, size_t n, size_t pos)
 	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(int));
 }
 
+void File::write(size_t *buffer, size_t n)
+{
+	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(size_t));
+}
+
+void File::write(size_t *buffer, size_t n, size_t pos)
+{
+	fstream.seekp(pos + startofdata);
+	fstream.write(reinterpret_cast<char *> (buffer), n*sizeof(size_t));
+}
+
 //Read functions
 void File::read(char *buffer, size_t n)
 {
@@ -313,6 +314,18 @@ void File::read(int *buffer, size_t n, size_t pos)
 	fstream.seekg(pos + startofdata);
 	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(int));
 }
+
+void File::read(size_t *buffer, size_t n)
+{
+	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(size_t));
+}
+
+void File::read(size_t *buffer, size_t n, size_t pos)
+{
+	fstream.seekg(pos + startofdata);
+	fstream.read(reinterpret_cast<char *> (buffer), n*sizeof(size_t));
+}
+
 
 // destructor
 File::~File(){

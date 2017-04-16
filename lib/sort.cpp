@@ -5,7 +5,7 @@ namespace rockseis {
 template<typename T>
 Sort<T>::Sort()
 {
-    nensembles = 0;
+    ngathers = 0;
     ntraces = 0;
     sortkey = SOURCE;
     kmapfile = "kmap.rss";
@@ -75,8 +75,6 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
     size_t n1 = Fdata->getN(1);
     size_t n2 = Fdata->getN(2);
 
-    sortmap = (size_t *) calloc(n2, sizeof(size_t));
-
     int nh = Fdata->getNheader();
     int dp = Fdata->getData_format();
     int hp = Fdata->getHeader_format();
@@ -89,7 +87,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 	positions = (position_t *) calloc(n2,sizeof(position_t));
 	ensembles = (position_t *) calloc(n2,sizeof(position_t));
 
-    nensembles = 0;
+    size_t nensembles = 0;
     for (size_t i2=0; i2 < n2; i2++){
         //Read coordinates
         Fdata->seekg(i2*(n1*dp + nh*hp) + Fdata->getStartofdata());
@@ -193,7 +191,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 	qsort(positions, n2, sizeof(position_t), sort_sr_0);
 
     nensembles = 1;
-    int ntraces = 1;
+    size_t ntraces = 1;
     double oldx, oldy, oldz;
     size_t oldind;
 
@@ -240,6 +238,9 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
     free(keymap); free(sortmap);
     keymap = (key *) calloc(nensembles, sizeof(key));
     sortmap = (size_t *) calloc(n2, sizeof(size_t));
+    //Setting variables
+    this->ngathers = nensembles;
+    this->ntraces = n2;
 
 	for (int i2=0; i2 < nensembles; i2++) {
         keymap[i2].i0 = map[I(0,i2)];
@@ -260,28 +261,28 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 }
 
 template<typename T>
-bool Sort<T>::getGather(std::shared_ptr<Data2D<T>> gather)
+std::shared_ptr<Data2D<T>> Sort<T>::get2DGather()
 {
 
-    if(this->nensembles == 0) rs_error("No sort map created.");
+    if(this->ngathers == 0 || this->ntraces == 0) rs_error("No sort map created.");
 
     int i;
-    for(i=0; i < this->nensembles; i++)
+    for(i=0; i < this->ngathers; i++)
     {
         if(keymap[i].status == NOT_STARTED || keymap[i].status == FAILED)
         {
             break;
         }
     }
-    if(i < this->nensembles) 
+    if(i < this->ngathers) 
     {
         // Found a shot
         bool status;
         std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
         status = Fdata->input(this->datafile);
-        if(status == FILE_ERR) rs_error("Sort::getGather: Error reading input data file.");
+        if(status == FILE_ERR) rs_error("Sort::get2DGather: Error reading input data file.");
         rs_datatype datatype = Fdata->getType(); 
-        if(datatype != DATA2D) rs_error("Sort::getGather: Datafile must be of type Data2D.");
+        if(datatype != DATA2D) rs_error("Sort::get2DGather: Datafile must be of type Data2D.");
         //Get gather size information
         size_t n1 = Fdata->getN(1);
         T d1 = Fdata->getD(1);
@@ -289,49 +290,52 @@ bool Sort<T>::getGather(std::shared_ptr<Data2D<T>> gather)
         size_t n2 = this->keymap[i].n;
 
         //Create gather
+	    std::shared_ptr<rockseis::Data2D<T>> gather;
         gather = std::make_shared<Data2D<T>>(n2,n1,d1,o1);
         Point2D<T> *scoords = (gather->getGeom())->getScoords();
         Point2D<T> *gcoords = (gather->getGeom())->getGcoords();
         T *data = gather->getData();
         size_t traceno;
-        for (i=0; i < n2; i++){
-            traceno = this->sortmap[this->keymap[i].i0 + i];
+        for (size_t j=0; j < n2; j++){
+            traceno = this->sortmap[this->keymap[i].i0 + j];
             Fdata->seekg(Fdata->getStartofdata() + traceno*(n1+NHEAD2D)*sizeof(T));
-            Fdata->read(&scoords[i].x, 1);
-            Fdata->read(&scoords[i].y, 1);
-            Fdata->read(&gcoords[i].x, 1);
-            Fdata->read(&gcoords[i].y, 1);
-            Fdata->read(&data[i*n1], n1);
+            Fdata->read(&scoords[j].x, 1);
+            Fdata->read(&scoords[j].y, 1);
+            Fdata->read(&gcoords[j].x, 1);
+            Fdata->read(&gcoords[j].y, 1);
+            Fdata->read(&data[j*n1], n1);
         }
-        return SORT_OK;
+        // Flag shot as running
+        this->keymap[i].status = RUNNING;
+        return gather;
     }else{
         // No shot available
-        return SORT_ERR; 
+        return nullptr;
     }
 }
 
 template<typename T>
-std::shared_ptr<Data3D<T>> Sort<T>::getGather()
+std::shared_ptr<Data3D<T>> Sort<T>::get3DGather()
 {
-    if(this->nensembles == 0) rs_error("No sort map created.");
+    if(this->ngathers == 0 || this->ntraces == 0) rs_error("No sort map created.");
 
     int i;
-    for(i=0; i < this->nensembles; i++)
+    for(i=0; i < this->ngathers; i++)
     {
         if(keymap[i].status == NOT_STARTED || keymap[i].status == FAILED)
         {
             break;
         }
     }
-    if(i < this->nensembles) 
+    if(i < this->ngathers) 
     {
         // Found a shot
         bool status;
         std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
         status = Fdata->input(this->datafile);
-        if(status == FILE_ERR) rs_error("Sort::getGather: Error reading input data file.");
+        if(status == FILE_ERR) rs_error("Sort::get3DGather: Error reading input data file.");
         rs_datatype datatype = Fdata->getType(); 
-        if(datatype != DATA3D) rs_error("Sort::getGather: Datafile must be of type Data3D.");
+        if(datatype != DATA3D) rs_error("Sort::get3DGather: Datafile must be of type Data3D.");
         //Get gather size information
         size_t n1 = Fdata->getN(1);
         T d1 = Fdata->getD(1);
@@ -362,6 +366,86 @@ std::shared_ptr<Data3D<T>> Sort<T>::getGather()
     }else{
         // No shot available
         return nullptr;
+    }
+}
+
+template<typename T>
+void Sort<T>::readKeymap(){
+    if(this->kmapfile.empty()) rs_error("Sort::readKeymap: kmapfile not set.");
+    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
+    if(Fin->input(this->kmapfile) == FILE_ERR) rs_error("Sort::readKeymap: Error opening file: ", this->kmapfile);
+    if(Fin->getType() != KEYMAP) rs_error("Sort::readKeymap: Key map file is not of correct type (KEYMAP)");
+    this->ngathers = Fin->getN(1);
+    free(keymap);
+    keymap = (key *) calloc(this->ngathers, sizeof(key));
+    int status;
+    for (size_t i=0; i < this->ngathers; i++)
+    {
+        Fin->read(&(this->keymap[i].i0), 1);
+        Fin->read(&(this->keymap[i].n), 1);
+        Fin->read(&status, 1);
+        this->keymap[i].status = static_cast<rockseis::rs_status>(status);
+    }
+}
+
+template<typename T>
+void Sort<T>::writeKeymap(){
+    if(ngathers == 0) rs_error("Sort::writeKeymap: Key map was not created, ngathers = 0");
+    size_t n1 = this->ngathers;
+
+    if(this->kmapfile.empty()) rs_error("Sort::writeKeymap: kmapfile not set.");
+
+    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
+    Fout->output(this->kmapfile);
+    Fout->setN(1,n1);
+    Fout->setD(1,1);
+    Fout->setData_format(sizeof(key));
+    Fout->setType(KEYMAP);
+    Fout->writeHeader();
+    Fout->seekp(Fout->getStartofdata());
+    int status;
+    for (size_t i=0; i < n1; i++)
+    {
+        Fout->write(&(this->keymap[i].i0), 1);
+        Fout->write(&(this->keymap[i].n), 1);
+        status = static_cast<int>(this->keymap[i].status);
+        Fout->write(&status, 1);
+    }
+}
+
+template<typename T>
+void Sort<T>::readSortmap(){
+    if(this->smapfile.empty()) rs_error("Sort::readSortmap: smapfile not set.");
+    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
+    if(Fin->input(this->smapfile) == FILE_ERR) rs_error("Sort::readSortmap: Error opening file: ", this->smapfile);
+    if(Fin->getType() != SORTMAP) rs_error("Sort::readSortmap: Sort map file is not of correct type (SORTMAP)");
+    this->ntraces = Fin->getN(1);
+    free(sortmap);
+    sortmap = (size_t *) calloc(this->ntraces, sizeof(size_t));
+    for (size_t i=0; i < this->ntraces; i++)
+    {
+        Fin->read(&(this->sortmap[i]), 1);
+    }
+}
+
+template<typename T>
+void Sort<T>::writeSortmap(){
+    if(ngathers == 0) rs_error("Sort::writeSortmap: Sort map was not created, ngathers = 0");
+    size_t n1 = this->ntraces;
+
+    if(this->smapfile.empty()) rs_error("Sort::writeSortmap: smapfile not set.");
+
+    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
+    Fout->output(this->smapfile);
+    Fout->setN(1,n1);
+    Fout->setD(1,1);
+    Fout->setData_format(sizeof(size_t));
+    Fout->setType(SORTMAP);
+    Fout->writeHeader();
+    Fout->seekp(Fout->getStartofdata());
+    for (size_t i=0; i < n1; i++)
+    {
+        Fout->write(&(this->sortmap[i]), 1);
     }
 }
 

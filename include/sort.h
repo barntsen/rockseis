@@ -42,26 +42,31 @@ public:
     Sort(); ///<Constructor
     virtual ~Sort();	///< Destructor
     void setStatus(size_t key, rs_status status); ///< Set status for a key 
-    rs_status getStatus(size_t key) { if(key < nensembles && key >= 0) return keymap[key].status; else rs_error("key out of bounds."); return FAILED;} ///< Set status for a key 
-    
+    rs_status getStatus(size_t key) { if(key < ngathers && key >= 0) return keymap[key].status; else rs_error("key out of bounds."); return FAILED;} ///< Set status for a key 
     bool createShotmap(std::string filename) { return createSort(filename, SOURCE, 0., 0.); } ///< Create a shot map using a data file
     bool createReceivermap(std::string filename) { return createSort(filename, RECEIVER, 0., 0.); } ///< Create a receiver map using a data file
     bool createCMPmap(std::string filename, T dx, T dy) { return createSort(filename, CMP, dx, dy); } ///< Create a CMP map using a data file
-    bool getGather(std::shared_ptr<Data2D<T>> gather);
+    std::shared_ptr<Data2D<T>> get2DGather(); ///< Get a gather using the keymap and sortmap
+    std::shared_ptr<Data3D<T>> get3DGather(); ///< Get a gather using the keymap and sortmap
 
-    std::shared_ptr<Data3D<T>> getGather();
-
-    // Read and write maps functions
-    ///< Read a keymap to file
-    ///< Write a keymap to file
-    ///< Read a sortmap to file
-    ///< Write a sortmap to file
+    // Functions to read and write maps
+    void readKeymap();  ///< Read a key map
+    void writeKeymap(); ///< Write a key map
+    void readSortmap(); ///< Read a sort map
+    void writeSortmap(); ///< Write a sort map
     
     //Get functions
-    size_t getNensemb() { return nensembles; } 
+    size_t getNensemb() { return ngathers; } ///< Get number of gathers
+    size_t getNtraces() { return ntraces; }  ///< Get number of traces in file
+    std::string getKmapfile() { return kmapfile; } ///< Get Kmapfile
+    std::string getSmapfile() { return smapfile; }  ///< Get Smapfile
+
+    //Set functions
+    void setKmapfile(std::string name) { kmapfile = name; }
+    void setSmapfile(std::string name) { smapfile = name; }
 
 private:
-    size_t nensembles;
+    size_t ngathers;
     size_t ntraces;
     key *keymap; // size nensemble, position to first trace and number of traces of ensemble, and finally a status of that ensemble 
     size_t *sortmap; // size ntrace, positions of the ensemble traces in file

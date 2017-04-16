@@ -33,6 +33,14 @@ int main(int argc, char* argv[])
         case rockseis::SNAPSHOT:
             std::cerr << "SNAPSHOT.";
             break;
+        case rockseis::KEYMAP:
+            std::cerr << "KEYMAP.";
+            break;
+        case rockseis::SORTMAP:
+            std::cerr << "SORTMAP.";
+            break;
+
+
     }
     std::cerr <<  std::endl;
     std::cerr << "Nheader: " << in->getNheader() << "\n"; 
