@@ -471,6 +471,7 @@ bool WavesAcoustic2D<T>::createSnap(std::string filename, Snap *Snap) {
         Snap->Fp->setO(3,this->getOz());
         Snap->Fp->setO(4,this->getSnapot());
         Snap->Fp->setData_format(sizeof(T));
+        Snap->Fp->setType(rockseis::SNAPSHOT);
         Snap->Fp->writeHeader();
         Snap->Fp->seekp(Snap->Fp->getStartofdata());
         this->setSnapit(0);
@@ -977,6 +978,7 @@ bool WavesAcoustic3D<T>::createSnap(std::string filename, Snap *Snap) {
         Snap->Fp->setO(3,this->getOz());
         Snap->Fp->setO(4,this->getSnapot());
         Snap->Fp->setData_format(sizeof(T));
+        Snap->Fp->setType(rockseis::SNAPSHOT);
         Snap->Fp->writeHeader();
         Snap->Fp->seekp(Snap->Fp->getStartofdata());
         this->setSnapit(0);
@@ -1514,6 +1516,7 @@ bool WavesElastic2D<T>::createSnap(std::string filename, Snap *Snap) {
         Snap->Fp->setO(3,this->getOz());
         Snap->Fp->setO(4,this->getSnapot());
         Snap->Fp->setData_format(sizeof(T));
+        Snap->Fp->setType(rockseis::SNAPSHOT);
         Snap->Fp->writeHeader();
         Snap->Fp->seekp(Snap->Fp->getStartofdata());
         this->setSnapit(0);
@@ -2443,6 +2446,7 @@ bool WavesElastic3D<T>::createSnap(std::string filename, Snap *Snap) {
         Snap->Fp->setO(3,this->getOz());
         Snap->Fp->setO(4,this->getSnapot());
         Snap->Fp->setData_format(sizeof(T));
+        Snap->Fp->setType(rockseis::SNAPSHOT);
         Snap->Fp->writeHeader();
         Snap->Fp->seekp(Snap->Fp->getStartofdata());
         this->setSnapit(0);
