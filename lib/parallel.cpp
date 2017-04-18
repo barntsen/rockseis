@@ -67,7 +67,7 @@ void MPImodeling::initTypes() {
 	offsets[0] = offsetof(workModeling_t,id);
 	offsets[1] = offsetof(workModeling_t,status);
 	offsets[2] = offsetof(workModeling_t,MPItag);
-	MPI_Type_struct(count,lengths,offsets,types,&MPIwork);
+	MPI_Type_create_struct(count,lengths,offsets,types,&MPIwork);
 	MPI_Type_commit(&MPIwork);
 
 	// Result type
@@ -79,7 +79,7 @@ void MPImodeling::initTypes() {
 	offsetsR[1] = offsetof(workResult_t,status);
 	offsetsR[2] = offsetof(workResult_t,fromRank);
 	offsetsR[3] = offsetof(workResult_t,MPItag);
-	MPI_Type_struct(countR,lengthsR,offsetsR,typesR,&MPIresult);
+	MPI_Type_create_struct(countR,lengthsR,offsetsR,typesR,&MPIresult);
 	MPI_Type_commit(&MPIresult);
 }
 

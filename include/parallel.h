@@ -5,6 +5,7 @@
 #include <vector>
 #include <mpi.h>
 #include <memory>
+#include <iostream>
 
 #define WORK_NOT_STARTED 0
 #define WORK_FINISHED 1

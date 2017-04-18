@@ -1,5 +1,6 @@
 #include <iostream>
 #include "parallel.h"
+#include <mpi.h>
 
 using namespace rockseis;
 
