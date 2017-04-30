@@ -7,6 +7,8 @@
 #include <iostream>
 #define NHEAD2D 4
 #define NHEAD3D 6
+#define SMAP 0
+#define GMAP 1
 
 namespace rockseis {
 
@@ -61,6 +63,10 @@ struct Point3D {
 void rs_error(std::string);
 void rs_error(std::string, std::string);
 void rs_error(std::string, std::string, std::string);
+
+void rs_warning(std::string);
+void rs_warning(std::string, std::string);
+void rs_warning(std::string, std::string, std::string);
 
 // =============== INITIALIZING TEMPLATE STRUCTS =============== //
 template struct Point2D<int>;

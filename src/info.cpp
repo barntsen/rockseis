@@ -44,6 +44,7 @@ int main(int argc, char* argv[])
     }
     std::cerr <<  std::endl;
     std::cerr << "Nheader: " << in->getNheader() << "\n"; 
+    std::cerr << "Header format: " << in->getHeader_format() << "\n"; 
 
     in->close();
     exit (0);

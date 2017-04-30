@@ -44,6 +44,17 @@ void rs_error(std::string msg1, std::string msg2,  std::string msg3){
     exit(1);
 }
 
+// Fatal error message 
+void rs_warning(std::string msg){
+    std::cerr << "Warning: " << msg << std::endl;
+}
+void rs_warning(std::string msg1, std::string msg2){
+    std::cerr << "Warning: " << msg1 << msg2 << std::endl;
+}
+void rs_warning(std::string msg1, std::string msg2,  std::string msg3){
+    std::cerr << "Warning: " << msg1 << msg2 << msg3 << std::endl;
+}
+
 }
 
 

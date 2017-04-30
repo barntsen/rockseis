@@ -27,6 +27,7 @@ public:
     size_t getN(int dim) { if( (dim <= MAXDIMS) && (dim > 0) ) return n[dim-1]; else return 0; }	///< Get dimension size
     T getD(int dim) { if( (dim <= MAXDIMS) && (dim > 0) ) return d[dim-1]; else return 0.; }	///< Get sampling interval
     T getO(int dim) { if( (dim <= MAXDIMS) && (dim > 0) ) return o[dim-1]; else return 0.; }	///< Get origin
+    size_t getNtot(); ///< Get total number of samples
 
     // Set functions
     void setN(int dim, size_t val); 	///< Set dimension size

@@ -47,9 +47,11 @@ bool File::input()
             status = FILE_ERR;
         }else{
             //Success
-            status = FILE_OK;	
             geometry->clear();
             readHeader();
+
+            status = checksum();
+            if(status == FILE_ERR) rs_warning("Input file failed checksum check.");
         }
     }
     return status;
@@ -76,9 +78,10 @@ bool File::input(std::string filename)
             status = FILE_ERR;
         }else{
             //Success
-            status = FILE_OK;	
             geometry->clear();
             readHeader();
+            status = checksum();
+            if(status == FILE_ERR) rs_warning("File ", filename, " failed checksum check.");
         }
     }
     return status;
@@ -128,9 +131,10 @@ bool File::append(std::string filename)
             status = FILE_ERR;
         }else{
             //Success
-            status = FILE_OK;	
             geometry->clear();
             readHeader();
+            status = checksum();
+            if(status == FILE_ERR) rs_warning("File ", filename, " failed checksum check.");
             fstream.seekp(pos);
         }
     }
@@ -211,7 +215,24 @@ void File::readHeader()
     }
     // Setting type
     this->setType(static_cast<rockseis::rs_datatype>(type));
+}
 
+bool File::checksum()
+{
+	size_t current_pos = fstream.tellg();
+    size_t size_from_file, size_from_geom;
+    size_t Ntot, N1;
+    fstream.seekg(0, fstream.end);
+    size_from_file = fstream.tellg();
+    fstream.seekg(current_pos);
+    Ntot= geometry->getNtot();
+    N1= geometry->getN(1);
+    size_from_geom =  startofdata + (Nheader*header_format*Ntot/N1) + (data_format*Ntot);
+    if(size_from_file != size_from_geom){
+        return FILE_ERR;
+    }else {
+        return FILE_OK;
+    }
 }
 
 // Write functions

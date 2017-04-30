@@ -56,7 +56,8 @@ public:
 	void write(int *buffer, size_t n, size_t pos); ///< Writes n ints to file starting from pos
 	void write(size_t *buffer, size_t n); ///< Writes n sze_t to file
 	void write(size_t *buffer, size_t n, size_t pos); ///< Writes n size_t to file starting from pos
-	bool is_open() { return fstream.is_open(); } ///< Checkes if file is open
+	bool is_open() { return fstream.is_open(); } ///< Checks if file is open
+    bool checksum(); ///< Check if file size matches header and geometry information
 
 	// Read functions
 	void readHeader(); ///< Read header from file

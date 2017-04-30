@@ -19,14 +19,14 @@ int main(int argc, char** argv) {
 		}
 
 		// Print work queue
-		std::cout << "Work queue before parallelization" << std::endl;
+		std::cerr << "Work queue before parallelization" << std::endl;
 		mpi.printWork();
 
 		// Perform work in parallel
 		mpi.performWork();
 	
 		// Print work queue
-		std::cout << "Work queue after parallelization" << std::endl;
+		std::cerr << "Work queue after parallelization" << std::endl;
 		mpi.printWork();
 	}
 	else {

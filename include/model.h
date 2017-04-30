@@ -9,6 +9,7 @@
 #include "geometry.h"
 #include "utils.h"
 #include "file.h"
+#include "data.h"
 
 namespace rockseis {
 
@@ -121,7 +122,10 @@ public:
     T *getL() { return L; }		///< Get L
     std::string getVpfile() { return Vpfile; }
     std::string getRfile() { return Rfile; }
-    
+    void setVpfile(std::string name) { Vpfile = name; }
+    void setRfile(std::string name) { Rfile = name; }
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
+
     /** Stagger model functions. 
     It creates the padded Rx, Rz and L from the non-padded models R and Vp. 
     */
@@ -162,6 +166,8 @@ public:
     T *getL() { return L; }		///< Get L
     std::string getVpfile() { return Vpfile; }
     std::string getRfile() { return Rfile; }
+    void setVpfile(std::string name) { Vpfile = name; }
+    void setRfile(std::string name) { Rfile = name; }
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz and L from the non-padded models R and Vp. 
@@ -207,11 +213,14 @@ public:
     std::string getVpfile() { return Vpfile; }
     std::string getVsfile() { return Vsfile; }
     std::string getRfile() { return Rfile; }
-
+    void setVpfile(std::string name) { Vpfile = name; }
+    void setVsfile(std::string name) { Vsfile = name; }
+    void setRfile(std::string name) { Rfile = name; }
     /** Stagger model functions. 
     It creates the padded Rx, Rz, L, L2M and M from the non-padded models R, Vp and Vs. 
     */
     void staggerModels();
+    std::shared_ptr<rockseis::ModelElastic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
 
 private:
     T *Vp;  // P-wave velocity
@@ -258,6 +267,9 @@ public:
     std::string getVpfile() { return Vpfile; }
     std::string getVsfile() { return Vsfile; }
     std::string getRfile() { return Rfile; }
+    void setVpfile(std::string name) { Vpfile = name; }
+    void setVsfile(std::string name) { Vsfile = name; }
+    void setRfile(std::string name) { Rfile = name; }
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, Vp and Vs. 

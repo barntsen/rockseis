@@ -18,8 +18,6 @@
 #define WAVES_OK 1;
 #define WAVES_ERR 0;
 
-#define SMAP 0
-#define GMAP 1
 
 namespace rockseis {
 

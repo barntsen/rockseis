@@ -56,7 +56,19 @@ bool Geometry<T>::compare(std::shared_ptr<Geometry<T>> other){
     return 0;
 }
 
-
+template<typename T>
+size_t Geometry<T>::getNtot(){
+    int i;
+    size_t Ntot = 1;
+    for(i = 0; i < MAXDIMS; i++)
+    {    
+	    if(n[i] > 0) 
+	    {
+            Ntot *= n[i];
+	    }
+    }
+    return Ntot;
+}
 
 template<typename T>
 void Geometry<T>::setN(int dim, size_t val) 

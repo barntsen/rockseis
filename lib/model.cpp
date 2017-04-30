@@ -1,6 +1,5 @@
 // Include statements
 #include "model.h"
-#include "file.h"
 
 namespace rockseis {
 
@@ -366,9 +365,9 @@ void ModelAcoustic2D<T>::writeModel() {
     std::string Rfile = this->getRfile();
     // Open files for writting
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
-    Fvp->output(Vpfile.c_str());
+    Fvp->output(Vpfile);
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
-    Frho->output(Rfile.c_str());
+    Frho->output(Rfile);
 
     // Write models
     int nx = this->getNx();
@@ -388,7 +387,7 @@ void ModelAcoustic2D<T>::writeModel() {
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
     Vp = this->getVp();
-    Fvp->write(Vp, nx*nz);
+    Fvp->write(Vp, nx*nz, 0);
     Fvp->close();
 
     Frho->setN(1,nx);
@@ -401,7 +400,7 @@ void ModelAcoustic2D<T>::writeModel() {
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
     R = this->getR();
-    Frho->write(R, nx*nz);
+    Frho->write(R, nx*nz, 0);
     Frho->close();
 }
 
@@ -445,6 +444,91 @@ void ModelAcoustic2D<T>::staggerModels(){
             L[ind_pml(ix,lpml)] *= 0.0;
         }
     }
+}
+
+
+template<typename T>
+std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) {
+
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> local;
+    /* Get source or receiver min and max positions */
+    Point2D<T> *coords;
+    size_t ntr = data->getNtrace();
+    T min, max; 
+    if(map == SMAP){
+        coords = (data->getGeom())->getScoords();
+        min = coords[0].x;
+        max = coords[0].x;
+        for (int i=1; i < ntr; i++){
+            if(coords[i].x < min) min = coords[i].x;
+            if(coords[i].x > max) max = coords[i].x;
+        }
+    }else{
+        coords = (data->getGeom())->getGcoords();
+        min = coords[0].x;
+        max = coords[0].x;
+        for (size_t i=1; i < ntr; i++){
+            if(coords[i].x < min) min = coords[i].x;
+            if(coords[i].x > max) max = coords[i].x;
+        }
+    }
+
+    T dx = this->getDx();
+    T ox = this->getOx();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+	/* Determine grid positions and sizes */
+    size_t size = rintf((max-min + aperture)/dx) + 1;
+    if( size % 2 == 0 ) size--; // Get odd size due to symmetry
+    off_t start = rintf((min - ox)/dx) - (size - 1)/2; 
+
+    /* Create local model */
+    local = std::make_shared<rockseis::ModelAcoustic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), ox, this->getOz(), this->getFs());
+
+	/* Copying from big model into local model */
+    T *Vp = local->getVp();
+    T *R = local->getR();
+
+    /* Allocate two traces to read models from file */
+    T *vptrace = (T *) calloc(nz, sizeof(T));
+    if(vptrace == NULL) rs_error("Modelacoustic2d::getlocal: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nz, sizeof(T));
+    if(rhotrace == NULL) rs_error("Modelacoustic2d::getlocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic2D::getLocal : Error reading from Vp file.");
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic2D::getLocal : Error reading from Density file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+	rockseis::Index k2d(size,nz);
+    for(size_t i2=0; i2<size; i2++) {
+        lpos = i2 + i;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nx-1)) lpos = nx - 1;
+        fpos = lpos * nz;
+        Fvp->read(vptrace, nz, fpos);
+        Frho->read(rhotrace, nz, fpos);
+        for(size_t i1=0; i1<nz; i1++) {
+            Vp[k2d(i2,i1)] = vptrace[i1];
+            R[k2d(i2,i1)] = rhotrace[i1];
+        }
+    }
+
+    /* Free traces */
+    free(vptrace);
+    free(rhotrace);
+
+    return local;
 }
 
 // =============== 3D ACOUSTIC MODEL CLASS =============== //
@@ -616,7 +700,7 @@ void ModelAcoustic3D<T>::writeModel() {
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
     Vp = this->getVp();
-    Fvp->write(Vp, nx*ny*nz);
+    Fvp->write(Vp, nx*ny*nz, 0);
     Fvp->close();
 
     Frho->setN(1,nx);
@@ -632,7 +716,7 @@ void ModelAcoustic3D<T>::writeModel() {
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
     R = this->getR();
-    Frho->write(R, nx*ny*nz);
+    Frho->write(R, nx*ny*nz, 0);
     Frho->close();
 }
 
@@ -868,11 +952,11 @@ void ModelElastic2D<T>::writeModel() {
     std::string Rfile = this->getRfile();
     // Open files for writting
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
-    Fvp->output(Vpfile.c_str());
+    Fvp->output(Vpfile);
     std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
-    Fvs->output(Vsfile.c_str());
+    Fvs->output(Vsfile);
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
-    Frho->output(Rfile.c_str());
+    Frho->output(Rfile);
 
     // Write models
     int nx = this->getNx();
@@ -892,7 +976,7 @@ void ModelElastic2D<T>::writeModel() {
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
     Vp = this->getVp();
-    Fvp->write(Vp, nx*nz);
+    Fvp->write(Vp, nx*nz, 0);
     Fvp->close();
 
     Fvs->setN(1,nx);
@@ -905,7 +989,7 @@ void ModelElastic2D<T>::writeModel() {
     Fvs->setData_format(sizeof(T));
     Fvs->writeHeader();
     Vs = this->getVs();
-    Fvs->write(Vs, nx*nz);
+    Fvs->write(Vs, nx*nz, 0);
     Fvs->close();
 
     Frho->setN(1,nx);
@@ -918,11 +1002,10 @@ void ModelElastic2D<T>::writeModel() {
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
     R = this->getR();
-    Frho->write(R, nx*nz);
+    Frho->write(R, nx*nz, 0);
     Frho->close();
 
 }
-
 
 template<typename T>
 void ModelElastic2D<T>::staggerModels(){
@@ -972,6 +1055,102 @@ void ModelElastic2D<T>::staggerModels(){
             L2M[ind_pml(ix,lpml)] *= 0.0;
         }
     }
+}
+
+template<typename T>
+std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) {
+
+    std::shared_ptr<rockseis::ModelElastic2D<T>> local;
+    /* Get source or receiver min and max positions */
+    Point2D<T> *coords;
+    size_t ntr = data->getNtrace();
+    T min, max; 
+    if(map == SMAP){
+        coords = (data->getGeom())->getScoords();
+        min = coords[0].x;
+        max = coords[0].x;
+        for (int i=1; i < ntr; i++){
+            if(coords[i].x < min) min = coords[i].x;
+            if(coords[i].x > max) max = coords[i].x;
+        }
+    }else{
+        coords = (data->getGeom())->getGcoords();
+        min = coords[0].x;
+        max = coords[0].x;
+        for (size_t i=1; i < ntr; i++){
+            if(coords[i].x < min) min = coords[i].x;
+            if(coords[i].x > max) max = coords[i].x;
+        }
+    }
+
+    T dx = this->getDx();
+    T ox = this->getOx();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+	/* Determine grid positions and sizes */
+    size_t size = rintf((max-min + aperture)/dx) + 1;
+    if( size % 2 == 0 ) size--; // Get odd size due to symmetry
+    off_t start = rintf((min - ox)/dx) - (size - 1)/2; 
+
+    /* Create local model */
+    local = std::make_shared<rockseis::ModelElastic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), ox, this->getOz(), this->getFs());
+
+	/* Copying from big model into local model */
+    T *Vp = local->getVp();
+    T *R = local->getR();
+
+    /* Allocate two traces to read models from file */
+    T *vptrace = (T *) calloc(nx, sizeof(T));
+    if(vptrace == NULL) rs_error("ModelElastic2d::getlocal: Failed to allocate memory.");
+    T *vstrace = (T *) calloc(nx, sizeof(T));
+    if(vstrace == NULL) rs_error("ModelElastic2d::getlocal: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelElastic2d::getlocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelElastic2D::getLocal : Error reading from Vp file.");
+    }
+    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    status = Fvs->input(Vsfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelElastic2D::getLocal : Error reading from Vs file.");
+    }
+
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelElastic2D::getLocal : Error reading from Density file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+    rockseis::Index l2d(size,nz);
+    rockseis::Index f2d(nx,nz);
+    for(size_t i1=0; i1<nz; i1++) {
+        fpos = f2d(0, i1)*sizeof(T);
+        Fvp->read(vptrace, nx, fpos);
+        Fvs->read(vstrace, nx, fpos);
+        Frho->read(rhotrace, nx, fpos);
+        for(size_t i2=0; i2<size; i2++) {
+            lpos = i + i2;
+            if(lpos < 0) lpos = 0;
+            if(lpos > (nx-1)) lpos = nx - 1;
+            Vp[l2d(i2,i1)] = vptrace[lpos];
+            Vs[l2d(i2,i1)] = vstrace[lpos];
+            R[l2d(i2,i1)] = rhotrace[lpos];
+        }
+    }
+
+    /* Free traces */
+    free(vptrace);
+    free(vstrace);
+    free(rhotrace);
+
+    return local;
 }
 
 template<typename T>
@@ -1197,7 +1376,7 @@ void ModelElastic3D<T>::writeModel() {
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
     Vp = this->getVp();
-    Fvp->write(Vp, nx*ny*nz);
+    Fvp->write(Vp, nx*ny*nz, 0);
     Fvp->close();
 
     Fvs->setN(1,nx);
@@ -1213,7 +1392,7 @@ void ModelElastic3D<T>::writeModel() {
     Fvs->setData_format(sizeof(T));
     Fvs->writeHeader();
     Vs = this->getVs();
-    Fvs->write(Vs, nx*ny*nz);
+    Fvs->write(Vs, nx*ny*nz, 0);
     Fvs->close();
 
     Frho->setN(1,nx);
@@ -1229,7 +1408,7 @@ void ModelElastic3D<T>::writeModel() {
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
     R = this->getR();
-    Frho->write(R, nx*ny*nz);
+    Frho->write(R, nx*ny*nz, 0);
     Frho->close();
 }
 

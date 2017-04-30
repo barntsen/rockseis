@@ -17,21 +17,18 @@
 
 namespace rockseis {
 // =============== MPI WORK STRUCTS =============== //
-struct workModeling_s {
+typedef struct {
 	int id;
 	int status;
 	int MPItag;
-};
-typedef struct workModeling_s workModeling_t;
+}  workModeling_t;
 
-struct workResult_s {
+typedef struct {
 	int id;
 	int status;
 	int fromRank;
 	int MPItag;
-};
-
-typedef struct workResult_s workResult_t;
+}  workResult_t;
 
 
 // =============== PARENT MPI CLASS =============== //

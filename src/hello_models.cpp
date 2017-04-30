@@ -54,6 +54,7 @@ int main()
 	std::shared_ptr<rockseis::ModelElastic2D<float>> model2d (new rockseis::ModelElastic2D<float>(nx, nz, lpml, dx, dz, ox, oz, fs));
 	std::shared_ptr<rockseis::ModelElastic3D<float>> model3d (new rockseis::ModelElastic3D<float>(nx, ny, nz, lpml, dx, dy, dz, ox, oy, oz, fs));
 
+
 	// Make a model
 	int ix,iy, iz;
 	float *R2d, *Vp2d, *Vs2d;
@@ -79,57 +80,24 @@ int main()
         }
     }
 
-	// Output 2d models
-	Fmod->output("Vp2d.rss");
-	Fmod->clearGeometry();
-	Fmod->setN(1,nx);
-	Fmod->setN(3,nz);
-	Fmod->setD(1,dx);
-	Fmod->setD(3,dz);
-	Fmod->setO(1,ox);
-	Fmod->setO(3,oz);
-	Fmod->setData_format(sizeof(float));
-	Fmod->writeHeader();
-	Fmod->write(Vp2d, nx*nz,0);
-	Fmod->close();
+    // Adding a reflector
+    for(iz=5; iz<7; iz++){
+            for(ix=5; ix<nx; ix++){
+                Vp2d[k2d(ix,iz)]= 2500;
+            }
+    }
 
-	Fmod->output("Vs2d.rss");
-	Fmod->writeHeader();
-	Fmod->write(Vs2d, nx*nz,0);
-	Fmod->close();
+    model2d->setVpfile("Vp2d.rss");
+    model2d->setVsfile("Vs2d.rss");
+    model2d->setRfile("Rho2d.rss");
+    model2d->writeModel();
 
-	Fmod->output("Rho2d.rss");
-	Fmod->writeHeader();
-	Fmod->write(R2d, nx*nz,0);
-	Fmod->close();
+    model3d->setVpfile("Vp3d.rss");
+    model3d->setVsfile("Vs3d.rss");
+    model3d->setRfile("Rho3d.rss");
+    model3d->writeModel();
 
-	// Output 3d models
-	Fmod->output("Vp3d.rss");
-	Fmod->clearGeometry();
-	Fmod->setN(1,nx);
-	Fmod->setN(2,ny);
-	Fmod->setN(3,nz);
-	Fmod->setD(1,dx);
-	Fmod->setD(2,dy);
-	Fmod->setD(3,dz);
-	Fmod->setO(1,ox);
-	Fmod->setO(2,oy);
-	Fmod->setO(3,oz);
-	Fmod->setData_format(sizeof(float));
-	Fmod->writeHeader();
-	Fmod->write(Vp3d, nx*ny*nz,0);
-	Fmod->close();
 
-	Fmod->output("Vs3d.rss");
-	Fmod->writeHeader();
-	Fmod->write(Vs3d, nx*ny*nz,0);
-	Fmod->close();
-
-	Fmod->output("Rho3d.rss");
-	Fmod->writeHeader();
-	Fmod->write(R3d, nx*ny*nz,0);
-	Fmod->close();
-	
 	// Setup a 2d Wavelet 
 	std::shared_ptr<rockseis::Data2D<float>> source2d (new rockseis::Data2D<float>(1, nt, dt, 0.0));
 	float *wav = source2d->getData();
@@ -156,6 +124,14 @@ int main()
 	if(status == FILE_ERR){
 		std::cout << "Failed to write wavelet file. \n";
 	}
+
+    /* Test Get local model function */
+	std::shared_ptr<rockseis::ModelElastic2D<float>> lmodel2d;
+    lmodel2d = model2d->getLocal(source2d, 900, SMAP);
+    lmodel2d->setVpfile("LVp2d.rss");
+    lmodel2d->setVsfile("LVs2d.rss");
+    lmodel2d->setRfile("LRho2d.rss");
+    lmodel2d->writeModel();
 
 	// Setup a 3d Wavelet 
 	std::shared_ptr<rockseis::Data3D<float>> source3d (new rockseis::Data3D<float>(1, nt, dt, 0.0));
