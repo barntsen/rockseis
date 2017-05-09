@@ -1339,6 +1339,7 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
 
 	/* Copying from big model into local model */
     T *Vp = local->getVp();
+    T *Vs = local->getVs();
     T *R = local->getR();
 
     /* Allocate two traces to read models from file */
