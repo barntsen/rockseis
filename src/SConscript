@@ -28,8 +28,6 @@ env.Install('../bin/',hello3d_acoustic)
 hello3d_elastic = env.Program(prefix + 'hello3d_elastic','hello3d_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello3d_elastic)
 
-mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel'],LIBPATH=['../build'])
-mpi.Install('../bin/',mpidbg)
 
 hello_mada = env.Program(prefix + 'hello_mada','hello_mada.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'config4cpp', 'rsfcpp', 'rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
 env.Install('../bin/',hello_mada)
@@ -52,3 +50,9 @@ env.Install('../bin/',hello_parser)
 
 hello_sort = env.Program(prefix + 'hello_sort','hello_sort.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort'],LIBPATH=['../build'])
 env.Install('../bin/',hello_sort)
+
+mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel'],LIBPATH=['../build'])
+mpi.Install('../bin/',mpidbg)
+
+mpiAcouticmod = mpi.Program(prefix + 'mpiAcouticmod','mpiAcouticmod.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'config4cpp', 'parallel'],LIBPATH=['../build', '../config4cpp/lib'])
+mpi.Install('../bin/',mpiAcouticmod)

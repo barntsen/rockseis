@@ -55,8 +55,13 @@ int main()
 	std::shared_ptr<rockseis::ModelElastic3D<float>> model3d (new rockseis::ModelElastic3D<float>(nx, ny, nz, lpml, dx, dy, dz, ox, oy, oz, fs));
 
 
-	// Make a model
-	int ix,iy, iz;
+	/* Make a model */
+
+    // Create empty models
+    model2d->createModel();
+    model3d->createModel();
+
+    // Get pointers to the models
 	float *R2d, *Vp2d, *Vs2d;
 	float *R3d, *Vp3d, *Vs3d;
 	R3d = model3d->getR();
@@ -67,6 +72,7 @@ int main()
 	Vs2d = model2d->getVs();
 	rockseis::Index k2d(nx,nz);
 	rockseis::Index k3d(nx,ny,nz);
+	int ix,iy, iz;
     for(iz=0; iz<nz; iz++){
         for(iy=0; iy<ny; iy++){
             for(ix=0; ix<nx; ix++){
@@ -125,13 +131,7 @@ int main()
 		std::cout << "Failed to write wavelet file. \n";
 	}
 
-    /* Test Get local model function */
-	std::shared_ptr<rockseis::ModelElastic2D<float>> lmodel2d;
-    lmodel2d = model2d->getLocal(source2d, 900, SMAP);
-    lmodel2d->setVpfile("LVp2d.rss");
-    lmodel2d->setVsfile("LVs2d.rss");
-    lmodel2d->setRfile("LRho2d.rss");
-    lmodel2d->writeModel();
+   
 
 	// Setup a 3d Wavelet 
 	std::shared_ptr<rockseis::Data3D<float>> source3d (new rockseis::Data3D<float>(1, nt, dt, 0.0));
@@ -197,5 +197,23 @@ int main()
 	if(status == FILE_ERR){
 		std::cout << "Failed to write record3d file. \n";
 	}
-	return 0;
+
+
+    /* Test Get local model function */
+    std::shared_ptr<rockseis::ModelElastic2D<float>> lmodel2d;
+    lmodel2d = model2d->getLocal(source2d, 900, SMAP);
+    lmodel2d->setVpfile("LVp2d.rss");
+    lmodel2d->setVsfile("LVs2d.rss");
+    lmodel2d->setRfile("LRho2d.rss");
+    lmodel2d->writeModel();
+
+    std::shared_ptr<rockseis::ModelElastic3D<float>> lmodel3d;
+    lmodel3d = model3d->getLocal(source3d, 900, 900, SMAP);
+    lmodel3d->setVpfile("LVp3d.rss");
+    lmodel3d->setVsfile("LVs3d.rss");
+    lmodel3d->setRfile("LRho3d.rss");
+    lmodel3d->writeModel();
+
+
+    return 0;
 }

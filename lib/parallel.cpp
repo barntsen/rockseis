@@ -26,7 +26,7 @@ MPI::~MPI() {
 	MPI_Finalize();
 }
 
-int MPI::getNRank() {
+int MPI::getNrank() {
 	return nrank;
 }
 
@@ -62,7 +62,7 @@ void MPImodeling::initTypes() {
 	// Work type
 	int count = 3;
 	int lengths[3] = {1,1,1};
-	MPI_Datatype types[3] = {MPI_INT,MPI_INT,MPI_INT};
+	MPI_Datatype types[3] = {MPI_UNSIGNED_LONG,MPI_INT,MPI_INT};
 	MPI_Aint offsets[3];
 	offsets[0] = offsetof(workModeling_t,id);
 	offsets[1] = offsetof(workModeling_t,status);
@@ -73,7 +73,7 @@ void MPImodeling::initTypes() {
 	// Result type
 	int countR = 4;
 	int lengthsR[4] = {1,1,1,1};
-	MPI_Datatype typesR[4] = {MPI_INT,MPI_INT,MPI_INT,MPI_INT};
+	MPI_Datatype typesR[4] = {MPI_UNSIGNED_LONG,MPI_INT,MPI_INT,MPI_INT};
 	MPI_Aint offsetsR[4];
 	offsetsR[0] = offsetof(workResult_t,id);
 	offsetsR[1] = offsetof(workResult_t,status);
@@ -113,7 +113,7 @@ void MPImodeling::printWork() {
 }
 
 void MPImodeling::sendWorkToAll() {
-	for(int i=1; i<getNRank(); i++) {
+	for(int i=1; i<getNrank(); i++) {
 		// Get work from queue
 		std::shared_ptr<workModeling_t> work = getWork();
 		if(work != NULL) {
@@ -155,7 +155,7 @@ void MPImodeling::performWork() {
 	}
 
 	// Work queue is finished so collecting results
-	for(int i=1; i<getNRank(); ++i) {
+	for(int i=1; i<getNrank(); ++i) {
 		// Receive work from slaves
 		workResult_t result = receiveResult();
 

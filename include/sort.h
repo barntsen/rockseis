@@ -47,7 +47,9 @@ public:
     bool createReceivermap(std::string filename) { return createSort(filename, RECEIVER, 0., 0.); } ///< Create a receiver map using a data file
     bool createCMPmap(std::string filename, T dx, T dy) { return createSort(filename, CMP, dx, dy); } ///< Create a CMP map using a data file
     std::shared_ptr<Data2D<T>> get2DGather(); ///< Get a gather using the keymap and sortmap
+    std::shared_ptr<Data2D<T>> get2DGather(size_t num); ///< Get gather number using the keymap and sortmap
     std::shared_ptr<Data3D<T>> get3DGather(); ///< Get a gather using the keymap and sortmap
+    std::shared_ptr<Data3D<T>> get3DGather(size_t num); ///< Get gather number using the keymap and sortmap
 
     // Functions to read and write maps
     void readKeymap();  ///< Read a key map
@@ -64,6 +66,7 @@ public:
     //Set functions
     void setKmapfile(std::string name) { kmapfile = name; }
     void setSmapfile(std::string name) { smapfile = name; }
+    void setDatafile(std::string name) { datafile = name; }
 
 private:
     size_t ngathers;

@@ -42,6 +42,7 @@ public:
     T getOy() { return geometry->getO(2); }		///< Get Oy
     T getOz() { return geometry->getO(3); }		///< Get Oz
     std::shared_ptr<Geometry<T>> getGeom() { return geometry; } ///< Get geometry
+    bool getRealized() { return realized; } ///< Check if model is allocated
     
     // Set functions
     void setNx(const int _nx) { geometry->setN(1, _nx); }	///< Set Nx
@@ -59,6 +60,7 @@ public:
     void setOy(const T _oy) { geometry->setO(2, _oy); }	///< Set Oy
     void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
     void setDim(const int _dim) { dim = _dim; } 	///< Set the dimension
+    void setRealized(const bool val) { realized = val; } ///< Set if model is allocated
     
     // I/O functions
     virtual void readModel() = 0;	///< Read model (virtual)
@@ -97,6 +99,7 @@ private:
     int ny_pml;
     int nz_pml;
     bool fs;
+    bool realized;  // Set to 1 when the model is allocated to the correct size
 };
 
 // =============== 2D ACOUSTIC MODEL CLASS =============== //
@@ -130,6 +133,11 @@ public:
     It creates the padded Rx, Rz and L from the non-padded models R and Vp. 
     */
     void staggerModels(); 
+
+    /** Create model
+    It creates an empty model of Vp and R
+    */
+    void createModel();
     
 private:
     T *Vp;  ///< P-wave velocity
@@ -169,10 +177,17 @@ public:
     void setVpfile(std::string name) { Vpfile = name; }
     void setRfile(std::string name) { Rfile = name; }
 
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperturex, T aperturey, bool map);
+
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz and L from the non-padded models R and Vp. 
     */
     void staggerModels();
+
+    /** Create model
+    It creates an empty model of Vp and R
+    */
+    void createModel();
 
 private:
     T *Vp;  ///< P-wave velocity
@@ -221,6 +236,11 @@ public:
     */
     void staggerModels();
     std::shared_ptr<rockseis::ModelElastic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
+
+    /** Create model
+    It creates an empty model of Vp, Vs and R
+    */
+    void createModel();
 
 private:
     T *Vp;  // P-wave velocity
@@ -271,10 +291,17 @@ public:
     void setVsfile(std::string name) { Vsfile = name; }
     void setRfile(std::string name) { Rfile = name; }
 
+    std::shared_ptr<rockseis::ModelElastic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperture_x, T aperture_y, bool map);
+
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, Vp and Vs. 
     */
     void staggerModels();
+
+    /** Create model
+    It creates an empty model of Vp, Vs and R
+    */
+    void createModel();
 
 private:
     T *Vp;  ///< P-wave velocity

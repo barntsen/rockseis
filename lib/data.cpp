@@ -371,7 +371,7 @@ template<typename T>
 Data3D<T>::Data3D(const int _ntrace, const int _nt, const T _dt, const T _ot): Data<T>(_ntrace, _nt, _dt, _ot)
 {
     // Create a 3D data geometry
-    geometry =std::make_shared<Geometry3D<T>>(_ntrace); 
+    geometry = std::make_shared<Geometry3D<T>>(_ntrace); 
 
     // Allocate the memory for the data
     data = (T *) calloc(_ntrace*_nt, sizeof(T));
@@ -398,7 +398,8 @@ Data3D<T>::Data3D(std::string datafile): Data<T>(datafile)
     size_t nt;
     T dt;
     T ot;
-    //Opeing file for reading
+
+    //Opening file for reading
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(datafile.c_str());
     if(status == FILE_ERR){

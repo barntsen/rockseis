@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
 		// Master
 
 		// Create work queue
-		for(int i=0; i<20; i++) {
+		for(unsigned long int i=0; i<20; i++) {
 			// Work struct
 			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
 			mpi.addWork(work);
@@ -43,6 +43,8 @@ int main(int argc, char** argv) {
 			}
 			else {
 				// Do some work
+                std::cerr << "Received order to get shot number " << work.id << std::endl;
+                std::cerr << "Processing work with id number " << work.id << std::endl;
 				work.status = WORK_FINISHED;
 
 				// Send result back

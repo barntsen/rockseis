@@ -18,13 +18,13 @@
 namespace rockseis {
 // =============== MPI WORK STRUCTS =============== //
 typedef struct {
-	int id;
+	unsigned long id;
 	int status;
 	int MPItag;
 }  workModeling_t;
 
 typedef struct {
-	int id;
+	unsigned long int id;
 	int status;
 	int fromRank;
 	int MPItag;
@@ -42,7 +42,7 @@ public:
 	~MPI();					///< Destructor
 
 	// Get functions
-	int getNRank();				///< Get number of processors
+	int getNrank();				///< Get number of processors
 	int getRank();				///< Get rank for current processor
 
 	// Send and receive functions
