@@ -19,8 +19,8 @@ Model<T>::Model() {
     geometry->setO(2, 0.);
     geometry->setO(3, 0.);
     lpml = 1;
-    fs = 0;
-    realized=0;
+    fs = false;
+    realized=false;
 }
 template<typename T>
 Model<T>::Model(const int _dim) {
@@ -36,8 +36,8 @@ Model<T>::Model(const int _dim) {
     geometry->setO(2, 0.);
     geometry->setO(3, 0.);
     lpml = 1;
-    fs = 0;
-    realized=0;
+    fs = false;
+    realized=false;
 }
 
 template<typename T>
@@ -55,7 +55,7 @@ Model<T>::Model(const int _dim, const int _nx, const int _ny, const int _nz, con
     geometry->setO(3, _oz);
     lpml = _lpml;
     fs = _fs;
-    realized=0;
+    realized=false;
 }
 
 template<typename T>
@@ -224,12 +224,11 @@ ModelAcoustic2D<T>::ModelAcoustic2D(): Model<T>(2) {
     nx_pml = nx +2*lpml;
     nz_pml = nz +2*lpml;
     
-    Vp = (T *) calloc(nx*nz,sizeof(T));
-    R = (T *) calloc(nx*nz,sizeof(T));
-    L = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Rx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Rz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    this->setRealized(true);
+    Vp = (T *) calloc(1,1);
+    R = (T *) calloc(1,1);
+    L = (T *) calloc(1,1);
+    Rx = (T *) calloc(1,1);
+    Rz = (T *) calloc(1,1);
     
 }
 
@@ -523,6 +522,9 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
 
     /* Create local model */
     local = std::make_shared<rockseis::ModelAcoustic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getFs());
+
+    /*Realizing local model */
+    local->createModel();
 
 	/* Copying from big model into local model */
     T *Vp = local->getVp();
@@ -914,6 +916,9 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
 
     /* Create local model */
     local = std::make_shared<rockseis::ModelAcoustic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), (ox + start_x*dx), (oy + start_y*dy), this->getOz(), this->getFs());
+
+    /*Realizing local model */
+    local->createModel();
 
 	/* Copying from big model into local model */
     T *Vp = local->getVp();
@@ -1329,6 +1334,9 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
     /* Create local model */
     local = std::make_shared<rockseis::ModelElastic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getFs());
 
+    /*Realizing local model */
+    local->createModel();
+
 	/* Copying from big model into local model */
     T *Vp = local->getVp();
     T *R = local->getR();
@@ -1568,6 +1576,7 @@ void ModelElastic3D<T>::readModel() {
     if(Vs == NULL) rs_error("ModelElastic3D::readModel: Failed to allocate memory.");
     R = (T *) calloc(nx*ny*nz,sizeof(T));
     if(R == NULL) rs_error("ModelElastic3D::readModel: Failed to allocate memory.");
+    this->setRealized(true);
 
     Vp = this->getVp();
     Fvp->read(Vp, nx*ny*nz);
@@ -1809,6 +1818,9 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
 
     /* Create local model */
     local = std::make_shared<rockseis::ModelElastic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), (ox + start_x*dx), (oy + start_y*dy), this->getOz(), this->getFs());
+
+    /*Realizing local model */
+    local->createModel();
 
 	/* Copying from big model into local model */
     T *Vp = local->getVp();
