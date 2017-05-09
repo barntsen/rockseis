@@ -1285,7 +1285,7 @@ void ModelElastic2D<T>::createModel() {
     int nx = this->getNx();
     int nz = this->getNz();
 
-    /* Reallocate Vp and R */
+    /* Reallocate Vp, Vs and R */
     free(Vp); free(Vs); free(R);
     Vp = (T *) calloc(nx*nz,sizeof(T));
     if(Vp == NULL) rs_error("ModelElastic2D::createModel: Failed to allocate memory.");

@@ -13,6 +13,7 @@ File::File()
     header_format = -1;
     type=GENERIC;
     geometry = std::make_shared<Geometry<double>>(); 
+    headerstat = false;
 
 
     //Compute start of data
