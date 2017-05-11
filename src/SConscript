@@ -41,9 +41,11 @@ env.Install('../bin/',rss2rsf)
 segy2rss = env.Program(prefix + 'segy2rss','segy2rss.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'config4cpp', 'rsfcpp', 'rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
 env.Install('../bin/',segy2rss)
 
-
 info = env.Program(prefix + 'info','info.cpp',LIBS=['file', 'utils','geometry'],LIBPATH=['../build'])
 env.Install('../bin/',info)
+
+makesurvey = env.Program(prefix + 'makesurvey','makesurvey.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse'],LIBPATH=['../build', '../config4cpp/lib'])
+env.Install('../bin/',makesurvey)
 
 hello_parser = env.Program(prefix + 'hello_parser','hello_parser.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello_parser)

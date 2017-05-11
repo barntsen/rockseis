@@ -77,10 +77,11 @@ public:
 
     // File input/output
     /** Read and write data files */
-    bool read(); /// Read data and coordinates
-    bool readCoords(); /// Read only coordinates
-    bool write(); /// Writes data and coordinates
-    bool writeTraces(); /// Writes data and coordinates to the end of the file
+    bool read(); ///< Read data and coordinates
+    bool readCoords(); ///< Read only coordinates
+    bool copyCoords(std::shared_ptr<Data2D<T>> Data); ///< copy coordinates from other data
+    bool write(); ///< Writes data and coordinates
+    bool writeTraces(); ///< Writes data and coordinates to the end of the file
 
 private:
     std::shared_ptr<Geometry2D<T>> geometry; // Data geometry 
@@ -112,6 +113,7 @@ public:
     /** Read and write data files */
     bool read(); /// Read data and coordinates
     bool readCoords(); /// Read only coordinates
+    bool copyCoords(std::shared_ptr<Data3D<T>> Data); ///< copy coordinates from other data
     bool write(); /// Writes data and coordinates
     bool writeTraces(); /// Writes data and coordinates to the end of the file
 

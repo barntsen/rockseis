@@ -19,6 +19,8 @@ libmains = Split(config4cpp_lib)
 
 env.Library(libdir + 'config4cpp', libmains)
 
+env.Library(libdir + 'inparse',['inparse.cpp', libmains])
+
 # Where are the files 
 config4cpp.Append(CPPPATH=['./src', './include/config4cpp'])
 

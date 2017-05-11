@@ -71,6 +71,7 @@ env.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized
 # Include path
 env.Append(CPPPATH=['../include'])
 env.Append(CPPPATH=['../config4cpp/include'])
+env.Append(CPPPATH=['../config4cpp/src'])
 env.Append(CPPPATH=['../madagascar/include'])
 env.Append(LIBPATH=['../build'])
 

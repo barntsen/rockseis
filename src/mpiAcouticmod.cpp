@@ -30,6 +30,9 @@ int main(int argc, char** argv) {
 	bool fs=0;
 	int order=0;
 	int snapinc=0;
+    int dim;
+    float apertx=900;
+    float aperty=0;
     std::string Surveyfile;
     std::string Waveletfile;
     std::string Vpfile;
@@ -91,7 +94,12 @@ int main(int argc, char** argv) {
         std::cerr << ex.c_str() << std::endl;
         status = 1;
     }
-
+    try {
+        dim = cfg->lookupInt(scope, "dim");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
     try {
         fs = cfg->lookupBoolean(scope, "freesurface");
     } catch(const config4cpp::ConfigurationException & ex) {
@@ -128,6 +136,20 @@ int main(int argc, char** argv) {
     } catch(const config4cpp::ConfigurationException & ex) {
         std::cerr << ex.c_str() << std::endl;
         status = 1;
+    }
+    try {
+        apertx = cfg->lookupFloat(scope, "apertx");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+    if(dim == 3){
+        try {
+            aperty = cfg->lookupFloat(scope, "aperty");
+        } catch(const config4cpp::ConfigurationException & ex) {
+            std::cerr << ex.c_str() << std::endl;
+            status = 1;
+        }
     }
     if(Psnap){
         try {
@@ -261,8 +283,9 @@ int main(int argc, char** argv) {
         Sort->writeKeymap();
         Sort->writeSortmap();
 
+        // Get number of shots
         int ngathers =  Sort->getNensemb();
-        std::cerr << "Number of shot gathers: " << ngathers << std::endl;
+        size_t ntraces = Sort->getNtraces();
 
 		// Create work queue
 		for(unsigned long int i=0; i<ngathers; i++) {
@@ -281,36 +304,93 @@ int main(int argc, char** argv) {
 		// Print work queue
 		std::cerr << "Work queue after parallelization" << std::endl;
 		mpi.printWork();
-	}
-	else {
-		/* Slave */
-        std::shared_ptr<rockseis::Data3D<float>> OneShot;
-        rockseis::Point3D<float> *scoords;
+    }
+    else {
+        /* Slave */
+        std::shared_ptr<rockseis::Data2D<float>> OneShot;
+        std::shared_ptr<rockseis::ModellingAcoustic2D<float>> modelling;
+        rockseis::Point2D<float> *scoords;
+        float xs,zs; // Source coordinates
         while(1) {
-			workModeling_t work = mpi.receiveWork();
+            workModeling_t work = mpi.receiveWork();
 
-			if(work.MPItag == MPI_TAG_DIE) {
-				break;
-			}
+            if(work.MPItag == MPI_TAG_DIE) {
+                break;
+            }
 
-			if(work.MPItag == MPI_TAG_NO_WORK) {
-				mpi.sendNoWork(0);
-			}
-			else {
-				// Do some work
+            if(work.MPItag == MPI_TAG_NO_WORK) {
+                mpi.sendNoWork(0);
+            }
+            else {
+                // Do some work
                 Sort->readKeymap();
                 Sort->readSortmap();
 
-                OneShot = Sort->get3DGather(work.id);
+                OneShot = Sort->get2DGather(work.id);
+                size_t ntr = OneShot->getNtrace();
+                lmodel = gmodel->getLocal(OneShot, apertx, SMAP);
                 scoords = (OneShot->getGeom())->getScoords();
-                std::cerr << "Got shot with coordinates x: " << scoords[0].x << " y: " << scoords[0].y << " z: " << scoords[0].z << " and number of traces: " << OneShot->getNtrace() << std::endl;
-                work.status = WORK_FINISHED;
-                OneShot.reset();
+                xs = scoords[0].x;
+                zs = scoords[0].y;
 
-				// Send result back
-				mpi.sendResult(work);		
-			}
-		}
-	}
+                scoords = (source->getGeom())->getScoords();
+                scoords[0].x = xs;
+                scoords[0].y = zs;
+
+                // Read wavelet data and coordinates and make a map
+                source->read();
+                source->makeMap(lmodel->getGeom());
+
+                modelling = std::make_shared<rockseis::ModellingAcoustic2D<float>>(lmodel, source, order, snapinc);
+
+                // Setting Snapshot file 
+                if(Psnap){
+                    modelling->setSnapP(Psnapfile);
+                }
+                if(Axsnap){
+                    modelling->setSnapAx(Axsnapfile);
+                }
+                if(Azsnap){
+                    modelling->setSnapAz(Azsnapfile);
+                }
+
+                // Setting Record
+                if(Precord){
+                    Pdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    Pdata2D->setField(rockseis::PRESSURE);
+                    std:: string datafile = std::to_string(work.id) + "_" + Precordfile;
+                    Pdata2D->setFile(datafile);
+                    // Copy geometry to Data
+                    Pdata2D->copyCoords(OneShot);
+                    Pdata2D->makeMap(lmodel->getGeom());
+                    modelling->setRecP(Pdata2D);
+                }
+
+                // Stagger model
+                lmodel->staggerModels();
+
+                // Run modelling 
+                modelling->run();
+
+                // Output record
+                if(Precord){
+                    Pdata2D->write();
+                }
+
+
+                // Reset all classes
+                OneShot.reset();
+                lmodel.reset();
+                modelling.reset();
+                if(Precord){
+                    Pdata2D.reset();
+                }
+                work.status = WORK_FINISHED;
+
+                // Send result back
+                mpi.sendResult(work);		
+            }
+        }
+    }
 }
 

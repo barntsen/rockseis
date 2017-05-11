@@ -239,14 +239,14 @@ bool Data2D<T>::readCoords()
     }
 
     size_t nt = Fin->getN(1);
-    int ntrace = Fin->getN(2);
+    size_t ntrace = Fin->getN(2);
     size_t Nheader = Fin->getNheader();
 
     status = FILE_OK;
     if ( Fin->is_open()  && (Nheader == NHEAD2D) )
     {
         // Create geometry
-        int i;
+        size_t i;
         Point2D<T> *scoords = (this->getGeom())->getScoords();
         Point2D<T> *gcoords = (this->getGeom())->getGcoords();
         for (i=0; i < ntrace; i++)
@@ -260,6 +260,37 @@ bool Data2D<T>::readCoords()
             Fin->read(&gcoords[i].y, 1);
         }	
     }else{
+        status = FILE_ERR;	
+    }
+    return status;
+}
+
+template<typename T>
+bool Data2D<T>::copyCoords(std::shared_ptr<Data2D<T>> Data)
+{
+    bool status;
+    size_t ntr1 = this->getNtrace();
+    size_t ntr2 = Data->getNtrace();
+
+    if(ntr1 == ntr2)
+    {
+    // Copy geometry
+        size_t i;
+        Point2D<T> *scoords1 = (this->getGeom())->getScoords();
+        Point2D<T> *gcoords1 = (this->getGeom())->getGcoords();
+
+        Point2D<T> *scoords2 = (Data->getGeom())->getScoords();
+        Point2D<T> *gcoords2 = (Data->getGeom())->getGcoords();
+        for (i=0; i < ntr1; i++)
+        {
+            scoords1[i].x = scoords2[i].x;
+            scoords1[i].y = scoords2[i].y;
+            gcoords1[i].x = gcoords2[i].x;
+            gcoords1[i].y = gcoords2[i].y;
+        }	
+        status = FILE_OK;	
+    }else{
+        rs_error("Data2D<T>::copyCoords : Mismatch in number of traces of Data2D objects");
         status = FILE_ERR;	
     }
     return status;
@@ -526,7 +557,7 @@ bool Data3D<T>::readCoords()
 	    rs_error("Data3D::readCoords : Error reading from " , datafile ,". ");
     }
     size_t nt = Fin->getN(1);
-    int ntrace = Fin->getN(2);
+    size_t ntrace = Fin->getN(2);
     size_t Nheader = Fin->getNheader();
     int data_format = Fin->getData_format();
 
@@ -534,7 +565,7 @@ bool Data3D<T>::readCoords()
     if ( Fin->is_open()  && (Nheader == NHEAD3D) && (data_format == sizeof(T)))
     {
         // Create geometry
-        int i;
+        size_t i;
         Point3D<T> *scoords = (this->getGeom())->getScoords();
         Point3D<T> *gcoords = (this->getGeom())->getGcoords();
         for (i=0; i < ntrace; i++)
@@ -550,6 +581,39 @@ bool Data3D<T>::readCoords()
             Fin->read(&gcoords[i].z, 1);
         }	
     }else{
+        status = FILE_ERR;	
+    }
+    return status;
+}
+
+template<typename T>
+bool Data3D<T>::copyCoords(std::shared_ptr<Data3D<T>> Data)
+{
+    bool status;
+    size_t ntr1 = this->getNtrace();
+    size_t ntr2 = Data->getNtrace();
+
+    if(ntr1 == ntr2)
+    {
+    // Copy geometry
+        size_t i;
+        Point3D<T> *scoords1 = (this->getGeom())->getScoords();
+        Point3D<T> *gcoords1 = (this->getGeom())->getGcoords();
+
+        Point3D<T> *scoords2 = (Data->getGeom())->getScoords();
+        Point3D<T> *gcoords2 = (Data->getGeom())->getGcoords();
+        for (i=0; i < ntr1; i++)
+        {
+            scoords1[i].x = scoords2[i].x;
+            scoords1[i].y = scoords2[i].y;
+            scoords1[i].z = scoords2[i].z;
+            gcoords1[i].x = gcoords2[i].x;
+            gcoords1[i].y = gcoords2[i].y;
+            gcoords1[i].z = gcoords2[i].z;
+        }	
+        status = FILE_OK;	
+    }else{
+        rs_error("Data3D<T>::copyCoords : Mismatch in number of traces of Data3D objects");
         status = FILE_ERR;	
     }
     return status;
