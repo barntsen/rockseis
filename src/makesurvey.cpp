@@ -30,7 +30,42 @@ int main(int argc, char* argv[])
     std::shared_ptr<rockseis::Data3D<float>> Bdata3d;
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
 
-    if(argc < 2) rs_error("No configuration file given");
+    if(argc < 2) {
+        PRINT_DOC(# RSMAKESURVEY - Create a regular 2D/3D seismic survey);
+        PRINT_DOC(# Default configuration file for rsmakesurvey );
+        PRINT_DOC();
+        PRINT_DOC(#Survey parameters );
+        PRINT_DOC(            dim = "2";);
+        PRINT_DOC(        OBC = "false";);
+        PRINT_DOC();
+        PRINT_DOC(# Source parameters);
+        PRINT_DOC(        nsx = "10";);
+        PRINT_DOC(        nsy = "10";);
+        PRINT_DOC(        sx0 = "5.0"; );
+        PRINT_DOC(        sy0 = "0.0";);
+        PRINT_DOC(        sz0 = "0.0"; # Source depth );
+        PRINT_DOC(            dsx = "10.0"; );
+        PRINT_DOC(        dsy = "10.0";);
+        PRINT_DOC();
+        PRINT_DOC(# Flip-flop shooting parameters);
+        PRINT_DOC(        ds1x = "0.0"; # Signed x-offset from source line (sx,sy) position for source 1);
+        PRINT_DOC(            ds1y = "0.0"; # Signed y-offset from source line (sx,sy) position for source 1);
+        PRINT_DOC(            ds2x = "0.0"; # Signed x-offset from source line (sx,sy) position for source 2);
+        PRINT_DOC(            ds2y = "0.0"; # Signed y-offset from source line (sx,sy) position for source 2);
+        PRINT_DOC();
+        PRINT_DOC(# Receiver parameters);
+        PRINT_DOC(            ngx = "1";);
+        PRINT_DOC(        ngy = "1";);
+        PRINT_DOC(        gx0 = "0.0"; # Minimum signed offset from sx);
+        PRINT_DOC(            gy0 = "0.0"; # Minimum signed offset from sy);
+        PRINT_DOC(            gz0 = "10.0"; # Receiver depth);
+        PRINT_DOC(            dgx = "1.0";);
+        PRINT_DOC(        dgy = "1.0";);
+        PRINT_DOC();
+        PRINT_DOC(        verb = "false";);
+
+        rs_error("No configuration file given");
+    }
 
 
     /* Get parameters from input */

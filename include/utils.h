@@ -10,6 +10,8 @@
 #define SMAP 0
 #define GMAP 1
 
+#define PRINT_DOC(s) std::cerr << (#s) << std::endl;
+
 namespace rockseis {
 
 // =============== ENUMS =============== //
