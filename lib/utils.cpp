@@ -55,6 +55,12 @@ void rs_warning(std::string msg1, std::string msg2,  std::string msg3){
     std::cerr << "Warning: " << msg1 << msg2 << msg3 << std::endl;
 }
 
+// =============== INITIALIZING TEMPLATE STRUCTS =============== //
+template struct Point2D<int>;
+template struct Point2D<float>;
+template struct Point3D<int>;
+template struct Point3D<float>;
+
 }
 
 

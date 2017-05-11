@@ -30,6 +30,7 @@ public:
     T getOt() { return ot; }		///< Get ot
     std::shared_ptr<File> getFdata() { return Fdata; } ///< Get Fdata handle
     int getNtrace() { return ntrace; }	///< Get number of traces
+    int getRecinc() { return recinc; }	///< Get recording interval
     std::string getFile() { return datafile; } ///< Get filename
     rs_field getField() { return field; } ///< Get data type
     bool open(std::string flag); ///< Open file. Flags can be "i", "o" or "a".
@@ -42,6 +43,7 @@ public:
     void setOt(const T _ot) { ot = _ot; }	///< Set origin (ot)
     void setFile(std::string _datafile) { datafile=_datafile; } ///< Set filename
     void setField(rs_field _field) { field = _field; } ///< Set data type 
+    void setRecinc(const int inc) { recinc = inc; }	///< Set Nx
 
 private:
     std::string datafile;
@@ -52,6 +54,7 @@ private:
     rs_field field;
     rs_datatype datatype;
     std::shared_ptr<File> Fdata;
+    int recinc;
 };
 
 // =============== 2D DATA CLASS =============== //

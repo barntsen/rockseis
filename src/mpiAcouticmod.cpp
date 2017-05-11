@@ -10,6 +10,7 @@
 #include "sort.h"
 #include "data.h"
 #include "file.h"
+#include "interp.h"
 #include <memory>
 #include <fstream>
 #include <math.h>
@@ -30,9 +31,11 @@ int main(int argc, char** argv) {
 	bool fs=0;
 	int order=0;
 	int snapinc=0;
+	int recinc=1;
     int dim;
     float apertx=900;
     float aperty=0;
+    float dtrec = 4e-3;
     std::string Surveyfile;
     std::string Waveletfile;
     std::string Vpfile;
@@ -41,7 +44,9 @@ int main(int argc, char** argv) {
     std::string Psnapfile;
     std::string Precordfile;
     std::shared_ptr<rockseis::Data2D<float>> Pdata2D;
+    std::shared_ptr<rockseis::Data2D<float>> Pdata2Di;
     std::shared_ptr<rockseis::Data3D<float>> Pdata3D;
+    std::shared_ptr<rockseis::Data3D<float>> Pdata3Di;
 
     bool Axsnap=0, Axrecord=0;
     std::string Axsnapfile;
@@ -270,13 +275,21 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
     Sort->setDatafile(Surveyfile);
 	
-
     // Create a global model class
 	std::shared_ptr<rockseis::ModelAcoustic2D<float>> gmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
     // Create a local model class
 	std::shared_ptr<rockseis::ModelAcoustic2D<float>> lmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
 
+    // Create a data class for the source wavelet
 	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Waveletfile));
+
+    // Create an interpolation class
+    std::shared_ptr<rockseis::Interp<float>> interp (new rockseis::Interp<float>(SINC));
+
+    // Compute recording parameters
+    size_t ntrec; 
+    ntrec = (size_t) rintf((source->getNt()-1)*source->getDt()/dtrec + 1);
+
 	if(mpi.getRank() == 0) {
 		// Master
         Sort->createShotmap(Surveyfile); 
@@ -285,7 +298,11 @@ int main(int argc, char** argv) {
 
         // Get number of shots
         int ngathers =  Sort->getNensemb();
-        size_t ntraces = Sort->getNtraces();
+        
+        if(Precord){
+            // Create an empty data file
+            Sort->createEmptydataset(Precordfile, ntrec, dtrec, 0.0);
+        }
 
 		// Create work queue
 		for(unsigned long int i=0; i<ngathers; i++) {
@@ -333,19 +350,18 @@ int main(int argc, char** argv) {
                 xs = scoords[0].x;
                 zs = scoords[0].y;
 
+                // Read wavelet data and coordinates and make a map
+                source->read();
                 scoords = (source->getGeom())->getScoords();
                 scoords[0].x = xs;
                 scoords[0].y = zs;
-
-                // Read wavelet data and coordinates and make a map
-                source->read();
                 source->makeMap(lmodel->getGeom());
 
-                modelling = std::make_shared<rockseis::ModellingAcoustic2D<float>>(lmodel, source, order, snapinc);
+                modelling = std::make_shared<rockseis::ModellingAcoustic2D<float>>(lmodel, source, order, recinc, snapinc);
 
                 // Setting Snapshot file 
                 if(Psnap){
-                    modelling->setSnapP(Psnapfile);
+                    modelling->setSnapP(std::to_string(work.id) + "_" + Psnapfile);
                 }
                 if(Axsnap){
                     modelling->setSnapAx(Axsnapfile);
@@ -374,7 +390,12 @@ int main(int argc, char** argv) {
 
                 // Output record
                 if(Precord){
+                    Pdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
+                    std:: string datafile = std::to_string(work.id) + "_i_" + Precordfile;
+                    Pdata2Di->setFile(datafile);
+                    interp->interp(Pdata2D, Pdata2Di);
                     Pdata2D->write();
+                    Pdata2Di->write();
                 }
 
 
@@ -384,6 +405,7 @@ int main(int argc, char** argv) {
                 modelling.reset();
                 if(Precord){
                     Pdata2D.reset();
+                    Pdata2Di.reset();
                 }
                 work.status = WORK_FINISHED;
 

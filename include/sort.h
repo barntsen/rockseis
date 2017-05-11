@@ -56,6 +56,9 @@ public:
     void writeKeymap(); ///< Write a key map
     void readSortmap(); ///< Read a sort map
     void writeSortmap(); ///< Write a sort map
+
+    // Create empty dataset 
+    void createEmptydataset(std::string filename, size_t n1, T d1, T o1);
     
     //Get functions
     size_t getNensemb() { return ngathers; } ///< Get number of gathers

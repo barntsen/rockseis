@@ -540,6 +540,60 @@ void Sort<T>::writeSortmap(){
 }
 
 
+template<typename T>
+void Sort<T>::createEmptydataset(std::string filename, size_t n1, T d1, T o1){
+    if(this->ngathers == 0 || this->ntraces == 0) rs_error("No sort map created.");
+
+    bool status;
+    std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
+    status = Fdata->input(this->datafile);
+    if(status == FILE_ERR) rs_error("Sort::createEmptydata: Error reading input survey data file.");
+    rs_datatype datatype = Fdata->getType(); 
+    if(datatype != DATA2D && datatype != DATA3D ) rs_error("Sort::createEmptydata: Datafile must be of type Data2D or Data3D.");
+
+    //Get number of traces
+    size_t n2 = this->ntraces;
+    std::shared_ptr<rockseis::Data2D<T>> data2d;
+    std::shared_ptr<rockseis::Data3D<T>> data3d;
+    if(datatype == DATA2D){
+        data2d = std::make_shared<Data2D<T>>(1,n1,d1,o1);
+        data2d->setFile(filename);
+        status = data2d->open("o");
+        if(status == FILE_ERR) rockseis::rs_error("Error opening file for writting");
+
+        Point2D<T> *scoords = (data2d->getGeom())->getScoords();
+        Point2D<T> *gcoords = (data2d->getGeom())->getGcoords();
+        for (size_t j=0; j < n2; j++){
+            Fdata->seekg(Fdata->getStartofdata() + j*(n1+NHEAD2D)*sizeof(T));
+            Fdata->read(&scoords[0].x, 1);
+            Fdata->read(&scoords[0].y, 1);
+            Fdata->read(&gcoords[0].x, 1);
+            Fdata->read(&gcoords[0].y, 1);
+            data2d->writeTraces();
+        }
+        data2d->close();
+    }else{
+        data3d = std::make_shared<Data3D<T>>(1,n1,d1,o1);
+        data3d->setFile(filename);
+        status = data3d->open("o");
+        if(status == FILE_ERR) rockseis::rs_error("Error opening file for writting");
+
+        Point3D<T> *scoords = (data3d->getGeom())->getScoords();
+        Point3D<T> *gcoords = (data3d->getGeom())->getGcoords();
+        for (size_t j=0; j < n2; j++){
+            Fdata->seekg(Fdata->getStartofdata() + j*(n1+NHEAD3D)*sizeof(T));
+            Fdata->read(&scoords[0].x, 1);
+            Fdata->read(&scoords[0].y, 1);
+            Fdata->read(&scoords[0].z, 1);
+            Fdata->read(&gcoords[0].x, 1);
+            Fdata->read(&gcoords[0].y, 1);
+            Fdata->read(&gcoords[0].z, 1);
+            data3d->writeTraces();
+        }
+        data3d->close();
+    }
+}
+
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Sort<float>;
 template class Sort<double>;

@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <math.h>
 #define NHEAD2D 4
 #define NHEAD3D 6
 #define SMAP 0
@@ -19,6 +20,7 @@ typedef enum {PRESSURE, VX, VY, VZ, SXX, SYY, SZZ, SYZ, SXZ, SXY} rs_field; ///<
 typedef enum {SOURCE, RECEIVER, CMP} rs_key; ///< Information on how data is sorted
 typedef enum {GENERIC, REGULAR, DATA2D, DATA3D, SNAPSHOT, KEYMAP, SORTMAP} rs_datatype; ///< Information about the file content (Regular model, 2D data, 3D data, etc.)
 typedef enum {FINISHED, RUNNING, NOT_STARTED, FAILED} rs_status; ///< Status of a process(ex. in modelling, migration, ...)
+typedef enum {LINEAR, BSPLINE, SINC} rs_interpmode; ///< Interpolation mode.)
 
 // =============== INDEX CLASS =============== //
 /** The Index class.
@@ -70,10 +72,5 @@ void rs_warning(std::string);
 void rs_warning(std::string, std::string);
 void rs_warning(std::string, std::string, std::string);
 
-// =============== INITIALIZING TEMPLATE STRUCTS =============== //
-template struct Point2D<int>;
-template struct Point2D<float>;
-template struct Point3D<int>;
-template struct Point3D<float>;
 }
 #endif //UTILS_H
