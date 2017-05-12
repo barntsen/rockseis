@@ -33,7 +33,7 @@ File::File()
 
 bool File::input()
 {
-    bool status;
+    bool status = FILE_OK;
     char buffer[MAGIC_NUMBER_LENGTH+1];
     memset(buffer, 0, sizeof(buffer));
     fstream.open("/dev/stdin", std::ios::in | std::ios::binary);
@@ -60,7 +60,7 @@ bool File::input()
 
 bool File::input(std::string filename)
 {
-    bool status;
+    bool status = FILE_OK;
     char buffer[MAGIC_NUMBER_LENGTH+1];
     memset(buffer, 0, sizeof(buffer));
     if(strcmp(filename.c_str(), "stdin")){
@@ -108,35 +108,34 @@ void File::output(std::string filename)
 
 void File::append()
 {
-    fstream.open("/dev/stdout", std::ios::app | std::ios::binary);
+    fstream.open("/dev/stdout", std::ios::in | std::ios::out  | std::ios::binary);
     if(!fstream.is_open() || fstream.fail()) rs_error("Error opening standard output (stdout) for appending.");
 }
 
 bool File::append(std::string filename)
 {
-    bool status;
+    bool status = FILE_OK;
     char buffer[MAGIC_NUMBER_LENGTH+1];
-    size_t pos;
     memset(buffer, 0, sizeof(buffer));
-	fstream.open(filename, std::ios::app | std::ios::binary);
-    if(fstream.fail() || !fstream.is_open()){
+	fstream.open(filename, std::ios::in | std::ios::out | std::ios::binary);
+    if(fstream.fail()){
         status = FILE_ERR; 
     }else{
         //Read header and check if file is of Rockseis format
-        pos = fstream.tellp();
-        fstream.seekp(0);
+        fstream.seekg(0, std::ios::beg);
         fstream.read(&buffer[0], MAGIC_NUMBER_LENGTH*sizeof(char));
         if(strcmp(buffer, MAGIC_NUMBER))
         {
             // Fail 
             status = FILE_ERR;
+            rs_warning("File failed MAGIC NUMBER comparison.");
         }else{
             //Success
             geometry->clear();
             readHeader();
             status = checksum();
             if(status == FILE_ERR) rs_warning("File ", filename, " failed checksum check.");
-            fstream.seekp(pos);
+            fstream.seekp(0, fstream.end);
         }
     }
     return status;

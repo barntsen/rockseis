@@ -14,7 +14,6 @@ int main(int argc, char* argv[])
 	    std::cout << "Error reading from input file. \n";
 	    exit(1);
     }
-    in->printGeometry();
 
     madagascar::oRSF out;
 

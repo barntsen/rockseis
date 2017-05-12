@@ -387,6 +387,23 @@ bool Data2D<T>::writeTraces()
     return status;
 }
 
+template<typename T>
+void Data2D<T>::createEmpty(size_t ntr)
+{
+    bool status;
+    std::string datafile = this->getFile();
+    if(datafile.empty()){
+        rs_error("Data2D::createEmpty: No file assigned. ");
+    }
+
+    status = this->open("o");
+    if(status == FILE_ERR) rockseis::rs_error("Data2D::createEmpty: Error opening file for writting");
+
+    for (size_t i=0; i < ntr; i++){
+        this->writeTraces();
+    }
+    this->close();
+}
 
 // destructor
 template<typename T>
@@ -710,6 +727,24 @@ bool Data3D<T>::writeTraces()
         status = FILE_ERR;	
     }
     return status;
+}
+
+template<typename T>
+void Data3D<T>::createEmpty(size_t ntr)
+{
+    bool status;
+    std::string datafile = this->getFile();
+    if(datafile.empty()){
+        rs_error("Data3D::createEmpty: No file assigned. ");
+    }
+
+    status = this->open("o");
+    if(status == FILE_ERR) rockseis::rs_error("Data3D::createEmpty: Error opening file for writting");
+
+    for (size_t i=0; i < ntr; i++){
+        this->writeTraces();
+    }
+    this->close();
 }
 
 // destructor

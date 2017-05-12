@@ -85,6 +85,7 @@ public:
     bool copyCoords(std::shared_ptr<Data2D<T>> Data); ///< copy coordinates from other data
     bool write(); ///< Writes data and coordinates
     bool writeTraces(); ///< Writes data and coordinates to the end of the file
+    void createEmpty(size_t ntr); ///< Create empty dataset with ntr traces
 
 private:
     std::shared_ptr<Geometry2D<T>> geometry; // Data geometry 
@@ -119,6 +120,7 @@ public:
     bool copyCoords(std::shared_ptr<Data3D<T>> Data); ///< copy coordinates from other data
     bool write(); /// Writes data and coordinates
     bool writeTraces(); /// Writes data and coordinates to the end of the file
+    void createEmpty(size_t ntr); ///< Create empty dataset with ntr traces
 
 private:
     std::shared_ptr<Geometry3D<T>> geometry;  // Data geometry 

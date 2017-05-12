@@ -216,7 +216,7 @@ int ModellingAcoustic2D<T>::run(){
      dt = source->getDt();
      ot = source->getOt();
 
-     this->createLog("log.txt");
+     this->createLog(this->getLogfile());
 
      // Create the classes 
      std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot, this->getSnapinc()));
@@ -348,7 +348,7 @@ int ModellingAcoustic3D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
 	// Create log file
-	this->createLog("log.txt");
+    this->createLog(this->getLogfile());
 
     // Create snapshot for pressure
     if(this->snapPset){ 
@@ -632,7 +632,7 @@ int ModellingElastic3D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
 	// Create log file
-	this->createLog("log.txt");
+     this->createLog(this->getLogfile());
 
     // Create snapshot for pressure
     if(this->snapPset){ 

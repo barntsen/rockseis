@@ -505,7 +505,8 @@ int main(int argc, char* argv[])
 {
     /* Variables */
     char ahead[SF_EBCBYTES], bhead[SF_BNYBYTES];
-    int format, ns, ntr;
+    int format, ns; 
+    size_t ntr;
     char *trace;
     float dt=0.0, t0;
     FILE *file;
@@ -614,7 +615,7 @@ int main(int argc, char* argv[])
     nsegy = SF_HDRBYTES + ns*4;
     trace = sf_charalloc (nsegy);
     float *ftrace = Bdata->getData();
-    for (int i=0; i < ntr; i++)
+    for (size_t i=0; i < ntr; i++)
     {
         if(nsegy != fread(trace, 1, nsegy, file)){
             std::cerr << "Error reading data in segy file.\n";
