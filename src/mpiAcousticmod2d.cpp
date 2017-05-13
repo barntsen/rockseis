@@ -65,7 +65,6 @@ int main(int argc, char** argv) {
 	bool fs;
 	int order;
 	int snapinc;
-    int dim;
     float apertx;
     float dtrec;
     std::string Surveyfile;
@@ -101,7 +100,6 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("dtrec", &dtrec) == INPARSE_ERR) status = true;
     if(Inpar->getPar("order", &order) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("dim", &dim) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
