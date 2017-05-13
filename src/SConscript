@@ -57,4 +57,7 @@ mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel'],LIBPATH=['
 mpi.Install('../bin/',mpidbg)
 
 mpiAcousticmod2d = mpi.Program(prefix + 'mpiAcousticmod2d','mpiAcousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse'],LIBPATH=['../build', '../config4cpp/lib'])
-mpi.Install('../bin/',mpiAcouticmod)
+mpi.Install('../bin/',mpiAcousticmod2d)
+
+mpiAcousticmod3d = mpi.Program(prefix + 'mpiAcousticmod3d','mpiAcousticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse'],LIBPATH=['../build', '../config4cpp/lib'])
+mpi.Install('../bin/',mpiAcousticmod3d)

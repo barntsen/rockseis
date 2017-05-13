@@ -428,8 +428,10 @@ Data3D<T>::Data3D(const int _ntrace, const int _nt, const T _dt, const T _ot): D
     std::shared_ptr<File> Fdata = this->getFdata();
     Fdata->setN(1,_nt);
     Fdata->setD(1,_dt);
-    Fdata->setO(1,0.0);
+    Fdata->setO(1,_ot);
     Fdata->setN(2,0);
+    Fdata->setD(2,1.0);
+    Fdata->setO(2,0.0);
     Fdata->setNheader(NHEAD3D);
     Fdata->setData_format(sizeof(T));
     Fdata->setHeader_format(sizeof(T));
