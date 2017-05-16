@@ -222,7 +222,7 @@ int ModellingAcoustic2D<T>::run(){
      std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot, this->getSnapinc()));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
-    // Create snapshot for pressure
+    // Create snapshots
     if(this->snapPset){ 
         waves->createSnap(this->snapP, waves->getPsnap());
     }
@@ -240,10 +240,10 @@ int ModellingAcoustic2D<T>::run(){
     	waves->forwardstepAcceleration(model, der);
     	waves->forwardstepStress(model, der);
     
-    	// Inserting source (Pressure)
+    	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
-        // Recording data (Pressure)
+        // Recording data 
         if(this->recPset){
             waves->recordData(this->recP, GMAP, it);
         }
@@ -350,7 +350,7 @@ int ModellingAcoustic3D<T>::run(){
 	// Create log file
     this->createLog(this->getLogfile());
 
-    // Create snapshot for pressure
+    // Create snapshots
     if(this->snapPset){ 
         waves->createSnap(this->snapP, waves->getPsnap());
     }
@@ -371,10 +371,10 @@ int ModellingAcoustic3D<T>::run(){
     	waves->forwardstepAcceleration(model, der);
     	waves->forwardstepStress(model, der);
     
-    	// Inserting source (Pressure)
+    	// Inserting source
     	waves->insertSource(model, source, SMAP, it);
 
-        // Recording data (Pressure)
+        // Recording data 
         if(this->recPset){
             waves->recordData(this->recP, GMAP, it);
         }
@@ -491,7 +491,7 @@ int ModellingElastic2D<T>::run(){
      std::shared_ptr<WavesElastic2D<T>> waves (new WavesElastic2D<T>(model, nt, dt, ot, this->getSnapinc()));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
-    // Create snapshot for pressure
+    // Create snapshots
     if(this->snapPset){ 
         waves->createSnap(this->snapP, waves->getPsnap());
     }
@@ -509,10 +509,10 @@ int ModellingElastic2D<T>::run(){
     	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
     
-    	// Inserting source (Pressure)
+    	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
-        // Recording data (Pressure)
+        // Recording data 
         if(this->recPset){
             waves->recordData(this->recP, GMAP, it);
         }
@@ -634,7 +634,7 @@ int ModellingElastic3D<T>::run(){
 	// Create log file
      this->createLog(this->getLogfile());
 
-    // Create snapshot for pressure
+    // Create snapshots
     if(this->snapPset){ 
         waves->createSnap(this->snapP, waves->getPsnap());
     }
@@ -655,10 +655,10 @@ int ModellingElastic3D<T>::run(){
     	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
     
-    	// Inserting source (Pressure)
+    	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
-        // Recording data (Pressure)
+        // Recording data 
         if(this->recPset){
             waves->recordData(this->recP, GMAP, it);
         }
