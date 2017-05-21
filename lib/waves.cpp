@@ -68,7 +68,6 @@ Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, con
     snapdt = _dt*snapinc;
     snapot = _ot;
     enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
-    //std::cerr << "Waves:: Enddiff: " << enddiff << std::endl;
 }
 
 template<typename T>
@@ -93,7 +92,25 @@ void Waves<T>::setSnapinc(const int _snapinc){
     snapdt = dt*snapinc;
     snapot = ot;
     enddiff = (int) rintf(((nt-1)*dt - (snapnt-1)*snapdt)/dt);
-    //std::cerr << "Waves::setSnapinc: Enddiff: " << enddiff << std::endl;
+}
+
+template<typename T>
+void Waves<T>::allocSnap(Snap<T> *Snap) 
+{
+    if(Snap->allocated == false) {
+        Snap->data = (T *) calloc(this->getNx()*this->getNy()*this->getNz(), sizeof(T));
+        Snap->allocated = true;
+    }else{
+        free(Snap->data);
+        Snap->data = (T *) calloc(this->getNx()*this->getNy()*this->getNz(), sizeof(T));
+        Snap->allocated = true;
+    }
+}
+
+template<typename T>
+void Waves<T>::freeSnap(Snap<T> *Snap)
+{
+    if(Snap->allocated) free(Snap->data);
 }
 
 // =============== 2D ACOUSTIC MODEL CLASS =============== //
@@ -199,6 +216,12 @@ WavesAcoustic2D<T>::~WavesAcoustic2D() {
     free(P2);
     free(Ax);
     free(Az);
+    if(Psnap.open) Psnap.Fp->close();
+    if(Psnap.allocated) free(Psnap.data);
+    if(Axsnap.open) Axsnap.Fp->close();
+    if(Axsnap.allocated) free(Axsnap.data);
+    if(Azsnap.open) Azsnap.Fp->close();
+    if(Azsnap.allocated) free(Azsnap.data);
 }
 
 template<typename T>
@@ -455,7 +478,7 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, b
 }
 
 template<typename T>
-bool WavesAcoustic2D<T>::createSnap(std::string filename, Snap *Snap) {
+bool WavesAcoustic2D<T>::createSnap(std::string filename, Snap<T> *Snap) {
     if(!filename.empty()){
         Snap->filename = filename;
         Snap->Fp = std::make_shared<File>();
@@ -483,7 +506,7 @@ bool WavesAcoustic2D<T>::createSnap(std::string filename, Snap *Snap) {
 
 // Write Snapshots
 template<typename T>
-void WavesAcoustic2D<T>::writeSnap(int it, Snap *Snap){
+void WavesAcoustic2D<T>::writeSnap(int it, Snap<T> *Snap){
     int nx = this->getNx();
     int nz = this->getNz();
     int nx_pml = this->getNx_pml();
@@ -520,6 +543,58 @@ void WavesAcoustic2D<T>::writeSnap(int it, Snap *Snap){
     }
 }
 
+
+
+
+template<typename T>
+bool WavesAcoustic2D<T>::openSnap(std::string filename, Snap<T> *Snap) {
+    if(Snap->open) rs_error("Snapshot cannot be opened two times.");
+    if(!filename.empty()){
+        Snap->filename = filename;
+        Snap->Fp = std::make_shared<File>();
+        if(Snap->Fp->input(Snap->filename) == FILE_ERR)
+        {
+            rs_error("WavesAcoustic2D::openSnap: Error opening snapshot file for reading.");
+        }
+        if(this->getNx() != Snap->Fp->getN(1)) rs_error("WavesAcoustic2D::openSnap: Mismatch in nx size of snaps");
+        if(this->getNz() != Snap->Fp->getN(3)) rs_error("WavesAcoustic2D::openSnap: Mismatch in nz size of snaps");
+        if(sizeof(T) != Snap->Fp->getData_format()) rs_error("WavesAcoustic2D::openSnap: Mismatch in precision of snaps");
+        if(this->getSnapnt() != Snap->Fp->getN(4)) rs_error("WavesAcoustic2D::openSnap: Mismatch in number of snaps");
+        if(Snap->Fp->getType() != rockseis::SNAPSHOT) rs_error("WavesAcoustic2D::openSnap: Mismatch in file type");
+        Snap->open = true;
+        this->setSnapit(this->getSnapnt() - 1);
+    }else{
+        rs_error("WavesAcoustic2D::openSnap: No filename set.");
+    }
+        return WAVES_OK;
+}
+
+// Write Snapshots
+template<typename T>
+void WavesAcoustic2D<T>::readSnap(int it, Snap<T> *Snap){
+    int nx = this->getNx();
+    int nz = this->getNz();
+    Index I(nx,nz);
+    int snapit = this->getSnapit();
+
+    if(Snap->open && Snap->allocated){
+       if(((it-this->getEnddiff()) % this->getSnapinc()) == 0){
+           this->setSnapit(snapit - 1); // Increment snap counter
+           //Read snapshot
+           Snap->Fp->seekp(nx*nz*snapit*sizeof(T));
+           Snap->Fp->read(&(Snap->data[0]),nz*nx); 
+       }
+    }
+}
+
+
+template<typename T>
+void WavesAcoustic2D<T>::closeSnap(Snap<T> *snap) {
+    if(snap->open) {
+        snap->Fp->close();
+        snap->open = false;
+    }
+}
 
 // Roll the pressure pointers
 template<typename T>
@@ -959,7 +1034,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
 }
 
 template<typename T>
-bool WavesAcoustic3D<T>::createSnap(std::string filename, Snap *Snap) {
+bool WavesAcoustic3D<T>::createSnap(std::string filename, Snap<T> *Snap) {
     if(!filename.empty()){
         Snap->filename = filename;
         Snap->Fp = std::make_shared<File>();
@@ -990,7 +1065,7 @@ bool WavesAcoustic3D<T>::createSnap(std::string filename, Snap *Snap) {
 
 // Write Snapshots
 template<typename T>
-void WavesAcoustic3D<T>::writeSnap(int it, Snap *Snap){
+void WavesAcoustic3D<T>::writeSnap(int it, Snap<T> *Snap){
     int nx = this->getNx();
     int ny = this->getNy();
     int nz = this->getNz();
@@ -1504,7 +1579,7 @@ void WavesElastic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bo
 }
 
 template<typename T>
-bool WavesElastic2D<T>::createSnap(std::string filename, Snap *Snap) {
+bool WavesElastic2D<T>::createSnap(std::string filename, Snap<T> *Snap) {
     if(!filename.empty()){
         Snap->filename = filename;
         Snap->Fp = std::make_shared<File>();
@@ -1533,7 +1608,7 @@ bool WavesElastic2D<T>::createSnap(std::string filename, Snap *Snap) {
 
 // Write Snapshots
 template<typename T>
-void WavesElastic2D<T>::writeSnap(int it, Snap *Snap){
+void WavesElastic2D<T>::writeSnap(int it, Snap<T> *Snap){
     int nx = this->getNx();
     int nz = this->getNz();
     int nx_pml = this->getNx_pml();
@@ -2437,7 +2512,7 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
 
 
 template<typename T>
-bool WavesElastic3D<T>::createSnap(std::string filename, Snap *Snap) {
+bool WavesElastic3D<T>::createSnap(std::string filename, Snap<T> *Snap) {
     if(!filename.empty()){
         Snap->filename = filename;
         Snap->Fp = std::make_shared<File>();
@@ -2469,7 +2544,7 @@ bool WavesElastic3D<T>::createSnap(std::string filename, Snap *Snap) {
 
 // Write Snapshots
 template<typename T>
-void WavesElastic3D<T>::writeSnap(int it, Snap *Snap){
+void WavesElastic3D<T>::writeSnap(int it, Snap<T> *Snap){
     int nx = this->getNx();
     int ny = this->getNy();
     int nz = this->getNz();

@@ -24,12 +24,15 @@ namespace rockseis {
 /** The Snapshot struct
  *
  */
-typedef struct {
+template<typename T>
+struct Snap {
     std::string filename; ///< filename
     std::shared_ptr<rockseis::File> Fp; ///< File handle
     bool open; ///< flag to see if file is open
+    bool allocated; ///< flag to see if data is allocated
     rs_field field; ///< enum indicating which field to snap
-} Snap;
+    T *data;
+};
 
 /** The abstract waves class
  *
@@ -66,6 +69,8 @@ public:
     int getSnapit() { return snapit; } ///< Get snapit
     int getEnddiff() { return enddiff; } ///< Get enddiff
     int getSnapinc() { return snapinc; } ///< Get snapinc
+    void allocSnap(Snap<T> *snap); ///< Allocate data in snapshot
+    void freeSnap(Snap<T> *snap); ///< Free data in snapshot
     
     // Set functions
     void setNx(const int _nx) { geometry->setN(1, _nx); }///< Set Nx
@@ -135,12 +140,14 @@ public:
     void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
 
     // Snapshot functions
-    bool openSnap(std::string filename, Snap *snap); ///< Open a snapshot for reading and writting
-    bool createSnap(std::string filename, Snap *snap); ///< Create a new snapshot file
-    void writeSnap(const int it, Snap *snap); ///< Write to a snapshot
-    Snap *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure snapshot struct
-    Snap *getAxsnap() { return &Axsnap; } ///< Get a pointer to the Ax snapshot struct
-    Snap *getAzsnap() { return &Azsnap; } ///< Get a pointer to the Az snapshot struct
+    bool openSnap(std::string filename, Snap<T> *snap); ///< Open a snapshot for reading and writting
+    void closeSnap(Snap<T> *snap); ///< Close a snapshot file 
+    bool createSnap(std::string filename, Snap<T> *snap); ///< Create a new snapshot file
+    void writeSnap(const int it, Snap<T> *snap); ///< Write to a snapshot
+    void readSnap(const int it, Snap<T> *snap); ///< Read snapshot
+    Snap<T> *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure snapshot struct
+    Snap<T> *getAxsnap() { return &Axsnap; } ///< Get a pointer to the Ax snapshot struct
+    Snap<T> *getAzsnap() { return &Azsnap; } ///< Get a pointer to the Az snapshot struct
 
 private:
     T *P1; // Pressure at time t
@@ -150,7 +157,7 @@ private:
     std::shared_ptr<PmlAcoustic2D<T>> Pml; // Associated PML class
     
     // Snapshot structures
-    Snap Axsnap, Azsnap, Psnap;
+    Snap<T> Axsnap, Azsnap, Psnap;
 };
 
 /** The 3D Acoustic WAVES class
@@ -183,13 +190,13 @@ public:
     void roll();  // Roll the pressure pointers
 
     //    // Snapshot functions
-    bool openSnap(std::string filename, Snap *snap); ///< Open a snapshot for reading and writting
-    bool createSnap(std::string filename, Snap *snap); ///< Create a new snapshot file
-    void writeSnap(const int it, Snap *snap); ///< Write to a snapshot
-    Snap *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure snapshot struct
-    Snap *getAxsnap() { return &Axsnap; } ///< Get a pointer to the Ax snapshot struct
-    Snap *getAysnap() { return &Aysnap; } ///< Get a pointer to the Ay snapshot struct
-    Snap *getAzsnap() { return &Azsnap; } ///< Get a pointer to the Az snapshot struct
+    bool openSnap(std::string filename, Snap<T> *snap); ///< Open a snapshot for reading and writting
+    bool createSnap(std::string filename, Snap<T> *snap); ///< Create a new snapshot file
+    void writeSnap(const int it, Snap<T> *snap); ///< Write to a snapshot
+    Snap<T> *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure snapshot struct
+    Snap<T> *getAxsnap() { return &Axsnap; } ///< Get a pointer to the Ax snapshot struct
+    Snap<T> *getAysnap() { return &Aysnap; } ///< Get a pointer to the Ay snapshot struct
+    Snap<T> *getAzsnap() { return &Azsnap; } ///< Get a pointer to the Az snapshot struct
 
 private:
     T *P1; // Pressure at time t
@@ -200,7 +207,7 @@ private:
     std::shared_ptr<PmlAcoustic3D<T>> Pml; // Associated Pml class
 
     // Snapshot structures
-    Snap Axsnap, Aysnap, Azsnap, Psnap;
+    Snap<T> Axsnap, Aysnap, Azsnap, Psnap;
 
 };
 
@@ -234,15 +241,15 @@ public:
     void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
 
     // Snapshot functions
-    bool openSnap(std::string filename, Snap *snap); ///< Open a snapshot for reading and writting
-    bool createSnap(std::string filename, Snap *snap); ///< Create a new snapshot file
-    void writeSnap(const int it, Snap *snap); ///< Write to a snapshot
-    Snap *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure (Sxx+Szz) snapshot struct
-    Snap *getSxxsnap() { return &Sxxsnap; } ///< Get a pointer to the Sxx snapshot struct
-    Snap *getSzzsnap() { return &Szzsnap; } ///< Get a pointer to the Szz snapshot struct
-    Snap *getSxzsnap() { return &Sxzsnap; } ///< Get a pointer to the Sxz snapshot struct
-    Snap *getVxsnap() { return &Vxsnap; } ///< Get a pointer to the Vx snapshot struct
-    Snap *getVzsnap() { return &Vzsnap; } ///< Get a pointer to the Vz snapshot struct
+    bool openSnap(std::string filename, Snap<T> *snap); ///< Open a snapshot for reading and writting
+    bool createSnap(std::string filename, Snap<T> *snap); ///< Create a new snapshot file
+    void writeSnap(const int it, Snap<T> *snap); ///< Write to a snapshot
+    Snap<T> *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure (Sxx+Szz) snapshot struct
+    Snap<T> *getSxxsnap() { return &Sxxsnap; } ///< Get a pointer to the Sxx snapshot struct
+    Snap<T> *getSzzsnap() { return &Szzsnap; } ///< Get a pointer to the Szz snapshot struct
+    Snap<T> *getSxzsnap() { return &Sxzsnap; } ///< Get a pointer to the Sxz snapshot struct
+    Snap<T> *getVxsnap() { return &Vxsnap; } ///< Get a pointer to the Vx snapshot struct
+    Snap<T> *getVzsnap() { return &Vzsnap; } ///< Get a pointer to the Vz snapshot struct
 
 
 private:
@@ -254,7 +261,7 @@ private:
     std::shared_ptr<PmlElastic2D<T>> Pml; // Associated Pml class
 
     // Snapshot structures
-    Snap Vxsnap, Vzsnap, Sxxsnap, Szzsnap, Sxzsnap, Psnap;
+    Snap<T> Vxsnap, Vzsnap, Sxxsnap, Szzsnap, Sxzsnap, Psnap;
 };
 
 /** The 3D Elastic WAVES class
@@ -286,19 +293,19 @@ public:
     void recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
 
     // Snapshot functions
-    bool openSnap(std::string filename, Snap *snap); ///< Open a snapshot for reading and writting
-    bool createSnap(std::string filename, Snap *snap); ///< Create a new snapshot file
-    void writeSnap(const int it, Snap *snap); ///< Write to a snapshot
-    Snap *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure (Sxx+Szz) snapshot struct
-    Snap *getSxxsnap() { return &Sxxsnap; } ///< Get a pointer to the Sxx snapshot struct
-    Snap *getSyysnap() { return &Syysnap; } ///< Get a pointer to the Syy snapshot struct
-    Snap *getSzzsnap() { return &Szzsnap; } ///< Get a pointer to the Szz snapshot struct
-    Snap *getSyzsnap() { return &Syzsnap; } ///< Get a pointer to the Syz snapshot struct
-    Snap *getSxzsnap() { return &Sxzsnap; } ///< Get a pointer to the Sxz snapshot struct
-    Snap *getSxysnap() { return &Sxysnap; } ///< Get a pointer to the Sxy snapshot struct
-    Snap *getVxsnap() { return &Vxsnap; } ///< Get a pointer to the Vx snapshot struct
-    Snap *getVysnap() { return &Vysnap; } ///< Get a pointer to the Vy snapshot struct
-    Snap *getVzsnap() { return &Vzsnap; } ///< Get a pointer to the Vz snapshot struct
+    bool openSnap(std::string filename, Snap<T> *snap); ///< Open a snapshot for reading and writting
+    bool createSnap(std::string filename, Snap<T> *snap); ///< Create a new snapshot file
+    void writeSnap(const int it, Snap<T> *snap); ///< Write to a snapshot
+    Snap<T> *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure (Sxx+Szz) snapshot struct
+    Snap<T> *getSxxsnap() { return &Sxxsnap; } ///< Get a pointer to the Sxx snapshot struct
+    Snap<T> *getSyysnap() { return &Syysnap; } ///< Get a pointer to the Syy snapshot struct
+    Snap<T> *getSzzsnap() { return &Szzsnap; } ///< Get a pointer to the Szz snapshot struct
+    Snap<T> *getSyzsnap() { return &Syzsnap; } ///< Get a pointer to the Syz snapshot struct
+    Snap<T> *getSxzsnap() { return &Sxzsnap; } ///< Get a pointer to the Sxz snapshot struct
+    Snap<T> *getSxysnap() { return &Sxysnap; } ///< Get a pointer to the Sxy snapshot struct
+    Snap<T> *getVxsnap() { return &Vxsnap; } ///< Get a pointer to the Vx snapshot struct
+    Snap<T> *getVysnap() { return &Vysnap; } ///< Get a pointer to the Vy snapshot struct
+    Snap<T> *getVzsnap() { return &Vzsnap; } ///< Get a pointer to the Vz snapshot struct
 
 
     
@@ -316,7 +323,7 @@ private:
     std::shared_ptr<PmlElastic3D<T>> Pml; // Associated Pml class
 
     // Snapshot structures
-    Snap Vxsnap, Vysnap, Vzsnap, Sxxsnap, Syysnap, Szzsnap, Syzsnap, Sxzsnap, Sxysnap, Psnap;
+    Snap<T> Vxsnap, Vysnap, Vzsnap, Sxxsnap, Syysnap, Szzsnap, Syzsnap, Sxzsnap, Sxysnap, Psnap;
 };
 
 }
