@@ -27,6 +27,7 @@ modelling = env.Library(builddir + 'modelling',['modelling.cpp', 'pml.cpp', 'der
 rtm = env.Library(builddir + 'rtm',['rtm.cpp', 'pml.cpp', 'der.cpp', 'waves.cpp'])
 parallel = mpi.Library(builddir + 'parallel','parallel.cpp')
 revolve = env.Library(builddir + 'revolve',['revolve.cpp', 'waves.cpp', 'file.cpp'])
+snap = env.Library(builddir + 'snap',['snap.cpp', 'waves.cpp', 'file.cpp'])
 
 
 # 

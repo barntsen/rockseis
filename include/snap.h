@@ -24,10 +24,10 @@ namespace rockseis {
  *
  */
 template<typename T>
-class Snap {
+class Snapshot {
 public:
-    Snap(); ///<Constructor
-    virtual ~Snap();	///< Destructor
+    Snapshot(); ///<Constructor
+    virtual ~Snapshot();	///< Destructor
 
     // Set functions
     void setNx(const int _nx) { geometry->setN(1, _nx); }///< Set Nx
@@ -70,11 +70,11 @@ public:
     int getSnapit() { return snapit; } ///< Get snapit
     int getEnddiff() { return enddiff; } ///< Get enddiff
     int getSnapinc() { return snapinc; } ///< Get snapinc
-    T* getData(int i) { if(i >= 0 && i < 3) return data[i]; } ///< Get data pointer
+    T* getData(int i) { if(i >= 0 && i < 3) return data[i]; else return nullptr;} ///< Get data pointer
 
     // Memory functions
-    void allocSnap(); ///< Allocate data in snapshot
-    void freeSnap(); ///< Free data in snapshot
+    void allocSnap(const int i); ///< Allocate data in snapshot
+    void freeSnaps(); ///< Free data in snapshot
 
     //File functions
     bool openSnap(std::string filename, char flag); ///< Open a snapshot for reading, writting or appending
@@ -95,5 +95,17 @@ public:
     int snapit; 
     int snapinc;
 };
+
+
+template<typename T>
+class Snapshot2D: public Snapshot<T> {
+public:
+    Snapshot2D(); 	///< Constructor
+    ~Snapshot2D();       	///< Destructor
+private:
+
+};
+
+
 }
 #endif //SNAP_H

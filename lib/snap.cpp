@@ -3,7 +3,7 @@
 namespace rockseis {
 // constructor
 template<typename T>
-Snap<T>::Snap()
+Snapshot<T>::Snapshot()
 {
     for(int i=0; i < NPTR; i++) allocated[i] = false;
     open = false;
@@ -12,7 +12,7 @@ Snap<T>::Snap()
     Fp = std::make_shared<File>();
     snapinc=1;
     enddiff=0;
-    data = (T *) calloc(1,1);
+    
 }
 
 // Make constructors for different Wave classes 
@@ -21,10 +21,10 @@ Snap<T>::Snap()
 
 //Open Snap
 template<typename T>
-bool Snap<T>::openSnap(std::string filename, char flag) {
+bool Snapshot<T>::openSnap(std::string filename, char flag) {
     if(!filename.empty()){
         switch(flag){
-            case "w":
+            case 'w':
                 this->filename = filename;
                 this->Fp->output(this->filename);
                 this->open = true;
@@ -43,7 +43,7 @@ bool Snap<T>::openSnap(std::string filename, char flag) {
                 this->Fp->seekp(this->Fp->getStartofdata());
                 this->setSnapit(0);
                 break;
-            case "r":
+            case 'r':
                 if(this->open) rs_error("Snapshot cannot be opened two times.");
                 this->filename = filename;
                 if(this->Fp->input(this->filename) == FILE_ERR)
@@ -58,7 +58,7 @@ bool Snap<T>::openSnap(std::string filename, char flag) {
                 this->open = true;
                 this->setSnapit(this->getSnapnt() - 1);
                 break;
-            case "a":
+            case 'a':
                 if(this->open) rs_error("Snapshot cannot be opened two times.");
                 if(this->Fp->append(this->filename) == FILE_ERR)
                 {
@@ -74,7 +74,7 @@ bool Snap<T>::openSnap(std::string filename, char flag) {
 
                 break;
             default:
-                rs_error("Snap::openSnap: Invalid flag: ", flag);
+                rs_error("Snap::openSnap: Invalid flag.");
                 break;
         }
     }else{
@@ -85,7 +85,7 @@ bool Snap<T>::openSnap(std::string filename, char flag) {
 
 // Write Snapshots
 template<typename T>
-void Snap<T>::writeSnap(int it){
+void Snapshot<T>::writeSnap(const int it){
     int nx = this->getNx();
     int nz = this->getNz();
     int nx_pml = this->getNx_pml();
@@ -95,7 +95,7 @@ void Snap<T>::writeSnap(int it){
     int i,j;
     int snapit = this->getSnapit();
 
-    if(Snap->open){
+    if(this->open){
        if((it % this->getSnapinc()) == 0){
            this->setSnapit(snapit + 1); // Increment snap counter
            //Write snapshot
@@ -110,7 +110,7 @@ void Snap<T>::writeSnap(int it){
 
 // Write Snapshots
 template<typename T>
-void Snap<T>::readSnap(int it){
+void Snapshot<T>::readSnap(const int it){
     int nx = this->getNx();
     int nz = this->getNz();
     Index I(nx,nz);
@@ -121,14 +121,14 @@ void Snap<T>::readSnap(int it){
            this->setSnapit(snapit - 1); // Increment snap counter
            //Read snapshot
            this->Fp->seekp(nx*nz*snapit*sizeof(T));
-           this->Fp->read(&(this->data[0]),nz*nx); 
+           this->Fp->read(this->data[0],nz*nx); 
        }
     }
 }
 
 
 template<typename T>
-void Snap<T>::closeSnap() {
+void Snapshot<T>::closeSnap() {
     if(this->open) {
         this->Fp->close();
         this->open = false;
@@ -136,7 +136,7 @@ void Snap<T>::closeSnap() {
 }
 
 template<typename T>
-void Snap<T>::allocSnap(int i) 
+void Snapshot<T>::allocSnap(int i) 
 {
     if(i >= NPTR || i < 0) rs_error("Snap::allocSnap: Trying to allocate data out of bounds.");
     if(this->allocated[i] == false) {
@@ -150,22 +150,22 @@ void Snap<T>::allocSnap(int i)
 }
 
 template<typename T>
-void Snap<T>::freeSnaps()
+void Snapshot<T>::freeSnaps()
 {
     for(int i=0; i<NPTR; i++){
-        if(Snap->allocated[i]) free(Snap->data[i]);
+        if(this->allocated[i]) free(this->data[i]);
     }
 }
 
 template<typename T>
-Snap<T>::~Snap() {
+Snapshot<T>::~Snapshot() {
     for(int i=0; i<NPTR; i++){
-        if(Snap->allocated[i]) free(Snap->data[i]);
+        if(this->allocated[i]) free(this->data[i]);
     }
 }
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
-template class Snap<float>;
-template class Snap<double>;
+template class Snapshot<float>;
+template class Snapshot<double>;
 
 }

@@ -67,7 +67,7 @@ public:
     Data2D(const int _ntrace, const int _nt, const T _dt, const T _ot); 	///< Constructor
     Data2D(std::string datafile, const int _nt, const T _dt, const T _ot); 	///< Constructor
     Data2D(std::string datafile); ///< Constructor
-    virtual ~Data2D();       	///< Destructor
+    ~Data2D();       	///< Destructor
 
     // Get functions
     std::shared_ptr<Geometry2D<T>> getGeom() { return geometry; } ///< Get data geometry
