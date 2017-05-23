@@ -10,9 +10,6 @@ Snapshot<T>::Snapshot()
     field = PRESSURE;
     geometry = std::make_shared<Geometry<T>>(); 
     Fp = std::make_shared<File>();
-    snapinc=1;
-    enddiff=0;
-    
 }
 
 // Make constructors for different Wave classes 
@@ -83,48 +80,7 @@ bool Snapshot<T>::openSnap(std::string filename, char flag) {
     return SNAP_OK;
 }
 
-// Write Snapshots
-template<typename T>
-void Snapshot<T>::writeSnap(const int it){
-    int nx = this->getNx();
-    int nz = this->getNz();
-    int nx_pml = this->getNx_pml();
-    int nz_pml = this->getNz_pml();
-    int lpml = this->getLpml();
-    Index I(nx_pml,nz_pml);
-    int i,j;
-    int snapit = this->getSnapit();
 
-    if(this->open){
-       if((it % this->getSnapinc()) == 0){
-           this->setSnapit(snapit + 1); // Increment snap counter
-           //Write snapshot
-           for(j=0; j<nz; j++){
-               for(i=0; i<nx; i++){
-                   Fp->write(&data[0][I(i+lpml,j+lpml)],1); 
-               }
-           }
-        }
-    }
-}
-
-// Write Snapshots
-template<typename T>
-void Snapshot<T>::readSnap(const int it){
-    int nx = this->getNx();
-    int nz = this->getNz();
-    Index I(nx,nz);
-    int snapit = this->getSnapit();
-
-    if(this->open && this->allocated[0]){
-       if(((it-this->getEnddiff()) % this->getSnapinc()) == 0){
-           this->setSnapit(snapit - 1); // Increment snap counter
-           //Read snapshot
-           this->Fp->seekp(nx*nz*snapit*sizeof(T));
-           this->Fp->read(this->data[0],nz*nx); 
-       }
-    }
-}
 
 
 template<typename T>
@@ -157,15 +113,184 @@ void Snapshot<T>::freeSnaps()
     }
 }
 
+
 template<typename T>
 Snapshot<T>::~Snapshot() {
+    this->closeSnap();
     for(int i=0; i<NPTR; i++){
         if(this->allocated[i]) free(this->data[i]);
     }
 }
 
+
+// =============== 2D SNAPSHOT CLASS =============== //
+
+template<typename T>
+Snapshot2D<T>::Snapshot2D(std::shared_ptr<WavesAcoustic2D<T>> waves, int snapinc)
+{
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _nt;
+    T _dt, _ot;
+    int _lpml;
+    int snapnt, enddiff;
+    T snapdt, snapot;
+
+/* Get necessary parameters from waves class */
+    _nx=waves->getNx();
+    _ny=waves->getNy();
+    _nz=waves->getNz();
+    _dx=waves->getDx();
+    _dy=waves->getDy();
+    _dz=waves->getDz();
+    _ox=waves->getOx();
+    _oy=waves->getOy();
+    _oz=waves->getOz();
+    _lpml = waves->getLpml();
+    _nt = waves->getNt();
+    _dt = waves->getDt();
+    _ot = waves->getOt();
+
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setLpml(_lpml);
+    this->setSnapinc(snapinc);
+
+    snapnt = (_nt-1)/snapinc + 1;
+    snapdt = _dt*snapinc;
+    snapot = _ot;
+    enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
+    this->setSnapnt(snapnt);
+    this->setSnapdt(snapdt);
+    this->setSnapot(snapot);
+    this->setEnddiff(enddiff);
+    this->setData(NULL, 0);
+    this->setData(NULL, 1);
+    this->setData(NULL, 2);
+}
+
+template<typename T>
+Snapshot2D<T>::Snapshot2D(std::shared_ptr<WavesElastic2D<T>> waves, int snapinc)
+{
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _nt;
+    T _dt, _ot;
+    int _lpml;
+    int snapnt, enddiff;
+    T snapdt, snapot;
+
+/* Get necessary parameters from waves class */
+    _nx=waves->getNx();
+    _ny=waves->getNy();
+    _nz=waves->getNz();
+    _dx=waves->getDx();
+    _dy=waves->getDy();
+    _dz=waves->getDz();
+    _ox=waves->getOx();
+    _oy=waves->getOy();
+    _oz=waves->getOz();
+    _lpml = waves->getLpml();
+    _nt = waves->getNt();
+    _dt = waves->getDt();
+    _ot = waves->getOt();
+
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setLpml(_lpml);
+    this->setSnapinc(snapinc);
+
+    snapnt = (_nt-1)/snapinc + 1;
+    snapdt = _dt*snapinc;
+    snapot = _ot;
+    enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
+    this->setSnapnt(snapnt);
+    this->setSnapdt(snapdt);
+    this->setSnapot(snapot);
+    this->setEnddiff(enddiff);
+    this->setData(NULL, 0);
+    this->setData(NULL, 1);
+    this->setData(NULL, 2);
+}
+
+    // Write Snapshots
+template<typename T>
+void Snapshot2D<T>::writeSnap(const int it){
+    int nx = this->getNx();
+    int nz = this->getNz();
+    int nx_pml = this->getNx_pml();
+    int nz_pml = this->getNz_pml();
+    int lpml = this->getLpml();
+    Index I(nx_pml,nz_pml);
+    int i,j;
+    int snapit = this->getSnapit();
+    T *data1 = this->getData(0);
+    T *data2 = this->getData(1);
+    T *data3 = this->getData(2);
+    std::shared_ptr<rockseis::File> Fp = this->getFp();
+    T val = 0;
+    if(this->getOpen()){
+        if((it % this->getSnapinc()) == 0){
+            this->setSnapit(snapit + 1); // Increment snap counter
+            //Write snapshot
+            for(j=0; j<nz; j++){
+                for(i=0; i<nx; i++){
+                    if(data1 != NULL) val = data1[I(i+lpml,j+lpml)];
+                    if(data2 != NULL) val += data2[I(i+lpml,j+lpml)];
+                    if(data3 != NULL) val += data3[I(i+lpml,j+lpml)];
+                    Fp->write(&val,1); 
+                }
+            }
+        }
+    }
+}
+
+// read Snapshots
+template<typename T>
+void Snapshot2D<T>::readSnap(const int it){
+    int nx = this->getNx();
+    int nz = this->getNz();
+    Index I(nx,nz);
+    int snapit = this->getSnapit();
+    std::shared_ptr<rockseis::File> Fp = this->getFp();
+
+    if(this->getOpen() && this->getAllocated(0)){
+        if(((it-this->getEnddiff()) % this->getSnapinc()) == 0){
+            this->setSnapit(snapit - 1); // Increment snap counter
+            //Read snapshot
+            Fp->seekp(nx*nz*snapit*sizeof(T));
+            Fp->read(this->getData(0),nz*nx); 
+        }
+    }
+}
+
+template<typename T>
+Snapshot2D<T>::~Snapshot2D() 
+{
+}
+
+
+
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Snapshot<float>;
 template class Snapshot<double>;
+template class Snapshot2D<float>;
+template class Snapshot2D<double>;
 
 }

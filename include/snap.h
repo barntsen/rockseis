@@ -45,7 +45,7 @@ public:
     void setSnapot(const T ot) { geometry->setO(4, ot); } ///< Set snapot
     void setSnapit(const int it) { snapit = it; } ///< Set snapit
     void setEnddiff(const int it) { enddiff = it; } ///< Set enddiff
-    void setSnapinc(const int inc); ///< Set snapinc
+    void setSnapinc(const int inc) { snapinc = inc; } ///< Set snapinc
     void setData(T *ptr, int i) { if(i >= 0 && i < NPTR) data[i] = ptr; } ///< Set data pointer
 
     // Get functions
@@ -70,7 +70,10 @@ public:
     int getSnapit() { return snapit; } ///< Get snapit
     int getEnddiff() { return enddiff; } ///< Get enddiff
     int getSnapinc() { return snapinc; } ///< Get snapinc
+    bool getOpen() { return open; }
+    bool getAllocated(int i) { if(i >= 0 && i < 3) return allocated[i]; else {rs_error("Eror in getAllocated, index is out of bounds."); return 0;} }
     T* getData(int i) { if(i >= 0 && i < 3) return data[i]; else return nullptr;} ///< Get data pointer
+    std::shared_ptr<rockseis::File> getFp() { return Fp; } ///< Get pointer to file handle
 
     // Memory functions
     void allocSnap(const int i); ///< Allocate data in snapshot
@@ -79,8 +82,6 @@ public:
     //File functions
     bool openSnap(std::string filename, char flag); ///< Open a snapshot for reading, writting or appending
     void closeSnap(); ///< Close snapshot file 
-    void writeSnap(const int it); ///< Write snapshot
-    void readSnap(const int it); ///< Read snapshot
 
    private:
     std::string filename; ///< filename
@@ -100,9 +101,12 @@ public:
 template<typename T>
 class Snapshot2D: public Snapshot<T> {
 public:
-    Snapshot2D(); 	///< Constructor
+    Snapshot2D(std::shared_ptr<WavesAcoustic2D<T>> waves, int snapinc); 	///< Constructor
+    Snapshot2D(std::shared_ptr<WavesElastic2D<T>> waves, int snapinc); 	///< Constructor
     ~Snapshot2D();       	///< Destructor
-private:
+
+    void writeSnap(const int it); ///< Write snapshot
+    void readSnap(const int it); ///< Read snapshot
 
 };
 

@@ -8,7 +8,6 @@ template<typename T>
 Modelling<T>::Modelling() {
 	order = 4;
     snapinc=1;
-    recinc=1;
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 0;
@@ -27,34 +26,6 @@ Modelling<T>::Modelling(int _order, int _snapinc) {
         snapinc = _snapinc;
     }else{
         snapinc=1;
-    }
-
-    recinc=snapinc;
-	prog.previous = 0;
-	prog.current = 0;
-    prog.persec = 1;
-}
-
-template<typename T>
-Modelling<T>::Modelling(int _order, int _recinc, int _snapinc) {
-    if(_order > 1 && _order < 9)
-    {
-        order = _order;
-    }else{
-        order = 4;
-    }
-    if(_snapinc > 0)
-    {
-        snapinc = _snapinc;
-    }else{
-        snapinc=1;
-    }
-
-    if(_recinc > 0)
-    {
-        recinc = _recinc;
-    }else{
-        recinc=1;
     }
 
 	prog.previous = 0;
@@ -192,20 +163,6 @@ ModellingAcoustic2D<T>::ModellingAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> 
 }
 
 template<typename T>
-ModellingAcoustic2D<T>::ModellingAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model,std::shared_ptr<Data2D<T>> _source, int order, int recinc, int snapinc):Modelling<T>(order, recinc, snapinc){
-    source = _source;
-    model = _model;
-    sourceset = true;
-    modelset = true;
-    recPset = false;
-    recAxset = false;
-    recAzset = false;
-    snapPset = false;
-    snapAxset = false;
-    snapAzset = false;
-}
-
-template<typename T>
 int ModellingAcoustic2D<T>::run(){
      int result = MOD_ERR;
      int nt;
@@ -222,9 +179,16 @@ int ModellingAcoustic2D<T>::run(){
      std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot, this->getSnapinc()));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
+     std::shared_ptr<Snapshot2D<T>> Psnap;
+     std::shared_ptr<Snapshot2D<T>> Axsnap;
+     std::shared_ptr<Snapshot2D<T>> Azsnap;
+
     // Create snapshots
     if(this->snapPset){ 
-        waves->createSnap(this->snapP, waves->getPsnap());
+        Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        //waves->createSnap(this->snapP, waves->getPsnap());
+        Psnap->openSnap(this->snapP, 'w');
+        Psnap->setData(waves->getAz(), 2); //Set Pressure as the field to snap
     }
     if(this->snapAxset){ 
         waves->createSnap(this->snapAx, waves->getAxsnap());
@@ -258,7 +222,8 @@ int ModellingAcoustic2D<T>::run(){
     
     	//Writting out results to snapshot file
         if(this->snapPset){ 
-            waves->writeSnap(it, waves->getPsnap());
+            //waves->writeSnap(it, waves->getPsnap());
+            Psnap->writeSnap(it);
         }
 
         if(this->snapAxset){ 
@@ -275,6 +240,7 @@ int ModellingAcoustic2D<T>::run(){
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }	
+    Psnap->closeSnap();
     
     result=MOD_OK;
     return result;
@@ -317,21 +283,6 @@ ModellingAcoustic3D<T>::ModellingAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> 
     snapAzset = false;
 }
 
-template<typename T>
-ModellingAcoustic3D<T>::ModellingAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> _model,std::shared_ptr<Data3D<T>> _source, int order, int recinc, int snapinc):Modelling<T>(order, recinc, snapinc){
-    source = _source;
-    model = _model;
-    sourceset = true;
-    modelset = true;
-    recPset = false;
-    recAxset = false;
-    recAyset = false;
-    recAzset = false;
-    snapPset = false;
-    snapAxset = false;
-    snapAyset = false;
-    snapAzset = false;
-}
 template<typename T>
 int ModellingAcoustic3D<T>::run(){
      int result = MOD_ERR;
@@ -458,24 +409,6 @@ ModellingElastic2D<T>::ModellingElastic2D(std::shared_ptr<ModelElastic2D<T>> _mo
     snapVzset = false;
 }
 
-
-template<typename T>
-ModellingElastic2D<T>::ModellingElastic2D(std::shared_ptr<ModelElastic2D<T>> _model,std::shared_ptr<Data2D<T>> _source, int order, int recinc, int snapinc):Modelling<T>(order, recinc, snapinc){
-    source = _source;
-    model = _model;
-    sourceset = true;
-    modelset = true;
-    recPset = false;
-    recVxset = false;
-    recVzset = false;
-    snapPset = false;
-    snapSxxset = false;
-    snapSzzset = false;
-    snapSxzset = false;
-    snapVxset = false;
-    snapVzset = false;
-}
-
 template<typename T>
 int ModellingElastic2D<T>::run(){
      int result = MOD_ERR;
@@ -574,28 +507,6 @@ ModellingElastic3D<T>::ModellingElastic3D(){
 
 template<typename T>
 ModellingElastic3D<T>::ModellingElastic3D(std::shared_ptr<ModelElastic3D<T>> _model,std::shared_ptr<Data3D<T>> _source, int order, int snapinc):Modelling<T>(order, snapinc){
-    source = _source;
-    model = _model;
-    sourceset = true;
-    modelset = true;
-    recPset = false;
-    recVxset = false;
-    recVyset = false;
-    recVzset = false;
-    snapPset = false;
-    snapSxxset = false;
-    snapSyyset = false;
-    snapSzzset = false;
-    snapSxzset = false;
-    snapSyzset = false;
-    snapSxyset = false;
-    snapVxset = false;
-    snapVyset = false;
-    snapVzset = false;
-}
-
-template<typename T>
-ModellingElastic3D<T>::ModellingElastic3D(std::shared_ptr<ModelElastic3D<T>> _model,std::shared_ptr<Data3D<T>> _source, int order, int recinc, int snapinc):Modelling<T>(order, recinc, snapinc){
     source = _source;
     model = _model;
     sourceset = true;

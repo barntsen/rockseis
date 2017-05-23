@@ -65,8 +65,8 @@ env['WX'] = True;
 
 
 # Compiler flags
-env.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
-#env.Append(CPPFLAGS=' -g -Wall' ) # For debugging
+#env.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
+env.Append(CPPFLAGS=' -g -Wall' ) # For debugging
 
 # Include path
 env.Append(CPPPATH=['../include'])

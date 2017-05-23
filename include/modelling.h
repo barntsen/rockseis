@@ -14,6 +14,7 @@
 #include "data.h"
 #include "waves.h"
 #include "der.h"
+#include "snap.h"
 
 #define MOD_OK 1
 #define MOD_ERR 0
@@ -44,16 +45,13 @@ class Modelling {
 public:
     Modelling();	///< Constructor
     Modelling(int order, int snapinc);  ///< Constructor
-    Modelling(int order, int recinc, int snapinc);  ///< Constructor
     
     // Modelling functions
     int getOrder() { return order; } ///< Get order of FD stencil
     int getSnapinc() { return snapinc; } ///< Get snap increment
-    int getRecinc() { return recinc; } ///< Get rec increment
     std::string getLogfile() { return logfile; } ///< Get name of logfile
     void setOrder(int _order) { if(_order > 1 && _order < 9)  order = _order;} ///< Set order of FD stencil
     void setSnapinc(int _snapinc) {snapinc = _snapinc;} ///< Set snap increment for recording snapshots
-    void setRecinc(int _recinc) {recinc = _recinc;} ///< Set rec increment for recording shots
     void setLogfile(std::string name) { logfile = name; } ///< Set name of logfile
     bool createLog(std::string name); ///< Set name of logfile and open for writing
     void writeLog(std::string text);  ///< Write string to log file
@@ -67,7 +65,6 @@ public:
 private:
     int order;  ///< Order of the FD stencil 
     int snapinc;  ///< Snap interval
-    int recinc;  ///< Snap interval
     std::string logfile; ///< Log file name
     std::ofstream Flog; ///< Logfile
 	Progress prog; ///< Progress counter
@@ -81,7 +78,6 @@ class ModellingAcoustic2D: public Modelling<T> {
 public:
     ModellingAcoustic2D();					///< Constructor
     ModellingAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);					///< Constructor 
-    ModellingAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Data2D<T>> source, int order, int recinc, int snapinc);					///< Constructor 
     int run(); ///< Runs modelling
     void setModel(std::shared_ptr<ModelAcoustic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
@@ -116,7 +112,6 @@ class ModellingAcoustic3D: public Modelling<T> {
 public:
     ModellingAcoustic3D();					///< Constructor
     ModellingAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Data3D<T>> source, int order, int snapinc);					///< Constructor 
-    ModellingAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Data3D<T>> source, int order, int recinc, int snapinc);					///< Constructor 
     int run(); ///< Runs modelling
     void setModel(std::shared_ptr<ModelAcoustic3D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
@@ -155,7 +150,6 @@ class ModellingElastic2D: public Modelling<T> {
 public:
     ModellingElastic2D();					///< Constructor
     ModellingElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);					///< Constructor 
-    ModellingElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, int order, int recinc, int snapinc);					///< Constructor 
     int run(); ///< Runs modelling
     void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
@@ -193,7 +187,6 @@ class ModellingElastic3D: public Modelling<T> {
 public:
     ModellingElastic3D();					///< Constructor
     ModellingElastic3D(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Data3D<T>> source, int order, int snapinc);					///< Constructor 
-    ModellingElastic3D(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Data3D<T>> source, int order, int recinc, int snapinc);					///< Constructor 
     int run(); ///< Runs modelling
     void setModel(std::shared_ptr<ModelElastic3D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
