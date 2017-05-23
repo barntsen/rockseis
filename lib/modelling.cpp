@@ -188,7 +188,7 @@ int ModellingAcoustic2D<T>::run(){
         Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
         //waves->createSnap(this->snapP, waves->getPsnap());
         Psnap->openSnap(this->snapP, 'w');
-        Psnap->setData(waves->getAz(), 2); //Set Pressure as the field to snap
+        Psnap->setData(waves->getAz(), 0); //Set Pressure as the field to snap
     }
     if(this->snapAxset){ 
         waves->createSnap(this->snapAx, waves->getAxsnap());
