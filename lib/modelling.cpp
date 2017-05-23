@@ -175,26 +175,28 @@ int ModellingAcoustic2D<T>::run(){
 
      this->createLog(this->getLogfile());
 
-     // Create the classes 
+     // Create the finite difference modelling classes 
      std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot, this->getSnapinc()));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
+    // Create snapshots
      std::shared_ptr<Snapshot2D<T>> Psnap;
      std::shared_ptr<Snapshot2D<T>> Axsnap;
      std::shared_ptr<Snapshot2D<T>> Azsnap;
-
-    // Create snapshots
     if(this->snapPset){ 
         Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-        //waves->createSnap(this->snapP, waves->getPsnap());
         Psnap->openSnap(this->snapP, 'w');
-        Psnap->setData(waves->getAz(), 0); //Set Pressure as the field to snap
+        Psnap->setData(waves->getP1(), 0); //Set Pressure as the field to snap
     }
     if(this->snapAxset){ 
-        waves->createSnap(this->snapAx, waves->getAxsnap());
+        Axsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Axsnap->openSnap(this->snapAx, 'w');
+        Axsnap->setData(waves->getAx(), 0); //Set Pressure as the field to snap
     }
     if(this->snapAzset){ 
-        waves->createSnap(this->snapAz, waves->getAzsnap());
+        Azsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Azsnap->openSnap(this->snapAz, 'w');
+        Azsnap->setData(waves->getAz(), 0); //Set Pressure as the field to snap
     }
 
     // Loop over time
@@ -222,16 +224,15 @@ int ModellingAcoustic2D<T>::run(){
     
     	//Writting out results to snapshot file
         if(this->snapPset){ 
-            //waves->writeSnap(it, waves->getPsnap());
             Psnap->writeSnap(it);
         }
 
         if(this->snapAxset){ 
-            waves->writeSnap(it, waves->getAxsnap());
+            Axsnap->writeSnap(it);
         }
 
         if(this->snapAzset){ 
-            waves->writeSnap(it, waves->getAzsnap());
+            Azsnap->writeSnap(it);
         }
 
     	// Roll the pointers P1 and P2
@@ -240,8 +241,7 @@ int ModellingAcoustic2D<T>::run(){
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }	
-    Psnap->closeSnap();
-    
+
     result=MOD_OK;
     return result;
 }

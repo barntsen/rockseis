@@ -68,6 +68,7 @@ Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, con
     snapdt = _dt*snapinc;
     snapot = _ot;
     enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
+
 }
 
 template<typename T>
@@ -133,6 +134,13 @@ WavesAcoustic2D<T>::WavesAcoustic2D(){
     Psnap.field = PRESSURE;
     Axsnap.field = VX;
     Azsnap.field = VZ;
+
+    Psnap.allocated = false; 
+    Psnap.open = false; 
+    Axsnap.allocated = false; 
+    Axsnap.open = false; 
+    Azsnap.allocated = false; 
+    Azsnap.open = false; 
 }
 
 template<typename T>
@@ -153,6 +161,13 @@ WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt,
     Psnap.field = PRESSURE;
     Axsnap.field = VX;
     Azsnap.field = VZ;
+
+    Psnap.allocated = false; 
+    Psnap.open = false; 
+    Axsnap.allocated = false; 
+    Axsnap.open = false; 
+    Azsnap.allocated = false; 
+    Azsnap.open = false; 
 }
 
 
@@ -207,6 +222,13 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
     Psnap.field = PRESSURE;
     Axsnap.field = VX;
     Azsnap.field = VZ;
+
+    Psnap.allocated = false; 
+    Psnap.open = false; 
+    Axsnap.allocated = false; 
+    Axsnap.open = false; 
+    Azsnap.allocated = false; 
+    Azsnap.open = false; 
 }
 
 template<typename T>
