@@ -110,6 +110,18 @@ public:
 
 };
 
+template<typename T>
+class Snapshot3D: public Snapshot<T> {
+public:
+    Snapshot3D(std::shared_ptr<WavesAcoustic3D<T>> waves, int snapinc); 	///< Constructor
+    Snapshot3D(std::shared_ptr<WavesElastic3D<T>> waves, int snapinc); 	///< Constructor
+    ~Snapshot3D();       	///< Destructor
+
+    void writeSnap(const int it); ///< Write snapshot
+    void readSnap(const int it); ///< Read snapshot
+
+};
+
 
 }
 #endif //SNAP_H

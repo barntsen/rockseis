@@ -176,7 +176,7 @@ int ModellingAcoustic2D<T>::run(){
      this->createLog(this->getLogfile());
 
      // Create the finite difference modelling classes 
-     std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot, this->getSnapinc()));
+     std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
     // Create snapshots
@@ -185,18 +185,18 @@ int ModellingAcoustic2D<T>::run(){
      std::shared_ptr<Snapshot2D<T>> Azsnap;
     if(this->snapPset){ 
         Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-        Psnap->openSnap(this->snapP, 'w');
+        Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
         Psnap->setData(waves->getP1(), 0); //Set Pressure as the field to snap
     }
     if(this->snapAxset){ 
         Axsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-        Axsnap->openSnap(this->snapAx, 'w');
-        Axsnap->setData(waves->getAx(), 0); //Set Pressure as the field to snap
+        Axsnap->openSnap(this->snapAx, 'w'); // Create a new snapshot file
+        Axsnap->setData(waves->getAx(), 0); //Set Ax as the field to snap
     }
     if(this->snapAzset){ 
         Azsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-        Azsnap->openSnap(this->snapAz, 'w');
-        Azsnap->setData(waves->getAz(), 0); //Set Pressure as the field to snap
+        Azsnap->openSnap(this->snapAz, 'w'); // Create a new snapshot file
+        Azsnap->setData(waves->getAz(), 0); //Set Az as the field to snap
     }
 
     // Loop over time
@@ -295,24 +295,36 @@ int ModellingAcoustic3D<T>::run(){
      ot = source->getOt();
 
      // Create the classes 
-     std::shared_ptr<WavesAcoustic3D<T>> waves (new WavesAcoustic3D<T>(model, nt, dt, ot, this->getSnapinc()));
+     std::shared_ptr<WavesAcoustic3D<T>> waves (new WavesAcoustic3D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
 	// Create log file
     this->createLog(this->getLogfile());
 
     // Create snapshots
+     std::shared_ptr<Snapshot3D<T>> Psnap;
+     std::shared_ptr<Snapshot3D<T>> Axsnap;
+     std::shared_ptr<Snapshot3D<T>> Aysnap;
+     std::shared_ptr<Snapshot3D<T>> Azsnap;
     if(this->snapPset){ 
-        waves->createSnap(this->snapP, waves->getPsnap());
+        Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
+        Psnap->setData(waves->getP1(), 0); //Set Pressure as the field to snap
     }
     if(this->snapAxset){ 
-        waves->createSnap(this->snapAx, waves->getAxsnap());
+        Axsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Axsnap->openSnap(this->snapAx, 'w'); // Create a new snapshot file
+        Axsnap->setData(waves->getAx(), 0); //Set Ax as the field to snap
     }
     if(this->snapAyset){ 
-        waves->createSnap(this->snapAy, waves->getAysnap());
+        Aysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Aysnap->openSnap(this->snapAy, 'w'); // Create a new snapshot file
+        Aysnap->setData(waves->getAy(), 0); //Set Ay as the field to snap
     }
     if(this->snapAzset){ 
-        waves->createSnap(this->snapAz, waves->getAzsnap());
+        Azsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Azsnap->openSnap(this->snapAz, 'w'); // Create a new snapshot file
+        Azsnap->setData(waves->getAz(), 0); //Set Az as the field to snap
     }
 
     // Loop over time
@@ -344,19 +356,19 @@ int ModellingAcoustic3D<T>::run(){
     
     	//Writting out results to snapshot file
         if(this->snapPset){ 
-            waves->writeSnap(it, waves->getPsnap());
+            Psnap->writeSnap(it);
         }
 
         if(this->snapAxset){ 
-            waves->writeSnap(it, waves->getAxsnap());
+            Axsnap->writeSnap(it);
         }
 
         if(this->snapAyset){ 
-            waves->writeSnap(it, waves->getAysnap());
+            Aysnap->writeSnap(it);
         }
 
         if(this->snapAzset){ 
-            waves->writeSnap(it, waves->getAzsnap());
+            Azsnap->writeSnap(it);
         }
 
     	// Roll the pointers P1 and P2
@@ -421,18 +433,28 @@ int ModellingElastic2D<T>::run(){
      ot = source->getOt();
 
      // Create the classes 
-     std::shared_ptr<WavesElastic2D<T>> waves (new WavesElastic2D<T>(model, nt, dt, ot, this->getSnapinc()));
+     std::shared_ptr<WavesElastic2D<T>> waves (new WavesElastic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
     // Create snapshots
+     std::shared_ptr<Snapshot2D<T>> Psnap;
+     std::shared_ptr<Snapshot2D<T>> Vxsnap;
+     std::shared_ptr<Snapshot2D<T>> Vzsnap;
     if(this->snapPset){ 
-        waves->createSnap(this->snapP, waves->getPsnap());
+        Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
+        Psnap->setData(waves->getSxx(), 0); //Set Stress as first field 
+        Psnap->setData(waves->getSzz(), 1); //Set Stress as second field
     }
     if(this->snapVxset){ 
-        waves->createSnap(this->snapVx, waves->getVxsnap());
+        Vxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
+        Vxsnap->setData(waves->getVx(), 0); //Set Vx as field to snap
     }
     if(this->snapVzset){ 
-        waves->createSnap(this->snapVz, waves->getVzsnap());
+        Vzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
+        Vzsnap->setData(waves->getVz(), 0); //Set Vz as field to snap
     }
 
     // Loop over time
@@ -462,15 +484,15 @@ int ModellingElastic2D<T>::run(){
     
     	//Writting out results to snapshot file
         if(this->snapPset){ 
-            waves->writeSnap(it, waves->getPsnap());
+            Psnap->writeSnap(it);
         }
 
         if(this->snapVxset){ 
-            waves->writeSnap(it, waves->getVxsnap());
+            Vxsnap->writeSnap(it);
         }
 
         if(this->snapVzset){ 
-            waves->writeSnap(it, waves->getVzsnap());
+            Vzsnap->writeSnap(it);
         }
     }	
     
@@ -539,24 +561,38 @@ int ModellingElastic3D<T>::run(){
      ot = source->getOt();
 
      // Create the classes 
-     std::shared_ptr<WavesElastic3D<T>> waves (new WavesElastic3D<T>(model, nt, dt, ot, this->getSnapinc()));
+     std::shared_ptr<WavesElastic3D<T>> waves (new WavesElastic3D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
 	// Create log file
      this->createLog(this->getLogfile());
 
     // Create snapshots
+     std::shared_ptr<Snapshot3D<T>> Psnap;
+     std::shared_ptr<Snapshot3D<T>> Vxsnap;
+     std::shared_ptr<Snapshot3D<T>> Vysnap;
+     std::shared_ptr<Snapshot3D<T>> Vzsnap;
     if(this->snapPset){ 
-        waves->createSnap(this->snapP, waves->getPsnap());
+        Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
+        Psnap->setData(waves->getSxx(), 0); //Set Stress as first field 
+        Psnap->setData(waves->getSyy(), 1); //Set Stress as second field 
+        Psnap->setData(waves->getSzz(), 2); //Set Stress as third field
     }
     if(this->snapVxset){ 
-        waves->createSnap(this->snapVx, waves->getVxsnap());
+        Vxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
+        Vxsnap->setData(waves->getVx(), 0); //Set Vx as field to snap
     }
     if(this->snapVyset){ 
-        waves->createSnap(this->snapVy, waves->getVysnap());
+        Vysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Vysnap->openSnap(this->snapVy, 'w'); // Create a new snapshot file
+        Vysnap->setData(waves->getVy(), 0); //Set Vy as field to snap
     }
     if(this->snapVzset){ 
-        waves->createSnap(this->snapVz, waves->getVzsnap());
+        Vzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
+        Vzsnap->setData(waves->getVz(), 0); //Set Vz as field to snap
     }
 
     // Loop over time
@@ -591,19 +627,19 @@ int ModellingElastic3D<T>::run(){
     
     	//Writting out results to snapshot file
         if(this->snapPset){ 
-            waves->writeSnap(it, waves->getPsnap());
+            Psnap->writeSnap(it);
         }
 
         if(this->snapVxset){ 
-            waves->writeSnap(it, waves->getVxsnap());
+            Vxsnap->writeSnap(it);
         }
 
         if(this->snapVyset){ 
-            waves->writeSnap(it, waves->getVysnap());
+            Vysnap->writeSnap(it);
         }
 
         if(this->snapVzset){ 
-            waves->writeSnap(it, waves->getVzsnap());
+            Vzsnap->writeSnap(it);
         }
 
         // Output progress to logfile

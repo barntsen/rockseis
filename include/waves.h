@@ -21,19 +21,6 @@
 
 namespace rockseis {
 
-/** The Snapshot struct
- *
- */
-template<typename T>
-struct Snap {
-    std::string filename; ///< filename
-    std::shared_ptr<rockseis::File> Fp; ///< File handle
-    bool open; ///< flag to see if file is open
-    bool allocated; ///< flag to see if data is allocated
-    rs_field field; ///< enum indicating which field to snap
-    T *data;
-};
-
 /** The abstract waves class
  *
  */
@@ -41,7 +28,7 @@ template<typename T>
 class Waves {
 public:
     Waves();		///< Constructor
-    Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int snapinc);	///< Constructor
+    Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
     virtual ~Waves();	///< Destructor
     
     // Get functions
@@ -63,16 +50,7 @@ public:
     T getOz() { return geometry->getO(3); }	///< Get Oz
     T getOt() { return geometry->getO(4); }	///< Get Ot
 
-    int getSnapnt() { return snapnt; } ///< Get snapnt
-    T getSnapdt() { return snapdt; } ///< Get snapdt
-    T getSnapot() { return snapot; } ///< Get snapdt
-    int getSnapit() { return snapit; } ///< Get snapit
-    int getEnddiff() { return enddiff; } ///< Get enddiff
-    int getSnapinc() { return snapinc; } ///< Get snapinc
-    void allocSnap(Snap<T> *snap); ///< Allocate data in snapshot
-    void freeSnap(Snap<T> *snap); ///< Free data in snapshot
-    
-    // Set functions
+        // Set functions
     void setNx(const int _nx) { geometry->setN(1, _nx); }///< Set Nx
     void setNy(const int _ny) { geometry->setN(2, _ny); }///< Set Ny
     void setNz(const int _nz) { geometry->setN(3, _nz); }///< Set Nz
@@ -88,24 +66,11 @@ public:
     void setOt(const T _ot) { geometry->setO(4, _ot); }	///< Set Ot
     void setDim(const int _dim) { dim = _dim; }		///< Set the dimension
 
-    void setSnapnt(const int nt) { snapnt = nt; } ///< Set snapnt
-    void setSnapdt(const T dt) { snapdt = dt; } ///< Set snapdt
-    void setSnapot(const T ot) { snapot = ot; } ///< Set snapot
-    void setSnapit(const int it) { snapit = it; } ///< Set snapit
-    void setEnddiff(const int it) { enddiff = it; } ///< Set enddiff
-    void setSnapinc(const int inc); ///< Set snapinc
-
 private:
     int dim;
     std::shared_ptr<Geometry<T>> geometry; // regular geometry
     int lpml; // PML boundary size
-    /* Snap variables */
-    int enddiff;
-    int snapit; 
-    int snapnt;
-    int snapinc;
-    T snapdt;
-    T snapot;
+
 };
 
 /** The 2D Acoustic WAVES class
@@ -115,8 +80,8 @@ template<typename T>
 class WavesAcoustic2D: public Waves<T> {
 public:
     WavesAcoustic2D();					///< Constructor
-    WavesAcoustic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot, const int snapinc);	///< Constructor
-    WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot, const int snapinc);	///< Constructor
+    WavesAcoustic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
+    WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
     ~WavesAcoustic2D();					///< Destructor
     
     // Time stepping
@@ -139,16 +104,6 @@ public:
     // Record data at receivers functions
     void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
 
-    // Snapshot functions
-    bool openSnap(std::string filename, Snap<T> *snap); ///< Open a snapshot for reading and writting
-    void closeSnap(Snap<T> *snap); ///< Close a snapshot file 
-    bool createSnap(std::string filename, Snap<T> *snap); ///< Create a new snapshot file
-    void writeSnap(const int it, Snap<T> *snap); ///< Write to a snapshot
-    void readSnap(const int it, Snap<T> *snap); ///< Read snapshot
-    Snap<T> *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure snapshot struct
-    Snap<T> *getAxsnap() { return &Axsnap; } ///< Get a pointer to the Ax snapshot struct
-    Snap<T> *getAzsnap() { return &Azsnap; } ///< Get a pointer to the Az snapshot struct
-
 private:
     T *P1; // Pressure at time t
     T *P2; // Pressure at time t+1
@@ -156,8 +111,6 @@ private:
     T *Az; // Acceleration component at time t
     std::shared_ptr<PmlAcoustic2D<T>> Pml; // Associated PML class
     
-    // Snapshot structures
-    Snap<T> Axsnap, Azsnap, Psnap;
 };
 
 /** The 3D Acoustic WAVES class
@@ -167,14 +120,17 @@ template<typename T>
 class WavesAcoustic3D: public Waves<T> {
 public:
     WavesAcoustic3D();	///< Constructor
-    WavesAcoustic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int _snapinc);	///< Constructor
-    WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, int _nt, T _dt, T _ot, const int _snapinc);	///< Constructor
+    WavesAcoustic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
+    WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
     ~WavesAcoustic3D();	///< Destructor
 
     // Get functions
     std::shared_ptr<PmlAcoustic3D<T>> getPml() { return Pml; }  ///< Get pml
     T * getP2() { return P2; }  ///< Get advanced pressure
     T * getP1() { return P1; }  ///< Get current pressure
+    T * getAx() { return Ax; }  ///< Get current x-acceleration
+    T * getAy() { return Ay; }  ///< Get current y-acceleration
+    T * getAz() { return Az; }  ///< Get current z-acceleration
 
     // Time stepping functions
     void forwardstepAcceleration(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with acceleration
@@ -189,15 +145,6 @@ public:
     void computeABC() { Pml->callcompABC(); } ///< Compute the PML decay constants (needed if changes are made to the Amax, Kmax and Smax)
     void roll();  // Roll the pressure pointers
 
-    //    // Snapshot functions
-    bool openSnap(std::string filename, Snap<T> *snap); ///< Open a snapshot for reading and writting
-    bool createSnap(std::string filename, Snap<T> *snap); ///< Create a new snapshot file
-    void writeSnap(const int it, Snap<T> *snap); ///< Write to a snapshot
-    Snap<T> *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure snapshot struct
-    Snap<T> *getAxsnap() { return &Axsnap; } ///< Get a pointer to the Ax snapshot struct
-    Snap<T> *getAysnap() { return &Aysnap; } ///< Get a pointer to the Ay snapshot struct
-    Snap<T> *getAzsnap() { return &Azsnap; } ///< Get a pointer to the Az snapshot struct
-
 private:
     T *P1; // Pressure at time t
     T *P2; // Pressure at time t+1
@@ -205,9 +152,6 @@ private:
     T *Ay; // Acceleration component at time t
     T *Az; // Acceleration component at time t
     std::shared_ptr<PmlAcoustic3D<T>> Pml; // Associated Pml class
-
-    // Snapshot structures
-    Snap<T> Axsnap, Aysnap, Azsnap, Psnap;
 
 };
 
@@ -219,8 +163,8 @@ class WavesElastic2D: public Waves<T> {
 public:
     WavesElastic2D();	///< Constructor
     ~WavesElastic2D();	///< Destructor
-    WavesElastic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot, const int snapinc);	///< Constructor
-    WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot, const int snapinc);	///< Constructor
+    WavesElastic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
+    WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
 
     // Get functions
     std::shared_ptr<PmlElastic2D<T>> getPml() { return Pml; } ///< Get Pml 
@@ -240,18 +184,6 @@ public:
     // Record data at receivers functions
     void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
 
-    // Snapshot functions
-    bool openSnap(std::string filename, Snap<T> *snap); ///< Open a snapshot for reading and writting
-    bool createSnap(std::string filename, Snap<T> *snap); ///< Create a new snapshot file
-    void writeSnap(const int it, Snap<T> *snap); ///< Write to a snapshot
-    Snap<T> *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure (Sxx+Szz) snapshot struct
-    Snap<T> *getSxxsnap() { return &Sxxsnap; } ///< Get a pointer to the Sxx snapshot struct
-    Snap<T> *getSzzsnap() { return &Szzsnap; } ///< Get a pointer to the Szz snapshot struct
-    Snap<T> *getSxzsnap() { return &Sxzsnap; } ///< Get a pointer to the Sxz snapshot struct
-    Snap<T> *getVxsnap() { return &Vxsnap; } ///< Get a pointer to the Vx snapshot struct
-    Snap<T> *getVzsnap() { return &Vzsnap; } ///< Get a pointer to the Vz snapshot struct
-
-
 private:
     T *Sxx;  // Stress component at time t+1
     T *Szz; // Stress component at time t+1
@@ -260,8 +192,6 @@ private:
     T *Vz; // Velocity component at time t+1/2
     std::shared_ptr<PmlElastic2D<T>> Pml; // Associated Pml class
 
-    // Snapshot structures
-    Snap<T> Vxsnap, Vzsnap, Sxxsnap, Szzsnap, Sxzsnap, Psnap;
 };
 
 /** The 3D Elastic WAVES class
@@ -271,8 +201,8 @@ template<typename T>
 class WavesElastic3D: public Waves<T> {
 public:
     WavesElastic3D();	///< Constructor
-    WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int snapinc);	///< Constructor
-    WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot, const int snapinc);	///< Constructor
+    WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
+    WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
     ~WavesElastic3D();	///< Destructor
 
     // Get functions
@@ -292,22 +222,6 @@ public:
     void insertSource(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
     void recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
 
-    // Snapshot functions
-    bool openSnap(std::string filename, Snap<T> *snap); ///< Open a snapshot for reading and writting
-    bool createSnap(std::string filename, Snap<T> *snap); ///< Create a new snapshot file
-    void writeSnap(const int it, Snap<T> *snap); ///< Write to a snapshot
-    Snap<T> *getPsnap() { return &Psnap; } ///< Get a pointer to the pressure (Sxx+Szz) snapshot struct
-    Snap<T> *getSxxsnap() { return &Sxxsnap; } ///< Get a pointer to the Sxx snapshot struct
-    Snap<T> *getSyysnap() { return &Syysnap; } ///< Get a pointer to the Syy snapshot struct
-    Snap<T> *getSzzsnap() { return &Szzsnap; } ///< Get a pointer to the Szz snapshot struct
-    Snap<T> *getSyzsnap() { return &Syzsnap; } ///< Get a pointer to the Syz snapshot struct
-    Snap<T> *getSxzsnap() { return &Sxzsnap; } ///< Get a pointer to the Sxz snapshot struct
-    Snap<T> *getSxysnap() { return &Sxysnap; } ///< Get a pointer to the Sxy snapshot struct
-    Snap<T> *getVxsnap() { return &Vxsnap; } ///< Get a pointer to the Vx snapshot struct
-    Snap<T> *getVysnap() { return &Vysnap; } ///< Get a pointer to the Vy snapshot struct
-    Snap<T> *getVzsnap() { return &Vzsnap; } ///< Get a pointer to the Vz snapshot struct
-
-
     
 private:
     T *Sxx;  // Stress component at time t+1
@@ -321,9 +235,6 @@ private:
     T *Vy; // Velocity component at time t+1/2
     T *Vz; // Velocity component at time t+1/2
     std::shared_ptr<PmlElastic3D<T>> Pml; // Associated Pml class
-
-    // Snapshot structures
-    Snap<T> Vxsnap, Vysnap, Vzsnap, Sxxsnap, Syysnap, Szzsnap, Syzsnap, Sxzsnap, Sxysnap, Psnap;
 };
 
 }

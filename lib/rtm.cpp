@@ -163,11 +163,13 @@ int RtmAcoustic2D<T>::run(){
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot, this->getSnapinc()));
+     std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      // Create snapshots
-        waves->createSnap(this->getCpfile(), waves->getPsnap());
+     std::shared_ptr<Snapshot2D<T>> Psnap;
+     Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+     Psnap->openSnap(this->getCpfile(), 'w'); // Create a new snapshot file
 
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -180,7 +182,7 @@ int RtmAcoustic2D<T>::run(){
     	waves->insertSource(model, source, SMAP, it);
 
     	//Writting out results to snapshot file
-        waves->writeSnap(it, waves->getPsnap());
+        Psnap->writeSnap(it);
 
     	// Roll the pointers P1 and P2
     	waves->roll();
@@ -191,14 +193,14 @@ int RtmAcoustic2D<T>::run(){
     
     
     //Close snapshot file
-    waves->closeSnap(waves->getPsnap());
+    Psnap->closeSnap();
 
     // Reset waves
     waves.reset();
-    waves  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot, this->getSnapinc());
+    waves  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot);
 
-    waves->openSnap(this->getCpfile(), waves->getPsnap());
-    waves->allocSnap(waves->getPsnap());
+    Psnap->openSnap(this->getCpfile(), 'r');
+    Psnap->allocSnap(0);
 
     // Loop over reverse time
     for(int it=0; it < nt; it++)
@@ -211,7 +213,7 @@ int RtmAcoustic2D<T>::run(){
     	waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
 
         //Get forward snapshot
-        waves->readSnap(nt-1 - it, waves->getPsnap());
+        Psnap->readSnap(nt-1 - it);
 
         //Get backward snapshot
         T *wr = waves->getP1();

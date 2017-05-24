@@ -26,12 +26,15 @@ bool Snapshot<T>::openSnap(std::string filename, char flag) {
                 this->Fp->output(this->filename);
                 this->open = true;
                 this->Fp->setN(1,this->getNx());
+                this->Fp->setN(2,this->getNy());
                 this->Fp->setN(3,this->getNz());
                 this->Fp->setN(4,this->getSnapnt());
                 this->Fp->setD(1,this->getDx());
+                this->Fp->setD(2,this->getDy());
                 this->Fp->setD(3,this->getDz());
                 this->Fp->setD(4,this->getSnapdt());
                 this->Fp->setO(1,this->getOx());
+                this->Fp->setO(2,this->getOy());
                 this->Fp->setO(3,this->getOz());
                 this->Fp->setO(4,this->getSnapot());
                 this->Fp->setData_format(sizeof(T));
@@ -48,6 +51,7 @@ bool Snapshot<T>::openSnap(std::string filename, char flag) {
                     rs_error("Snap::openSnap: Error opening snapshot file for reading.");
                 }
                 if(this->getNx() != this->Fp->getN(1)) rs_error("Snap::openSnap: Mismatch in nx size of snaps");
+                if(this->getNy() != this->Fp->getN(2)) rs_error("Snap::openSnap: Mismatch in ny size of snaps");
                 if(this->getNz() != this->Fp->getN(3)) rs_error("Snap::openSnap: Mismatch in nz size of snaps");
                 if(sizeof(T) != this->Fp->getData_format()) rs_error("Snap::openSnap: Mismatch in precision of snaps");
                 if(this->getSnapnt() != this->Fp->getN(4)) rs_error("Snap::openSnap: Mismatch in number of snaps");
@@ -62,13 +66,13 @@ bool Snapshot<T>::openSnap(std::string filename, char flag) {
                     rs_error("Snap::openSnap: Error opening snapshot file for reading.");
                 }
                 if(this->getNx() != this->Fp->getN(1)) rs_error("Snap::openSnap: Mismatch in nx size of snaps");
+                if(this->getNy() != this->Fp->getN(2)) rs_error("Snap::openSnap: Mismatch in ny size of snaps");
                 if(this->getNz() != this->Fp->getN(3)) rs_error("Snap::openSnap: Mismatch in nz size of snaps");
                 if(sizeof(T) != this->Fp->getData_format()) rs_error("Snap::openSnap: Mismatch in precision of snaps");
                 if(this->getSnapnt() != this->Fp->getN(4)) rs_error("Snap::openSnap: Mismatch in number of snaps");
                 if(this->Fp->getType() != rockseis::SNAPSHOT) rs_error("Snap::openSnap: Mismatch in file type");
                 this->open = true;
                 this->setSnapit(this->getSnapnt() - 1);
-
                 break;
             default:
                 rs_error("Snap::openSnap: Invalid flag.");
@@ -266,7 +270,6 @@ template<typename T>
 void Snapshot2D<T>::readSnap(const int it){
     int nx = this->getNx();
     int nz = this->getNz();
-    Index I(nx,nz);
     int snapit = this->getSnapit();
     std::shared_ptr<rockseis::File> Fp = this->getFp();
 
@@ -283,7 +286,176 @@ void Snapshot2D<T>::readSnap(const int it){
 template<typename T>
 Snapshot2D<T>::~Snapshot2D() 
 {
+    // Do nothing.
 }
+
+// =============== 3D SNAPSHOT CLASS =============== //
+
+template<typename T>
+Snapshot3D<T>::Snapshot3D(std::shared_ptr<WavesAcoustic3D<T>> waves, int snapinc)
+{
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _nt;
+    T _dt, _ot;
+    int _lpml;
+    int snapnt, enddiff;
+    T snapdt, snapot;
+
+/* Get necessary parameters from waves class */
+    _nx=waves->getNx();
+    _ny=waves->getNy();
+    _nz=waves->getNz();
+    _dx=waves->getDx();
+    _dy=waves->getDy();
+    _dz=waves->getDz();
+    _ox=waves->getOx();
+    _oy=waves->getOy();
+    _oz=waves->getOz();
+    _lpml = waves->getLpml();
+    _nt = waves->getNt();
+    _dt = waves->getDt();
+    _ot = waves->getOt();
+
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setLpml(_lpml);
+    this->setSnapinc(snapinc);
+
+    snapnt = (_nt-1)/snapinc + 1;
+    snapdt = _dt*snapinc;
+    snapot = _ot;
+    enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
+    this->setSnapnt(snapnt);
+    this->setSnapdt(snapdt);
+    this->setSnapot(snapot);
+    this->setEnddiff(enddiff);
+    this->setData(NULL, 0);
+    this->setData(NULL, 1);
+    this->setData(NULL, 2);
+}
+
+template<typename T>
+Snapshot3D<T>::Snapshot3D(std::shared_ptr<WavesElastic3D<T>> waves, int snapinc)
+{
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _nt;
+    T _dt, _ot;
+    int _lpml;
+    int snapnt, enddiff;
+    T snapdt, snapot;
+
+/* Get necessary parameters from waves class */
+    _nx=waves->getNx();
+    _ny=waves->getNy();
+    _nz=waves->getNz();
+    _dx=waves->getDx();
+    _dy=waves->getDy();
+    _dz=waves->getDz();
+    _ox=waves->getOx();
+    _oy=waves->getOy();
+    _oz=waves->getOz();
+    _lpml = waves->getLpml();
+    _nt = waves->getNt();
+    _dt = waves->getDt();
+    _ot = waves->getOt();
+
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setLpml(_lpml);
+    this->setSnapinc(snapinc);
+
+    snapnt = (_nt-1)/snapinc + 1;
+    snapdt = _dt*snapinc;
+    snapot = _ot;
+    enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
+    this->setSnapnt(snapnt);
+    this->setSnapdt(snapdt);
+    this->setSnapot(snapot);
+    this->setEnddiff(enddiff);
+    this->setData(NULL, 0);
+    this->setData(NULL, 1);
+    this->setData(NULL, 2);
+}
+
+    // Write Snapshots
+template<typename T>
+void Snapshot3D<T>::writeSnap(const int it){
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+    int nx_pml = this->getNx_pml();
+    int ny_pml = this->getNy_pml();
+    int nz_pml = this->getNz_pml();
+    int lpml = this->getLpml();
+    Index I(nx_pml,ny_pml,nz_pml);
+    int i,j,k;
+    int snapit = this->getSnapit();
+    T *data1 = this->getData(0);
+    T *data2 = this->getData(1);
+    T *data3 = this->getData(2);
+    std::shared_ptr<rockseis::File> Fp = this->getFp();
+    T val = 0;
+    if(this->getOpen()){
+        if((it % this->getSnapinc()) == 0){
+            this->setSnapit(snapit + 1); // Increment snap counter
+            //Write snapshot
+            for(k=0; k<nz; k++){
+                for(j=0; j<ny; j++){
+                    for(i=0; i<nx; i++){
+                        if(data1 != NULL) val = data1[I(i+lpml,j+lpml,k+lpml)];
+                        if(data2 != NULL) val += data2[I(i+lpml,j+lpml,k+lpml)];
+                        if(data3 != NULL) val += data3[I(i+lpml,j+lpml,k+lpml)];
+                        Fp->write(&val,1); 
+                    }
+                }
+            }
+        }
+    }
+}
+
+// read Snapshots
+template<typename T>
+void Snapshot3D<T>::readSnap(const int it){
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+    int snapit = this->getSnapit();
+    std::shared_ptr<rockseis::File> Fp = this->getFp();
+
+    if(this->getOpen() && this->getAllocated(0)){
+        if(((it-this->getEnddiff()) % this->getSnapinc()) == 0){
+            this->setSnapit(snapit - 1); // Increment snap counter
+            //Read snapshot
+            Fp->seekp(nx*ny*nz*snapit*sizeof(T));
+            Fp->read(this->getData(0),nz*ny*nx); 
+        }
+    }
+}
+
+template<typename T>
+Snapshot3D<T>::~Snapshot3D() 
+{
+    // Do nothing.
+}
+
 
 
 
@@ -292,5 +464,7 @@ template class Snapshot<float>;
 template class Snapshot<double>;
 template class Snapshot2D<float>;
 template class Snapshot2D<double>;
+template class Snapshot3D<float>;
+template class Snapshot3D<double>;
 
 }

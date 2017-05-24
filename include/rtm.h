@@ -14,6 +14,7 @@
 #include "data.h"
 #include "waves.h"
 #include "der.h"
+#include "snap.h"
 
 #define RTM_OK 1
 #define RTM_ERR 0

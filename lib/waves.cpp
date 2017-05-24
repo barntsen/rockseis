@@ -21,11 +21,6 @@ Waves<T>::Waves() {
     geometry->setO(4, 0.);
     dim=0;
     lpml = 10;
-    snapinc=1;
-    snapnt=1;
-    snapdt=1.;
-    snapot=0.;
-    enddiff=0;
 }
 
 template<typename T>
@@ -34,7 +29,7 @@ Waves<T>::~Waves() {
 }
 
 template<typename T>
-Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt,  const T _ox, const T _oy, const T _oz, const T _ot, const int _snapinc) {
+Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt,  const T _ox, const T _oy, const T _oz, const T _ot) {
     geometry = std::make_shared<Geometry<T>>(); 
     geometry->setN(1, _nx);
     geometry->setN(2, _ny);
@@ -51,68 +46,8 @@ Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, con
     dim = _dim;
     lpml = _lpml;
 
-    // Setting snap time axis
-    if(_snapinc < 1) {
-	    /* Error */ 
-	    std::cerr << "Waves::snapinc must be an integer larger than 0. Setting snapinc to 1\n";
-	    snapinc =1;
-    }
-    if(_snapinc > _nt) {
-	    /* Error */ 
-	    std::cerr << "Waves::snapinc is larger than modelling nt. Setting snapinc to nt\n";
-        snapinc=_nt;
-	    
-    }
-    snapinc = _snapinc;
-    snapnt = (_nt-1)/snapinc + 1;
-    snapdt = _dt*snapinc;
-    snapot = _ot;
-    enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
-
 }
 
-template<typename T>
-void Waves<T>::setSnapinc(const int _snapinc){
-    int nt = this->getNt();
-    T dt = this->getDt();
-    T ot = this->getOt();
-
-    // Setting snap time axis
-    if(_snapinc < 1) {
-	    /* Error */ 
-	    std::cerr << "Waves::Setsnapinc: snapinc must be an integer larger than 0. Setting snapinc to 1\n";
-	    snapinc = 1;
-    }
-    if(_snapinc > nt) {
-	    /* Error */ 
-	    std::cerr << "Waves::Setsnapinc: snapinc is larger than modelling nt. Setting snapinc to nt\n";
-	    
-    }
-    snapinc = _snapinc;
-    snapnt = (nt-1)/snapinc + 1;
-    snapdt = dt*snapinc;
-    snapot = ot;
-    enddiff = (int) rintf(((nt-1)*dt - (snapnt-1)*snapdt)/dt);
-}
-
-template<typename T>
-void Waves<T>::allocSnap(Snap<T> *Snap) 
-{
-    if(Snap->allocated == false) {
-        Snap->data = (T *) calloc(this->getNx()*this->getNy()*this->getNz(), sizeof(T));
-        Snap->allocated = true;
-    }else{
-        free(Snap->data);
-        Snap->data = (T *) calloc(this->getNx()*this->getNy()*this->getNz(), sizeof(T));
-        Snap->allocated = true;
-    }
-}
-
-template<typename T>
-void Waves<T>::freeSnap(Snap<T> *Snap)
-{
-    if(Snap->allocated) free(Snap->data);
-}
 
 // =============== 2D ACOUSTIC MODEL CLASS =============== //
 template<typename T>
@@ -131,20 +66,10 @@ WavesAcoustic2D<T>::WavesAcoustic2D(){
     P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Psnap.field = PRESSURE;
-    Axsnap.field = VX;
-    Azsnap.field = VZ;
-
-    Psnap.allocated = false; 
-    Psnap.open = false; 
-    Axsnap.allocated = false; 
-    Axsnap.open = false; 
-    Azsnap.allocated = false; 
-    Azsnap.open = false; 
 }
 
 template<typename T>
-WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot, const int _snapinc): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot, _snapinc) {
+WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot) {
     
     /* Create associated PML class */
     Pml = std::make_shared<PmlAcoustic2D<T>>(_nx, _nz, _lpml, _dt);
@@ -158,21 +83,12 @@ WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt,
     P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Psnap.field = PRESSURE;
-    Axsnap.field = VX;
-    Azsnap.field = VZ;
 
-    Psnap.allocated = false; 
-    Psnap.open = false; 
-    Axsnap.allocated = false; 
-    Axsnap.open = false; 
-    Azsnap.allocated = false; 
-    Azsnap.open = false; 
 }
 
 
 template<typename T>
-WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot, const int _snapinc): Waves<T>(){
+WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, int _nt, T _dt, T _ot): Waves<T>(){
 
     int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
@@ -205,7 +121,6 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
     this->setOt(_ot);
     this->setLpml(_lpml);
     this->setDim(_dim);
-    this->setSnapinc(_snapinc);
 
     /* Create associated PML class */
     Pml = std::make_shared<PmlAcoustic2D<T>>(_nx, _nz, _lpml, _dt);
@@ -219,16 +134,7 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
     P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Psnap.field = PRESSURE;
-    Axsnap.field = VX;
-    Azsnap.field = VZ;
 
-    Psnap.allocated = false; 
-    Psnap.open = false; 
-    Axsnap.allocated = false; 
-    Axsnap.open = false; 
-    Azsnap.allocated = false; 
-    Azsnap.open = false; 
 }
 
 template<typename T>
@@ -238,12 +144,6 @@ WavesAcoustic2D<T>::~WavesAcoustic2D() {
     free(P2);
     free(Ax);
     free(Az);
-    if(Psnap.open) Psnap.Fp->close();
-    if(Psnap.allocated) free(Psnap.data);
-    if(Axsnap.open) Axsnap.Fp->close();
-    if(Axsnap.allocated) free(Axsnap.data);
-    if(Azsnap.open) Azsnap.Fp->close();
-    if(Azsnap.allocated) free(Azsnap.data);
 }
 
 template<typename T>
@@ -499,124 +399,6 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, b
 
 }
 
-template<typename T>
-bool WavesAcoustic2D<T>::createSnap(std::string filename, Snap<T> *Snap) {
-    if(!filename.empty()){
-        Snap->filename = filename;
-        Snap->Fp = std::make_shared<File>();
-        Snap->Fp->output(Snap->filename);
-        Snap->open = true;
-        Snap->Fp->setN(1,this->getNx());
-        Snap->Fp->setN(3,this->getNz());
-        Snap->Fp->setN(4,this->getSnapnt());
-        Snap->Fp->setD(1,this->getDx());
-        Snap->Fp->setD(3,this->getDz());
-        Snap->Fp->setD(4,this->getSnapdt());
-        Snap->Fp->setO(1,this->getOx());
-        Snap->Fp->setO(3,this->getOz());
-        Snap->Fp->setO(4,this->getSnapot());
-        Snap->Fp->setData_format(sizeof(T));
-        Snap->Fp->setType(rockseis::SNAPSHOT);
-        Snap->Fp->writeHeader();
-        Snap->Fp->seekp(Snap->Fp->getStartofdata());
-        this->setSnapit(0);
-    }else{
-        rs_error("WavesAcoustic2D::createSnap: No filename set.");
-    }
-        return WAVES_OK;
-}
-
-// Write Snapshots
-template<typename T>
-void WavesAcoustic2D<T>::writeSnap(int it, Snap<T> *Snap){
-    int nx = this->getNx();
-    int nz = this->getNz();
-    int nx_pml = this->getNx_pml();
-    int nz_pml = this->getNz_pml();
-    int lpml = this->getLpml();
-    Index I(nx_pml,nz_pml);
-    int i,j;
-    int snapit = this->getSnapit();
-    T *field;
-    switch(Snap->field){
-        case PRESSURE:
-            field = this->P1;
-            break;
-        case VX:
-            field = this->Ax;
-            break;
-        case VZ:
-            field = this->Az;
-            break;
-        default:
-            break;
-    }
-
-    if(Snap->open){
-       if((it % this->getSnapinc()) == 0){
-           this->setSnapit(snapit + 1); // Increment snap counter
-           //Write snapshot
-           for(j=0; j<nz; j++){
-               for(i=0; i<nx; i++){
-                   Snap->Fp->write(&field[I(i+lpml,j+lpml)],1); 
-               }
-           }
-        }
-    }
-}
-
-
-
-
-template<typename T>
-bool WavesAcoustic2D<T>::openSnap(std::string filename, Snap<T> *Snap) {
-    if(Snap->open) rs_error("Snapshot cannot be opened two times.");
-    if(!filename.empty()){
-        Snap->filename = filename;
-        Snap->Fp = std::make_shared<File>();
-        if(Snap->Fp->input(Snap->filename) == FILE_ERR)
-        {
-            rs_error("WavesAcoustic2D::openSnap: Error opening snapshot file for reading.");
-        }
-        if(this->getNx() != Snap->Fp->getN(1)) rs_error("WavesAcoustic2D::openSnap: Mismatch in nx size of snaps");
-        if(this->getNz() != Snap->Fp->getN(3)) rs_error("WavesAcoustic2D::openSnap: Mismatch in nz size of snaps");
-        if(sizeof(T) != Snap->Fp->getData_format()) rs_error("WavesAcoustic2D::openSnap: Mismatch in precision of snaps");
-        if(this->getSnapnt() != Snap->Fp->getN(4)) rs_error("WavesAcoustic2D::openSnap: Mismatch in number of snaps");
-        if(Snap->Fp->getType() != rockseis::SNAPSHOT) rs_error("WavesAcoustic2D::openSnap: Mismatch in file type");
-        Snap->open = true;
-        this->setSnapit(this->getSnapnt() - 1);
-    }else{
-        rs_error("WavesAcoustic2D::openSnap: No filename set.");
-    }
-        return WAVES_OK;
-}
-
-// Write Snapshots
-template<typename T>
-void WavesAcoustic2D<T>::readSnap(int it, Snap<T> *Snap){
-    int nx = this->getNx();
-    int nz = this->getNz();
-    Index I(nx,nz);
-    int snapit = this->getSnapit();
-
-    if(Snap->open && Snap->allocated){
-       if(((it-this->getEnddiff()) % this->getSnapinc()) == 0){
-           this->setSnapit(snapit - 1); // Increment snap counter
-           //Read snapshot
-           Snap->Fp->seekp(nx*nz*snapit*sizeof(T));
-           Snap->Fp->read(&(Snap->data[0]),nz*nx); 
-       }
-    }
-}
-
-
-template<typename T>
-void WavesAcoustic2D<T>::closeSnap(Snap<T> *snap) {
-    if(snap->open) {
-        snap->Fp->close();
-        snap->open = false;
-    }
-}
 
 // Roll the pressure pointers
 template<typename T>
@@ -635,7 +417,7 @@ WavesAcoustic3D<T>::WavesAcoustic3D(){
 }
 
 template<typename T>
-WavesAcoustic3D<T>::WavesAcoustic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int _snapinc): Waves<T>(3, _nx, _ny, _nz, _nt, _lpml, _dx, _dy, _dz, _dt, _ox, _oy, _oz, _ot, _snapinc) {
+WavesAcoustic3D<T>::WavesAcoustic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot): Waves<T>(3, _nx, _ny, _nz, _nt, _lpml, _dx, _dy, _dz, _dt, _ox, _oy, _oz, _ot) {
     
     /* Create associated PML class */
     Pml =std::make_shared<PmlAcoustic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
@@ -651,15 +433,11 @@ WavesAcoustic3D<T>::WavesAcoustic3D(const int _nx, const int _ny, const int _nz,
     Ax = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Psnap.field = PRESSURE;
-    Axsnap.field = VX;
-    Aysnap.field = VY;
-    Azsnap.field = VZ;
 }
 
 
 template<typename T>
-WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, int _nt, T _dt, T _ot, const int _snapinc): Waves<T>() {
+WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, int _nt, T _dt, T _ot): Waves<T>() {
     int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
@@ -691,7 +469,6 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
     this->setOt(_ot);
     this->setLpml(_lpml);
     this->setDim(_dim);
-    this->setSnapinc(_snapinc);
    
     /* Create associated PML class */
     Pml =std::make_shared<PmlAcoustic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
@@ -707,10 +484,6 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
     Ax = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Psnap.field = PRESSURE;
-    Axsnap.field = VX;
-    Aysnap.field = VY;
-    Azsnap.field = VZ;
 }
 
 template<typename T>
@@ -1055,82 +828,6 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
     }
 }
 
-template<typename T>
-bool WavesAcoustic3D<T>::createSnap(std::string filename, Snap<T> *Snap) {
-    if(!filename.empty()){
-        Snap->filename = filename;
-        Snap->Fp = std::make_shared<File>();
-        Snap->Fp->output(Snap->filename);
-        Snap->open = true;
-        Snap->Fp->setN(1,this->getNx());
-        Snap->Fp->setN(2,this->getNy());
-        Snap->Fp->setN(3,this->getNz());
-        Snap->Fp->setN(4,this->getSnapnt());
-        Snap->Fp->setD(1,this->getDx());
-        Snap->Fp->setD(2,this->getDy());
-        Snap->Fp->setD(3,this->getDz());
-        Snap->Fp->setD(4,this->getSnapdt());
-        Snap->Fp->setO(1,this->getOx());
-        Snap->Fp->setO(2,this->getOy());
-        Snap->Fp->setO(3,this->getOz());
-        Snap->Fp->setO(4,this->getSnapot());
-        Snap->Fp->setData_format(sizeof(T));
-        Snap->Fp->setType(rockseis::SNAPSHOT);
-        Snap->Fp->writeHeader();
-        Snap->Fp->seekp(Snap->Fp->getStartofdata());
-        this->setSnapit(0);
-    }else{
-        rs_error("WavesAcoustic3D::createSnap: No filename set.");
-    }
-        return WAVES_OK;
-}
-
-// Write Snapshots
-template<typename T>
-void WavesAcoustic3D<T>::writeSnap(int it, Snap<T> *Snap){
-    int nx = this->getNx();
-    int ny = this->getNy();
-    int nz = this->getNz();
-    int nx_pml = this->getNx_pml();
-    int ny_pml = this->getNy_pml();
-    int nz_pml = this->getNz_pml();
-    int lpml = this->getLpml();
-    Index I(nx_pml,ny_pml,nz_pml);
-    int i,j,k;
-    int snapit = this->getSnapit();
-    T *field;
-    switch(Snap->field){
-        case PRESSURE:
-            field = this->P1;
-            break;
-        case VX:
-            field = this->Ax;
-            break;
-        case VY:
-            field = this->Ay;
-            break;
-        case VZ:
-            field = this->Az;
-            break;
-        default:
-            break;
-    }
-
-    if(Snap->open){
-       if((it % this->getSnapinc()) == 0){
-           this->setSnapit(snapit + 1); // Increment snap counter
-           //Write snapshot
-           for(k=0; k<nz; k++){
-               for(j=0; j<ny; j++){
-                   for(i=0; i<nx; i++){
-                       Snap->Fp->write(&field[I(i+lpml,j+lpml,k+lpml)],1); 
-                   }
-               }
-           }
-       }
-    }
-}
-
 
 template<typename T>
 WavesAcoustic3D<T>::~WavesAcoustic3D() {
@@ -1165,7 +862,7 @@ WavesElastic2D<T>::WavesElastic2D()	///< Constructor
 
 
 template<typename T>
-WavesElastic2D<T>::WavesElastic2D(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot, const int _snapinc): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot, _snapinc) {
+WavesElastic2D<T>::WavesElastic2D(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot) {
     
     /* Create associated PML class */
     Pml = std::make_shared<PmlElastic2D<T>>(_nx, _nz, _lpml, _dt);
@@ -1180,16 +877,10 @@ WavesElastic2D<T>::WavesElastic2D(const int _nx, const int _nz, const int _nt, c
     Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Psnap.field = PRESSURE;
-    Vxsnap.field = VX;
-    Vzsnap.field = VZ;
-    Sxxsnap.field = SXX;
-    Szzsnap.field = SZZ;
-    Sxzsnap.field = SXZ;
 }
 
 template<typename T>
-WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot, const int _snapinc): Waves<T>() {
+WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot): Waves<T>() {
     int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
@@ -1221,7 +912,6 @@ WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> m
     this->setOt(_ot);
     this->setLpml(_lpml);
     this->setDim(_dim);
-    this->setSnapinc(_snapinc);
    
     /* Create associated PML class */
     Pml = std::make_shared<PmlElastic2D<T>>(_nx, _nz, _lpml, _dt);
@@ -1236,12 +926,6 @@ WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> m
     Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    Psnap.field = PRESSURE;
-    Vxsnap.field = VX;
-    Vzsnap.field = VZ;
-    Sxxsnap.field = SXX;
-    Szzsnap.field = SZZ;
-    Sxzsnap.field = SXZ;
 }
 
 
@@ -1600,79 +1284,6 @@ void WavesElastic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bo
 
 }
 
-template<typename T>
-bool WavesElastic2D<T>::createSnap(std::string filename, Snap<T> *Snap) {
-    if(!filename.empty()){
-        Snap->filename = filename;
-        Snap->Fp = std::make_shared<File>();
-        Snap->Fp->output(Snap->filename);
-        Snap->open = true;
-        Snap->Fp->setN(1,this->getNx());
-        Snap->Fp->setN(3,this->getNz());
-        Snap->Fp->setN(4,this->getSnapnt());
-        Snap->Fp->setD(1,this->getDx());
-        Snap->Fp->setD(3,this->getDz());
-        Snap->Fp->setD(4,this->getSnapdt());
-        Snap->Fp->setO(1,this->getOx());
-        Snap->Fp->setO(3,this->getOz());
-        Snap->Fp->setO(4,this->getSnapot());
-        Snap->Fp->setData_format(sizeof(T));
-        Snap->Fp->setType(rockseis::SNAPSHOT);
-        Snap->Fp->writeHeader();
-        Snap->Fp->seekp(Snap->Fp->getStartofdata());
-        this->setSnapit(0);
-    }else{
-        std::cerr << "WavesElastic2D::createSnap: No filename set.\n";
-        exit(1);
-    }
-        return WAVES_OK;
-}
-
-// Write Snapshots
-template<typename T>
-void WavesElastic2D<T>::writeSnap(int it, Snap<T> *Snap){
-    int nx = this->getNx();
-    int nz = this->getNz();
-    int nx_pml = this->getNx_pml();
-    int nz_pml = this->getNz_pml();
-    int lpml = this->getLpml();
-    Index I(nx_pml,nz_pml);
-    int i,j;
-    int snapit = this->getSnapit();
-    T *field1 = NULL, *field2 = NULL;
-    T val;
-    switch(Snap->field){
-        case PRESSURE:
-            field1 = this->Sxx;
-            field2 = this->Szz;
-            break;
-        case VX:
-            field1 = this->Vx;
-            break;
-        case VZ:
-            field1 = this->Vz;
-            break;
-        default:
-            break;
-    }
-
-    if(Snap->open){
-       if((it % this->getSnapinc()) == 0){
-           this->setSnapit(snapit + 1); // Increment snap counter
-           //Write snapshot
-           for(j=0; j<nz; j++){
-               for(i=0; i<nx; i++){
-                   if (field2 != NULL){
-                       val = field1[I(i+lpml,j+lpml)] + field2[I(i+lpml,j+lpml)];
-                   }else{
-                       val = field1[I(i+lpml,j+lpml)];
-                   }
-                   Snap->Fp->write(&val,1); 
-               }
-           }
-        }
-    }
-}
 
 template<typename T>
 WavesElastic2D<T>::~WavesElastic2D() {
@@ -1695,7 +1306,7 @@ WavesElastic3D<T>::WavesElastic3D(){
 }
 
 template<typename T>
-WavesElastic3D<T>::WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot, const int _snapinc): Waves<T>(3, _nx, _ny, _nz, _nt, _lpml, _dx, _dy, _dz, _dt, _ox, _oy, _oz, _ot, _snapinc) {
+WavesElastic3D<T>::WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot): Waves<T>(3, _nx, _ny, _nz, _nt, _lpml, _dx, _dy, _dz, _dt, _ox, _oy, _oz, _ot) {
     
     /* Create associated PML class */
     Pml = std::make_shared<PmlElastic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
@@ -1715,20 +1326,10 @@ WavesElastic3D<T>::WavesElastic3D(const int _nx, const int _ny, const int _nz, c
     Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Psnap.field = PRESSURE;
-    Vxsnap.field = VX;
-    Vysnap.field = VY;
-    Vzsnap.field = VZ;
-    Sxxsnap.field = SXX;
-    Syysnap.field = SYY;
-    Szzsnap.field = SZZ;
-    Syzsnap.field = SYZ;
-    Sxzsnap.field = SXZ;
-    Sxysnap.field = SXY;
 }
 
 template<typename T>
-WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot, const int _snapinc): Waves<T>() {
+WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot): Waves<T>() {
     int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
@@ -1760,7 +1361,6 @@ WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> m
     this->setOt(_ot);
     this->setLpml(_lpml);
     this->setDim(_dim);
-    this->setSnapinc(_snapinc);
 
     /* Create associated PML class */
     Pml = std::make_shared<PmlElastic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
@@ -1780,16 +1380,6 @@ WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> m
     Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Psnap.field = PRESSURE;
-    Vxsnap.field = VX;
-    Vysnap.field = VY;
-    Vzsnap.field = VZ;
-    Sxxsnap.field = SXX;
-    Syysnap.field = SYY;
-    Szzsnap.field = SZZ;
-    Syzsnap.field = SYZ;
-    Sxzsnap.field = SXZ;
-    Sxysnap.field = SXY;
 }
 
 template<typename T>
@@ -2529,94 +2119,6 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
             break;
         default:
             break;
-    }
-}
-
-
-template<typename T>
-bool WavesElastic3D<T>::createSnap(std::string filename, Snap<T> *Snap) {
-    if(!filename.empty()){
-        Snap->filename = filename;
-        Snap->Fp = std::make_shared<File>();
-        Snap->Fp->output(Snap->filename);
-        Snap->open = true;
-        Snap->Fp->setN(1,this->getNx());
-        Snap->Fp->setN(2,this->getNy());
-        Snap->Fp->setN(3,this->getNz());
-        Snap->Fp->setN(4,this->getSnapnt());
-        Snap->Fp->setD(1,this->getDx());
-        Snap->Fp->setD(2,this->getDy());
-        Snap->Fp->setD(3,this->getDz());
-        Snap->Fp->setD(4,this->getSnapdt());
-        Snap->Fp->setO(1,this->getOx());
-        Snap->Fp->setO(2,this->getOy());
-        Snap->Fp->setO(3,this->getOz());
-        Snap->Fp->setO(4,this->getSnapot());
-        Snap->Fp->setData_format(sizeof(T));
-        Snap->Fp->setType(rockseis::SNAPSHOT);
-        Snap->Fp->writeHeader();
-        Snap->Fp->seekp(Snap->Fp->getStartofdata());
-        this->setSnapit(0);
-    }else{
-        std::cerr << "WavesElastic3D::createSnap: No filename set.\n";
-        exit(1);
-    }
-        return WAVES_OK;
-}
-
-// Write Snapshots
-template<typename T>
-void WavesElastic3D<T>::writeSnap(int it, Snap<T> *Snap){
-    int nx = this->getNx();
-    int ny = this->getNy();
-    int nz = this->getNz();
-    int nx_pml = this->getNx_pml();
-    int ny_pml = this->getNy_pml();
-    int nz_pml = this->getNz_pml();
-    int lpml = this->getLpml();
-    Index I(nx_pml,ny_pml,nz_pml);
-    int i,j,k;
-    int snapit = this->getSnapit();
-    T *field1 = NULL, *field2 = NULL, *field3 = NULL;
-    T val;
-    switch(Snap->field){
-        case PRESSURE:
-            field1 = this->Sxx;
-            field2 = this->Syy;
-            field3 = this->Szz;
-            break;
-        case VX:
-            field1 = this->Vx;
-            break;
-        case VY:
-            field1 = this->Vy;
-            break;
-        case VZ:
-            field1 = this->Vz;
-            break;
-        default:
-            break;
-    }
-
-    if(Snap->open){
-        if((it % this->getSnapinc()) == 0){
-            this->setSnapit(snapit + 1); // Increment snap counter
-            //Write snapshot
-            for(k=0; k<nz; k++){
-                for(j=0; j<ny; j++){
-                    for(i=0; i<nx; i++){
-                        if (field2 != NULL){
-                            val = field1[I(i+lpml,j+lpml,k+lpml)] + 
-                                field2[I(i+lpml,j+lpml,k+lpml)] + 
-                                field3[I(i+lpml,j+lpml,k+lpml)];
-                        }else{
-                            val = field1[I(i+lpml,j+lpml,k+lpml)];
-                        }
-                        Snap->Fp->write(&val,1); 
-                    }
-                }
-            }
-        }
     }
 }
 
