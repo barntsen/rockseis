@@ -202,6 +202,9 @@ int RtmAcoustic2D<T>::run(){
     Psnap->openSnap(this->getCpfile(), 'r');
     Psnap->allocSnap(0);
 
+    //Get pointer for backward snapshot
+    T *wr = waves->getP1();
+
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
@@ -213,14 +216,20 @@ int RtmAcoustic2D<T>::run(){
     	waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
 
         //Get forward snapshot
-        Psnap->readSnap(nt-1 - it);
-
-        //Get backward snapshot
-        T *wr = waves->getP1();
+        Psnap->readSnap(nt - 1 - it);
 
         // Do Crosscorrelation
+        
+        // Roll the pointers P1 and P2
+    	waves->roll();
+
+        // Output progress to logfile
+        this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
     }
     
+    // Write out image file
+
+
     result=RTM_OK;
     return result;
 }

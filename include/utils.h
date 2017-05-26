@@ -30,14 +30,20 @@ class Index{
 public:
     Index(int _nx, int _ny); ///< 2D constructor
     Index(int _nx, int _ny, int _nz); ///< 3D constructor
+    Index(int _nx, int _ny, int _nhx, int _nhy); ///< 4D constructor
+    Index(int _nx, int _ny, int _nz, int _nhx, int _nhy, int _nhz); ///< 6D constructor
     ~Index(); ///< Destructor
     int operator() (int ix, int iy); ///< 2D operator
     int operator() (int ix, int iy, int iz); ///< 3D operator 
+    int operator() (int ix, int iy, int ihx, int ihy); ///< 4D operator 
+    int operator() (int ix, int iy, int iz, int ihx, int ihy, int nhz); ///< 6D operator 
 private:
     int nx; 
     int ny;
     int nz;
-    
+    int nhx;
+    int nhy;
+    int nhz;
 };
 
 // =============== POINT STRUCT =============== //
