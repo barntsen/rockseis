@@ -41,7 +41,7 @@ public:
     bool write(); ///< Writes image
     void allocateImage(); /// Allocate memory for image
     void freeImage(); /// Free memory for imagedata
-    void crosscorr(T *ws, int pads, T* wr, int padr);
+    void crossCorr(T *ws, int pads, T* wr, int padr);
 
 private:
     T *imagedata; // Image array
@@ -80,7 +80,7 @@ public:
     bool write(); ///< Writes image
     void allocateImage(); /// Allocate memory for image
     void freeImage(); /// Free memory for imagedata
-    void crosscorr(T *ws, int pads, T* wr, int padr);
+    void crossCorr(T *ws, int pads, T* wr, int padr);
 
 private:
     T *imagedata; // Image array

@@ -10,6 +10,7 @@ Snapshot<T>::Snapshot()
     field = PRESSURE;
     geometry = std::make_shared<Geometry<T>>(); 
     Fp = std::make_shared<File>();
+    snapit = 0;
 }
 
 // Make constructors for different Wave classes 
@@ -84,15 +85,25 @@ bool Snapshot<T>::openSnap(std::string filename, char flag) {
     return SNAP_OK;
 }
 
-
-
-
 template<typename T>
 void Snapshot<T>::closeSnap() {
     if(this->open) {
         this->Fp->close();
         this->open = false;
     }
+}
+
+template<typename T>
+void Snapshot<T>::removeSnap() {
+    if(this->open) {
+        this->Fp->close();
+        this->open = false;
+    }
+	if(!this->filename.empty()){
+		if( remove( filename.c_str() ) != 0 ){
+			rs_error( "Snapshot::removeSnap: Error deleting file: ", filename);
+		}
+	}
 }
 
 template<typename T>
@@ -272,13 +283,14 @@ void Snapshot2D<T>::readSnap(const int it){
     int nz = this->getNz();
     int snapit = this->getSnapit();
     std::shared_ptr<rockseis::File> Fp = this->getFp();
+    off_t pos;
 
     if(this->getOpen() && this->getAllocated(0)){
         if(((it-this->getEnddiff()) % this->getSnapinc()) == 0){
             this->setSnapit(snapit - 1); // Increment snap counter
             //Read snapshot
-            Fp->seekp(nx*nz*snapit*sizeof(T));
-            Fp->read(this->getData(0),nz*nx); 
+            pos  = nx*nz*snapit*sizeof(T);
+            Fp->read(this->getData(0), nz*nx, pos); 
         }
     }
 }
@@ -438,14 +450,15 @@ void Snapshot3D<T>::readSnap(const int it){
     int ny = this->getNy();
     int nz = this->getNz();
     int snapit = this->getSnapit();
+    off_t pos;
     std::shared_ptr<rockseis::File> Fp = this->getFp();
 
     if(this->getOpen() && this->getAllocated(0)){
         if(((it-this->getEnddiff()) % this->getSnapinc()) == 0){
             this->setSnapit(snapit - 1); // Increment snap counter
             //Read snapshot
-            Fp->seekp(nx*ny*nz*snapit*sizeof(T));
-            Fp->read(this->getData(0),nz*ny*nx); 
+            pos = nx*ny*nz*snapit*sizeof(T);
+            Fp->read(this->getData(0),nz*ny*nx, pos); 
         }
     }
 }

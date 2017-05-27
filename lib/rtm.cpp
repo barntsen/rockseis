@@ -146,6 +146,7 @@ RtmAcoustic2D<T>::RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std:
     dataP = _dataP;
     model = _model;
     sourceset = true;
+    dataPset = true;
     modelset = true;
 }
 
@@ -169,7 +170,8 @@ int RtmAcoustic2D<T>::run(){
      // Create snapshots
      std::shared_ptr<Snapshot2D<T>> Psnap;
      Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-     Psnap->openSnap(this->getCpfile(), 'w'); // Create a new snapshot file
+     Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
+     Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
 
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -199,7 +201,11 @@ int RtmAcoustic2D<T>::run(){
     waves.reset();
     waves  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot);
 
-    Psnap->openSnap(this->getCpfile(), 'r');
+    // Create image
+    std::shared_ptr<Image2D<T>> pimage (new Image2D<T>(this->getPimagefile(), model, 1, 1));
+    pimage->allocateImage();
+
+    Psnap->openSnap(this->getSnapfile(), 'r');
     Psnap->allocSnap(0);
 
     //Get pointer for backward snapshot
@@ -219,7 +225,10 @@ int RtmAcoustic2D<T>::run(){
         Psnap->readSnap(nt - 1 - it);
 
         // Do Crosscorrelation
-        
+        if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
+            pimage->crossCorr(Psnap->getData(0), 0, wr, waves->getLpml());
+        }
+
         // Roll the pointers P1 and P2
     	waves->roll();
 
@@ -228,7 +237,10 @@ int RtmAcoustic2D<T>::run(){
     }
     
     // Write out image file
+    pimage->write();
 
+	//Remove snapshot file
+	Psnap->removeSnap();
 
     result=RTM_OK;
     return result;

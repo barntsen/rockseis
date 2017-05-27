@@ -7,7 +7,7 @@ namespace rockseis {
 
 // constructor
 template<typename T>
-Image2D<T>::Image2D(std::string imagefile): Model<T>(2)
+Image2D<T>::Image2D(std::string _imagefile): Model<T>(2)
 {
     bool status;
     long int _nx, _ny, _nz;
@@ -15,9 +15,10 @@ Image2D<T>::Image2D(std::string imagefile): Model<T>(2)
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
 
-/* Get necessary parameters from file */
+    /* Get necessary parameters from file */
 
     //Opening file for reading
+    imagefile = _imagefile;
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     status = Fin->input(imagefile.c_str());
     if(status == FILE_ERR){
@@ -155,6 +156,12 @@ bool Image2D<T>::write()
         Fout->setN(3,nz);
         Fout->setD(3,dz);
         Fout->setO(3,oz);
+        Fout->setN(4,nhx);
+        Fout->setD(4,dx);
+        Fout->setO(4,-dx*(nhx-1)/2);
+        Fout->setN(6,nhz);
+        Fout->setD(6,dz);
+        Fout->setO(6,-dz*(nhz-1)/2);
         Fout->setData_format(sizeof(T));
         Fout->setHeader_format(sizeof(T));
         Fout->setType(REGULAR);
@@ -165,6 +172,7 @@ bool Image2D<T>::write()
 
         status = FILE_OK;
     }else{
+	    rs_error("Image2D::writeImage: Image is not allocated. ");
         status = FILE_ERR;	
     }
     return status;
@@ -190,8 +198,9 @@ void Image2D<T>::freeImage()
 
 
 template<typename T>
-void Image2D<T>::crosscorr(T *ws, int pads, T* wr, int padr)
+void Image2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 {
+    if(!allocated) this->allocateImage();
 	int ix, iz, ihx, ihz;
 	int nhx = this->getNhx();
 	int nhz = this->getNhz();
@@ -210,7 +219,7 @@ void Image2D<T>::crosscorr(T *ws, int pads, T* wr, int padr)
 				{
 					for (iz=0; iz<nz; iz++){
 						if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz))
-							imagedata[ki(ix,iz,ihx,ihz)] += ws[ks(ix+pads, iz+pads)]*wr[ks(ix+padr, iz+padr)];
+							imagedata[ki(ix,iz,ihx,ihz)] += ws[ks(ix+pads, iz+pads)]*wr[kr(ix+padr, iz+padr)];
 					}	
 				}
 			}
@@ -231,7 +240,7 @@ Image2D<T>::~Image2D() {
 
 // constructor
 template<typename T>
-Image3D<T>::Image3D(std::string imagefile): Model<T>(2)
+Image3D<T>::Image3D(std::string imagefile): Model<T>(3)
 {
     bool status;
     long int _nx, _ny, _nz;
@@ -423,8 +432,9 @@ void Image3D<T>::freeImage()
 }
 
 template<typename T>
-void Image3D<T>::crosscorr(T *ws, int pads, T* wr, int padr)
+void Image3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 {
+    if(!allocated) this->allocateImage();
 	int ix, iy, iz, ihx, ihy, ihz;
 	int nhx = this->getNhx();
 	int nhy = this->getNhy();
@@ -448,7 +458,7 @@ void Image3D<T>::crosscorr(T *ws, int pads, T* wr, int padr)
 							if( ((iy-hy) >= 0) && ((iy-hy) < ny) && ((iy+hy) >= 0) && ((iy+hy) < ny))
 								for (iz=0; iz<nz; iz++){
 									if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz))
-										imagedata[ki(ix,iy,iz,ihx,ihy,ihz)] += ws[ks(ix+pads,iy+pads,iz+pads)]*wr[ks(ix+padr,iy+padr,iz+padr)];
+										imagedata[ki(ix,iy,iz,ihx,ihy,ihz)] += ws[ks(ix+pads,iy+pads,iz+pads)]*wr[kr(ix+padr,iy+padr,iz+padr)];
 								}	
 						}
 				}

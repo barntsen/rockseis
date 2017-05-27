@@ -19,6 +19,9 @@ env.Install('../bin/',hello_models)
 hello_acoustic = env.Program(prefix + 'hello_acoustic','hello_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello_acoustic)
 
+hello_artm = env.Program(prefix + 'hello_artm','hello_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'rtm', 'image', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+env.Install('../bin/',hello_artm)
+
 hello_elastic = env.Program(prefix + 'hello_elastic','hello_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',hello_elastic)
 

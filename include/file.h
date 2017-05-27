@@ -41,36 +41,36 @@ public:
 	
 	// Write functions
 	void writeHeader(); ///< Output header to file
-	void seekp(size_t pos) { fstream.seekp(pos); }
-	void seekg(size_t pos) { fstream.seekg(pos); }
-	void seekp(size_t pos, std::ios_base::seekdir way) { fstream.seekp(pos, way); }
-	void seekg(size_t pos, std::ios_base::seekdir way) { fstream.seekg(pos, way); }
+	void seekp(off_t pos) { fstream.seekp(pos); }
+	void seekg(off_t pos) { fstream.seekg(pos); }
+	void seekp(off_t pos, std::ios_base::seekdir way) { fstream.seekp(pos, way); }
+	void seekg(off_t pos, std::ios_base::seekdir way) { fstream.seekg(pos, way); }
 
 	void write(char *buffer, size_t n); ///< Writes n chars to file
-	void write(char *buffer, size_t n, size_t pos); ///< Writes n chars to file starting from pos
+	void write(char *buffer, size_t n, off_t pos); ///< Writes n chars to file starting from pos
 	void write(float *buffer, size_t n); ///< Writes n floats to file
-	void write(float *buffer, size_t n, size_t pos); ///< Writes n floats to file starting from pos
+	void write(float *buffer, size_t n, off_t pos); ///< Writes n floats to file starting from pos
 	void write(double *buffer, size_t n); ///< Writes n doubles to file
-	void write(double *buffer, size_t n, size_t pos); ///< Writes n doubles to file
+	void write(double *buffer, size_t n, off_t pos); ///< Writes n doubles to file
 	void write(int *buffer, size_t n); ///< Writes n ints to file
-	void write(int *buffer, size_t n, size_t pos); ///< Writes n ints to file starting from pos
+	void write(int *buffer, size_t n, off_t pos); ///< Writes n ints to file starting from pos
 	void write(size_t *buffer, size_t n); ///< Writes n sze_t to file
-	void write(size_t *buffer, size_t n, size_t pos); ///< Writes n size_t to file starting from pos
+	void write(size_t *buffer, size_t n, off_t pos); ///< Writes n size_t to file starting from pos
 	bool is_open() { return fstream.is_open(); } ///< Checks if file is open
     bool checksum(); ///< Check if file size matches header and geometry information
 
 	// Read functions
 	void readHeader(); ///< Read header from file
 	void read(char *buffer, size_t n); ///< Reads n chars from file
-	void read(char *buffer, size_t n, size_t pos); ///< Reads n chars from file starting from pos
+	void read(char *buffer, size_t n, off_t pos); ///< Reads n chars from file starting from pos
 	void read(float *buffer, size_t n); ///< Reads n floats from file
-	void read(float *buffer, size_t n, size_t pos); ///< Reads n floats from file starting from pos
+	void read(float *buffer, size_t n, off_t pos); ///< Reads n floats from file starting from pos
 	void read(double *buffer, size_t n); ///< Reads n doubles from file
-	void read(double *buffer, size_t n, size_t pos); ///< Reads n doubles from file starting from pos
+	void read(double *buffer, size_t n, off_t pos); ///< Reads n doubles from file starting from pos
 	void read(int *buffer, size_t n); ///< Reads n ints from file
-	void read(int *buffer, size_t n, size_t pos); ///< Reads n ints from file starting from pos
+	void read(int *buffer, size_t n, off_t pos); ///< Reads n ints from file starting from pos
 	void read(size_t *buffer, size_t n); ///< Reads n size_ts from file
-	void read(size_t *buffer, size_t n, size_t pos); ///< Reads n size_ts from file starting from pos
+	void read(size_t *buffer, size_t n, off_t pos); ///< Reads n size_ts from file starting from pos
 
 	// Get geometry
 	std::shared_ptr<Geometry<double>> getGeom() { return geometry; }

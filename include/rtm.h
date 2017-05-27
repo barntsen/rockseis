@@ -15,6 +15,7 @@
 #include "waves.h"
 #include "der.h"
 #include "snap.h"
+#include "image.h"
 
 #define RTM_OK 1
 #define RTM_ERR 0
@@ -50,13 +51,13 @@ public:
     int getOrder() { return order; } ///< Get order of FD stencil
     int getSnapinc() { return snapinc; } ///< Get snap increment
     std::string getLogfile() { return logfile; } ///< Get name of logfile
-    std::string getCpfile() { return cpfile; } ///< Sets checkpoint filename
+    std::string getSnapfile() { return snapfile; } ///< Sets checkpoint filename
     void setOrder(int _order) { if(_order > 1 && _order < 9)  order = _order;} ///< Set order of FD stencil
     void setSnapinc(int _snapinc) {snapinc = _snapinc;} ///< Set snap increment for recording snapshots
     void setLogfile(std::string name) { logfile = name; } ///< Set name of logfile
     void setOptimal(bool val) { optimal = val; } ///< Sets optimal checkpointing flag
     void setIncore(bool val) { incore = val; } ///< Sets optimal checkpoint incore flag
-    void setCpfile(std::string file) { cpfile = file; } ///< Sets checkpoint filename
+    void setSnapfile(std::string file) { snapfile = file; } ///< Sets checkpoint filename
     bool createLog(std::string name); ///< Set name of logfile and open for writing
     void writeLog(std::string text);  ///< Write string to log file
     void writeLog(char * text); ///< Write c_string to log file
@@ -75,7 +76,7 @@ private:
     bool optimal; 
     bool incore;
     bool edges;
-    std::string cpfile;
+    std::string snapfile;
 };
 
 /** The 2D Acoustic Rtm class
@@ -91,6 +92,8 @@ public:
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
     void setDataAz(std::shared_ptr<Data2D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
+    void setPimagefile(std::string file) { Pimagefile = file; }
+    std::string getPimagefile() { return Pimagefile; } 
 
 
     ~RtmAcoustic2D();	///< Destructor
@@ -103,6 +106,7 @@ private:
     bool modelset;
     bool sourceset;
     bool dataPset, dataAxset, dataAzset;
+    std::string Pimagefile;
 };
 
 }

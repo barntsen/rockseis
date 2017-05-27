@@ -38,7 +38,7 @@ int main()
 
 	nx = 45;
 	ny = 11;
-	nz = 41;
+	nz = 51;
 	dx = 10.;
 	dy = 10.;
 	dz = 10.;
@@ -87,10 +87,13 @@ int main()
     }
 
     // Adding a reflector
-    for(iz=5; iz<7; iz++){
-            for(ix=5; ix<nx; ix++){
+    for(iz=22; iz<nz; iz++){
+        for(iy=0; iy<ny; iy++){
+            for(ix=0; ix<nx; ix++){
                 Vp2d[k2d(ix,iz)]= 2500;
+                Vp3d[k3d(ix,iy,iz)]= 2500;
             }
+        }
     }
 
     model2d->setVpfile("Vp2d.rss");
@@ -107,7 +110,7 @@ int main()
 	// Setup a 2d Wavelet 
 	std::shared_ptr<rockseis::Data2D<float>> source2d (new rockseis::Data2D<float>(1, nt, dt, 0.0));
 	float *wav = source2d->getData();
-	float f0 = 15;
+	float f0 = 20;
 	float t0 = 1e-1;
 	float t;
 	float s=-3.1415*3.1415*f0*f0;
@@ -122,7 +125,7 @@ int main()
  	// Set source2d position
 	rockseis::Point2D<float> *scoords2d = (source2d->getGeom())->getScoords();
 	scoords2d[0].x = 220;
-	scoords2d[0].y = 200; 
+	scoords2d[0].y = 10; 
 
 	//Output the wavelet
 	source2d->setFile("Wav2d.rss");
@@ -147,7 +150,7 @@ int main()
 	rockseis::Point3D<float> *scoords3d = (source3d->getGeom())->getScoords();
 	scoords3d[0].x = 220;
 	scoords3d[0].y = 50; 
-	scoords3d[0].z = 200; 
+	scoords3d[0].z = 10; 
 
 	//Output the wavelet
 	source3d->setFile("Wav3d.rss");

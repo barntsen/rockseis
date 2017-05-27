@@ -82,6 +82,7 @@ public:
     //File functions
     bool openSnap(std::string filename, char flag); ///< Open a snapshot for reading, writting or appending
     void closeSnap(); ///< Close snapshot file 
+    void removeSnap(); ///< Delete snapshot file
 
    private:
     std::string filename; ///< filename

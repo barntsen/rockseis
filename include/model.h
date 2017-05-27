@@ -62,9 +62,6 @@ public:
     void setDim(const int _dim) { dim = _dim; } 	///< Set the dimension
     void setRealized(const bool val) { realized = val; } ///< Set if model is allocated
     
-    // I/O functions
-    virtual void readModel() = 0;	///< Read model (virtual)
-    virtual void writeModel() = 0;	///< write model (virtual)
     // PADDING AND STAGGERING FUNCTIONS 
     /** Pads 2-D model.
      * Pads the model by copying the edges over the padded area.  
