@@ -247,6 +247,111 @@ int RtmAcoustic2D<T>::run(){
 }
 
 template<typename T>
+int RtmAcoustic2D<T>::run_edge(){
+     int result = RTM_ERR;
+     int nt;
+     float dt;
+	 float ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesAcoustic2D<T>> waves_fw (new WavesAcoustic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
+
+     // Create snapshots
+     std::shared_ptr<Snapshot2D<T>> Psnap;
+     Psnap = std::make_shared<Snapshot2D<T>>(waves_fw, this->getSnapinc());
+     Psnap->setData(waves_fw->getP1(), 0); //Set Pressure as snap field
+     Psnap->openEdge(this->getSnapfile(), 'w'); // Create a new snapshot file
+
+    // Loop over forward time
+    for(int it=0; it < nt; it++)
+    {
+    	// Time stepping
+    	waves_fw->forwardstepAcceleration(model, der);
+    	waves_fw->forwardstepStress(model, der);
+    
+    	// Inserting source 
+    	waves_fw->insertSource(model, source, SMAP, it);
+
+    	//Writting out results to snapshot file
+        Psnap->writeEdge(it);
+
+    	// Roll the pointers P1 and P2
+    	waves_fw->roll();
+
+        // Output progress to logfile
+        this->writeProgress(it, 2*nt-1, 20, 48);
+    }//End of forward loop
+    
+    
+    //Close snapshot file
+    Psnap->closeSnap();
+
+    // Reset waves_fw
+    waves_fw.reset();
+    waves_fw  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot);
+    std::shared_ptr<WavesAcoustic2D<T>> waves_bw (new WavesAcoustic2D<T>(model, nt, dt, ot));
+
+    // Create image
+    std::shared_ptr<Image2D<T>> pimage (new Image2D<T>(this->getPimagefile(), model, 1, 1));
+    pimage->allocateImage();
+
+    Psnap.reset();
+    Psnap = std::make_shared<Snapshot2D<T>>(waves_fw, this->getSnapinc());
+    Psnap->openEdge(this->getSnapfile(), 'r');
+    Psnap->setData(waves_fw->getP2(), 0); //Set Pressure as snap field
+
+    //Get pointer for backward snapshot
+    T *wr = waves_bw->getP1();
+    T *ws = waves_fw->getP1();
+
+    // Loop over reverse time
+    for(int it=0; it < nt; it++)
+    {
+    	// Time stepping
+    	waves_fw->forwardstepAcceleration(model, der);
+    	waves_fw->forwardstepStress(model, der);
+
+    	waves_bw->forwardstepAcceleration(model, der);
+    	waves_bw->forwardstepStress(model, der);
+
+    	// Inserting source 
+    	waves_bw->insertSource(model, dataP, GMAP, (nt - 1 - it));
+
+        //Get forward edges
+        Psnap->readEdge(nt - 1 - it);
+
+        // Do Crosscorrelation
+        if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
+            pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
+        }
+
+        // Roll the pointers P1 and P2
+    	waves_fw->roll();
+    	waves_bw->roll();
+
+        // Output progress to logfile
+        this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
+    }
+    
+    // Write out image file
+    pimage->write();
+
+	//Remove snapshot file
+	Psnap->removeSnap();
+
+    result=RTM_OK;
+    return result;
+}
+
+
+template<typename T>
 RtmAcoustic2D<T>::~RtmAcoustic2D() {
     // Nothing here
 }

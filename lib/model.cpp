@@ -1906,6 +1906,9 @@ ModelElastic3D<T>::~ModelElastic3D() {
 }
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
+template class Model<float>;
+template class Model<double>;
+
 template class ModelAcoustic2D<float>;
 template class ModelAcoustic3D<float>;
 template class ModelElastic2D<float>;

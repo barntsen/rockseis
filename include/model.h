@@ -23,7 +23,7 @@ public:
     Model();		///< Constructor
     Model(const int _dim);	///< Constructor with dimension
     Model(const int _dim, const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const bool _fs); ///< Constructer with all variables
-    virtual ~Model();	///< Destructor
+    ~Model();	///< Destructor
     
     // Get functions
     int getDim() { return dim; }		///< Get dimension

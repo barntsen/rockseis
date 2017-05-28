@@ -7,6 +7,7 @@
 #include "der.h"
 #include "data.h"
 #include "file.h"
+#include "image.h"
 #include <memory>
 #include <fstream>
 #include <math.h>
@@ -144,7 +145,8 @@ int main()
 	data->makeMap(model->getGeom());
 
 	// Run modelling 
-	rtm->run();
+	//rtm->run();
+	rtm->run_edge();
 
 	return 0;
 }

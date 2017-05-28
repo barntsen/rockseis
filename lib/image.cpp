@@ -45,6 +45,8 @@ Image2D<T>::Image2D(std::string _imagefile): Model<T>(2)
     this->setNx(_nx);
     this->setNy(_ny);
     this->setNz(_nz);
+    this->setNhx(_nhx);
+    this->setNhz(_nhz);
     this->setDx(_dx);
     this->setDy(_dy);
     this->setDz(_dz);
@@ -278,6 +280,9 @@ Image3D<T>::Image3D(std::string imagefile): Model<T>(3)
     this->setNx(_nx);
     this->setNy(_ny);
     this->setNz(_nz);
+    this->setNhx(_nhx);
+    this->setNhy(_nhy);
+    this->setNhz(_nhz);
     this->setDx(_dx);
     this->setDy(_dy);
     this->setDz(_dz);

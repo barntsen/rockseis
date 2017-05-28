@@ -33,6 +33,9 @@ int main(int argc, char* argv[])
         case rockseis::SNAPSHOT:
             std::cerr << "SNAPSHOT.";
             break;
+        case rockseis::EDGESNAP:
+            std::cerr << "EDGESNAP.";
+            break;
         case rockseis::KEYMAP:
             std::cerr << "KEYMAP.";
             break;

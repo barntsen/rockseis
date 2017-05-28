@@ -87,7 +87,8 @@ class RtmAcoustic2D: public Rtm<T> {
 public:
     RtmAcoustic2D();					///< Constructor
     RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataP, int order, int snapinc);					///< Constructor 
-    int run(); ///< Runs rtm
+    int run(); ///< Runs rtm with full snapshoting
+    int run_edge(); ///< Runs rtm with edge boundary saving
     void setModel(std::shared_ptr<ModelAcoustic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }

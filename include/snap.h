@@ -15,7 +15,7 @@
 #define SNAP_OK 1
 #define SNAP_ERR 0
 
-#define NPTR 3
+#define NPTR 9
 
 namespace rockseis {
 
@@ -47,6 +47,7 @@ public:
     void setEnddiff(const int it) { enddiff = it; } ///< Set enddiff
     void setSnapinc(const int inc) { snapinc = inc; } ///< Set snapinc
     void setData(T *ptr, int i) { if(i >= 0 && i < NPTR) data[i] = ptr; } ///< Set data pointer
+    void setDim(const int _dim) { dim = _dim; }	///< Set lpml
 
     // Get functions
     int getNx() { return geometry->getN(1); }	///< Get Nx
@@ -56,6 +57,7 @@ public:
     int getNz() { return geometry->getN(3); }	///< Get Nz
     int getNz_pml() { return geometry->getN(3) + 2*lpml ; }	///< Get Nz padded
     int getLpml() { return lpml; }		///< Get lpml
+    int getDim() { return dim; }		///< Get dim
     T getDx() { return geometry->getD(1); }	///< Get Dx
     T getDy() { return geometry->getD(2); }	///< Get Dy
     T getDz() { return geometry->getD(3); }	///< Get Dz
@@ -81,6 +83,7 @@ public:
 
     //File functions
     bool openSnap(std::string filename, char flag); ///< Open a snapshot for reading, writting or appending
+    bool openEdge(std::string filename, char flag); ///< Open a edge snapshot for reading, writting or appending
     void closeSnap(); ///< Close snapshot file 
     void removeSnap(); ///< Delete snapshot file
 
@@ -88,6 +91,7 @@ public:
     std::string filename; ///< filename
     std::shared_ptr<rockseis::File> Fp; ///< File handle
     std::shared_ptr<Geometry<T>> geometry; // regular geometry
+    int dim;
     int lpml; // PML boundary size
     bool open; ///< flag to see if file is open
     rs_field field; ///< enum indicating which field to snap
@@ -109,6 +113,8 @@ public:
     void writeSnap(const int it); ///< Write snapshot
     void readSnap(const int it); ///< Read snapshot
 
+    void writeEdge(const int it); ///< Write edges
+    void readEdge(const int it); ///< Read edges
 };
 
 template<typename T>
@@ -121,8 +127,9 @@ public:
     void writeSnap(const int it); ///< Write snapshot
     void readSnap(const int it); ///< Read snapshot
 
+    void writeEdge(const int it); ///< Write edges
+    void readEdge(const int it); ///< Read edges
 };
-
 
 }
 #endif //SNAP_H
