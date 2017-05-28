@@ -347,7 +347,7 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic2
                 if(this->snaps != this->Fc->getN(2)) rs_error("Revolve::openCheck: Mismatch in number of checkpoints");
                 if(sizeof(T) != this->Fc->getData_format()) rs_error("Revolve::openCheck: Mismatch in precision of checkpoints");
                 if(this->Fc->getType() != rockseis::CHECKPOINT) rs_error("Revolve::openCheck: Mismatch in file type");
-                if(incore){
+                if(this->incore){
                     if(this->allocated) free(this->checkpoints);
                     this->checkpoints = (T *) calloc(this->checksize*this->snaps, sizeof(T));
                 }else{
@@ -355,19 +355,20 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic2
 				}
 				break;
 			case 'a':
-				if(this->open) rs_error("Checkpoint cannot be opened two times.");
-				this->filename = _filename;
-				if(this->Fc->append(this->filename) == FILE_ERR)
-				{
-					rs_error("Revolve::openCheck: Error opening checkpoint file for reading.");
-				}
-				if(this->checksize != this->Fc->getN(1)) rs_error("Revolve::openCheck: Mismatch in size of checkpoints");
-				if(this->snaps != this->Fc->getN(2)) rs_error("Revolve::openCheck: Mismatch in number of checkpoints");
-				if(sizeof(T) != this->Fc->getData_format()) rs_error("Revolve::openCheck: Mismatch in precision of checkpoints");
-				if(this->Fc->getType() != rockseis::CHECKPOINT) rs_error("Revolve::openCheck: Mismatch in file type");
-				this->open = true;
+                if(!this->incore){
+                    if(this->open) rs_error("Checkpoint cannot be opened two times.");
+                    this->filename = _filename;
+                    if(this->Fc->append(this->filename) == FILE_ERR)
+                    {
+                        rs_error("Revolve::openCheck: Error opening checkpoint file for reading and writting.");
+                    }
+                    if(this->checksize != this->Fc->getN(1)) rs_error("Revolve::openCheck: Mismatch in size of checkpoints");
+                    if(this->snaps != this->Fc->getN(2)) rs_error("Revolve::openCheck: Mismatch in number of checkpoints");
+                    if(sizeof(T) != this->Fc->getData_format()) rs_error("Revolve::openCheck: Mismatch in precision of checkpoints");
+                    if(this->Fc->getType() != rockseis::CHECKPOINT) rs_error("Revolve::openCheck: Mismatch in file type");
+                    this->open = true;
+                }
 				break;
-
             default: 
                 rs_error("Revolve::openCheck: Invalid flag.");
         }
