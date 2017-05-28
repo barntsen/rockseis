@@ -127,7 +127,7 @@ int main()
     // Setting Snapshot file 
     rtm->setSnapfile(Psnapfile);
 
-    rtm->setNcheck(21);
+    rtm->setNcheck(11);
     rtm->setIncore(true);
 
     //Setting Pimage file
@@ -146,7 +146,9 @@ int main()
     //Read input data 
 	data->read();
 	data->makeMap(model->getGeom());
-    rockseis::rs_snapmethod snapmethod = rockseis::OPTIMAL;
+    //rockseis::rs_snapmethod snapmethod = rockseis::OPTIMAL;
+    rockseis::rs_snapmethod snapmethod = rockseis::FULL;
+    //rockseis::rs_snapmethod snapmethod = rockseis::EDGES;
 
 	// Run modelling 
     switch(snapmethod){

@@ -189,6 +189,7 @@ int RtmAcoustic2D<T>::run(){
     	waves->insertSource(model, source, SMAP, it);
 
     	//Writting out results to snapshot file
+        Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
         Psnap->writeSnap(it);
 
     	// Roll the pointers P1 and P2
@@ -213,9 +214,6 @@ int RtmAcoustic2D<T>::run(){
     Psnap->openSnap(this->getSnapfile(), 'r');
     Psnap->allocSnap(0);
 
-    //Get pointer for backward snapshot
-    T *wr = waves->getP1();
-
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
@@ -231,6 +229,7 @@ int RtmAcoustic2D<T>::run(){
 
         // Do Crosscorrelation
         if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
+            T *wr = waves->getP1();
             pimage->crossCorr(Psnap->getData(0), 0, wr, waves->getLpml());
         }
 
@@ -285,6 +284,7 @@ int RtmAcoustic2D<T>::run_edge(){
     	waves_fw->insertSource(model, source, SMAP, it);
 
     	//Writting out results to snapshot file
+        Psnap->setData(waves_fw->getP1(), 0); //Set Pressure as snap field
         Psnap->writeEdge(it);
 
     	// Roll the pointers P1 and P2
@@ -312,10 +312,6 @@ int RtmAcoustic2D<T>::run_edge(){
     Psnap->setData(waves_fw->getP2(), 0); //Set Pressure as snap field
     Psnap->openEdge(this->getSnapfile(), 'r');
 
-    //Get pointer for backward snapshot
-    T *ws = waves_fw->getP1();
-    T *wr = waves_bw->getP1();
-
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
@@ -330,10 +326,13 @@ int RtmAcoustic2D<T>::run_edge(){
     	waves_bw->insertSource(model, dataP, GMAP, (nt - 1 - it));
 
         //Get forward edges
+        Psnap->setData(waves_fw->getP2(), 0); //Set Pressure as snap field
         Psnap->readEdge(nt - 1 - it);
 
         // Do Crosscorrelation
         if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
+            T *ws = waves_fw->getP1();
+            T *wr = waves_bw->getP1();
             pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
         }
 
@@ -374,7 +373,8 @@ int RtmAcoustic2D<T>::run_optimal(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
      std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
      revolve_action whatodo;
-     int oldcapo;
+     int oldcapo,capo;
+     capo = 0;
 
      // Create checkpoint file
      optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
@@ -383,18 +383,16 @@ int RtmAcoustic2D<T>::run_optimal(){
      std::shared_ptr<Image2D<T>> pimage (new Image2D<T>(this->getPimagefile(), model, 1, 1));
      pimage->allocateImage();
 
-     //Get pointers for snapshots
-    T *ws = waves_fw->getP1();
-    T *wr = waves_bw->getP1();
 
     // Loop over forward time
     do
     {
         oldcapo=optimal->getCapo();
         whatodo = optimal->revolve();
+        capo = optimal->getCapo();
         if (whatodo == advance)
         {
-            for(int it=oldcapo; it < optimal->getCapo(); it++)
+            for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
                 waves_fw->forwardstepAcceleration(model, der);
@@ -414,16 +412,19 @@ int RtmAcoustic2D<T>::run_optimal(){
             waves_fw->forwardstepStress(model, der);
 
             // Inserting source 
-            waves_fw->insertSource(model, source, SMAP, optimal->getCapo());
+            waves_fw->insertSource(model, source, SMAP, capo);
 
             // Inserting data
-            waves_bw->insertSource(model, dataP, GMAP, optimal->getCapo());
+            waves_bw->insertSource(model, dataP, GMAP, capo);
 
-            // Do Crosscorrelation
+            /* Do Crosscorrelation */
+            T *ws = waves_fw->getP1();
+            T *wr = waves_bw->getP1();
             pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
 
             // Roll the pointers P1 and P2
             waves_fw->roll();
+            waves_bw->roll();
 
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
@@ -436,9 +437,11 @@ int RtmAcoustic2D<T>::run_optimal(){
             waves_bw->forwardstepStress(model, der);
 
             // Inserting data
-            waves_bw->insertSource(model, dataP, GMAP, optimal->getCapo());
+            waves_bw->insertSource(model, dataP, GMAP, capo);
 
-            // Do Crosscorrelation
+            /* Do Crosscorrelation */
+            T *ws = waves_fw->getP1();
+            T *wr = waves_bw->getP1();
             pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
 
             // Roll the pointers P1 and P2
@@ -451,6 +454,10 @@ int RtmAcoustic2D<T>::run_optimal(){
         if (whatodo == restore)
         {
             optimal->readCheck(waves_fw);
+        }
+
+        if(whatodo == error){
+            std::cerr << "Error!" << std::endl;
         }
 
         // Output progress to logfile
