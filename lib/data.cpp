@@ -65,9 +65,6 @@ bool Data<T>::open(std::string flag)
 template<typename T>
 void Data<T>::close()
 {
-    if(Fdata->getHeaderstat()){
-        Fdata->writeHeader();
-    }
     Fdata->close();
 }
 
@@ -367,7 +364,6 @@ bool Data2D<T>::writeTraces()
         // Update geometry
         size_t n2 = Fout->getN(2);
         Fout->setN(2, n2 + ntrace);
-        Fout->setHeaderstat(true);
         Point2D<T> *scoords = (this->getGeom())->getScoords();
         Point2D<T> *gcoords = (this->getGeom())->getGcoords();
         for (int i=0; i < ntrace; i++)
@@ -709,7 +705,6 @@ bool Data3D<T>::writeTraces()
         // Update geometry
         size_t n2 = Fout->getN(2);
         Fout->setN(2, n2 + ntrace);
-        Fout->setHeaderstat(true);
         Point3D<T> *scoords = (this->getGeom())->getScoords();
         Point3D<T> *gcoords = (this->getGeom())->getGcoords();
         for (int i=0; i < ntrace; i++)

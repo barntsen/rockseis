@@ -22,6 +22,8 @@
 
 namespace rockseis {
 
+// =============== ENUMS =============== //
+typedef enum {GENERIC, REGULAR, DATA2D, DATA3D, SNAPSHOT, EDGESNAP, CHECKPOINT, KEYMAP, SORTMAP} rs_datatype; ///< Information about the file content (Regular model, 2D data, 3D data, etc.)
 // =============== ABSTRACT FILE CLASS =============== //
 /** The file class
  *
@@ -86,9 +88,9 @@ public:
 	bool compareGeometry(std::shared_ptr<File> other) {return geometry->compare(other->getGeom()); }
 
 	// Set geometry
-        void setN(int dim, size_t val) { geometry->setN(dim, val); }	///< Set dimension size
-        void setD(int dim, double val) { geometry->setD(dim, val); }	///< Set sampling interval
-        void setO(int dim, double val) { geometry->setO(dim, val); }	///< Set origin
+        void setN(int dim, size_t val) { geometry->setN(dim, val); headerstat = true;}	///< Set dimension size
+        void setD(int dim, double val) { geometry->setD(dim, val); headerstat = true;}	///< Set sampling interval
+        void setO(int dim, double val) { geometry->setO(dim, val); headerstat = true;}	///< Set origin
 
 	// Set functions
 	void setNheader(size_t val) { Nheader = val; } ///< set number of header values
@@ -101,6 +103,7 @@ public:
 	size_t getNheader() { return Nheader; } ///< get number of header values
 	int getData_format() { return data_format; } ///< get data format 
 	int getHeader_format() { return header_format; } ///< get header format 
+    bool getFail() { return fstream.fail(); }
 	rs_datatype getType() { return type; } ///< get datatype
 	size_t getStartofdata() { return startofdata; } 
 

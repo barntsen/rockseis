@@ -16,6 +16,7 @@
 #include "der.h"
 #include "snap.h"
 #include "image.h"
+#include "revolve.h"
 
 #define RTM_OK 1
 #define RTM_ERR 0
@@ -24,6 +25,9 @@
 #define SMAP 0
 
 namespace rockseis {
+
+// =============== ENUMS =============== //
+typedef enum {FULL, OPTIMAL, EDGES} rs_snapmethod; ///< Snapshot saving method
 
 /** The Progress struct
  *
@@ -55,9 +59,12 @@ public:
     void setOrder(int _order) { if(_order > 1 && _order < 9)  order = _order;} ///< Set order of FD stencil
     void setSnapinc(int _snapinc) {snapinc = _snapinc;} ///< Set snap increment for recording snapshots
     void setLogfile(std::string name) { logfile = name; } ///< Set name of logfile
-    void setOptimal(bool val) { optimal = val; } ///< Sets optimal checkpointing flag
+    void setSnapmethod(rs_snapmethod val) { snapmethod = val; } ///< Sets choice of snapshot saving
     void setIncore(bool val) { incore = val; } ///< Sets optimal checkpoint incore flag
+    void setNcheck(int val) { ncheck = val; } ///< Sets optimal checkpointing number of snaps 
     void setSnapfile(std::string file) { snapfile = file; } ///< Sets checkpoint filename
+    int getNcheck() { return ncheck; } ///< Gets the number of checkpoints for the optimal checkpointing scheme
+    bool getIncore() { return incore; } ///< Gets the incore flag for the optimal checkpointing scheme
     bool createLog(std::string name); ///< Set name of logfile and open for writing
     void writeLog(std::string text);  ///< Write string to log file
     void writeLog(char * text); ///< Write c_string to log file
@@ -73,9 +80,9 @@ private:
     std::string logfile; ///< Log file name
     std::ofstream Flog; ///< Logfile
 	Progress prog; ///< Progress counter
-    bool optimal; 
-    bool incore;
-    bool edges;
+    rs_snapmethod snapmethod; 
+    bool incore; ///< Incore flag for optimal checkpointing (No IO)
+    int ncheck; ///< Number of checkpoints in optimal checkpointing
     std::string snapfile;
 };
 
@@ -89,6 +96,7 @@ public:
     RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataP, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs rtm with full snapshoting
     int run_edge(); ///< Runs rtm with edge boundary saving
+    int run_optimal(); ///< Runs rtm with optimal checkpointing
     void setModel(std::shared_ptr<ModelAcoustic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }

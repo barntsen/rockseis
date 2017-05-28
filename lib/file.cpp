@@ -143,6 +143,7 @@ bool File::append(std::string filename)
 
 void File::close()
 {
+    if(headerstat) writeHeader();
 	fstream.close();
 }
 
@@ -350,7 +351,7 @@ void File::read(size_t *buffer, size_t n, off_t pos)
 
 // destructor
 File::~File(){
-    fstream.close();
+    this->close();
 }
 }
 

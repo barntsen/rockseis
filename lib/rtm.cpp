@@ -8,6 +8,8 @@ template<typename T>
 Rtm<T>::Rtm() {
 	order = 4;
     snapinc=1;
+    snapmethod = FULL;
+    ncheck = 0;
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 0;
@@ -27,6 +29,9 @@ Rtm<T>::Rtm(int _order, int _snapinc) {
     }else{
         snapinc=1;
     }
+
+    snapmethod = FULL;
+    ncheck = 0;
 
 	prog.previous = 0;
 	prog.current = 0;
@@ -304,12 +309,12 @@ int RtmAcoustic2D<T>::run_edge(){
 
     Psnap.reset();
     Psnap = std::make_shared<Snapshot2D<T>>(waves_fw, this->getSnapinc());
-    Psnap->openEdge(this->getSnapfile(), 'r');
     Psnap->setData(waves_fw->getP2(), 0); //Set Pressure as snap field
+    Psnap->openEdge(this->getSnapfile(), 'r');
 
     //Get pointer for backward snapshot
-    T *wr = waves_bw->getP1();
     T *ws = waves_fw->getP1();
+    T *wr = waves_bw->getP1();
 
     // Loop over reverse time
     for(int it=0; it < nt; it++)
@@ -350,6 +355,118 @@ int RtmAcoustic2D<T>::run_edge(){
     return result;
 }
 
+template<typename T>
+int RtmAcoustic2D<T>::run_optimal(){
+     int result = RTM_ERR;
+     int nt;
+     float dt;
+	 float ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesAcoustic2D<T>> waves_fw (new WavesAcoustic2D<T>(model, nt, dt, ot));
+    std::shared_ptr<WavesAcoustic2D<T>> waves_bw (new WavesAcoustic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
+     std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
+     revolve_action whatodo;
+     int oldcapo;
+
+     // Create checkpoint file
+     optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
+
+     // Create image
+     std::shared_ptr<Image2D<T>> pimage (new Image2D<T>(this->getPimagefile(), model, 1, 1));
+     pimage->allocateImage();
+
+     //Get pointers for snapshots
+    T *ws = waves_fw->getP1();
+    T *wr = waves_bw->getP1();
+
+    // Loop over forward time
+    do
+    {
+        oldcapo=optimal->getCapo();
+        whatodo = optimal->revolve();
+        if (whatodo == advance)
+        {
+            for(int it=oldcapo; it < optimal->getCapo(); it++)
+            {
+                // Time stepping
+                waves_fw->forwardstepAcceleration(model, der);
+                waves_fw->forwardstepStress(model, der);
+
+                // Inserting source 
+                waves_fw->insertSource(model, source, SMAP, it);
+
+                // Roll the pointers P1 and P2
+                waves_fw->roll();
+            }
+        }
+        if (whatodo == firsturn)
+        {
+            // Time stepping
+            waves_fw->forwardstepAcceleration(model, der);
+            waves_fw->forwardstepStress(model, der);
+
+            // Inserting source 
+            waves_fw->insertSource(model, source, SMAP, optimal->getCapo());
+
+            // Inserting data
+            waves_bw->insertSource(model, dataP, GMAP, optimal->getCapo());
+
+            // Do Crosscorrelation
+            pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
+
+            // Roll the pointers P1 and P2
+            waves_fw->roll();
+
+            //Close checkpoint file for w and reopen for rw
+            optimal->closeCheck();
+            optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+        }
+        if (whatodo == youturn)
+        {
+            // Time stepping
+            waves_bw->forwardstepAcceleration(model, der);
+            waves_bw->forwardstepStress(model, der);
+
+            // Inserting data
+            waves_bw->insertSource(model, dataP, GMAP, optimal->getCapo());
+
+            // Do Crosscorrelation
+            pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
+
+            // Roll the pointers P1 and P2
+            waves_bw->roll();
+        }
+        if (whatodo == takeshot)
+        {
+            optimal->writeCheck(waves_fw);
+        }
+        if (whatodo == restore)
+        {
+            optimal->readCheck(waves_fw);
+        }
+
+        // Output progress to logfile
+        //this->writeProgress(capo, nt, 20, 48);
+    } while((whatodo != terminate) && (whatodo != error));
+
+
+    // Write out image file
+    pimage->write();
+
+	//Remove snapshot file
+	optimal->removeCheck();
+
+    result=RTM_OK;
+    return result;
+}
 
 template<typename T>
 RtmAcoustic2D<T>::~RtmAcoustic2D() {

@@ -41,17 +41,28 @@ template<typename T>
 class Revolve {
 public:
     Revolve();	///< Constructor
-    Revolve(unsigned int _nt, unsigned int _nsnaps);	///< Constructor
+    Revolve(unsigned int _nt, unsigned int _nsnaps, bool incore);	///< Constructor
     int adjust(int nsteps); ///< Automatically compute optimal number of snaps
     double expense(int steps, int snaps); ///< Get ratio between full and optimal checkpointing forward modelling steps
     int numforw(int steps, int snaps); ///< Get total number of forward modellings
     revolve_action revolve(); ///< Get what to do
+
+    // Get functions
     int getCapo() { return capo; } ///< Get capo
     int getInfo() { return info; }
     int getFine() { return fine; }
     int getCheck() { return check; }
-    void readCheckpoint();
-    void writeCheckpoint();
+    int getSnaps() { return snaps; }
+    
+    //Set functions
+    void setInfo(int _info) { info = _info; }
+
+    // Checkpointing functions
+    void openCheck(std::string filename, std::shared_ptr<WavesAcoustic2D<T>> waves, char flag);
+    void readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves);
+    void writeCheck(std::shared_ptr<WavesAcoustic2D<T>> waves);
+    void removeCheck();
+    void closeCheck();
     
     // Revolve functions
     ~Revolve();	///< Destructor
@@ -66,7 +77,7 @@ private:
     int nfw;
 	int info;
     bool incore;
-    T *chp;
+    T *checkpoints;
     std::shared_ptr<File> Fc;
     std::string filename;
     revolve_nums numbers;
@@ -76,6 +87,9 @@ private:
     int ch[CHECKUP];
     int oldsnaps;
     int oldfine;
+    bool open;
+    bool allocated;
+    size_t checksize;
 };
 
 }

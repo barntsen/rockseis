@@ -88,6 +88,7 @@ bool Snapshot<T>::openEdge(std::string filename, char flag) {
     int count = 0;
         switch(flag){
             case 'w':
+                if(this->open) rs_error("Snapshot cannot be opened two times.");
                 this->filename = filename;
                 this->Fp->output(this->filename);
                 this->open = true;
@@ -362,6 +363,7 @@ void Snapshot2D<T>::writeSnap(const int it){
             }
         }
     }
+    if(Fp->getFail()) rs_error("Snapshot2D::writeSnap: Error writting to file.");
 }
 
 // read Snapshots
@@ -381,6 +383,7 @@ void Snapshot2D<T>::readSnap(const int it){
             Fp->read(this->getData(0), nz*nx, pos); 
         }
     }
+    if(Fp->getFail()) rs_error("Snapshot2D::readSnap: Error reading from file.");
 }
 
 // Write Edges
@@ -427,6 +430,7 @@ void Snapshot2D<T>::writeEdge(const int it){
             }
         }
     }
+    if(Fp->getFail()) rs_error("Snapshot2D::writeEdge: Error writting to file.");
 }
 
 // read Edges
@@ -476,6 +480,7 @@ void Snapshot2D<T>::readEdge(const int it){
             }
         }
     }
+    if(Fp->getFail()) rs_error("Snapshot2D::readEdge: Error reading from file.");
 }
 
 template<typename T>
@@ -630,6 +635,7 @@ void Snapshot3D<T>::writeSnap(const int it){
             }
         }
     }
+    if(Fp->getFail()) rs_error("Snapshot3D::writeSnap: Error writting to file.");
 }
 
 // read Snapshots

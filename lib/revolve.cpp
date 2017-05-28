@@ -4,7 +4,7 @@ namespace rockseis {
 // constructor
 //
 template<typename T>
-Revolve<T>::Revolve(unsigned int _nt, unsigned int _snaps)
+Revolve<T>::Revolve(unsigned int _nt, unsigned int _snaps, bool _incore)
 {
     steps = _nt;
     snaps = _snaps;
@@ -13,13 +13,17 @@ Revolve<T>::Revolve(unsigned int _nt, unsigned int _snaps)
         snaps = adjust(steps);
     }
     
-    chp = (T *) calloc(1,1);
     Fc = std::make_shared<File>(); 
 
 	/* Neccessary for first call to revolve */
 	capo=0;
 	fine = steps;
 	check = -1;    
+
+    info = 0;
+    incore = _incore;
+    open = false;
+    allocated = false;
 }
 
 template <typename T>
@@ -299,10 +303,238 @@ revolve_action Revolve<T>::revolve()
     }
  } 
 
+template<typename T>
+void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic2D<T>> waves, char flag)
+{
+    int nx_pml, nz_pml;
+    int lpml;
+
+    nx_pml=waves->getNx_pml();
+    nz_pml=waves->getNz_pml();
+    lpml = waves->getLpml();
+    this->checksize = 2*nz_pml*nx_pml + 4*nz_pml*lpml + 4*nx_pml*lpml;
+
+        switch(flag){
+            case 'w':
+                if(!incore){
+                    this->filename = _filename;
+                    if(!this->filename.empty()){
+                        this->Fc->output(this->filename);
+                        this->open = true;
+                        this->Fc->setN(1, this->checksize);
+                        this->Fc->setN(2,this->snaps);
+                        this->Fc->setData_format(sizeof(T));
+                        this->Fc->setType(rockseis::CHECKPOINT);
+                        this->Fc->writeHeader();
+                        this->Fc->seekp(this->Fc->getStartofdata());
+                    }else{
+                        rs_error("Revolve::openCheck: Filename not set.");
+                    }
+                }else{
+                    this->checkpoints = (T *) calloc(this->checksize*this->snaps, sizeof(T));
+                    if(checkpoints == NULL) rs_error("Revolve::openCheck: Failed to allocate memory for checkpoints.");
+                    this->allocated = true;
+                }
+                break;
+            case 'r':
+                if(this->open) rs_error("Checkpoint cannot be opened two times.");
+                this->filename = _filename;
+                if(this->Fc->input(this->filename) == FILE_ERR)
+                {
+                    rs_error("Revolve::openCheck: Error opening checkpoint file for reading.");
+                }
+                if(this->checksize != this->Fc->getN(1)) rs_error("Revolve::openCheck: Mismatch in size of checkpoints");
+                if(this->snaps != this->Fc->getN(2)) rs_error("Revolve::openCheck: Mismatch in number of checkpoints");
+                if(sizeof(T) != this->Fc->getData_format()) rs_error("Revolve::openCheck: Mismatch in precision of checkpoints");
+                if(this->Fc->getType() != rockseis::CHECKPOINT) rs_error("Revolve::openCheck: Mismatch in file type");
+                if(incore){
+                    if(this->allocated) free(this->checkpoints);
+                    this->checkpoints = (T *) calloc(this->checksize*this->snaps, sizeof(T));
+                }else{
+                    this->open = true;
+				}
+				break;
+			case 'a':
+				if(this->open) rs_error("Checkpoint cannot be opened two times.");
+				this->filename = _filename;
+				if(this->Fc->append(this->filename) == FILE_ERR)
+				{
+					rs_error("Revolve::openCheck: Error opening checkpoint file for reading.");
+				}
+				if(this->checksize != this->Fc->getN(1)) rs_error("Revolve::openCheck: Mismatch in size of checkpoints");
+				if(this->snaps != this->Fc->getN(2)) rs_error("Revolve::openCheck: Mismatch in number of checkpoints");
+				if(sizeof(T) != this->Fc->getData_format()) rs_error("Revolve::openCheck: Mismatch in precision of checkpoints");
+				if(this->Fc->getType() != rockseis::CHECKPOINT) rs_error("Revolve::openCheck: Mismatch in file type");
+				this->open = true;
+				break;
+
+            default: 
+                rs_error("Revolve::openCheck: Invalid flag.");
+        }
+}
+
+template<typename T>
+void Revolve<T>::closeCheck()
+{
+	if(this->open){
+		Fc->close();
+		this->open = false;
+	}
+}
+
+template<typename T>
+void Revolve<T>::removeCheck()
+{
+	if(!incore){
+		if(this->open) {
+			this->Fc->close();
+			this->open = false;
+		}
+		if(!this->filename.empty()){
+			if( remove( filename.c_str() ) != 0 ){
+				rs_error( "Snapshot::removeSnap: Error deleting file: ", filename);
+			}
+		}
+	}
+}
+
+template<typename T>
+void Revolve<T>::readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
+{
+
+    size_t nx_pml, nz_pml;
+    size_t lpml;
+    nx_pml=waves->getNx_pml();
+    nz_pml=waves->getNz_pml();
+    lpml = waves->getLpml();
+    T *P1 = waves->getP1();
+    T *P2 = waves->getP2();
+    std::shared_ptr<PmlAcoustic2D<T>> Pml = waves->getPml();
+
+    size_t pos = this->checksize*this->check; 
+    if(this->incore){
+		if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");;
+		memcpy(P1, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
+		pos += nz_pml*nx_pml;
+
+		memcpy(P2, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
+		pos += nz_pml*nx_pml;
+
+		memcpy(Pml->P_left, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
+		pos += nz_pml*lpml;
+
+		memcpy(Pml->P_right, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
+		pos += nz_pml*lpml;
+
+		memcpy(Pml->P_top, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
+		pos += nx_pml*lpml;
+
+		memcpy(Pml->P_bottom, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
+		pos += nx_pml*lpml;
+
+		memcpy(Pml->Axx_left, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
+		pos += nz_pml*lpml;
+
+		memcpy(Pml->Axx_right, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
+		pos += nz_pml*lpml;
+
+		memcpy(Pml->Azz_top, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
+		pos += nx_pml*lpml;
+
+		memcpy(Pml->Azz_bottom, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
+	}else{
+		if(this->open){
+			this->Fc->read(P1, nz_pml*nx_pml, pos*sizeof(T));
+			this->Fc->read(P2, nz_pml*nx_pml);
+			this->Fc->read(Pml->P_left, nz_pml*lpml);
+			this->Fc->read(Pml->P_right, nz_pml*lpml);
+			this->Fc->read(Pml->P_top, nx_pml*lpml);
+			this->Fc->read(Pml->P_bottom, nx_pml*lpml);
+			this->Fc->read(Pml->Axx_left, nz_pml*lpml);
+			this->Fc->read(Pml->Axx_right, nz_pml*lpml);
+			this->Fc->read(Pml->Azz_top, nx_pml*lpml);
+			this->Fc->read(Pml->Azz_bottom, nx_pml*lpml);
+			if(Fc->getFail()) rs_error("Revolve::readCheck: Error reading checkpoints from file.");
+		}else{
+			rs_error("Revolve::readCheck: File is closed.");
+
+		}
+	}
+}
+
+template<typename T>
+void Revolve<T>::writeCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
+{
+
+    size_t nx_pml, nz_pml;
+    size_t lpml;
+    nx_pml=waves->getNx_pml();
+    nz_pml=waves->getNz_pml();
+    lpml = waves->getLpml();
+    T *P1 = waves->getP1();
+    T *P2 = waves->getP2();
+    std::shared_ptr<PmlAcoustic2D<T>> Pml = waves->getPml();
+
+    size_t pos = this->checksize*this->check; 
+    if(this->incore){
+		if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");;
+		memcpy(this->checkpoints+pos, P1, nz_pml*nx_pml*sizeof(T));
+		pos += nz_pml*nx_pml;
+
+		memcpy(this->checkpoints+pos, P2,  nz_pml*nx_pml*sizeof(T));
+		pos += nz_pml*nx_pml;
+
+		memcpy(this->checkpoints+pos, Pml->P_left, nz_pml*lpml*sizeof(T));
+		pos += nz_pml*lpml;
+
+		memcpy(this->checkpoints+pos, Pml->P_right, nz_pml*lpml*sizeof(T));
+		pos += nz_pml*lpml;
+
+		memcpy(this->checkpoints+pos, Pml->P_top, nx_pml*lpml*sizeof(T));
+		pos += nx_pml*lpml;
+
+		memcpy(this->checkpoints+pos, Pml->P_bottom, nx_pml*lpml*sizeof(T));
+		pos += nx_pml*lpml;
+
+		memcpy(this->checkpoints+pos, Pml->Axx_left, nz_pml*lpml*sizeof(T));
+		pos += nz_pml*lpml;
+
+		memcpy(this->checkpoints+pos, Pml->Axx_right, nz_pml*lpml*sizeof(T));
+		pos += nz_pml*lpml;
+
+		memcpy(this->checkpoints+pos, Pml->Azz_top, nx_pml*lpml*sizeof(T));
+		pos += nx_pml*lpml;
+
+		memcpy(this->checkpoints+pos, Pml->Azz_bottom, nx_pml*lpml*sizeof(T));
+	}else{
+		if(this->open){
+			this->Fc->write(P1, nz_pml*nx_pml, pos*sizeof(T));
+			this->Fc->write(P2, nz_pml*nx_pml);
+			this->Fc->write(Pml->P_left, nz_pml*lpml);
+			this->Fc->write(Pml->P_right, nz_pml*lpml);
+			this->Fc->write(Pml->P_top, nx_pml*lpml);
+			this->Fc->write(Pml->P_bottom, nx_pml*lpml);
+			this->Fc->write(Pml->Axx_left, nz_pml*lpml);
+			this->Fc->write(Pml->Axx_right, nz_pml*lpml);
+			this->Fc->write(Pml->Azz_top, nx_pml*lpml);
+			this->Fc->write(Pml->Azz_bottom, nx_pml*lpml);
+			if(Fc->getFail()) rs_error("Revolve::writeCheck: Error writing checkpoints to file.");
+		}else{
+			rs_error("Revolve::writeCheck: File is closed.");
+
+		}
+	}
+}
+
 // destructor
 template<typename T>
 Revolve<T>::~Revolve(){
-    free(chp);
+	if(this->allocated){
+		free(checkpoints);
+	}
+	if(this->open){
+		Fc->close();
+	}
 }
 
 // =============== INITIALIZING TEMPLATE STRUCTS =============== //

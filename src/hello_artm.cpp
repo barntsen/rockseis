@@ -127,6 +127,9 @@ int main()
     // Setting Snapshot file 
     rtm->setSnapfile(Psnapfile);
 
+    rtm->setNcheck(21);
+    rtm->setIncore(true);
+
     //Setting Pimage file
     rtm->setPimagefile(Pimagefile);
 
@@ -143,10 +146,22 @@ int main()
     //Read input data 
 	data->read();
 	data->makeMap(model->getGeom());
+    rockseis::rs_snapmethod snapmethod = rockseis::OPTIMAL;
 
 	// Run modelling 
-	//rtm->run();
-	rtm->run_edge();
+    switch(snapmethod){
+        case rockseis::FULL:
+            rtm->run();
+            break;
+        case rockseis::OPTIMAL:
+            rtm->run_optimal();
+            break;
+        case rockseis::EDGES:
+            rtm->run_edge();
+            break;
+        default:
+            rockseis::rs_error("Invalid option of snapshot saving."); 
+    }
 
 	return 0;
 }
