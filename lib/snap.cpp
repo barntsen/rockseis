@@ -656,6 +656,7 @@ void Snapshot3D<T>::readSnap(const int it){
             Fp->read(this->getData(0),nz*ny*nx, pos); 
         }
     }
+    if(Fp->getFail()) rs_error("Snapshot3D::readSnap: Error reading from file.");
 }
 
 template<typename T>

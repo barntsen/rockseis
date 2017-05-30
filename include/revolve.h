@@ -59,8 +59,11 @@ public:
 
     // Checkpointing functions
     void openCheck(std::string filename, std::shared_ptr<WavesAcoustic2D<T>> waves, char flag);
+    void openCheck(std::string filename, std::shared_ptr<WavesAcoustic3D<T>> waves, char flag);
     void readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves);
+    void readCheck(std::shared_ptr<WavesAcoustic3D<T>> waves);
     void writeCheck(std::shared_ptr<WavesAcoustic2D<T>> waves);
+    void writeCheck(std::shared_ptr<WavesAcoustic3D<T>> waves);
     void removeCheck();
     void closeCheck();
     
@@ -68,6 +71,7 @@ public:
     ~Revolve();	///< Destructor
 
 private:
+    void createCheck(std::string filename, char flag);
     int maxrange(int ss, int tt);
 	int check;
     int capo;
