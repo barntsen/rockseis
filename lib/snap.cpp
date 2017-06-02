@@ -440,7 +440,7 @@ void Snapshot2D<T>::readEdge(const int it){
     int nz = this->getNz();
     int nx_pml = this->getNx_pml();
     int nz_pml = this->getNz_pml();
-    int lpml = this->getLpml();
+    int lpml = this->getLpml(); 
     int snapit = this->getSnapit();
     std::shared_ptr<rockseis::File> Fp = this->getFp();
     off_t pos;

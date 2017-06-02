@@ -52,6 +52,8 @@
 #define w88 -3.351959e-5
 /*^*/
 
+#define ind(i,j,k) ((k)*ny*nx + (j)*nx + (i))
+
 namespace rockseis {
 /* Constructors*/
 template <typename T>
@@ -218,7 +220,6 @@ void Der<T>::setOrder(const int _order)
 // Forward derivatives
 template <typename T>
 void Der<T>::ddx_fw(T *f){
-    rockseis::Index ind(nx, ny, nz);
     int ip, im;
     
     // Clear derivative
@@ -253,7 +254,6 @@ void Der<T>::ddx_fw(T *f){
 
 template <typename T>
 void Der<T>::ddy_fw(T *f){
-    rockseis::Index ind(nx, ny, nz);
     int ip, im;
     
     // Clear derivative
@@ -290,7 +290,6 @@ void Der<T>::ddy_fw(T *f){
 
 template <typename T>
 void Der<T>::ddz_fw(T *f){
-    rockseis::Index ind(nx, ny, nz);
     int ip, im;
     
     // Clear derivative
@@ -332,7 +331,6 @@ void Der<T>::ddz_fw(T *f){
 // Backward derivatives
 template <typename T>
 void Der<T>::ddx_bw(T *f){
-    rockseis::Index ind(nx, ny, nz);
     int ip, im;
     
     // Clear derivative
@@ -368,7 +366,6 @@ void Der<T>::ddx_bw(T *f){
 
 template <typename T>
 void Der<T>::ddy_bw(T *f){
-    rockseis::Index ind(nx, ny, nz);
     int ip, im;
     
     // Clear derivative
@@ -405,7 +402,6 @@ void Der<T>::ddy_bw(T *f){
 
 template <typename T>
 void Der<T>::ddz_bw(T *f){
-    rockseis::Index ind(nx, ny, nz);
     int ip, im;
     
     // Clear derivative

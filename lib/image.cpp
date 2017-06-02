@@ -1,5 +1,13 @@
 #include "image.h"
 
+#define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
+#define ks2D(i,j) ((j)*nxs + (i))
+#define kr2D(i,j) ((j)*nxr + (i))
+
+#define ki3D(i,j,k,l,m,n) ((n)*nhy*nhx*nx*ny*nz + (m)*nhx*nx*ny*nz + (l)*nx*ny*nz + (k)*nx*ny + (j)*nx + (i))
+#define ks3D(i,j,k) ((k)*nxs*nys + (j)*nxs + (i))
+#define kr3D(i,j,k) ((k)*nxr*nyr + (j)*nxr + (i))
+
 namespace rockseis {
 
 
@@ -207,11 +215,10 @@ void Image2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 	int nhx = this->getNhx();
 	int nhz = this->getNhz();
 	int nx = this->getNx();
+	int nxs = nx+2*pads;
+	int nxr = nx+2*padr;
 	int nz = this->getNz();
 	int hx, hz;
-	Index ki(nx, nz, nhx, nhz);
-	Index ks(nx+2*pads, nz+2*pads);
-	Index kr(nx+2*padr, nz+2*padr);
 	for (ihx=0; ihx<nhx; ihx++){
 		hx= -(nhx-1)/2 + ihx;
 		for (ihz=0; ihz<nhz; ihz++){
@@ -221,7 +228,7 @@ void Image2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 				{
 					for (iz=0; iz<nz; iz++){
 						if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz))
-							imagedata[ki(ix,iz,ihx,ihz)] += ws[ks(ix+pads, iz+pads)]*wr[kr(ix+padr, iz+padr)];
+							imagedata[ki2D(ix,iz,ihx,ihz)] += ws[ks2D(ix+pads, iz+pads)]*wr[kr2D(ix+padr, iz+padr)];
 					}	
 				}
 			}
@@ -445,12 +452,13 @@ void Image3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 	int nhy = this->getNhy();
 	int nhz = this->getNhz();
 	int nx = this->getNx();
+	int nxs = nx + 2*pads;
+	int nxr = nx + 2*padr;
 	int ny = this->getNy();
+	int nys = ny + 2*pads;
+	int nyr = ny + 2*padr;
 	int nz = this->getNz();
 	int hx, hy, hz;
-	Index ki(nx, ny, nz, nhx, nhy, nhz);
-	Index ks(nx+2*pads, ny+2*pads, nz+2*pads);
-	Index kr(nx+2*padr, ny+2*pads, nz+2*padr);
 	for (ihx=0; ihx<nhx; ihx++){
 		hx= -(nhx-1)/2 + ihx;
 		for (ihy=0; ihy<nhy; ihy++){
@@ -463,7 +471,7 @@ void Image3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 							if( ((iy-hy) >= 0) && ((iy-hy) < ny) && ((iy+hy) >= 0) && ((iy+hy) < ny))
 								for (iz=0; iz<nz; iz++){
 									if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz))
-										imagedata[ki(ix,iy,iz,ihx,ihy,ihz)] += ws[ks(ix+pads,iy+pads,iz+pads)]*wr[kr(ix+padr,iy+padr,iz+padr)];
+										imagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += ws[ks3D(ix+pads,iy+pads,iz+pads)]*wr[kr3D(ix+padr,iy+padr,iz+padr)];
 								}	
 						}
 				}

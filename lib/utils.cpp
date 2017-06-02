@@ -42,27 +42,6 @@ Index::Index(int _nx, int _ny, int _nz, int _nhx, int _nhy, int _nhz)
     nhz = _nhz;
 }
 
-
-
-
-// () operator
-int Index::operator() (int ix, int iy)
-{
-    return (iy*nx + ix); 
-}
-int Index::operator() (int ix, int iy, int iz)
-{
-    return (iz*ny*nx + iy*nx + ix);
-}
-int Index::operator() (int ix, int iy, int ihx, int ihy)
-{
-    return (ihy*nhx*ny*nx + ihx*ny*nx + iy*nx + ix);
-}
-int Index::operator() (int ix, int iy, int iz, int ihx, int ihy, int ihz)
-{
-    return (ihz*nhy*nhx*nz*ny*nx + ihy*nhx*nz*ny*nx + ihx*nz*ny*nx + iz*ny*nx + iy*nx + ix);
-}
-
 // destructor
 Index::~Index(){
     /* Do nothing*/

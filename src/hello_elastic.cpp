@@ -216,7 +216,7 @@ int main()
     }
 
     //Setting sourcetype to VX (x-Force) type
-    source->setField(rockseis::VX);
+    source->setField(rockseis::PRESSURE);
 
     // Setting Record
     if(Precord){
