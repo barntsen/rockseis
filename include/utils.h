@@ -32,10 +32,10 @@ public:
     Index(int _nx, int _ny, int _nhx, int _nhy); ///< 4D constructor
     Index(int _nx, int _ny, int _nz, int _nhx, int _nhy, int _nhz); ///< 6D constructor
     ~Index(); ///< Destructor
-    int operator() (int ix, int iy) { return (iy*nx + ix); } ///< 2D operator
-    int operator() (int ix, int iy, int iz) { return (iz*ny*nx + iy*nx + ix); } ///< 3D operator 
-    int operator() (int ix, int iy, int ihx, int ihy) { return (ihy*nhx*ny*nx + ihx*ny*nx + iy*nx + ix); } ///< 4D operator 
-    int operator() (int ix, int iy, int iz, int ihx, int ihy, int ihz) { return (ihz*nhy*nhx*nz*ny*nx + ihy*nhx*nz*ny*nx + ihx*nz*ny*nx + iz*ny*nx + iy*nx + ix); } ///< 6D operator 
+    long int operator() (int ix, int iy) { return (iy*nx + ix); } ///< 2D operator
+    long int operator() (int ix, int iy, int iz) { return (iz*ny*nx + iy*nx + ix); } ///< 3D operator 
+    long int operator() (int ix, int iy, int ihx, int ihy) { return (ihy*nhx*ny*nx + ihx*ny*nx + iy*nx + ix); } ///< 4D operator 
+    long int operator() (int ix, int iy, int iz, int ihx, int ihy, int ihz) { return (ihz*nhy*nhx*nz*ny*nx + ihy*nhx*nz*ny*nx + ihx*nz*ny*nx + iz*ny*nx + iy*nx + ix); } ///< 6D operator 
 private:
     int nx; 
     int ny;
