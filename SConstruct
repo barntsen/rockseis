@@ -24,6 +24,7 @@ env['program_prefix'] = "rs" # Prefix for all programs
 # Configure (checking libraries for environment)
 ### TODO: Add autoconfig for WxWidgets
 env['WX'] = True;
+env['FFTW'] = False;
 
 #conf = Configure(env)
 #if conf.CheckLibWithHeader('wx','wx.h','cpp'):

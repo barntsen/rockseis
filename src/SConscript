@@ -56,8 +56,9 @@ env.Install('../bin/',hello_parser)
 hello_sort = env.Program(prefix + 'hello_sort','hello_sort.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort'],LIBPATH=['../build'])
 env.Install('../bin/',hello_sort)
 
-hello_fftw = env.Program(prefix + 'hello_fftw','hello_fftw.cpp',LIBS=['fftw3'],LIBPATH=['../build', '../../fftw-3.3.6-pl2/fftw-build/lib/'])
-env.Install('../bin/',hello_fftw)
+if(env['FFTW']):
+    hello_fftw = env.Program(prefix + 'hello_fftw','hello_fftw.cpp',LIBS=['fftw3'],LIBPATH=['../build', '../../fftw-3.3.6-pl2/fftw-build/lib/'])
+    env.Install('../bin/',hello_fftw)
 
 mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel'],LIBPATH=['../build'])
 mpi.Install('../bin/',mpidbg)
