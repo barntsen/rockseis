@@ -922,6 +922,10 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
     rockseis::Index l3d(size_x, size_y, nz);
     rockseis::Index f3d(nx, ny, nz);
     rockseis::Index l2d(nx, ny);
+    std::cerr << "nx*ny: " << nx*ny << std::endl;
+    fpos = f3d(0, 0, nz-1)*sizeof(T);
+    std::cerr << "Nx*Ny: " << nx*ny << std::endl;
+    std::cerr << "fpos: " << fpos << std::endl;
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f3d(0, 0, i1)*sizeof(T);
         Fvp->read(vptrace, nx*ny, fpos);
