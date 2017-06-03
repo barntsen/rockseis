@@ -217,13 +217,6 @@ void Model<T>::staggermodel_z(T *model, const int nx, const int ny, const int nz
 template<typename T>
 ModelAcoustic2D<T>::ModelAcoustic2D(): Model<T>(2) {
     /* Allocate variables */
-    int nx, nz, nx_pml, nz_pml, lpml;
-    nx = this->getNx();
-    nz = this->getNz();
-    lpml = this->getLpml();
-    nx_pml = nx +2*lpml;
-    nz_pml = nz +2*lpml;
-    
     Vp = (T *) calloc(1,1);
     R = (T *) calloc(1,1);
     L = (T *) calloc(1,1);
@@ -234,13 +227,6 @@ ModelAcoustic2D<T>::ModelAcoustic2D(): Model<T>(2) {
 
 template<typename T>
 ModelAcoustic2D<T>::ModelAcoustic2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 1.0, _oz, _fs) {
-    int nx, nz, nx_pml, nz_pml, lpml;
-    nx = this->getNx();
-    nz = this->getNz();
-    lpml = this->getLpml();
-    nx_pml = nx +2*lpml;
-    nz_pml = nz +2*lpml;
-    
     /* Allocate variables */
     Vp = (T *) calloc(1,1);
     R = (T *) calloc(1,1);
@@ -252,7 +238,7 @@ ModelAcoustic2D<T>::ModelAcoustic2D(const int _nx, const int _nz, const int _lpm
 template<typename T>
 ModelAcoustic2D<T>::ModelAcoustic2D(std::string _Vpfile, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(2) {
     bool status;
-    int nx, nz, nx_pml, nz_pml;
+    int nx, nz;
     T dx, dz;
     T ox, oz;
     Vpfile = _Vpfile;
@@ -309,9 +295,6 @@ ModelAcoustic2D<T>::ModelAcoustic2D(std::string _Vpfile, std::string _Rfile, con
     this->setLpml(_lpml);
     this->setFs(_fs);
 
-    nx_pml = this->getNx_pml();
-    nz_pml = this->getNz_pml();
-    
     /* Allocate variables */
     Vp = (T *) calloc(1,1);
     R = (T *) calloc(1,1);
@@ -576,14 +559,6 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
 // =============== 3D ACOUSTIC MODEL CLASS =============== //
 template<typename T>
 ModelAcoustic3D<T>::ModelAcoustic3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const bool _fs): Model<T>(3, _nx, _ny, _nz, _lpml, _dx, _dy, _dz, _ox, _oy, _oz, _fs) {
-    int nx, ny, nz, nx_pml, ny_pml, nz_pml, lpml;
-    nx = this->getNx();
-    ny = this->getNy();
-    nz = this->getNz();
-    lpml = this->getLpml();
-    nx_pml = nx +2*lpml;
-    ny_pml = ny +2*lpml;
-    nz_pml = nz +2*lpml;
     
     /* Allocate minimally the variables */
     Vp = (T *) calloc(1,1);
@@ -597,7 +572,7 @@ ModelAcoustic3D<T>::ModelAcoustic3D(const int _nx, const int _ny, const int _nz,
 template<typename T>
 ModelAcoustic3D<T>::ModelAcoustic3D(std::string _Vpfile, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(3) {
     bool status;
-    int nx, ny, nz, nx_pml, ny_pml, nz_pml;
+    int nx, ny, nz;
     T dx, dy, dz;
     T ox, oy, oz;
     Vpfile = _Vpfile;
@@ -660,10 +635,6 @@ ModelAcoustic3D<T>::ModelAcoustic3D(std::string _Vpfile, std::string _Rfile, con
     this->setLpml(_lpml);
     this->setFs(_fs);
 
-    nx_pml = this->getNx_pml();
-    ny_pml = this->getNy_pml();
-    nz_pml = this->getNz_pml();
-    
     /* Allocate variables */
     Vp = (T *) calloc(1,1);
     R = (T *) calloc(1,1);
@@ -984,12 +955,6 @@ ModelElastic2D<T>::ModelElastic2D(): Model<T>(2) {
 
 template<typename T>
 ModelElastic2D<T>::ModelElastic2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 1.0, _oz, _fs) {
-    int nx, nz, nx_pml, nz_pml, lpml;
-    nx = this->getNx();
-    nz = this->getNz();
-    lpml = this->getLpml();
-    nx_pml = nx +2*lpml;
-    nz_pml = nz +2*lpml;
     
     /* Allocate variables */
     Vp = (T *) calloc(1,1);
@@ -1006,7 +971,7 @@ ModelElastic2D<T>::ModelElastic2D(const int _nx, const int _nz, const int _lpml,
 template<typename T>
 ModelElastic2D<T>::ModelElastic2D(std::string _Vpfile, std::string _Vsfile, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(2) {
     bool status;
-    int nx, nz, nx_pml, nz_pml;
+    int nx, nz;
     T dx, dz;
     T ox, oz;
     Vpfile = _Vpfile;
@@ -1082,8 +1047,6 @@ ModelElastic2D<T>::ModelElastic2D(std::string _Vpfile, std::string _Vsfile, std:
     this->setLpml(_lpml);
     this->setFs(_fs);
 
-    nx_pml = this->getNx_pml();
-    nz_pml = this->getNz_pml();
     
     /* Allocate variables */
     Vp = (T *) calloc(1,1);
@@ -1417,14 +1380,6 @@ ModelElastic3D<T>::ModelElastic3D(): Model<T>(2) {
 
 template<typename T>
 ModelElastic3D<T>::ModelElastic3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const bool _fs): Model<T>(3, _nx, _ny, _nz, _lpml, _dx, _dy, _dz, _ox, _oy, _oz, _fs) {
-    int nx, ny, nz, nx_pml, ny_pml, nz_pml, lpml;
-    nx = this->getNx();
-    ny = this->getNy();
-    nz = this->getNz();
-    lpml = this->getLpml();
-    nx_pml = nx +2*lpml;
-    ny_pml = ny +2*lpml;
-    nz_pml = nz +2*lpml;
     
     /* Allocate variables */
     Vp = (T *) calloc(1,1);
@@ -1443,7 +1398,7 @@ ModelElastic3D<T>::ModelElastic3D(const int _nx, const int _ny, const int _nz, c
 template<typename T>
 ModelElastic3D<T>::ModelElastic3D(std::string _Vpfile, std::string _Vsfile, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(3) {
     bool status;
-    int nx, ny, nz, nx_pml, ny_pml, nz_pml;
+    int nx, ny, nz;
     T dx, dy, dz;
     T ox, oy, oz;
     Vpfile = _Vpfile;
@@ -1522,10 +1477,6 @@ ModelElastic3D<T>::ModelElastic3D(std::string _Vpfile, std::string _Vsfile, std:
     this->setLpml(_lpml);
     this->setFs(_fs);
 
-    nx_pml = this->getNx_pml();
-    ny_pml = this->getNy_pml();
-    nz_pml = this->getNz_pml();
-    
     /* Allocate variables */
     Vp = (T *) calloc(1,1);
     Vs = (T *) calloc(1,1);

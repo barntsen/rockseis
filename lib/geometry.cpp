@@ -104,6 +104,17 @@ Geometry2D<T>::Geometry2D(size_t ntrace): Geometry<T>()
     gcoords = (rockseis::Point2D<T> *) calloc(ntrace,sizeof(rockseis::Point2D<T>));
     smap = (rockseis::Point2D<int> *) calloc(ntrace,sizeof(rockseis::Point2D<int>));
     gmap = (rockseis::Point2D<int> *) calloc(ntrace,sizeof(rockseis::Point2D<int>));
+    for (size_t i=0; i< ntrace; i++) 
+    {
+        scoords[i].x = 0;
+        scoords[i].y = 0;
+        gcoords[i].x = 0;
+        gcoords[i].y = 0;
+        smap[i].x = -1;
+        smap[i].y = -1;
+        gmap[i].x = -1;
+        gmap[i].y = -1;
+    }
 }
 
 // destructor
@@ -181,6 +192,22 @@ Geometry3D<T>::Geometry3D(int ntrace): Geometry<T>()
     gcoords = (rockseis::Point3D<T> *) calloc(ntrace,sizeof(rockseis::Point3D<T>));
     smap = (rockseis::Point3D<int> *) calloc(ntrace,sizeof(rockseis::Point3D<int>));
     gmap = (rockseis::Point3D<int> *) calloc(ntrace,sizeof(rockseis::Point3D<int>));
+    for (size_t i=0; i< ntrace; i++) 
+    {
+        scoords[i].x = 0;
+        scoords[i].y = 0;
+        scoords[i].z = 0;
+        gcoords[i].x = 0;
+        gcoords[i].y = 0;
+        gcoords[i].z = 0;
+        smap[i].x = -1;
+        smap[i].y = -1;
+        smap[i].z = -1;
+        gmap[i].x = -1;
+        gmap[i].y = -1;
+        gmap[i].z = -1;
+    }
+
 }
 
 template<typename T>

@@ -792,7 +792,7 @@ bool Data3D<T>::writeTraces()
         Point3D<T> *gcoords = (this->getGeom())->getGcoords();
         for (int i=0; i < ntrace; i++)
         {
-            //Write coordinates to data trace (First source x and y and then receiver x and y
+            //Write coordinates to data trace (First source x, y and z, and then receiver x, y and z)
             Fout->write(&scoords[i].x, 1);
             Fout->write(&scoords[i].y, 1);
             Fout->write(&scoords[i].z, 1);

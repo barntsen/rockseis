@@ -632,6 +632,7 @@ void Sort<T>::createEmptydataset(std::string filename, size_t n1, T d1, T o1){
 
     //Get number of traces
     size_t n2 = this->ntraces;
+    size_t nt = Fdata->getN(1);
     std::shared_ptr<rockseis::Data2D<T>> data2d;
     std::shared_ptr<rockseis::Data3D<T>> data3d;
     if(datatype == DATA2D){
@@ -643,7 +644,7 @@ void Sort<T>::createEmptydataset(std::string filename, size_t n1, T d1, T o1){
         Point2D<T> *scoords = (data2d->getGeom())->getScoords();
         Point2D<T> *gcoords = (data2d->getGeom())->getGcoords();
         for (size_t j=0; j < n2; j++){
-            Fdata->seekg(Fdata->getStartofdata() + j*(n1+NHEAD2D)*sizeof(T));
+            Fdata->seekg(Fdata->getStartofdata() + j*(nt+NHEAD2D)*sizeof(T));
             Fdata->read(&scoords[0].x, 1);
             Fdata->read(&scoords[0].y, 1);
             Fdata->read(&gcoords[0].x, 1);
@@ -651,6 +652,7 @@ void Sort<T>::createEmptydataset(std::string filename, size_t n1, T d1, T o1){
             data2d->writeTraces();
         }
         data2d->close();
+        if(Fdata->getFail()) rs_error("Sort::createEmptydataset: Error reading from survey file");
     }else{
         data3d = std::make_shared<Data3D<T>>(1,n1,d1,o1);
         data3d->setFile(filename);
@@ -660,7 +662,7 @@ void Sort<T>::createEmptydataset(std::string filename, size_t n1, T d1, T o1){
         Point3D<T> *scoords = (data3d->getGeom())->getScoords();
         Point3D<T> *gcoords = (data3d->getGeom())->getGcoords();
         for (size_t j=0; j < n2; j++){
-            Fdata->seekg(Fdata->getStartofdata() + j*(n1+NHEAD3D)*sizeof(T));
+            Fdata->seekg(Fdata->getStartofdata() + j*(nt+NHEAD3D)*sizeof(T));
             Fdata->read(&scoords[0].x, 1);
             Fdata->read(&scoords[0].y, 1);
             Fdata->read(&scoords[0].z, 1);
@@ -670,6 +672,7 @@ void Sort<T>::createEmptydataset(std::string filename, size_t n1, T d1, T o1){
             data3d->writeTraces();
         }
         data3d->close();
+        if(Fdata->getFail()) rs_error("Sort::createEmptydataset: Error reading from survey file");
     }
 }
 
