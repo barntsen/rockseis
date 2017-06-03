@@ -393,6 +393,8 @@ void Sort<T>::put2DGather(std::shared_ptr<Data2D<T>> data, size_t number)
         Fdata->write(&gcoords[j].y, 1);
         Fdata->write(&tracedata[j*n1], n1);
     }
+
+    if(Fdata->getFail()) rs_error("Sort::Put2DGather: Error writting gather to output file");
 }
 
 template<typename T>
@@ -432,6 +434,8 @@ void Sort<T>::put3DGather(std::shared_ptr<Data3D<T>> data, size_t number)
         Fdata->write(&gcoords[j].z, 1);
         Fdata->write(&tracedata[j*n1], n1);
     }
+
+    if(Fdata->getFail()) rs_error("Sort::Put3DGather: Error writting gather to output file");
 }
 
 template<typename T>
