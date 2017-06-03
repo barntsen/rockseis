@@ -45,6 +45,7 @@ bool Data<T>::open(std::string flag)
     {
         case 'i':
             status = Fdata->input(datafile);
+            Fdata->seekg(Fdata->getStartofdata());
             break;
         case 'o':
             Fdata->output(datafile);
@@ -351,6 +352,44 @@ bool Data2D<T>::write()
 }
 
 template<typename T>
+bool Data2D<T>::readTraces()
+{
+    bool status;
+    int nt = this->getNt();
+    int ntrace = this->getNtrace();
+    std::shared_ptr<rockseis::File> Fin;
+    Fin = this->getFdata();
+
+    if ( Fin->is_open() )
+    {
+        // Update geometry
+        size_t n2 = Fin->getN(2);
+        Fin->setN(2, n2 + ntrace);
+        Point2D<T> *scoords = (this->getGeom())->getScoords();
+        Point2D<T> *gcoords = (this->getGeom())->getGcoords();
+        for (int i=0; i < ntrace; i++)
+        {
+            //Read coordinates to data trace (First source x and y and then receiver x and y
+            Fin->read(&scoords[i].x, 1);
+            Fin->read(&scoords[i].y, 1);
+            Fin->read(&gcoords[i].x, 1);
+            Fin->read(&gcoords[i].y, 1);
+            // Write trace data
+            Fin->read(&data[i*nt], nt);
+        }	
+    }else{
+        status = FILE_ERR;	
+    }
+
+    if(Fin->getFail()){
+        status = FILE_ERR;
+    }else{
+        status = FILE_OK;
+    }
+    return status;
+}
+
+template<typename T>
 bool Data2D<T>::writeTraces()
 {
     bool status;
@@ -376,9 +415,13 @@ bool Data2D<T>::writeTraces()
             // Write trace data
             Fout->write(&data[i*nt], nt);
         }	
-        status = FILE_OK;
     }else{
         status = FILE_ERR;	
+    }
+    if(Fout->getFail()){
+        status = FILE_ERR;
+    }else{
+        status = FILE_OK;
     }
     return status;
 }
@@ -692,6 +735,46 @@ bool Data3D<T>::write()
 }
 
 template<typename T>
+bool Data3D<T>::readTraces()
+{
+    bool status;
+    int nt = this->getNt();
+    int ntrace = this->getNtrace();
+    std::shared_ptr<rockseis::File> Fin;
+    Fin = this->getFdata();
+
+    if ( Fin->is_open() )
+    {
+        // Update geometry
+        size_t n2 = Fin->getN(2);
+        Fin->setN(2, n2 + ntrace);
+        Point3D<T> *scoords = (this->getGeom())->getScoords();
+        Point3D<T> *gcoords = (this->getGeom())->getGcoords();
+        for (int i=0; i < ntrace; i++)
+        {
+            //Write coordinates to data trace (First source x and y and then receiver x and y
+            Fin->read(&scoords[i].x, 1);
+            Fin->read(&scoords[i].y, 1);
+            Fin->read(&scoords[i].z, 1);
+            Fin->read(&gcoords[i].x, 1);
+            Fin->read(&gcoords[i].y, 1);
+            Fin->read(&gcoords[i].z, 1);
+            // Write trace data
+            Fin->read(&data[i*nt], nt);
+        }	
+    }else{
+        status = FILE_ERR;	
+    }
+
+    if(Fin->getFail()){
+        status = FILE_ERR;
+    }else{
+        status = FILE_OK;
+    }
+    return status;
+}
+
+template<typename T>
 bool Data3D<T>::writeTraces()
 {
     bool status;
@@ -719,9 +802,14 @@ bool Data3D<T>::writeTraces()
             // Write trace data
             Fout->write(&data[i*nt], nt);
         }	
-        status = FILE_OK;
     }else{
         status = FILE_ERR;	
+    }
+
+    if(Fout->getFail()){
+        status = FILE_ERR;
+    }else{
+        status = FILE_OK;
     }
     return status;
 }
