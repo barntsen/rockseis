@@ -100,8 +100,7 @@ int main(int argc, char* argv[])
         {
             case DATA2D:
                 Bdata2d = std::make_shared<rockseis::Data2D<float>>(1, in->getN(1), in->getD(1), in->getO(1));
-                Bdata2d->setFile("stdin");
-                Bdata2d->open("i");
+                Bdata2d->setFdata(in);
                 scoords2d = (Bdata2d->getGeom())->getScoords();
                 gcoords2d = (Bdata2d->getGeom())->getGcoords();
 
@@ -155,12 +154,11 @@ int main(int argc, char* argv[])
                 break;
             case DATA3D:
                 Bdata3d = std::make_shared<rockseis::Data3D<float>>(1, in->getN(1), in->getD(1), in->getO(1));
-                Bdata3d->setFile("stdin");
-                Bdata3d->open("i");
+                Bdata3d->setFdata(in);
                 scoords3d = (Bdata3d->getGeom())->getScoords();
                 gcoords3d = (Bdata3d->getGeom())->getGcoords();
 
-                if(Bdata3d->readTraces() == FILE_ERR) rs_error("Error reading from input file");
+                if(Bdata3d->readTraces() == FILE_ERR)  rs_error("Error reading from input file ");
                 s[0].x = scoords3d[0].x;
                 s[1].x = scoords3d[0].x;
                 g[0].x = gcoords3d[0].x;

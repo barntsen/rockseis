@@ -42,6 +42,7 @@ public:
     void setDt(const T _dt) { dt = _dt; }	///< Set sampling interval (dt)
     void setOt(const T _ot) { ot = _ot; }	///< Set origin (ot)
     void setFile(std::string _datafile) { datafile=_datafile; } ///< Set filename
+    void setFdata(std::shared_ptr<File> Fd) { Fdata = Fd; } ///< Set file handle
     void setField(rs_field _field) { field = _field; } ///< Set data type 
     void setRecinc(const int inc) { recinc = inc; }	///< Set Nx
 

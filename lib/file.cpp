@@ -77,6 +77,8 @@ bool File::input(std::string filename)
         {
             // Fail 
             status = FILE_ERR;
+            std::cerr << buffer << std::endl;
+            rs_error("File ", filename, " is not a RSS file.");
         }else{
             //Success
             geometry->clear();

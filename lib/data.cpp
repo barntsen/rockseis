@@ -45,6 +45,7 @@ bool Data<T>::open(std::string flag)
     {
         case 'i':
             status = Fdata->input(datafile);
+            if(status == FILE_ERR) rs_error("Error opening file");
             Fdata->seekg(Fdata->getStartofdata());
             break;
         case 'o':
@@ -363,8 +364,6 @@ bool Data2D<T>::readTraces()
     if ( Fin->is_open() )
     {
         // Update geometry
-        size_t n2 = Fin->getN(2);
-        Fin->setN(2, n2 + ntrace);
         Point2D<T> *scoords = (this->getGeom())->getScoords();
         Point2D<T> *gcoords = (this->getGeom())->getGcoords();
         for (int i=0; i < ntrace; i++)
@@ -374,7 +373,7 @@ bool Data2D<T>::readTraces()
             Fin->read(&scoords[i].y, 1);
             Fin->read(&gcoords[i].x, 1);
             Fin->read(&gcoords[i].y, 1);
-            // Write trace data
+            // Read trace data
             Fin->read(&data[i*nt], nt);
         }	
     }else{
@@ -746,20 +745,18 @@ bool Data3D<T>::readTraces()
     if ( Fin->is_open() )
     {
         // Update geometry
-        size_t n2 = Fin->getN(2);
-        Fin->setN(2, n2 + ntrace);
         Point3D<T> *scoords = (this->getGeom())->getScoords();
         Point3D<T> *gcoords = (this->getGeom())->getGcoords();
         for (int i=0; i < ntrace; i++)
         {
-            //Write coordinates to data trace (First source x and y and then receiver x and y
+            //Read coordinates to data trace (First source x and y and then receiver x and y
             Fin->read(&scoords[i].x, 1);
             Fin->read(&scoords[i].y, 1);
             Fin->read(&scoords[i].z, 1);
             Fin->read(&gcoords[i].x, 1);
             Fin->read(&gcoords[i].y, 1);
             Fin->read(&gcoords[i].z, 1);
-            // Write trace data
+            // Read trace data
             Fin->read(&data[i*nt], nt);
         }	
     }else{
