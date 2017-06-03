@@ -82,6 +82,12 @@ Der<T>::Der(const int _nx, const int _ny, const int _nz, const T _dx, const T _d
     dz = _dz;
     order = _order;
     
+    /* Check for possibility of interger overflow */
+    long int lnx, lny, lnz;
+    lnx = nx;
+    lny = ny;
+    lnz = nz;
+    if((lnx*lny*lnz - 1) != ind(nx-1, ny-1, nz-1)) rs_error("Der::Der: The model size is beyond the size this program can model.");
     
     if(order < 1) order = 1;
     if(order > 8) order = 8;

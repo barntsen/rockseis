@@ -539,7 +539,9 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f2d(0, i1)*sizeof(T);
         Fvp->read(vptrace, nx, fpos);
+        if(Fvp->getFail()) rs_error("ModelAcoustic2D::getLocal: Error reading from vp file");
         Frho->read(rhotrace, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic2D::getLocal: Error reading from rho file");
         for(size_t i2=0; i2<size; i2++) {
             lpos = i + i2;
             if(lpos < 0) lpos = 0;
@@ -923,7 +925,9 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f3d(0, 0, i1)*sizeof(T);
         Fvp->read(vptrace, nx*ny, fpos);
+        if(Fvp->getFail()) rs_error("ModelAcoustic3D::getLocal: Error reading from vp file");
         Frho->read(rhotrace, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic3D::getLocal: Error reading from rho file");
         for(size_t i3=0; i3<size_y; i3++) {
             lpos_y = j + i3;
                 if(lpos_y < 0) lpos_y = 0;
@@ -1339,8 +1343,11 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f2d(0, i1)*sizeof(T);
         Fvp->read(vptrace, nx, fpos);
+        if(Fvp->getFail()) rs_error("ModelElastic2D::getLocal: Error reading from vp file");
         Fvs->read(vstrace, nx, fpos);
+        if(Fvs->getFail()) rs_error("ModelElastic2D::getLocal: Error reading from vs file");
         Frho->read(rhotrace, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelElastic2D::getLocal: Error reading from rho file");
         for(size_t i2=0; i2<size; i2++) {
             lpos = i + i2;
             if(lpos < 0) lpos = 0;
@@ -1814,8 +1821,11 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f3d(0, 0, i1)*sizeof(T);
         Fvp->read(vptrace, nx*ny, fpos);
+        if(Fvp->getFail()) rs_error("ModelElastic3D::getLocal: Error reading from vp file");
         Fvs->read(vstrace, nx*ny, fpos);
+        if(Fvs->getFail()) rs_error("ModelElastic3D::getLocal: Error reading from vs file");
         Frho->read(rhotrace, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelElastic3D::getLocal: Error reading from rho file");
         for(size_t i3=0; i3<size_y; i3++) {
             lpos_y = j + i3;
                 if(lpos_y < 0) lpos_y = 0;
