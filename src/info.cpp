@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     bool attributes;
     Point3D<float> s[ATTR];
     Point3D<float> g[ATTR];
-    Point3D<float> apert[ATTR];
+    Point3D<float> offset[ATTR];
 
 
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -89,21 +89,6 @@ int main(int argc, char* argv[])
 
     if(attributes && (type == rockseis::DATA2D || type == rockseis::DATA3D))
     {
-        for(int i=0; i<ATTR; i++){
-            s[i].x = 0.0;
-            g[i].x = 0.0;
-            apert[i].x = 0.0;
-
-            s[i].y = 0.0;
-            g[i].y = 0.0;
-            apert[i].y = 0.0;
-
-            s[i].z = 0.0;
-            g[i].z = 0.0;
-            apert[i].z = 0.0;
-        }
-
-
         std::shared_ptr<rockseis::Data2D<float>> Bdata2d;
         std::shared_ptr<rockseis::Data3D<float>> Bdata3d;
         rockseis::Point2D<float> *scoords2d;
@@ -129,6 +114,10 @@ int main(int argc, char* argv[])
                 s[1].y = scoords2d[0].y;
                 g[0].y = gcoords2d[0].y;
                 g[1].y = gcoords2d[0].y;               
+                offset[0].x = 0;
+                offset[1].x = 0;
+                offset[0].y = 0;
+                offset[1].y = 0;
 
                 ntr = in->getN(2);
                 for(size_t i=1; i< ntr; i++)
@@ -143,7 +132,10 @@ int main(int argc, char* argv[])
                     if (scoords2d[0].y > s[1].y ) s[1].y = scoords2d[0].y;
                     if (gcoords2d[0].y < g[0].y ) g[0].y = gcoords2d[0].y;
                     if (gcoords2d[0].y > g[1].y ) g[1].y = gcoords2d[0].y;
-                    if(fabsf(scoords2d[0].x - gcoords2d[0].x) > apert[0].x) apert[0].x = fabsf(scoords2d[0].x - gcoords2d[0].x);
+                    if((gcoords2d[0].x - scoords2d[0].x) < offset[0].x) offset[0].x = gcoords2d[0].x - scoords2d[0].x;
+                    if((gcoords2d[0].x - scoords2d[0].x) > offset[1].x) offset[1].x = gcoords2d[0].x - scoords2d[0].x;
+                    if((gcoords2d[0].y - scoords2d[0].y) < offset[0].y) offset[0].y = gcoords2d[0].y - scoords2d[0].y;
+                    if((gcoords2d[0].y - scoords2d[0].y) > offset[1].y) offset[1].y = gcoords2d[0].y - scoords2d[0].y;
 
                 }
                 std::cerr << std::endl;
@@ -157,7 +149,8 @@ int main(int argc, char* argv[])
                 std::cerr <<"gx:                     " << g[0].x << "                        " << g[1].x << std::endl;
                 std::cerr <<"gz:                     " << g[0].y << "                        " << g[1].y << std::endl;
 
-                std::cerr <<"apertx:                 " << 2*apert[0].x << std::endl;
+                std::cerr <<"offsetx:                 " << offset[0].x << "                        " << offset[1].x << std::endl;
+                std::cerr <<"offsetz:                 " << offset[0].y << "                        " << offset[1].y << std::endl;
                 std::cerr <<"*******************************************************************************" << std::endl;
                 break;
             case DATA3D:
@@ -180,6 +173,12 @@ int main(int argc, char* argv[])
                 s[1].z = scoords3d[0].z;
                 g[0].z = gcoords3d[0].z;
                 g[1].z = gcoords3d[0].z;
+                offset[0].x = 0;
+                offset[1].x = 0;
+                offset[0].y = 0;
+                offset[1].y = 0;
+                offset[0].z = 0;
+                offset[1].z = 0;
 
                 ntr = in->getN(2);
                 for(size_t i=1; i< ntr; i++)
@@ -198,8 +197,12 @@ int main(int argc, char* argv[])
                     if (scoords3d[0].z > s[1].z ) s[1].z = scoords3d[0].z;
                     if (gcoords3d[0].z < g[0].z ) g[0].z = gcoords3d[0].z;
                     if (gcoords3d[0].z > g[1].z ) g[1].z = gcoords3d[0].z;
-                    if(fabsf(scoords3d[0].x - gcoords3d[0].x) > apert[0].x) apert[0].x = fabsf(scoords3d[0].x - gcoords3d[0].x);
-                    if(fabsf(scoords3d[0].y - gcoords3d[0].y) > apert[0].y) apert[0].y = fabsf(scoords3d[0].y - gcoords3d[0].y);
+                    if((gcoords3d[0].x - scoords3d[0].x) < offset[0].x) offset[0].x = gcoords3d[0].x - scoords3d[0].x;
+                    if((gcoords3d[0].x - scoords3d[0].x) > offset[1].x) offset[1].x = gcoords3d[0].x - scoords3d[0].x;
+                    if((gcoords3d[0].y - scoords3d[0].y) < offset[0].y) offset[0].y = gcoords3d[0].y - scoords3d[0].y;
+                    if((gcoords3d[0].y - scoords3d[0].y) > offset[1].y) offset[1].y = gcoords3d[0].y - scoords3d[0].y;
+                    if((gcoords3d[0].z - scoords3d[0].z) < offset[0].z) offset[0].z = gcoords3d[0].z - scoords3d[0].z;
+                    if((gcoords3d[0].z - scoords3d[0].z) > offset[1].z) offset[1].z = gcoords3d[0].z - scoords3d[0].z;
 
                 }
                 std::cerr << std::endl;
@@ -215,8 +218,9 @@ int main(int argc, char* argv[])
                 std::cerr <<"gy:                     " << g[0].y << "                        " << g[1].y << std::endl;
                 std::cerr <<"gz:                     " << g[0].z << "                        " << g[1].z << std::endl;
 
-                std::cerr <<"apertx:                 " << 2*apert[0].x << std::endl;
-                std::cerr <<"aperty:                 " << 2*apert[0].y << std::endl;
+                std::cerr <<"offsetx:                 " << offset[0].x << "                        " << offset[1].x << std::endl;
+                std::cerr <<"offsety:                 " << offset[0].y << "                        " << offset[1].y << std::endl;
+                std::cerr <<"offsetz:                 " << offset[0].z << "                        " << offset[1].z << std::endl;
                 std::cerr <<"*******************************************************************************" << std::endl;
                 break;
             default:
