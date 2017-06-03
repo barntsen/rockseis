@@ -94,6 +94,10 @@ void Interp<T>::interp(std::shared_ptr<Data2D<T>> from, std::shared_ptr<Data2D<T
     T o1, o2;
     T *data1 = from->getData();
     T *data2 = to->getData();
+    Point2D<T> *Scoords1 = (from->getGeom())->getScoords();
+    Point2D<T> *Gcoords1 = (from->getGeom())->getGcoords();
+    Point2D<T> *Scoords2 = (to->getGeom())->getScoords();
+    Point2D<T> *Gcoords2 = (to->getGeom())->getGcoords();
     n1 = from->getNt();
     n2 = to->getNt();
     ntr = from->getNtrace();
@@ -112,6 +116,11 @@ void Interp<T>::interp(std::shared_ptr<Data2D<T>> from, std::shared_ptr<Data2D<T
     T x0;
     for (size_t i = 0; i < ntr; i++)
     {
+        //Copy coordinates
+        Scoords2[i].x = Scoords1[i].x;
+        Scoords2[i].y = Scoords1[i].y;
+        Gcoords2[i].x = Gcoords1[i].x;
+        Gcoords2[i].y = Gcoords1[i].y;
         for(size_t j = 0; j < n2; j++)
         {
             val = o2 + j*d2;
@@ -148,6 +157,10 @@ void Interp<T>::interp(std::shared_ptr<Data3D<T>> from, std::shared_ptr<Data3D<T
     T o1, o2;
     T *data1 = from->getData();
     T *data2 = to->getData();
+    Point3D<T> *Scoords1 = (from->getGeom())->getScoords();
+    Point3D<T> *Gcoords1 = (from->getGeom())->getGcoords();
+    Point3D<T> *Scoords2 = (to->getGeom())->getScoords();
+    Point3D<T> *Gcoords2 = (to->getGeom())->getGcoords();
     n1 = from->getNt();
     n2 = to->getNt();
     ntr = from->getNtrace();
@@ -166,6 +179,13 @@ void Interp<T>::interp(std::shared_ptr<Data3D<T>> from, std::shared_ptr<Data3D<T
     T x0;
     for (size_t i = 0; i < ntr; i++)
     {
+        //Copy coordinates
+        Scoords2[i].x = Scoords1[i].x;
+        Scoords2[i].y = Scoords1[i].y;
+        Scoords2[i].z = Scoords1[i].z;
+        Gcoords2[i].x = Gcoords1[i].x;
+        Gcoords2[i].y = Gcoords1[i].y;
+        Gcoords2[i].z = Gcoords1[i].z;
         for(size_t j = 0; j < n2; j++)
         {
             val = o2 + j*d2;
