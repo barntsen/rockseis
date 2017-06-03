@@ -27,22 +27,22 @@ typedef enum {LINEAR, BSPLINE, SINC} rs_interpmode; ///< Interpolation mode.)
  * */
 class Index{
 public:
-    Index(int _nx, int _ny); ///< 2D constructor
-    Index(int _nx, int _ny, int _nz); ///< 3D constructor
-    Index(int _nx, int _ny, int _nhx, int _nhy); ///< 4D constructor
-    Index(int _nx, int _ny, int _nz, int _nhx, int _nhy, int _nhz); ///< 6D constructor
+    Index(long int _nx, long int _ny); ///< 2D constructor
+    Index(long int _nx, long int _ny, long int _nz); ///< 3D constructor
+    Index(long int _nx, long int _ny, long int _nhx, long int _nhy); ///< 4D constructor
+    Index(long int _nx, long int _ny, long int _nz, long int _nhx, long int _nhy, long int _nhz); ///< 6D constructor
     ~Index(); ///< Destructor
-    long int operator() (int ix, int iy) { return (iy*nx + ix); } ///< 2D operator
-    long int operator() (int ix, int iy, int iz) { return (iz*ny*nx + iy*nx + ix); } ///< 3D operator 
-    long int operator() (int ix, int iy, int ihx, int ihy) { return (ihy*nhx*ny*nx + ihx*ny*nx + iy*nx + ix); } ///< 4D operator 
-    long int operator() (int ix, int iy, int iz, int ihx, int ihy, int ihz) { return (ihz*nhy*nhx*nz*ny*nx + ihy*nhx*nz*ny*nx + ihx*nz*ny*nx + iz*ny*nx + iy*nx + ix); } ///< 6D operator 
+    long int operator() (long int ix, long int iy) { return (iy*nx + ix); } ///< 1D operator
+    long int operator() (long int ix, long int iy, long int iz) { return (iz*ny*nx + iy*nx + ix); } ///< 3D operator 
+    long int operator() (long int ix, long int iy, long int ihx, long int ihy) { return (ihy*nhx*ny*nx + ihx*ny*nx + iy*nx + ix); } ///< 4D operator 
+    long int operator() (long int ix, long int iy, long int iz, long int ihx, long int ihy, long int ihz) { return (ihz*nhy*nhx*nz*ny*nx + ihy*nhx*nz*ny*nx + ihx*nz*ny*nx + iz*ny*nx + iy*nx + ix); } ///< 6D operator 
 private:
-    int nx; 
-    int ny;
-    int nz;
-    int nhx;
-    int nhy;
-    int nhz;
+    long int nx; 
+    long int ny;
+    long int nz;
+    long int nhx;
+    long int nhy;
+    long int nhz;
 };
 
 // =============== POINT STRUCT =============== //

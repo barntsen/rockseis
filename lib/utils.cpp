@@ -2,7 +2,7 @@
 
 namespace rockseis {
 // constructor
-Index::Index(int _nx, int _ny)
+Index::Index(long int _nx, long int _ny)
 {
     nx = _nx;
     ny = _ny;
@@ -12,7 +12,7 @@ Index::Index(int _nx, int _ny)
     nhz = 1;
 }
 
-Index::Index(int _nx, int _ny, int _nz)
+Index::Index(long int _nx, long int _ny, long int _nz)
 {
     nx = _nx;
     ny = _ny;
@@ -22,7 +22,7 @@ Index::Index(int _nx, int _ny, int _nz)
     nhz = 1;
 }
 
-Index::Index(int _nx, int _ny, int _nhx, int _nhy)
+Index::Index(long int _nx, long int _ny, long int _nhx, long int _nhy)
 {
     nx = _nx;
     ny = _ny;
@@ -32,7 +32,7 @@ Index::Index(int _nx, int _ny, int _nhx, int _nhy)
     nhz = 1;
 }
 
-Index::Index(int _nx, int _ny, int _nz, int _nhx, int _nhy, int _nhz)
+Index::Index(long int _nx, long int _ny, long int _nz, long int _nhx, long int _nhy, long int _nhz)
 {
     nx = _nx;
     ny = _ny;
