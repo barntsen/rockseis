@@ -891,12 +891,6 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
     oxl = (ox + start_x*dx);
     oyl = (oy + start_y*dy);
 
-    std::cerr << "oxl: " << oxl << std::endl;
-    std::cerr << "oxl: " << oxl << std::endl;
-    std::cerr << "Xend: " << (oxl + (size_x-1)*dx) << std::endl;
-    std::cerr << "Yend: " << (oyl + (size_y-1)*dy) << std::endl;
-    std::cerr << "ozl: " << this->getOz() << std::endl;
-
     /* Create local model */
     local = std::make_shared<rockseis::ModelAcoustic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getFs());
 
