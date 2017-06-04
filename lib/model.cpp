@@ -879,16 +879,23 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
     size_t nz = this->getNz();
 
 	/* Determine grid positions and sizes */
-    size_t size_x = rintf((max_x-min_x + aperture_x)/dx) + 1;
+    size_t size_x = size_t (rintf((max_x-min_x + aperture_x)/dx) + 1);
     if( size_x % 2 == 0 ) size_x--; // Get odd size due to symmetry
-    off_t start_x = rintf((min_x - ox)/dx) - (size_x - 1)/2; 
+    off_t start_x = (off_t) (rintf((min_x - ox)/dx) - (size_x - 1)/2); 
 
-    size_t size_y = rintf((max_y-min_y + aperture_y)/dy) + 1;
+    size_t size_y = size_t(rintf((max_y-min_y + aperture_y)/dy) + 1);
     if( size_y % 2 == 0 ) size_y--; // Get odd size due to symmetry
-    off_t start_y = rintf((min_y - oy)/dy) - (size_y - 1)/2; 
+    off_t start_y = (off_t) (rintf((min_y - oy)/dy) - (size_y - 1)/2); 
+
+    off_t oxl, oyl; 
+    oxl = (ox + start_x*dx);
+    oyl = (oy + start_y*dy);
+
+    std::cerr << "oxl: " << oxl << std::endl;
+    std::cerr << "oyl: " << oyl << std::endl;
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelAcoustic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), (ox + start_x*dx), (oy + start_y*dy), this->getOz(), this->getFs());
+    local = std::make_shared<rockseis::ModelAcoustic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getFs());
 
     /*Realizing local model */
     local->createModel();
