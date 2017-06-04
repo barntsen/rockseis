@@ -314,6 +314,8 @@ int main(int argc, char** argv) {
 
                 // Output record
                 if(Precord){
+                    Pdata3D->setFile(Precordfile + "-" + std::to_string(work.id));
+                    Pdata3D->write();
                     Pdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
                     Pdata3Di->setFile(Precordfile);
                     interp->interp(Pdata3D, Pdata3Di);

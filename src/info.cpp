@@ -18,6 +18,7 @@ int main(int argc, char* argv[])
     Point3D<float> s[ATTR];
     Point3D<float> g[ATTR];
     Point3D<float> offset[ATTR];
+    Point3D<float> aoffset[ATTR];
 
 
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -113,10 +114,15 @@ int main(int argc, char* argv[])
                 s[1].y = scoords2d[0].y;
                 g[0].y = gcoords2d[0].y;
                 g[1].y = gcoords2d[0].y;               
-                offset[0].x = 0;
-                offset[1].x = 0;
-                offset[0].y = 0;
-                offset[1].y = 0;
+                offset[0].x = gcoords2d[0].x - scoords2d[0].x;
+                offset[1].x = gcoords2d[0].x - scoords2d[0].x;
+                offset[0].y = gcoords2d[0].y - scoords2d[0].y;
+                offset[1].y = gcoords2d[0].y - scoords2d[0].y;
+
+                aoffset[0].x = fabsf(gcoords2d[0].x - scoords2d[0].x);
+                aoffset[1].x = fabsf(gcoords2d[0].x - scoords2d[0].x);
+                aoffset[0].y = fabsf(gcoords2d[0].y - scoords2d[0].y);
+                aoffset[1].y = fabsf(gcoords2d[0].y - scoords2d[0].y);
 
                 ntr = in->getN(2);
                 for(size_t i=1; i< ntr; i++)
@@ -135,6 +141,10 @@ int main(int argc, char* argv[])
                     if((gcoords2d[0].x - scoords2d[0].x) > offset[1].x) offset[1].x = gcoords2d[0].x - scoords2d[0].x;
                     if((gcoords2d[0].y - scoords2d[0].y) < offset[0].y) offset[0].y = gcoords2d[0].y - scoords2d[0].y;
                     if((gcoords2d[0].y - scoords2d[0].y) > offset[1].y) offset[1].y = gcoords2d[0].y - scoords2d[0].y;
+                    if(fabsf(gcoords2d[0].x - scoords2d[0].x) < aoffset[0].x) aoffset[0].x = fabsf(gcoords2d[0].x - scoords2d[0].x);
+                    if(fabsf(gcoords2d[0].x - scoords2d[0].x) > aoffset[1].x) aoffset[1].x = fabsf(gcoords2d[0].x - scoords2d[0].x);
+                    if(fabsf(gcoords2d[0].y - scoords2d[0].y) < aoffset[0].y) aoffset[0].y = fabsf(gcoords2d[0].y - scoords2d[0].y);
+                    if(fabsf(gcoords2d[0].y - scoords2d[0].y) > aoffset[1].y) aoffset[1].y = fabsf(gcoords2d[0].y - scoords2d[0].y);
 
                 }
                 std::cerr << std::endl;
@@ -150,6 +160,8 @@ int main(int argc, char* argv[])
 
                 std::cerr <<"offsetx:                 " << offset[0].x << "                        " << offset[1].x << std::endl;
                 std::cerr <<"offsetz:                 " << offset[0].y << "                        " << offset[1].y << std::endl;
+                std::cerr <<"Aoffsetx:                 " << aoffset[0].x << "                        " << aoffset[1].x << std::endl;
+                std::cerr <<"Aoffsetz:                 " << aoffset[0].y << "                        " << aoffset[1].y << std::endl;
                 std::cerr <<"*******************************************************************************" << std::endl;
                 break;
             case DATA3D:
@@ -171,12 +183,19 @@ int main(int argc, char* argv[])
                 s[1].z = scoords3d[0].z;
                 g[0].z = gcoords3d[0].z;
                 g[1].z = gcoords3d[0].z;
-                offset[0].x = 0;
-                offset[1].x = 0;
-                offset[0].y = 0;
-                offset[1].y = 0;
-                offset[0].z = 0;
-                offset[1].z = 0;
+                offset[0].x = gcoords3d[0].x - scoords3d[0].x;
+                offset[1].x = gcoords3d[0].x - scoords3d[0].x;
+                offset[0].y = gcoords3d[0].y - scoords3d[0].y;
+                offset[1].y = gcoords3d[0].y - scoords3d[0].y;
+                offset[0].z = gcoords3d[0].z - scoords3d[0].z;
+                offset[1].z = gcoords3d[0].z - scoords3d[0].z;
+
+                aoffset[0].x = fabsf(gcoords3d[0].x - scoords3d[0].x);
+                aoffset[1].x = fabsf(gcoords3d[0].x - scoords3d[0].x);
+                aoffset[0].y = fabsf(gcoords3d[0].y - scoords3d[0].y);
+                aoffset[1].y = fabsf(gcoords3d[0].y - scoords3d[0].y);
+                aoffset[0].z = fabsf(gcoords3d[0].z - scoords3d[0].z);
+                aoffset[1].z = fabsf(gcoords3d[0].z - scoords3d[0].z);
 
                 ntr = in->getN(2);
                 for(size_t i=1; i< ntr; i++)
@@ -201,6 +220,12 @@ int main(int argc, char* argv[])
                     if((gcoords3d[0].y - scoords3d[0].y) > offset[1].y) offset[1].y = gcoords3d[0].y - scoords3d[0].y;
                     if((gcoords3d[0].z - scoords3d[0].z) < offset[0].z) offset[0].z = gcoords3d[0].z - scoords3d[0].z;
                     if((gcoords3d[0].z - scoords3d[0].z) > offset[1].z) offset[1].z = gcoords3d[0].z - scoords3d[0].z;
+                    if(fabsf(gcoords3d[0].x - scoords3d[0].x) < aoffset[0].x) aoffset[0].x = fabsf(gcoords3d[0].x - scoords3d[0].x);
+                    if(fabsf(gcoords3d[0].x - scoords3d[0].x) > aoffset[1].x) aoffset[1].x = fabsf(gcoords3d[0].x - scoords3d[0].x);
+                    if(fabsf(gcoords3d[0].y - scoords3d[0].y) < aoffset[0].y) aoffset[0].y = fabsf(gcoords3d[0].y - scoords3d[0].y);
+                    if(fabsf(gcoords3d[0].y - scoords3d[0].y) > aoffset[1].y) aoffset[1].y = fabsf(gcoords3d[0].y - scoords3d[0].y);
+                    if(fabsf(gcoords3d[0].z - scoords3d[0].z) < aoffset[0].z) aoffset[0].z = fabsf(gcoords3d[0].z - scoords3d[0].z);
+                    if(fabsf(gcoords3d[0].z - scoords3d[0].z) > aoffset[1].z) aoffset[1].z = fabsf(gcoords3d[0].z - scoords3d[0].z);
 
                 }
                 std::cerr << std::endl;
@@ -219,6 +244,10 @@ int main(int argc, char* argv[])
                 std::cerr <<"offsetx:                 " << offset[0].x << "                        " << offset[1].x << std::endl;
                 std::cerr <<"offsety:                 " << offset[0].y << "                        " << offset[1].y << std::endl;
                 std::cerr <<"offsetz:                 " << offset[0].z << "                        " << offset[1].z << std::endl;
+
+                std::cerr <<"Aoffsetx:                 " << aoffset[0].x << "                        " << aoffset[1].x << std::endl;
+                std::cerr <<"Aoffsety:                 " << aoffset[0].y << "                        " << aoffset[1].y << std::endl;
+                std::cerr <<"Aoffsetz:                 " << aoffset[0].z << "                        " << aoffset[1].z << std::endl;
                 std::cerr <<"*******************************************************************************" << std::endl;
                 break;
             default:
