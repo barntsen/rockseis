@@ -178,6 +178,18 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 			gmap[i].y  = -1;  // indey is off bounds
 		}
 	}
+
+   // Issue a warning if all receivers are out of bounds
+    bool s_inbound = false;
+    bool g_inbound = false;
+    
+    for (size_t i =0; i < n; i++) 
+    {
+        if ((smap[i].x >= 0)  && (smap[i].y >= 0)) s_inbound = true;
+        if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)) g_inbound = true;
+    }
+    if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+    if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
 }
 
 
@@ -287,7 +299,17 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 			gmap[i].z  = -1;  // indez is off bounds
 		}
 	}
-
+    // Issue a warning if all receivers are out of bounds
+    bool s_inbound = false;
+    bool g_inbound = false;
+    
+    for (size_t i =0; i < n; i++) 
+    {
+        if ((smap[i].x >= 0)  && (smap[i].y >= 0)  && (smap[i].z >= 0)) s_inbound = true;
+        if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)  && (gmap[i].z >= 0)) g_inbound = true;
+    }
+    if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+    if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
 }
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
