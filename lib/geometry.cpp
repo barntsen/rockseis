@@ -142,7 +142,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 	// Compute index smap
 	int pos;
 	for (size_t i = 0; i < n ; i++){
-		pos =  (int) round(scoords[i].x - ox)/dx;
+		pos =  (int) round((scoords[i].x - ox)/dx);
 		if(pos >=0 && pos < nx)
 		{
 			smap[i].x  = pos; // index is within bounds
@@ -150,7 +150,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		{
 			smap[i].x  = -1;  // index is off bounds
 		}
-		pos =  (int) round(scoords[i].y - oy)/dy;
+		pos =  (int) round((scoords[i].y - oy)/dy);
 		if(pos >=0 && pos < ny)
 		{
 			smap[i].y  = pos; // indey is within bounds
@@ -161,7 +161,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 	}
 	// Compute index gmap
 	for (size_t i = 0; i < n ; i++){
-		pos =  (int) round(gcoords[i].x - ox)/dx;
+		pos =  (int) round((gcoords[i].x - ox)/dx);
 		if(pos >=0 && pos < nx)
 		{
 			gmap[i].x  = pos; // index is within bounds
@@ -169,7 +169,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		{
 			gmap[i].x  = -1;  // index is off bounds
 		}
-		pos =  (int) round(gcoords[i].y - oy)/dy;
+		pos =  (int) round((gcoords[i].y - oy)/dy);
 		if(pos >=0 && pos < ny)
 		{
 			gmap[i].y  = pos; // indey is within bounds
@@ -248,7 +248,7 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 	// Compute index map
 	int pos;
 	for (size_t i = 0; i < n ; i++){
-		pos =  (int) round(scoords[i].x - ox)/dx;
+		pos =  (int) round((scoords[i].x - ox)/dx);
 		if(pos >=0 && pos < nx)
 		{
 			smap[i].x  = pos; // index is within bounds
@@ -256,7 +256,7 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		{
 			smap[i].x  = -1;  // index is off bounds
 		}
-		pos =  (int) round(scoords[i].y - oy)/dy;
+		pos =  (int) round((scoords[i].y - oy)/dy);
 		if(pos >=0 && pos < ny)
 		{
 			smap[i].y  = pos; // indey is within bounds
@@ -264,7 +264,7 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		{
 			smap[i].y  = -1;  // indey is off bounds
 		}
-		pos =  (int) round(scoords[i].z - oz)/dz;
+		pos =  (int) round((scoords[i].z - oz)/dz);
 		if(pos >=0 && pos < nz)
 		{
 			smap[i].z  = pos; // indez is within bounds
@@ -274,7 +274,7 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		}
 	}
 	for (size_t i = 0; i < n ; i++){
-		pos =  (int) round(gcoords[i].x - ox)/dx;
+		pos =  (int) round((gcoords[i].x - ox)/dx);
 		if(pos >=0 && pos < nx)
 		{
 			gmap[i].x  = pos; // index is within bounds
@@ -282,7 +282,7 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		{
 			gmap[i].x  = -1;  // index is off bounds
 		}
-		pos =  (int) round(gcoords[i].y - oy)/dy;
+		pos =  (int) round((gcoords[i].y - oy)/dy);
 		if(pos >=0 && pos < ny)
 		{
 			gmap[i].y  = pos; // indey is within bounds
@@ -290,7 +290,7 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		{
 			gmap[i].y  = -1;  // indey is off bounds
 		}
-		pos =  (int) round(gcoords[i].z - oz)/dz;
+		pos =  (int) round((gcoords[i].z - oz)/dz);
 		if(pos >=0 && pos < nz)
 		{
 			gmap[i].z  = pos; // indez is within bounds
