@@ -303,13 +303,19 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
     bool s_inbound = false;
     bool g_inbound = false;
     
-    for (size_t i =0; i < n; i++) 
+    for (size_t i = 0; i < n; i++) 
     {
         if ((smap[i].x >= 0)  && (smap[i].y >= 0)  && (smap[i].z >= 0)) s_inbound = true;
         if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)  && (gmap[i].z >= 0)) g_inbound = true;
     }
     if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
     if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+    std::cerr << "sxmap: " << smap[0].x << std::endl; 
+    std::cerr << "symap: " << smap[0].y << std::endl; 
+    std::cerr << "szmap: " << smap[0].z << std::endl; 
+    std::cerr << "gxmap: " << gmap[0].x << std::endl; 
+    std::cerr << "gymap: " << gmap[0].y << std::endl; 
+    std::cerr << "gzmap: " << gmap[0].z << std::endl; 
 }
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
