@@ -220,8 +220,6 @@ int main(int argc, char** argv) {
         /* Slave */
         std::shared_ptr<rockseis::Data3D<float>> Shotgeom;
         std::shared_ptr<rockseis::ModellingAcoustic3D<float>> modelling;
-        rockseis::Point3D<float> *scoords;
-        float xs,ys,zs; // Source coordinates
         while(1) {
             workModeling_t work = mpi.receiveWork();
 
@@ -240,18 +238,11 @@ int main(int argc, char** argv) {
                 Shotgeom = Sort->get3DGather(work.id);
                 size_t ntr = Shotgeom->getNtrace();
                 lmodel = gmodel->getLocal(Shotgeom, apertx, aperty, SMAP);
-                scoords = (Shotgeom->getGeom())->getScoords();
-                xs = scoords[0].x;
-                ys = scoords[0].y;
-                zs = scoords[0].z;
 
-                // Read wavelet data, set shot coordinates and make a map
+                // Read wavelet data, set shot and receiver coordinates and make a map
                 source->read();
-                scoords = (source->getGeom())->getScoords();
-                scoords[0].x = xs;
-                scoords[0].y = ys;
-                scoords[0].z = zs;
-                source->makeMap(lmodel->getGeom());
+                source->copyCoords(Shotgeom);
+                source->makeMap(lmodel->getGeom(), SMAP);
 
                 modelling = std::make_shared<rockseis::ModellingAcoustic3D<float>>(lmodel, source, order, snapinc);
 

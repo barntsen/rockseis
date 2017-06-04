@@ -271,7 +271,7 @@ bool Data2D<T>::copyCoords(std::shared_ptr<Data2D<T>> Data)
     size_t ntr1 = this->getNtrace();
     size_t ntr2 = Data->getNtrace();
 
-    if(ntr1 == ntr2)
+    if(ntr1 <= ntr2)
     {
     // Copy geometry
         size_t i;
@@ -650,7 +650,7 @@ bool Data3D<T>::copyCoords(std::shared_ptr<Data3D<T>> Data)
     size_t ntr1 = this->getNtrace();
     size_t ntr2 = Data->getNtrace();
 
-    if(ntr1 == ntr2)
+    if(ntr1 <= ntr2)
     {
     // Copy geometry
         size_t i;

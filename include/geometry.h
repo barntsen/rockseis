@@ -62,6 +62,7 @@ public:
     /** Creates integer map from data coordinates and model geometry.
      * */
     void makeMap(std::shared_ptr<Geometry<T>> _geom); 
+    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map); 
 
     // Get functions
     rockseis::Point2D<T> *getScoords() { return scoords; } ///< Get scoords
@@ -88,6 +89,7 @@ public:
     /** Creates integer map from data coordinates and model geometry.
      * */
     void makeMap(std::shared_ptr<Geometry<T>> _geom);
+    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map);
 
     // Get functions
     rockseis::Point3D<T> *getScoords() { return scoords; } ///< Get scoords

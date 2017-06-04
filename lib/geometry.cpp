@@ -192,6 +192,79 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
     if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
 }
 
+// create map
+template<typename T>
+void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
+	size_t n = this->getN(1);  //Get number of traces 
+	// Get regular model parameters
+	int nx = _geom->getN(1);
+	int ny = _geom->getN(3);
+	T dx = _geom->getD(1);
+	T dy = _geom->getD(3);
+    T ox = _geom->getO(1);
+    T oy = _geom->getO(3);
+
+    int pos;
+    if(map == SMAP)
+    {
+        // Compute index smap
+        for (size_t i = 0; i < n ; i++){
+            pos =  (int) round((scoords[i].x - ox)/dx);
+            if(pos >=0 && pos < nx)
+            {
+                smap[i].x  = pos; // index is within bounds
+            }else
+            {
+                smap[i].x  = -1;  // index is off bounds
+            }
+            pos =  (int) round((scoords[i].y - oy)/dy);
+            if(pos >=0 && pos < ny)
+            {
+                smap[i].y  = pos; // indey is within bounds
+            }else
+            {
+                smap[i].y  = -1;  // indey is off bounds
+            }
+        }
+        // Issue a warning if all coordinates are out of bounds
+        bool s_inbound = false;
+        for (size_t i =0; i < n; i++) 
+        {
+            if ((smap[i].x >= 0)  && (smap[i].y >= 0)) s_inbound = true;
+        }
+        if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+    }else{
+        // Compute index gmap
+        for (size_t i = 0; i < n ; i++){
+            pos =  (int) round((gcoords[i].x - ox)/dx);
+            if(pos >=0 && pos < nx)
+            {
+                gmap[i].x  = pos; // index is within bounds
+            }else
+            {
+                gmap[i].x  = -1;  // index is off bounds
+            }
+            pos =  (int) round((gcoords[i].y - oy)/dy);
+            if(pos >=0 && pos < ny)
+            {
+                gmap[i].y  = pos; // indey is within bounds
+            }else
+            {
+                gmap[i].y  = -1;  // indey is off bounds
+            }
+        }
+        // Issue a warning if all coordinates are out of bounds
+        bool g_inbound = false;
+        for (size_t i =0; i < n; i++) 
+        {
+            if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)) g_inbound = true;
+        }
+        if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+    }
+
+}
+
+
 
 /// =============== 3D DATA GEOMETRY CLASS =============== //
 
@@ -310,13 +383,99 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
     }
     if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
     if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
-    std::cerr << "sxmap: " << smap[0].x << std::endl; 
-    std::cerr << "symap: " << smap[0].y << std::endl; 
-    std::cerr << "szmap: " << smap[0].z << std::endl; 
-    std::cerr << "gxmap: " << gmap[0].x << std::endl; 
-    std::cerr << "gymap: " << gmap[0].y << std::endl; 
-    std::cerr << "gzmap: " << gmap[0].z << std::endl; 
 }
+
+// create map
+template<typename T>
+void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
+    size_t n = this->getN(1);  //Get number of traces 
+    // Get regular model parameters
+    int nx = _geom->getN(1);
+    int ny = _geom->getN(2);
+    int nz = _geom->getN(3);
+    T dx = _geom->getD(1);
+    T dy = _geom->getD(2);
+    T dz = _geom->getD(3);
+    T ox = _geom->getO(1);
+    T oy = _geom->getO(2);
+    T oz = _geom->getO(3);
+    // Compute index map
+    int pos;
+    if(map == SMAP){
+        for (size_t i = 0; i < n ; i++){
+            pos =  (int) round((scoords[i].x - ox)/dx);
+            if(pos >=0 && pos < nx)
+            {
+                smap[i].x  = pos; // index is within bounds
+            }else
+            {
+                smap[i].x  = -1;  // index is off bounds
+            }
+            pos =  (int) round((scoords[i].y - oy)/dy);
+            if(pos >=0 && pos < ny)
+            {
+                smap[i].y  = pos; // indey is within bounds
+            }else
+            {
+                smap[i].y  = -1;  // indey is off bounds
+            }
+            pos =  (int) round((scoords[i].z - oz)/dz);
+            if(pos >=0 && pos < nz)
+            {
+                smap[i].z  = pos; // indez is within bounds
+            }else
+            {
+                smap[i].z  = -1;  // indez is off bounds
+            }
+        }
+
+        // Issue a warning if all coordinates are out of bounds
+        bool s_inbound = false;
+
+        for (size_t i = 0; i < n; i++) 
+        {
+            if ((smap[i].x >= 0)  && (smap[i].y >= 0)  && (smap[i].z >= 0)) s_inbound = true;
+        }
+        if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+    }else{
+        for (size_t i = 0; i < n ; i++){
+            pos =  (int) round((gcoords[i].x - ox)/dx);
+            if(pos >=0 && pos < nx)
+            {
+                gmap[i].x  = pos; // index is within bounds
+            }else
+            {
+                gmap[i].x  = -1;  // index is off bounds
+            }
+            pos =  (int) round((gcoords[i].y - oy)/dy);
+            if(pos >=0 && pos < ny)
+            {
+                gmap[i].y  = pos; // indey is within bounds
+            }else
+            {
+                gmap[i].y  = -1;  // indey is off bounds
+            }
+            pos =  (int) round((gcoords[i].z - oz)/dz);
+            if(pos >=0 && pos < nz)
+            {
+                gmap[i].z  = pos; // indez is within bounds
+            }else
+            {
+                gmap[i].z  = -1;  // indez is off bounds
+            }
+        }
+
+        // Issue a warning if all coordinates are out of bounds
+        bool g_inbound = false;
+
+        for (size_t i = 0; i < n; i++) 
+        {
+            if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)  && (gmap[i].z >= 0)) g_inbound = true;
+        }
+        if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+    }
+}
+
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Geometry<float>;

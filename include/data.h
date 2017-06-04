@@ -77,7 +77,8 @@ public:
     // Make map function
     /** Makes an integer map of the data coordinates over a given model geometry
      * */
-    void makeMap(std::shared_ptr<Geometry<T>> _geom) { geometry->makeMap(_geom); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
 
     // File input/output
     /** Read and write data files */
@@ -113,7 +114,8 @@ public:
     // Make map function
     /** Makes an integer map of the data coordinates over a given model geometry
      * */
-    void makeMap(std::shared_ptr<Geometry<T>> _geom) { geometry->makeMap(_geom); }  
+    void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); }  
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
 
     // File input/output
     /** Read and write data files */

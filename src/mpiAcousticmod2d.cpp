@@ -199,8 +199,6 @@ int main(int argc, char** argv) {
         /* Slave */
         std::shared_ptr<rockseis::Data2D<float>> Shotgeom;
         std::shared_ptr<rockseis::ModellingAcoustic2D<float>> modelling;
-        rockseis::Point2D<float> *scoords;
-        float xs,zs; // Source coordinates
         while(1) {
             workModeling_t work = mpi.receiveWork();
 
@@ -219,16 +217,11 @@ int main(int argc, char** argv) {
                 Shotgeom = Sort->get2DGather(work.id);
                 size_t ntr = Shotgeom->getNtrace();
                 lmodel = gmodel->getLocal(Shotgeom, apertx, SMAP);
-                scoords = (Shotgeom->getGeom())->getScoords();
-                xs = scoords[0].x;
-                zs = scoords[0].y;
 
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();
-                scoords = (source->getGeom())->getScoords();
-                scoords[0].x = xs;
-                scoords[0].y = zs;
-                source->makeMap(lmodel->getGeom());
+                source->copyCoords(Shotgeom);
+                source->makeMap(lmodel->getGeom(), SMAP);
 
                 modelling = std::make_shared<rockseis::ModellingAcoustic2D<float>>(lmodel, source, order, snapinc);
 
