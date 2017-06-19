@@ -143,16 +143,22 @@ Rtm<T>::~Rtm() {
 
 template<typename T>
 RtmAcoustic2D<T>::RtmAcoustic2D(){
+    sourceset = false;
+    dataPset = false;
+    modelset = false;
+    pimageset = false;
 }
 
 template<typename T>
-RtmAcoustic2D<T>::RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataP, int order, int snapinc):Rtm<T>(order, snapinc){
+RtmAcoustic2D<T>::RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std::shared_ptr<Image2D<T>> _pimage, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataP, int order, int snapinc):Rtm<T>(order, snapinc){
     source = _source;
     dataP = _dataP;
     model = _model;
+    pimage = _pimage;
     sourceset = true;
     dataPset = true;
     modelset = true;
+    pimageset = true;
 }
 
 template<typename T>
@@ -208,7 +214,6 @@ int RtmAcoustic2D<T>::run(){
     waves  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot);
 
     // Create image
-    std::shared_ptr<Image2D<T>> pimage (new Image2D<T>(this->getPimagefile(), model, 1, 1));
     pimage->allocateImage();
 
     Psnap->openSnap(this->getSnapfile(), 'r');
@@ -304,7 +309,6 @@ int RtmAcoustic2D<T>::run_edge(){
     std::shared_ptr<WavesAcoustic2D<T>> waves_bw (new WavesAcoustic2D<T>(model, nt, dt, ot));
 
     // Create image
-    std::shared_ptr<Image2D<T>> pimage (new Image2D<T>(this->getPimagefile(), model, 1, 1));
     pimage->allocateImage();
 
     Psnap.reset();
@@ -380,7 +384,6 @@ int RtmAcoustic2D<T>::run_optimal(){
      optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
 
      // Create image
-     std::shared_ptr<Image2D<T>> pimage (new Image2D<T>(this->getPimagefile(), model, 1, 1));
      pimage->allocateImage();
 
 
@@ -480,10 +483,253 @@ RtmAcoustic2D<T>::~RtmAcoustic2D() {
     // Nothing here
 }
 
+// =============== ACOUSTIC 3D RTM CLASS =============== //
+
+template<typename T>
+RtmAcoustic3D<T>::RtmAcoustic3D(){
+    sourceset = false;
+    dataPset = false;
+    modelset = false;
+    pimageset = false;
+}
+
+template<typename T>
+RtmAcoustic3D<T>::RtmAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> _model, std::shared_ptr<Image3D<T>> _pimage, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _dataP, int order, int snapinc):Rtm<T>(order, snapinc){
+    source = _source;
+    dataP = _dataP;
+    model = _model;
+    pimage = _pimage;
+    sourceset = true;
+    dataPset = true;
+    modelset = true;
+    pimageset = true;
+}
+
+template<typename T>
+int RtmAcoustic3D<T>::run(){
+     int result = RTM_ERR;
+     int nt;
+     float dt;
+	 float ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesAcoustic3D<T>> waves (new WavesAcoustic3D<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
+
+     // Create snapshots
+     std::shared_ptr<Snapshot3D<T>> Psnap;
+     Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+     Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
+     Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+
+    // Loop over forward time
+    for(int it=0; it < nt; it++)
+    {
+    	// Time stepping
+    	waves->forwardstepAcceleration(model, der);
+    	waves->forwardstepStress(model, der);
+    
+    	// Inserting source 
+    	waves->insertSource(model, source, SMAP, it);
+
+    	//Writting out results to snapshot file
+        Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+        Psnap->writeSnap(it);
+
+    	// Roll the pointers P1 and P2
+    	waves->roll();
+
+        // Output progress to logfile
+        this->writeProgress(it, 2*nt-1, 20, 48);
+    }//End of forward loop
+    
+    
+    //Close snapshot file
+    Psnap->closeSnap();
+
+    // Reset waves
+    waves.reset();
+    waves  = std::make_shared<WavesAcoustic3D<T>>(model, nt, dt, ot);
+
+    // Create image
+    pimage->allocateImage();
+
+    Psnap->openSnap(this->getSnapfile(), 'r');
+    Psnap->allocSnap(0);
+
+    // Loop over reverse time
+    for(int it=0; it < nt; it++)
+    {
+    	// Time stepping
+    	waves->forwardstepAcceleration(model, der);
+    	waves->forwardstepStress(model, der);
+
+    	// Inserting source 
+    	waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
+
+        //Get forward snapshot
+        Psnap->readSnap(nt - 1 - it);
+
+        // Do Crosscorrelation
+        if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
+            T *wr = waves->getP1();
+            pimage->crossCorr(Psnap->getData(0), 0, wr, waves->getLpml());
+        }
+
+        // Roll the pointers P1 and P2
+    	waves->roll();
+
+        // Output progress to logfile
+        this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
+    }
+    
+    // Write out image file
+    pimage->write();
+
+	//Remove snapshot file
+	Psnap->removeSnap();
+
+    result=RTM_OK;
+    return result;
+}
+
+template<typename T>
+int RtmAcoustic3D<T>::run_optimal(){
+     int result = RTM_ERR;
+     int nt;
+     float dt;
+	 float ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesAcoustic3D<T>> waves_fw (new WavesAcoustic3D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesAcoustic3D<T>> waves_bw (new WavesAcoustic3D<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), waves_fw->getNy_pml(), waves_fw->getNz_pml(), waves_fw->getDx(), waves_fw->getDy(), waves_fw->getDz(), this->getOrder()));
+     std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
+     revolve_action whatodo;
+     int oldcapo,capo;
+     capo = 0;
+
+     // Create checkpoint file
+     optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
+
+     // Create image
+     pimage->allocateImage();
+
+
+    // Loop over forward time
+    do
+    {
+        oldcapo=optimal->getCapo();
+        whatodo = optimal->revolve();
+        capo = optimal->getCapo();
+        if (whatodo == advance)
+        {
+            for(int it=oldcapo; it < capo; it++)
+            {
+                // Time stepping
+                waves_fw->forwardstepAcceleration(model, der);
+                waves_fw->forwardstepStress(model, der);
+
+                // Inserting source 
+                waves_fw->insertSource(model, source, SMAP, it);
+
+                // Roll the pointers P1 and P2
+                waves_fw->roll();
+            }
+        }
+        if (whatodo == firsturn)
+        {
+            // Time stepping
+            waves_fw->forwardstepAcceleration(model, der);
+            waves_fw->forwardstepStress(model, der);
+
+            // Inserting source 
+            waves_fw->insertSource(model, source, SMAP, capo);
+
+            // Inserting data
+            waves_bw->insertSource(model, dataP, GMAP, capo);
+
+            /* Do Crosscorrelation */
+            T *ws = waves_fw->getP1();
+            T *wr = waves_bw->getP1();
+            pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
+
+            // Roll the pointers P1 and P2
+            waves_fw->roll();
+            waves_bw->roll();
+
+            //Close checkpoint file for w and reopen for rw
+            optimal->closeCheck();
+            optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+        }
+        if (whatodo == youturn)
+        {
+            // Time stepping
+            waves_bw->forwardstepAcceleration(model, der);
+            waves_bw->forwardstepStress(model, der);
+
+            // Inserting data
+            waves_bw->insertSource(model, dataP, GMAP, capo);
+
+            /* Do Crosscorrelation */
+            T *ws = waves_fw->getP1();
+            T *wr = waves_bw->getP1();
+            pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
+
+            // Roll the pointers P1 and P2
+            waves_bw->roll();
+        }
+        if (whatodo == takeshot)
+        {
+            optimal->writeCheck(waves_fw);
+        }
+        if (whatodo == restore)
+        {
+            optimal->readCheck(waves_fw);
+        }
+
+        if(whatodo == error){
+            std::cerr << "Error!" << std::endl;
+        }
+
+        // Output progress to logfile
+        //this->writeProgress(capo, nt, 20, 48);
+    } while((whatodo != terminate) && (whatodo != error));
+
+
+    // Write out image file
+    pimage->write();
+
+	//Remove snapshot file
+	optimal->removeCheck();
+
+    result=RTM_OK;
+    return result;
+}
+
+template<typename T>
+RtmAcoustic3D<T>::~RtmAcoustic3D() {
+    // Nothing here
+}
+
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Rtm<float>;
 template class Rtm<double>;
 template class RtmAcoustic2D<float>;
 template class RtmAcoustic2D<double>;
+template class RtmAcoustic3D<float>;
+template class RtmAcoustic3D<double>;
 
 }

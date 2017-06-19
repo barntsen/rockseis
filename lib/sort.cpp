@@ -28,34 +28,23 @@ int sort_sr_0(void const *a, void const *b)
 	pa = (position_t *) a;
 	pb = (position_t *) b;
 
+	if( pa->z < pb->z) return -1;
+	if( pa->z > pb->z) return 1;
+
+	if( pa->y < pb->y) return -1;
+	if( pa->y > pb->y) return 1;
+
 	if( pa->x < pb->x) return -1;
 	if( pa->x > pb->x) return 1;
 
-	if( pa->y < pb->y) return -1;
-	if( pa->y > pb->y) return 1;
+	if( pa->offz < pb->offz) return -1;
+	if( pa->offz > pb->offz) return 1;
 
-	if( pa->z < pb->z) return -1;
-	if( pa->z > pb->z) return 1;
+	if( pa->offy < pb->offy) return -1;
+	if( pa->offy > pb->offy) return 1;
 
-	return 0;
-}
-
-//Sort with distance from origin as primary key and y as secondary key
-int sort_sr_1(void const *a, void const *b)
-{
-	position_t *pa, *pb;
-
-	pa = (position_t *) a;
-	pb = (position_t *) b;
-
-	if((pa->x*pa->x) + (pa->y*pa->y) < (pb->x*pb->x) + (pb->y*pb->y)) return -1;
-	if((pa->x*pa->x) + (pa->y*pa->y) > (pb->x*pb->x) + (pb->y*pb->y)) return 1;
-
-	if( pa->y < pb->y) return -1;
-	if( pa->y > pb->y) return 1;
-
-	if( pa->z < pb->z) return -1;
-	if( pa->z > pb->z) return 1;
+	if( pa->offx < pb->offx) return -1;
+	if( pa->offx > pb->offx) return 1;
 
 	return 0;
 }
@@ -98,32 +87,52 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                     case SOURCE:
                         if(datatype == DATA3D) {
                             positions[i2].x = fbuffer[0];
+                            positions[i2].offx = fbuffer[3] - fbuffer[0];
                             positions[i2].y = fbuffer[1];
+                            positions[i2].offy = fbuffer[4] - fbuffer[1];
                             positions[i2].z = fbuffer[2];
+                            positions[i2].offz = fbuffer[5] - fbuffer[2];
                         }else{
                             positions[i2].x = fbuffer[0];
+                            positions[i2].offx = fbuffer[2] - fbuffer[0];
                             positions[i2].y = 0.0;
+                            positions[i2].offy = 0.0;
                             positions[i2].z = fbuffer[1];
+                            positions[i2].offz = fbuffer[3] - fbuffer[1];
                         }
                         break;
                     case RECEIVER:
                         if(datatype == DATA3D) {
                             positions[i2].x = fbuffer[3];
+                            positions[i2].offx = fbuffer[0] - fbuffer[3];
                             positions[i2].y = fbuffer[4];
+                            positions[i2].offy = fbuffer[1] - fbuffer[4];
                             positions[i2].z = fbuffer[5];
+                            positions[i2].offz = fbuffer[2] - fbuffer[5];
                         }else{
                             positions[i2].x = fbuffer[2];
+                            positions[i2].offx = fbuffer[0] - fbuffer[2];
                             positions[i2].y = 0.0;
+                            positions[i2].offy = 0.0;
                             positions[i2].z = fbuffer[3];
+                            positions[i2].offz = fbuffer[1] - fbuffer[3];
                         }
                         break;
                     case CMP:
                         if(datatype == DATA3D) {
                             positions[i2].x = 0.5*(fbuffer[0]+fbuffer[3]);
+                            positions[i2].offx = (fbuffer[3]-fbuffer[0]);
                             positions[i2].y = 0.5*(fbuffer[1]+fbuffer[4]);
+                            positions[i2].offy = (fbuffer[4]-fbuffer[1]);
+                            positions[i2].z = 0.0;
+                            positions[i2].offz = 0.0;
                         }else{
                             positions[i2].x = 0.5*(fbuffer[0]+fbuffer[2]);
+                            positions[i2].offx = (fbuffer[2]-fbuffer[1]);
                             positions[i2].y = 0.0;
+                            positions[i2].offy = 0.0;
+                            positions[i2].z = 0.0;
+                            positions[i2].offz = 0.0;
                         }
                         // Snapping coordinates to bins
 						ftmp=(positions[i2].x)/dx; // Compute index in irregular coordinate
@@ -142,32 +151,52 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                     case SOURCE:
                         if(datatype == DATA3D) {
                             positions[i2].x = dbuffer[0];
+                            positions[i2].offx = dbuffer[3] - dbuffer[0];
                             positions[i2].y = dbuffer[1];
+                            positions[i2].offy = dbuffer[4] - dbuffer[1];
                             positions[i2].z = dbuffer[2];
+                            positions[i2].offz = dbuffer[5] - dbuffer[2];
                         }else{
                             positions[i2].x = dbuffer[0];
+                            positions[i2].offx = dbuffer[2] - dbuffer[0];
                             positions[i2].y = 0.0;
+                            positions[i2].offy = 0.0;
                             positions[i2].z = dbuffer[1];
+                            positions[i2].offz = dbuffer[3] - dbuffer[1];
                         }
                         break;
                     case RECEIVER:
                         if(datatype == DATA3D) {
                             positions[i2].x = dbuffer[3];
+                            positions[i2].offx = dbuffer[0] - dbuffer[3];
                             positions[i2].y = dbuffer[4];
+                            positions[i2].offy = dbuffer[1] - dbuffer[4];
                             positions[i2].z = dbuffer[5];
+                            positions[i2].offz = dbuffer[2] - dbuffer[5];
                         }else{
                             positions[i2].x = dbuffer[2];
+                            positions[i2].offx = dbuffer[0] - dbuffer[2];
                             positions[i2].y = 0.0;
+                            positions[i2].offy = 0.0;
                             positions[i2].z = dbuffer[3];
+                            positions[i2].offz = dbuffer[1] - dbuffer[3];
                         }
                         break;
                     case CMP:
                         if(datatype == DATA3D) {
                             positions[i2].x = 0.5*(dbuffer[0]+dbuffer[3]);
+                            positions[i2].offx = (dbuffer[3]-dbuffer[0]);
                             positions[i2].y = 0.5*(dbuffer[1]+dbuffer[4]);
+                            positions[i2].offy = (dbuffer[4]-dbuffer[1]);
+                            positions[i2].z = 0.0;
+                            positions[i2].offz = 0.0;
                         }else{
                             positions[i2].x = 0.5*(dbuffer[0]+dbuffer[2]);
+                            positions[i2].offx = (dbuffer[2]-dbuffer[1]);
                             positions[i2].y = 0.0;
+                            positions[i2].offy = 0.0;
+                            positions[i2].z = 0.0;
+                            positions[i2].offz = 0.0;
                         }
 						// Snapping coordinates to bins
 						dtmp=(positions[i2].x)/dx; // Compute index in irregular coordinate

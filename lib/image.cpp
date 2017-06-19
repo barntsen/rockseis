@@ -410,6 +410,15 @@ bool Image3D<T>::write()
         Fout->setN(3,nz);
         Fout->setD(3,dz);
         Fout->setO(3,oz);
+        Fout->setN(4,nhx);
+        Fout->setD(4,dx);
+        Fout->setO(4,-dx*(nhx-1)/2);
+        Fout->setN(5,nhy);
+        Fout->setD(5,dy);
+        Fout->setO(5,-dy*(nhy-1)/2);
+        Fout->setN(6,nhz);
+        Fout->setD(6,dz);
+        Fout->setO(6,-dz*(nhz-1)/2);
         Fout->setData_format(sizeof(T));
         Fout->setHeader_format(sizeof(T));
         Fout->setType(REGULAR);

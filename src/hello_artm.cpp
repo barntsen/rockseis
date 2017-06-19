@@ -20,6 +20,7 @@ int main()
 
 	// Parameters
 	int lpml=0;
+    int nhx, nhz;
 	bool fs=0;
 	int order=0;
 	int snapinc=0;
@@ -110,6 +111,20 @@ int main()
         status = 1;
     }
 
+    try {
+        nhx = cfg->lookupInt(scope, "nhx");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+
+    try {
+        nhz = cfg->lookupInt(scope, "nhz");
+    } catch(const config4cpp::ConfigurationException & ex) {
+        std::cerr << ex.c_str() << std::endl;
+        status = 1;
+    }
+
 	// Destroy cfg
 	cfg->destroy();
 
@@ -120,18 +135,16 @@ int main()
 
 	// Create the classes 
 	std::shared_ptr<rockseis::ModelAcoustic2D<float>> model (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
+    std::shared_ptr<rockseis::Image2D<float>> pimage (new rockseis::Image2D<float>(Pimagefile, model, nhx, nhz));
 	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Sourcefile));
 	std::shared_ptr<rockseis::Data2D<float>> data (new rockseis::Data2D<float>(Precordfile));
-	std::shared_ptr<rockseis::RtmAcoustic2D<float>> rtm (new rockseis::RtmAcoustic2D<float>(model, source, data, order, snapinc));
+	std::shared_ptr<rockseis::RtmAcoustic2D<float>> rtm (new rockseis::RtmAcoustic2D<float>(model, pimage, source, data, order, snapinc));
 
     // Setting Snapshot file 
     rtm->setSnapfile(Psnapfile);
 
     rtm->setNcheck(11);
     rtm->setIncore(true);
-
-    //Setting Pimage file
-    rtm->setPimagefile(Pimagefile);
 
    	// Read acoustic model
 	model->readModel();

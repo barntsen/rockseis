@@ -25,8 +25,11 @@ namespace rockseis {
 typedef struct
 {
 	    double x;
+	    double offx;
 	    double y;
+	    double offy;
 	    double z;
+	    double offz;
 	    size_t ind;
 
 } position_t;
