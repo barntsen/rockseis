@@ -124,7 +124,7 @@ int main()
 
  	// Set source2d position
 	rockseis::Point2D<float> *scoords2d = (source2d->getGeom())->getScoords();
-	scoords2d[0].x = 220;
+	scoords2d[0].x = 20;
 	scoords2d[0].y = 10; 
 
 	//Output the wavelet
@@ -160,17 +160,22 @@ int main()
 	}
 
 	// Setup a 2d record
-	std::shared_ptr<rockseis::Data2D<float>> record2d (new rockseis::Data2D<float>(nx, 1, dt, 0.0));
+	std::shared_ptr<rockseis::Data2D<float>> record2d (new rockseis::Data2D<float>(2, 1, dt, 0.0));
 	// Set receiver positions
 	scoords2d = (record2d->getGeom())->getScoords();
 	rockseis::Point2D<float> *gcoords2d = (record2d->getGeom())->getGcoords();
-    for(int i=0; i<nx; i++)
-    {
-        gcoords2d[i].x = i*dx;
-        gcoords2d[i].y = 10; 
-        scoords2d[i].x = 220;
-        scoords2d[i].y = 200;
-    }
+   // for(int i=0; i<1; i++)
+   // {
+        gcoords2d[0].x = 300;
+        gcoords2d[0].y = 400; 
+        scoords2d[0].x = 20;
+        scoords2d[0].y = 10;
+
+        gcoords2d[1].x = 350;
+        gcoords2d[1].y = 10; 
+        scoords2d[1].x = 20;
+        scoords2d[1].y = 10;
+   // }
 	record2d->setFile("Shot2d.rss");
 	status = record2d->write();
 	if(status == FILE_ERR){

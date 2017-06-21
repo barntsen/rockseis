@@ -245,9 +245,6 @@ int RtmAcoustic2D<T>::run(){
         this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
     }
     
-    // Write out image file
-    pimage->write();
-
 	//Remove snapshot file
 	Psnap->removeSnap();
 
@@ -348,9 +345,6 @@ int RtmAcoustic2D<T>::run_edge(){
         this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
     }
     
-    // Write out image file
-    pimage->write();
-
 	//Remove snapshot file
 	Psnap->removeSnap();
 
@@ -467,9 +461,6 @@ int RtmAcoustic2D<T>::run_optimal(){
         //this->writeProgress(capo, nt, 20, 48);
     } while((whatodo != terminate) && (whatodo != error));
 
-
-    // Write out image file
-    pimage->write();
 
 	//Remove snapshot file
 	optimal->removeCheck();
@@ -589,8 +580,6 @@ int RtmAcoustic3D<T>::run(){
         this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
     }
     
-    // Write out image file
-    pimage->write();
 
 	//Remove snapshot file
 	Psnap->removeSnap();
@@ -709,8 +698,6 @@ int RtmAcoustic3D<T>::run_optimal(){
     } while((whatodo != terminate) && (whatodo != error));
 
 
-    // Write out image file
-    pimage->write();
 
 	//Remove snapshot file
 	optimal->removeCheck();

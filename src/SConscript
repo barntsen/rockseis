@@ -77,3 +77,8 @@ mpi.Install('../bin/',mpiElasticmod2d)
 
 mpiElasticmod3d = mpi.Program(prefix + 'mpiElasticmod3d','mpiElasticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
 mpi.Install('../bin/',mpiElasticmod3d)
+
+mpiAcousticrtm2d = mpi.Program(prefix + 'mpiAcousticrtm2d','mpiAcousticrtm2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image'],LIBPATH=['../build', '../config4cpp/lib'])
+mpi.Install('../bin/',mpiAcousticrtm2d)
+
+

@@ -163,7 +163,7 @@ int main()
     rockseis::rs_snapmethod snapmethod = rockseis::FULL;
     //rockseis::rs_snapmethod snapmethod = rockseis::EDGES;
 
-	// Run modelling 
+	// Run migration
     switch(snapmethod){
         case rockseis::FULL:
             rtm->run();
@@ -177,6 +177,10 @@ int main()
         default:
             rockseis::rs_error("Invalid option of snapshot saving."); 
     }
+
+
+    // Write out image file
+    pimage->write();
 
 	return 0;
 }

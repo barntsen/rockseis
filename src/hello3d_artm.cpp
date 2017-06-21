@@ -185,5 +185,8 @@ int main()
             rockseis::rs_error("Invalid option of snapshot saving."); 
     }
 
+    // Write out image file
+    pimage->write();
+
 	return 0;
 }
