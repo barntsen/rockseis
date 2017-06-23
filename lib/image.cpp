@@ -93,7 +93,7 @@ Image2D<T>::Image2D(std::string _imagefile, std::shared_ptr<ModelAcoustic2D<T>> 
     this->setNhx(nhx);
     this->setNhz(nhz);
     imagefile = _imagefile;
-
+    allocated = false;
 }
 
 template<typename T>
@@ -126,6 +126,159 @@ bool Image2D<T>::read()
     }else{
         status = FILE_ERR;	
     }
+    return status;
+}
+
+template<typename T>
+bool Image2D<T>::createEmpty()
+{
+    bool status;
+    if(imagefile.empty()){
+	    rs_error("Image2D::writeImage: No file assigned. ");
+    }
+
+    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
+    Fout->output(imagefile.c_str());
+
+	long int nx, nz;
+	int nhx, nhz;
+	T dx,dz; 
+	T ox,oz;
+	nx = this->getNx();
+	nz = this->getNz();
+	nhx = this->getNhx();
+	nhz = this->getNhz();
+	dx = this->getDx();
+	dz = this->getDz();
+	ox = this->getOx();
+	oz = this->getOz();
+
+
+
+    if ( Fout->is_open())
+    {
+        // Create geometry
+        Fout->setN(1,nx);
+        Fout->setD(1,dx);
+        Fout->setO(1,ox);
+        Fout->setN(3,nz);
+        Fout->setD(3,dz);
+        Fout->setO(3,oz);
+        Fout->setN(4,nhx);
+        Fout->setD(4,dx);
+        Fout->setO(4,-dx*(nhx-1)/2);
+        Fout->setN(6,nhz);
+        Fout->setD(6,dz);
+        Fout->setO(6,-dz*(nhz-1)/2);
+        Fout->setData_format(sizeof(T));
+        Fout->setHeader_format(sizeof(T));
+        Fout->setType(REGULAR);
+        Fout->writeHeader();
+        Fout->seekp(Fout->getStartofdata());
+        T val = 0.0;
+        // Write data
+        for (long int i=0; i < nx*nz*nhx*nhz; i++)
+        {
+            Fout->write(&val, 1);
+        }
+        if(Fout->getFail()) rs_error("Image2D::createEmpty: Failed to write data to file");
+        status = FILE_OK;
+    }else{
+        rs_error("Image2D::createEmpty: Error opening file. ");
+        status = FILE_ERR;	
+    }
+    return status;
+}
+
+template<typename T>
+bool Image2D<T>::stackImage(std::string infile)
+{
+    bool status;
+    if(imagefile.empty()){
+	    rs_error("Image2D::stackImage: No file assigned. ");
+    }
+
+    if(infile.empty()){
+	    rs_error("Image2D::stackImage: Input filename is empty. ");
+    }
+
+    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
+    Fout->append(imagefile.c_str());
+    if ( !Fout->is_open()) rs_error("Image2D::stackImage: Failed to open output image.");
+
+    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
+    Fin->input(infile.c_str());
+    if( !Fin->is_open() ) rs_error("Image2D::stackImage: Failed to open input image.");
+
+    long int nxg, nzg;
+    int nhxg, nhzg;
+	T dxg, dzg, oxg, ozg;
+    nxg = this->getNx();
+    nzg = this->getNz();
+    nhxg = this->getNhx();
+    nhzg = this->getNhz();
+    dxg = this->getDx();
+    dzg = this->getDz();
+    oxg = this->getOx();
+    ozg = this->getOz();
+
+    long int nxl, nzl;
+    int nhxl, nhzl;
+	T dxl, dzl, oxl, ozl;
+    nxl = Fin->getN(1);
+    nzl = Fin->getN(3);
+    nhxl = Fin->getN(4);
+    nhzl = Fin->getN(6);
+	dxl = Fin->getD(1);
+	dzl = Fin->getD(3);
+	oxl = Fin->getO(1);
+	ozl = Fin->getO(3);
+
+	if(nhxg != nhxl || nhzg != nhzl || dxg != dxl || dzg != dzl){
+		rs_error("Image2D::stackImage: Images are not compatible. Cannot stack.");
+	}
+
+    T *trcin;
+    trcin = (T *) calloc(nxl, sizeof(T));
+    if(trcin == NULL) rs_error("Image2D::stackImage: Failed to allocate memory for input trace.");
+
+    T *trcout;
+    trcout = (T *) calloc(nxg, sizeof(T));
+    if(trcout == NULL) rs_error("Image2D::stackImage: Failed to allocate memory for input trace.");
+
+	// Stack data
+	int ix, iz, ihx, ihz;
+    int ix_start, iz_start;
+	ix_start = (int) (oxl/dxl - oxg/dxg);
+	iz_start = (int) (ozl/dzl - ozg/dzg);
+	Index Iin(nxl, nzl, nhxl, nhzl);
+	Index Iout(nxg, nzg, nhxl, nhzl);
+	for(ihz=0; ihz<nhzl; ihz++) {
+		for(ihx=0; ihx<nhxl; ihx++) {
+			for(iz=0; iz<nzl; iz++) {
+				if((iz + iz_start) >= 0 && (iz + iz_start) < nzg){
+					// Read traces 
+					Fin->read(trcin, nxl, Iin(0,iz,ihx,ihz)*sizeof(T));
+					Fout->read(trcout, nxg, Iout(0,(iz+iz_start),ihx,ihz)*sizeof(T));
+					if(Fin->getFail()) rs_error("Image2D::stackImage: Failed to read data from file");
+					if(Fout->getFail()) rs_error("Image2D::stackImage: Failed to write data to file");
+					for(ix = 0; ix < nxl; ix++) {
+						if((ix + ix_start) >= 0 && (ix + ix_start) < nxg){
+							trcout[ix + ix_start] += trcin[ix];
+						}
+					}
+					// Write trc 
+					Fout->write(trcout, nxg, Iout(0, (iz+iz_start),ihx,ihz)*sizeof(T));
+					if(Fout->getFail()) rs_error("Image2D::stackImage: Failed to write data to file");
+				}
+			}
+		}
+	}
+	Fin->close();
+	Fout->close();
+	free(trcin);
+	free(trcout);
+	status = FILE_OK;
     return status;
 }
 
@@ -228,7 +381,7 @@ void Image2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 				{
 					for (iz=0; iz<nz; iz++){
 						if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz))
-							imagedata[ki2D(ix,iz,ihx,ihz)] += ws[ks2D(ix+pads, iz+pads)]*wr[kr2D(ix+padr, iz+padr)];
+							imagedata[ki2D(ix,iz,ihx,ihz)] += ws[ks2D(ix-hx+pads, iz-hz+pads)]*wr[kr2D(ix+hx+padr, iz+hz+padr)];
 					}	
 				}
 			}
@@ -329,6 +482,7 @@ Image3D<T>::Image3D(std::string _imagefile, std::shared_ptr<ModelAcoustic3D<T>> 
     this->setNhy(nhy);
     this->setNhz(nhz);
     imagefile = _imagefile;
+    allocated = false;
 }
 
 template<typename T>
@@ -480,7 +634,7 @@ void Image3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 							if( ((iy-hy) >= 0) && ((iy-hy) < ny) && ((iy+hy) >= 0) && ((iy+hy) < ny))
 								for (iz=0; iz<nz; iz++){
 									if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz))
-										imagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += ws[ks3D(ix+pads,iy+pads,iz+pads)]*wr[kr3D(ix+padr,iy+padr,iz+padr)];
+										imagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += ws[ks3D(ix-hx+pads,iy-hy+pads,iz-hz+pads)]*wr[kr3D(ix+hx+padr,iy+hy+padr,iz+hz+padr)];
 								}	
 						}
 				}
@@ -504,6 +658,7 @@ template class Image2D<float>;
 template class Image2D<double>;
 template class Image3D<float>;
 template class Image3D<double>;
+
 }
 
 

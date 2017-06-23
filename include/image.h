@@ -41,6 +41,8 @@ public:
     bool write(); ///< Writes image
     void allocateImage(); /// Allocate memory for image
     void freeImage(); /// Free memory for imagedata
+    bool createEmpty(); ///< Create empty image for stacking
+    bool stackImage(std::string infile); ///< Stack image
     void crossCorr(T *ws, int pads, T* wr, int padr);
 
 private:

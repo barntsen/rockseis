@@ -68,6 +68,7 @@ int main(int argc, char** argv) {
     std::string Precordfile;
     std::shared_ptr<rockseis::Data2D<float>> shot2D;
     std::shared_ptr<rockseis::Data2D<float>> shot2Di;
+    std::shared_ptr<rockseis::Image2D<float>> pimage;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -145,7 +146,15 @@ int main(int argc, char** argv) {
 
 		// Perform work in parallel
 		mpi.performWork();
-	
+
+        // Image
+        pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
+        pimage->createEmpty();
+
+		for(unsigned long int i=0; i<ngathers; i++) {
+            pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+        }
+
 		// Print work queue
 		std::cerr << "Work queue after parallelization" << std::endl;
 		mpi.printWork();
@@ -153,7 +162,6 @@ int main(int argc, char** argv) {
     else {
         /* Slave */
         std::shared_ptr<rockseis::RtmAcoustic2D<float>> rtm;
-        std::shared_ptr<rockseis::Image2D<float>> pimage;
         while(1) {
             workModeling_t work = mpi.receiveWork();
 
