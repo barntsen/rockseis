@@ -136,13 +136,9 @@ int main(int argc, char** argv) {
 		// Create work queue
 		for(unsigned long int i=0; i<ngathers; i++) {
 			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
+			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,{'\0'}});
 			mpi.addWork(work);
 		}
-
-		// Print work queue
-		std::cerr << "Work queue before parallelization" << std::endl;
-		mpi.printWork();
 
 		// Perform work in parallel
 		mpi.performWork();
@@ -154,10 +150,6 @@ int main(int argc, char** argv) {
 		for(unsigned long int i=0; i<ngathers; i++) {
             pimage->stackImage(Pimagefile + "-" + std::to_string(i));
         }
-
-		// Print work queue
-		std::cerr << "Work queue after parallelization" << std::endl;
-		mpi.printWork();
     }
     else {
         /* Slave */

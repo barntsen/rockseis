@@ -190,16 +190,9 @@ int main(int argc, char** argv) {
 			mpi.addWork(work);
 		}
 
-		// Print work queue
-		std::cerr << "Work queue before parallelization" << std::endl;
-		mpi.printWork();
-
 		// Perform work in parallel
 		mpi.performWork();
 	
-		// Print work queue
-		std::cerr << "Work queue after parallelization" << std::endl;
-		mpi.printWork();
     }
     else {
         /* Slave */

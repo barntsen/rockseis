@@ -6,6 +6,8 @@
 #include <mpi.h>
 #include <memory>
 #include <iostream>
+#include <fstream>
+#include "utils.h"
 
 #define WORK_NOT_STARTED 0
 #define WORK_FINISHED 1
@@ -21,6 +23,7 @@ typedef struct {
 	unsigned long id;
 	int status;
 	int MPItag;
+    char pname[MPI_MAX_PROCESSOR_NAME];
 }  workModeling_t;
 
 typedef struct {
@@ -44,6 +47,11 @@ public:
 	// Get functions
 	int getNrank();				///< Get number of processors
 	int getRank();				///< Get rank for current processor
+    char *getName();			///< Get rank for current processor
+    std::string getLogfile() { return logfile; }    ///< Get log file name
+
+	// Set functions
+    void setLogfile(std::string name) { logfile = name; }    ///< Set log file name
 
 	// Send and receive functions
 	virtual void performWork() = 0;
@@ -53,6 +61,8 @@ private:
 	// Variables
 	int nrank;	// Number of ranks
 	int rank;	// Rank for current rank
+    char name[MPI_MAX_PROCESSOR_NAME]; // Processors name
+    std::string logfile; // Logfile
 	
 	// Functions
 	virtual void sendWorkToAll() = 0;	///< Send work to all slaves

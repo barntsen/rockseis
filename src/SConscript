@@ -63,7 +63,7 @@ if(env['FFTW']):
     hello_fftw = env.Program(prefix + 'hello_fftw','hello_fftw.cpp',LIBS=['fftw3'],LIBPATH=['../build', '../../fftw-3.3.6-pl2/fftw-build/lib/'])
     env.Install('../bin/',hello_fftw)
 
-mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel'],LIBPATH=['../build'])
+mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel', 'utils'],LIBPATH=['../build'])
 mpi.Install('../bin/',mpidbg)
 
 mpiAcousticmod2d = mpi.Program(prefix + 'mpiAcousticmod2d','mpiAcousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])

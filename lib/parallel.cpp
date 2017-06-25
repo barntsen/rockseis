@@ -10,6 +10,13 @@ MPI::MPI() {
 	
 	// Getting rank for current processors
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
+	// Getting name for current processors
+    int length;
+    MPI_Get_processor_name(name, &length);
+
+    logfile = "mpiqueue.log";
+
 }
 
 MPI::MPI(int *argc, char ***argv) {
@@ -20,6 +27,12 @@ MPI::MPI(int *argc, char ***argv) {
 
 	// Getting rank for current processors
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
+	// Getting name for current processors
+    int length;
+    MPI_Get_processor_name(name, &length);
+
+    logfile = "mpiqueue.log";
 }
 
 MPI::~MPI() {
@@ -28,6 +41,10 @@ MPI::~MPI() {
 
 int MPI::getNrank() {
 	return nrank;
+}
+
+char *MPI::getName() {
+	return name;
 }
 
 int MPI::getRank() {
@@ -60,13 +77,14 @@ MPImodeling::~MPImodeling() {
 
 void MPImodeling::initTypes() {
 	// Work type
-	int count = 3;
-	int lengths[3] = {1,1,1};
-	MPI_Datatype types[3] = {MPI_UNSIGNED_LONG,MPI_INT,MPI_INT};
-	MPI_Aint offsets[3];
+	int count = 4;
+	int lengths[4] = {1,1,1,MPI_MAX_PROCESSOR_NAME};
+	MPI_Datatype types[4] = {MPI_UNSIGNED_LONG,MPI_INT,MPI_INT,MPI_CHAR};
+	MPI_Aint offsets[4];
 	offsets[0] = offsetof(workModeling_t,id);
 	offsets[1] = offsetof(workModeling_t,status);
 	offsets[2] = offsetof(workModeling_t,MPItag);
+	offsets[3] = offsetof(workModeling_t,pname);
 	MPI_Type_create_struct(count,lengths,offsets,types,&MPIwork);
 	MPI_Type_commit(&MPIwork);
 
@@ -98,18 +116,27 @@ void MPImodeling::addWork(std::shared_ptr<workModeling_t> _work) {
 }
 
 void MPImodeling::printWork() {
-	std::cerr << "=========================\n";
-	std::cerr << "       WORK QUEUE\n";
+    std::string logfilename = this->getLogfile(); 
 
-	if(work.size() == 0) {
-		std::cerr << "No work in queue\n";
-	}
-	else {
-		for(auto const& p: work) {
-			std::cerr << "id: " << p->id << " status: " << p->status << std::endl;
-		}
-	}
-	std::cerr << "\n\n";
+    if(!logfilename.empty()){
+        std::ofstream Flog; 
+        Flog.open(logfilename);
+        if(!Flog.is_open()) rs_error("MPImodeling::printWork: Error writting to MPI log file.");
+
+        Flog << "=========================\n";
+        Flog << "       WORK QUEUE\n";
+
+        if(work.size() == 0) {
+            Flog << "No work in queue\n";
+        }
+        else {
+            for(auto const& p: work) {
+                Flog << "id: " << p->id << " rank: " << p->MPItag << " proc: " << p->pname << " status: " << p->status << std::endl;
+            }
+        }
+        Flog << "\n\n";
+        Flog.close();
+    }
 }
 
 void MPImodeling::sendWorkToAll() {
@@ -126,9 +153,12 @@ void MPImodeling::sendWorkToAll() {
 }
 
 void MPImodeling::sendWork(std::shared_ptr<workModeling_t> work, const int rank) {
+	MPI_Status status;
 	// Changing status on work and sending to slave
 	work->status = WORK_RUNNING;
+    work->MPItag = rank;
 	MPI_Send(work.get(),1,MPIwork,rank,0,MPI_COMM_WORLD);
+	MPI_Recv(&work->pname,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
 }
 
 void MPImodeling::performWork() {
@@ -137,7 +167,8 @@ void MPImodeling::performWork() {
 
 	// Working through queue
 	std::shared_ptr<workModeling_t> work = getWork();
-	
+    // Print initial queue	
+    printWork();
 	while(work != NULL) {
 		// Receive work from slaves
 		workResult_t result = receiveResult();
@@ -145,6 +176,8 @@ void MPImodeling::performWork() {
 		if(result.MPItag != MPI_TAG_NO_WORK) {
 			// Check result
 			checkResult(result);
+            // Print updated queue
+            printWork();
 		}
 
 		// Sending work to slave
@@ -162,6 +195,8 @@ void MPImodeling::performWork() {
 		if(result.MPItag != MPI_TAG_NO_WORK) {
 			// Check result
 			checkResult(result);
+            // Print updated queue
+            printWork();
 		}
 	}
 
@@ -176,6 +211,8 @@ workModeling_t MPImodeling::receiveWork() {
 	MPI_Status status;
 	// Receiving
 	MPI_Recv(&work,1,MPIwork,0,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+    // Send name
+	MPI_Send(this->getName(),MPI_MAX_PROCESSOR_NAME,MPI_CHAR,0,0,MPI_COMM_WORLD);
 	// Updating struct
 	work.MPItag = status.MPI_TAG;
 
