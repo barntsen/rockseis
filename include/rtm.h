@@ -93,7 +93,7 @@ template<typename T>
 class RtmAcoustic2D: public Rtm<T> {
 public:
     RtmAcoustic2D();					///< Constructor
-    RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Image2D<T>> pimage, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataP, int order, int snapinc);					///< Constructor 
+    RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<ImageAcoustic2D<T>> pimage, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataP, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs rtm with full snapshoting
     int run_edge(); ///< Runs rtm with edge boundary saving
     int run_optimal(); ///< Runs rtm with optimal checkpointing
@@ -107,7 +107,7 @@ public:
 
 private:
     std::shared_ptr<ModelAcoustic2D<T>> model;
-    std::shared_ptr<Image2D<T>> pimage;
+    std::shared_ptr<ImageAcoustic2D<T>> pimage;
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> dataP;
     std::shared_ptr<Data2D<T>> dataAz;
@@ -124,7 +124,7 @@ template<typename T>
 class RtmAcoustic3D: public Rtm<T> {
 public:
     RtmAcoustic3D();					///< Constructor
-    RtmAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Image3D<T>> pimage, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataP, int order, int snapinc);					///< Constructor 
+    RtmAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<ImageAcoustic3D<T>> pimage, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataP, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs rtm with full snapshoting
     int run_edge(); ///< Runs rtm with edge boundary saving
     int run_optimal(); ///< Runs rtm with optimal checkpointing
@@ -133,12 +133,11 @@ public:
     void setDataP(std::shared_ptr<Data3D<T>> _dataP) { dataP = _dataP; dataPset = true; }
     void setDataAz(std::shared_ptr<Data3D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
 
-
     ~RtmAcoustic3D();	///< Destructor
 
 private:
     std::shared_ptr<ModelAcoustic3D<T>> model;
-    std::shared_ptr<Image3D<T>> pimage;
+    std::shared_ptr<ImageAcoustic3D<T>> pimage;
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> dataP;
     std::shared_ptr<Data3D<T>> dataAz;

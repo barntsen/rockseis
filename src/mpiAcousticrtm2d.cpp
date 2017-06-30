@@ -27,26 +27,33 @@ int main(int argc, char** argv) {
 
     if(argc < 2){
         if(mpi.getRank() == 0){
-            PRINT_DOC(# MPI 2d acoustic reverse-time migration default configuration file);
-            PRINT_DOC();
-            PRINT_DOC(# Modelling parameters);
-            PRINT_DOC(        freesurface = "false";  # True if free surface should be on);
-            PRINT_DOC(            order = "8";  # Order of finite difference stencil 2-8);
-            PRINT_DOC(            lpml = "18"; # Size of pml absorbing boundary (should be larger than order + 5 ));
-            PRINT_DOC(            apertx = "900"; # Aperture for local model (source is in the middle));
-            PRINT_DOC();
-            PRINT_DOC(# Snaping method);
-            PRINT_DOC(        snapmethod = "1";# Snap interval in multiples of modelling interval or number of snapshots to checkpoint);
-            PRINT_DOC(        incore = "false";);
-            PRINT_DOC(            snapinc = "10"; # Snap interval in multiples of modelling interval or number of snapshots to checkpoint);
-            PRINT_DOC();
-            PRINT_DOC(# Files);
-            PRINT_DOC(        Vp = "Vp2d.rss";);
-            PRINT_DOC(        Rho = "Rho2d.rss";);
-            PRINT_DOC(        Wavelet = "Wav2d.rss";);
-            PRINT_DOC(        Precordfile = "Pshots2d.rss";);
-            PRINT_DOC(        Psnapfile = "Psnaps2d.rss";);
-        }
+			PRINT_DOC(# MPI 2d acoustic reverse-time migration configuration file);
+			PRINT_DOC();
+			PRINT_DOC(# Modelling parameters);
+			PRINT_DOC(freesurface = "false";  # True if free surface should be on);
+			PRINT_DOC(order = "8";  # Order of finite difference stencil);
+			PRINT_DOC(lpml = "18"; # Size of pml absorbing boundary (should be larger than order + 5 ));
+			PRINT_DOC(snapinc = "4"; # Snap interval in multiples of modelling interval);
+			PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
+			PRINT_DOC();
+			PRINT_DOC(# Checkpointing parameters);
+			PRINT_DOC(snapmethod = "0";  );
+			PRINT_DOC(nsnaps = "11";);
+			PRINT_DOC(incore = "true";  );
+			PRINT_DOC();
+			PRINT_DOC(# Migration parameters);
+			PRINT_DOC(nhx = "1";);
+			PRINT_DOC(nhz = "1";);
+			PRINT_DOC();
+			PRINT_DOC(# Files);
+			PRINT_DOC(Vp = "Vp2d.rss";);
+			PRINT_DOC(Rho = "Rho2d.rss";);
+			PRINT_DOC(Wavelet = "Wav2d.rss";);
+			PRINT_DOC(Precordfile = "Pshots2d.rss";);
+			PRINT_DOC(Pimagefile = "Pimage2d.rss";);
+			PRINT_DOC(Psnapfile = "Psnaps2d.rss";);
+			PRINT_DOC();
+		}
         exit(1);
     }
     bool status;
@@ -68,7 +75,7 @@ int main(int argc, char** argv) {
     std::string Precordfile;
     std::shared_ptr<rockseis::Data2D<float>> shot2D;
     std::shared_ptr<rockseis::Data2D<float>> shot2Di;
-    std::shared_ptr<rockseis::Image2D<float>> pimage;
+    std::shared_ptr<rockseis::ImageAcoustic2D<float>> pimage;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -144,7 +151,7 @@ int main(int argc, char** argv) {
 		mpi.performWork();
 
         // Image
-        pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
+        pimage = std::make_shared<rockseis::ImageAcoustic2D<float>>(Pimagefile, gmodel, nhx, nhz);
         pimage->createEmpty();
 
 		for(unsigned long int i=0; i<ngathers; i++) {
@@ -174,7 +181,7 @@ int main(int argc, char** argv) {
                 size_t ntr = shot2D->getNtrace();
 
                 lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
-                pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
+                pimage = std::make_shared<rockseis::ImageAcoustic2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
 
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();

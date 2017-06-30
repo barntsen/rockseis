@@ -135,7 +135,7 @@ int main()
 
 	// Create the classes 
 	std::shared_ptr<rockseis::ModelAcoustic2D<float>> model (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
-    std::shared_ptr<rockseis::Image2D<float>> pimage (new rockseis::Image2D<float>(Pimagefile, model, nhx, nhz));
+    std::shared_ptr<rockseis::ImageAcoustic2D<float>> pimage (new rockseis::ImageAcoustic2D<float>(Pimagefile, model, nhx, nhz));
 	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Sourcefile));
 	std::shared_ptr<rockseis::Data2D<float>> data (new rockseis::Data2D<float>(Precordfile));
 	std::shared_ptr<rockseis::RtmAcoustic2D<float>> rtm (new rockseis::RtmAcoustic2D<float>(model, pimage, source, data, order, snapinc));

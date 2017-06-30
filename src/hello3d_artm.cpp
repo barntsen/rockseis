@@ -142,7 +142,7 @@ int main()
 
 	// Create the classes 
 	std::shared_ptr<rockseis::ModelAcoustic3D<float>> model (new rockseis::ModelAcoustic3D<float>(Vpfile, Rhofile, lpml ,fs));
-    std::shared_ptr<rockseis::Image3D<float>> pimage (new rockseis::Image3D<float>(Pimagefile, model, nhx, nhy, nhz));
+    std::shared_ptr<rockseis::ImageAcoustic3D<float>> pimage (new rockseis::ImageAcoustic3D<float>(Pimagefile, model, nhx, nhy, nhz));
 	std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(Sourcefile));
 	std::shared_ptr<rockseis::Data3D<float>> data (new rockseis::Data3D<float>(Precordfile));
 	std::shared_ptr<rockseis::RtmAcoustic3D<float>> rtm (new rockseis::RtmAcoustic3D<float>(model, pimage, source, data, order, snapinc));

@@ -153,8 +153,6 @@ bool Image2D<T>::createEmpty()
 	ox = this->getOx();
 	oz = this->getOz();
 
-
-
     if ( Fout->is_open())
     {
         // Create geometry
@@ -360,11 +358,38 @@ void Image2D<T>::freeImage()
 }
 
 
+
+
+// destructor
 template<typename T>
-void Image2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
+Image2D<T>::~Image2D() {
+    // Freeing all variables
+    if(allocated){
+        free(imagedata);
+    }
+}
+
+
+/// =============== 2D ACOUSTIC IMAGE CLASS =============== //
+template<typename T>
+ImageAcoustic2D<T>::ImageAcoustic2D(std::string _imagefile, std::shared_ptr<ModelAcoustic2D<T>> model, int nhx, int nhz):Image2D<T>(_imagefile, model, nhx, nhz)
 {
-    if(!allocated) this->allocateImage();
+    // Do nothing
+}
+
+
+template<typename T>
+ImageAcoustic2D<T>::ImageAcoustic2D(std::string _imagefile):Image2D<T>(_imagefile)
+{
+    // Do nothing
+}
+
+template<typename T>
+void ImageAcoustic2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
+{
+    if(!this->getAllocated()) this->allocateImage();
 	int ix, iz, ihx, ihz;
+    T *imagedata = this->getImagedata();
 	int nhx = this->getNhx();
 	int nhz = this->getNhz();
 	int nx = this->getNx();
@@ -389,13 +414,9 @@ void Image2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 	}
 }
 
-// destructor
 template<typename T>
-Image2D<T>::~Image2D() {
-    // Freeing all variables
-    if(allocated){
-        free(imagedata);
-    }
+ImageAcoustic2D<T>::~ImageAcoustic2D() {
+    // Do nothing
 }
 
 /// =============== 3D IMAGE CLASS =============== //
@@ -606,10 +627,33 @@ void Image3D<T>::freeImage()
     allocated = false;
 }
 
+// destructor
 template<typename T>
-void Image3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
+Image3D<T>::~Image3D() {
+    // Freeing all variables
+    if(allocated){
+        free(imagedata);
+    }
+    allocated = false;
+}
+
+/// =============== 3D ACOUSTIC IMAGE CLASS =============== //
+template<typename T>
+ImageAcoustic3D<T>::ImageAcoustic3D(std::string _imagefile, std::shared_ptr<ModelAcoustic3D<T>> model, int nhx, int nhy, int nhz):Image3D<T>(_imagefile, model, nhx, nhy, nhz)
 {
-    if(!allocated) this->allocateImage();
+    // Do nothing
+}
+
+template<typename T>
+ImageAcoustic3D<T>::ImageAcoustic3D(std::string _imagefile):Image3D<T>(_imagefile)
+{
+    // Do nothing
+}
+
+template<typename T>
+void ImageAcoustic3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
+{
+    if(!this->getAllocated()) this->allocateImage();
 	int ix, iy, iz, ihx, ihy, ihz;
 	int nhx = this->getNhx();
 	int nhy = this->getNhy();
@@ -622,6 +666,7 @@ void Image3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 	int nyr = ny + 2*padr;
 	int nz = this->getNz();
 	int hx, hy, hz;
+    T* imagedata = this->getImagedata();
 	for (ihx=0; ihx<nhx; ihx++){
 		hx= -(nhx-1)/2 + ihx;
 		for (ihy=0; ihy<nhy; ihy++){
@@ -643,21 +688,21 @@ void Image3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 	}
 }
 
-// destructor
 template<typename T>
-Image3D<T>::~Image3D() {
-    // Freeing all variables
-    if(allocated){
-        free(imagedata);
-    }
-    allocated = false;
+ImageAcoustic3D<T>::~ImageAcoustic3D() {
+    // Do nothing
 }
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Image2D<float>;
 template class Image2D<double>;
+template class ImageAcoustic2D<float>;
+template class ImageAcoustic2D<double>;
+
 template class Image3D<float>;
 template class Image3D<double>;
+template class ImageAcoustic3D<float>;
+template class ImageAcoustic3D<double>;
 
 }
 
