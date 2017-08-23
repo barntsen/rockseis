@@ -57,8 +57,260 @@ Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, con
 
 }
 
+// =============== 1D ACOUSTIC MODEL CLASS =============== //
+template<typename T>
+WavesAcoustic1D<T>::WavesAcoustic1D(){
+    int nz, lpml, nz_pml;
+    T dt;
+    nz = this->getNz();
+    lpml = this->getLpml();
+    dt = this->getDt();
+    this->setDim(1);
+    nz_pml = nz + 2*lpml;
+    Pml = std::make_shared<PmlAcoustic1D<T>>(nz, lpml, dt);
+    P1 = (T *) calloc(nz_pml,sizeof(T));
+    P2 = (T *) calloc(nz_pml,sizeof(T));
+    Az = (T *) calloc(nz_pml,sizeof(T));
+}
 
-// =============== 2D ACOUSTIC MODEL CLASS =============== //
+template<typename T>
+WavesAcoustic1D<T>::WavesAcoustic1D(const int _nz, const int _nt, const int _lpml, const T _dz, const T _dt, const T _oz, const T _ot): Waves<T>(1, 1, 1, _nz, _nt, _lpml, 1.0, 1.0, _dz, _dt, 0.0, 0.0, _oz, _ot) {
+    
+    /* Create associated PML class */
+    Pml = std::make_shared<PmlAcoustic1D<T>>(_nz, _lpml, _dt);
+    
+    /* Allocate memory variables */
+    int nz_pml;
+    this->setDim(1);
+    nz_pml = _nz + 2*_lpml;
+    P1 = (T *) calloc(nz_pml,sizeof(T));
+    P2 = (T *) calloc(nz_pml,sizeof(T));
+    Az = (T *) calloc(nz_pml,sizeof(T));
+}
+
+
+template<typename T>
+WavesAcoustic1D<T>::WavesAcoustic1D(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, int _nt, T _dt, T _ot): Waves<T>(){
+
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _dim, _lpml;
+
+    /* Get necessary parameters from model class */
+    _nx=model->getNx();
+    _ny=model->getNy();
+    _nz=model->getNz();
+    _dx=model->getDx();
+    _dy=model->getDy();
+    _dz=model->getDz();
+    _ox=model->getOx();
+    _oy=model->getOy();
+    _oz=model->getOz();
+    _dim = model->getDim();
+    _lpml = model->getLpml();
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setNt(_nt);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setDt(_dt);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setOt(_ot);
+    this->setLpml(_lpml);
+    this->setDim(_dim);
+
+    /* Create associated PML class */
+    Pml = std::make_shared<PmlAcoustic1D<T>>(_nz, _lpml, _dt);
+    
+    /* Allocate memory variables */
+    int nz_pml;
+    this->setDim(1);
+    nz_pml = _nz + 2*_lpml;
+    P1 = (T *) calloc(nz_pml,sizeof(T));
+    P2 = (T *) calloc(nz_pml,sizeof(T));
+    Az = (T *) calloc(nz_pml,sizeof(T));
+}
+
+template<typename T>
+WavesAcoustic1D<T>::~WavesAcoustic1D() {
+    /* Free allocated variables */
+    free(P1);
+    free(P2);
+    free(Az);
+}
+
+template<typename T>
+void WavesAcoustic1D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+    int i, iz, nz, lpml;
+    lpml = model->getLpml();
+    nz = model->getNz() + 2*lpml;
+    T *Rz, *df;
+    Rz = model->getRz();
+    df = der->getDf();
+    
+    // Derivate P forward with respect to z
+    der->ddz_fw(P1);
+    // Compute Az
+    for(iz=0; iz < nz; iz++){
+            Az[iz] = Rz[iz]*df[iz];
+    }
+    
+    // Attenuate bottom and top using staggered variables
+    for(iz=0; iz < lpml; iz++){
+            // Top
+            Pml->P_top[iz] = Pml->B_ltf_stag[iz]*Pml->P_top[iz] + Pml->A_ltf_stag[iz]*df[iz];
+            
+            Az[iz] -= Rz[iz]*(Pml->P_top[iz] + Pml->C_ltf_stag[iz]*df[iz]);
+            i = iz + nz - lpml;
+            //Bottom
+            Pml->P_bottom[iz] = Pml->B_rbb_stag[iz]*Pml->P_bottom[iz] + Pml->A_rbb_stag[iz]*df[i];
+            Az[i] -= Rz[i]*(Pml->P_bottom[iz] + Pml->C_rbb_stag[iz]*df[i]);
+        }
+    
+} // End of forwardstepAcceleration
+
+template<typename T>
+void WavesAcoustic1D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+    int i, iz, nz, lpml;
+    T dt;
+    lpml = model->getLpml();
+    nz = model->getNz() + 2*lpml;
+    dt = this->getDt();
+    T *L, *df;
+    L = model->getL();
+    df = der->getDf();
+    
+    // Derivate Az backward with respect to z
+    der->ddz_bw(Az);
+    // Compute P
+    for(iz=0; iz < nz; iz++){
+            P2[iz] = 2.0 * P1[iz] - P2[iz] +  dt*dt*L[iz]*df[iz];
+    }
+    
+    // Attenuate top and bottom using non-staggered variables
+    for(iz=0; iz < lpml; iz++){
+            // Top
+            Pml->Azz_top[iz] = Pml->B_ltf[iz]*Pml->Azz_top[iz] + Pml->A_ltf[iz]*df[iz];
+            
+            P2[iz] -= dt*dt*L[iz]*(Pml->Azz_top[iz] + Pml->C_ltf[iz]*df[iz]);
+            i = iz + nz - lpml;
+            //Bottom
+            Pml->Azz_bottom[iz] = Pml->B_rbb[iz]*Pml->Azz_bottom[iz] + Pml->A_rbb[iz]*df[i];
+            P2[i] -= dt*dt*L[i]*(Pml->Azz_bottom[iz] + Pml->C_rbb[iz]*df[i]);
+    }
+    
+}
+
+template<typename T>
+void WavesAcoustic1D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
+    Point2D<int> *map;
+    T *wav; 
+    int ntrace = source->getNtrace();
+    int nx, nz, lpml;
+    lpml = this->getLpml();
+    nx = 1;
+    nz = this->getNz() + 2*lpml;
+    T *Mod;
+    int nt = this->getNt();
+    T dt = this->getDt();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+    }else{
+        map = (source->getGeom())->getGmap();
+    }
+
+    rs_field sourcetype = source->getField();
+    wav = source->getData();
+    int i;
+    //Indexes 
+    Index Idat(nt, ntrace); // Data indexes
+    switch(sourcetype)
+    {
+        case VZ:
+            Mod = model->getRz();
+            for (i=0; i < ntrace; i++) 
+            {
+                if(map[i].y >=0)
+                { 
+                    Az[lpml + map[i].y] += Mod[lpml + map[i].y]*wav[Idat(it,i)]; 
+                }
+            }
+            break;
+        case PRESSURE:
+            Mod = model->getL();
+            for (i=0; i < ntrace; i++) 
+            {
+                if(map[i].y >=0)
+                { 
+                    P2[lpml + map[i].y] += dt*dt*Mod[lpml + map[i].y]*wav[Idat(it,i)]; 
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+template<typename T>
+void WavesAcoustic1D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
+    Point2D<int> *map;
+    T *dataarray; 
+    T *Fielddata;
+    int ntrace = data->getNtrace();
+    int nt = data->getNt();
+    int nx, nz, lpml;
+    lpml = this->getLpml();
+    nx = 1;
+    nz = this->getNz() + 2*lpml;
+
+    // Get correct map (data or receiver mapping)
+    if(maptype == SMAP) {
+        map = (data->getGeom())->getSmap();
+    }else{
+        map = (data->getGeom())->getGmap();
+    }
+
+    rs_field field = data->getField();
+    dataarray = data->getData();
+    int i;
+    Index Idat(nt, ntrace);
+    switch(field)
+    {
+        case PRESSURE:
+            Fielddata = this->getP1();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].y >=0)
+                {
+                    dataarray[Idat(it,i)] = Fielddata[lpml + map[i].y];
+                }
+            }
+	    break;
+        case VZ:
+            Fielddata = this->getAz();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].y >=0)
+                {
+                    dataarray[Idat(it,i)] = Fielddata[lpml + map[i].y];
+                }
+            }
+            break;
+        default:
+            break;
+    }
+
+}
+
+
+// =============== 2D ACOUSTIC WAVES CLASS =============== //
 template<typename T>
 WavesAcoustic2D<T>::WavesAcoustic2D(){
     int nx, nz, lpml, nx_pml, nz_pml;

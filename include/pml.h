@@ -60,6 +60,24 @@ private:
     T Kmax; // Pml constant (usually = 2)
 };
 
+// =============== 1D ACOUSTIC PML CLASS =============== //
+/** The 1D Acoustic PML model class
+ *
+ */
+template<typename T>
+class PmlAcoustic1D: public Pml<T> {
+public:
+    PmlAcoustic1D();	///< Constructor
+    PmlAcoustic1D(const int Lpml, const T dt);	///< Constructor
+    void callcompABC() { this->computeABC(); }  ///< Interface to computeABC()
+    ~PmlAcoustic1D();	///< Destructor
+    
+    T *P_top;
+    T *P_bottom;
+    T *Azz_top;
+    T *Azz_bottom;
+};
+
 // =============== 2D ACOUSTIC PML CLASS =============== //
 /** The 2D Acoustic PML model class
  *
@@ -107,7 +125,6 @@ public:
     T *Azz_top;
     T *Azz_bottom;
 };
-
 
 // =============== 2D ELASTIC PML CLASS =============== //
 /** The 2D Elastic PML model class

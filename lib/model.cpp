@@ -64,6 +64,26 @@ Model<T>::~Model() {
 }
 
 template <typename T>
+void Model<T>::padmodel1d(T *padded, T *model, const int nx, const int lpml){
+    int ix;
+    int nx_pml;
+    
+    nx_pml = nx + 2*lpml;
+    
+    T val;
+    // Padding models
+    for(ix=0; ix < nx; ix++){
+            val = model[ix];
+            padded[ix+lpml]=val;
+    }
+    
+    for(ix=0; ix < lpml; ix++){
+            padded[ix]=padded[lpml];
+            padded[nx_pml-lpml+ix]=padded[nx_pml-lpml-1];
+    }
+}
+
+template <typename T>
 void Model<T>::padmodel2d(T *padded, T *model, const int nx, const int ny, const int lpml){
     int ix,iy;
     int nx_pml, ny_pml;
@@ -212,6 +232,212 @@ void Model<T>::staggermodel_z(T *model, const int nx, const int ny, const int nz
     }
 }
 
+// =============== 1D ACOUSTIC MODEL CLASS =============== //
+template<typename T>
+ModelAcoustic1D<T>::ModelAcoustic1D(): Model<T>(2) {
+    /* Allocate variables */
+    Vp = (T *) calloc(1,1);
+    R = (T *) calloc(1,1);
+    L = (T *) calloc(1,1);
+    Rz = (T *) calloc(1,1);
+    
+}
+
+template<typename T>
+ModelAcoustic1D<T>::ModelAcoustic1D(const int _nz, const int _lpml, const T _dz, const T _oz, const bool _fs): Model<T>(2, 1, 1, _nz,  _lpml, 1.0, 1.0, _dz, 0.0, 0.0, _oz, _fs) {
+    /* Allocate variables */
+    Vp = (T *) calloc(1,1);
+    R = (T *) calloc(1,1);
+    L = (T *) calloc(1,1);
+    Rz = (T *) calloc(1,1);
+}
+
+template<typename T>
+ModelAcoustic1D<T>::ModelAcoustic1D(std::string _Vpfile, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(2) {
+    bool status;
+    int nz;
+    T dz;
+    T oz;
+    Vpfile = _Vpfile;
+    Rfile = _Rfile;
+
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic1D::Error reading from Vp file.");
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+        rs_error("ModelAcoustic1D::Error reading from density file.");
+    }
+
+    // Compare geometry in the two files
+    if(Fvp->compareGeometry(Frho) != 0)
+    {
+        rs_error("ModelAcoustic1D::Geometries in Vp and Density model files do not match.");
+    }
+
+    if(Fvp->getData_format() != Frho->getData_format())
+    {
+        rs_error("ModelAcoustic1D::Numerical precision mismatch in Vp and Density model files.");
+    }
+
+    if(Fvp->getData_format() != sizeof(T))
+    {
+        rs_error("ModelAcoustic1D::Numerical precision in Vp and Density model files mismatch with constructor.");
+    }
+    
+    // Read geometry from file
+    nz = Fvp->getN(3);
+    dz = (T) Fvp->getD(3);
+    oz = (T) Fvp->getO(3);
+    
+    // Close files
+    Fvp->close();
+    Frho->close();
+
+    // Store geometry in model class
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(_fs);
+
+    /* Allocate variables */
+    Vp = (T *) calloc(1,1);
+    R = (T *) calloc(1,1);
+    L = (T *) calloc(1,1);
+    Rz = (T *) calloc(1,1);
+}
+
+template<typename T>
+ModelAcoustic1D<T>::~ModelAcoustic1D() {
+    // Freeing all variables
+    free(Vp);
+    free(R);
+    free(L);
+    free(Rz);
+}
+
+template<typename T>
+void ModelAcoustic1D<T>::readModel() {
+    bool status;
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Rfile = this->getRfile();
+    // Open files for reading
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic1D::readModel : Error reading from Vp file.");
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic1D::readModel : Error reading from Density file.");
+    }
+
+    // Read models
+    int nz = this->getNz();
+
+    // Reallocate variables to correct size
+    free(Vp); free(R);
+    Vp = (T *) calloc(nz,sizeof(T));
+    if(Vp == NULL) rs_error("ModelAcoustic1D::readModel: Failed to allocate memory.");
+    R = (T *) calloc(nz,sizeof(T));
+    if(R == NULL) rs_error("ModelAcoustic1D::readModel: Failed to allocate memory.");
+    this->setRealized(true);
+
+    Vp = this->getVp();
+    Fvp->read(Vp, nz);
+    Fvp->close();
+
+    R = this->getR();
+    Frho->read(R, nz);
+    Frho->close();
+}
+
+template<typename T>
+void ModelAcoustic1D<T>::writeModel() {
+    if(!this->getRealized()) {
+        rs_error("ModelAcoustic1D::writeModel: Model is not allocated.");
+    }
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    Fvp->output(Vpfile);
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    Frho->output(Rfile);
+
+    // Write models
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Fvp->setN(3,nz);
+    Fvp->setD(3,dz);
+    Fvp->setO(3,oz);
+    Fvp->setType(REGULAR);
+    Fvp->setData_format(sizeof(T));
+    Fvp->writeHeader();
+    Vp = this->getVp();
+    Fvp->write(Vp, nz, 0);
+    Fvp->close();
+
+    Frho->setN(3,nz);
+    Frho->setD(3,dz);
+    Frho->setO(3,oz);
+    Frho->setType(REGULAR);
+    Frho->setData_format(sizeof(T));
+    Frho->writeHeader();
+    R = this->getR();
+    Frho->write(R, nz, 0);
+    Frho->close();
+}
+
+template<typename T>
+void ModelAcoustic1D<T>::staggerModels(){
+    if(!this->getRealized()) {
+        rs_error("ModelAcoustic1D::staggerModels: Model is not allocated.");
+    }
+    int iz;
+    int nz, lpml, nz_pml;
+    nz = this->getNz();
+    lpml = this->getLpml();
+    nz_pml = this->getNz_pml();
+    
+    // Reallocate necessary variables 
+    free(L); free(Rz);
+    L = (T *) calloc(nz_pml,sizeof(T));
+    if(L == NULL) rs_error("ModelAcoustic1D::staggerModels: Failed to allocate memory.");
+    Rz = (T *) calloc(nz_pml,sizeof(T));
+    if(Rz == NULL) rs_error("ModelAcoustic1D::staggerModels: Failed to allocate memory.");
+    
+    // Padding
+    this->padmodel1d(Rz, R, nz, lpml);
+    this->padmodel1d(L, Vp, nz, lpml);
+    
+    // Computing moduli
+    T _rho, _vp;
+    for(iz=0; iz < nz_pml; iz++){
+        _vp=L[iz];
+        _rho=Rz[iz];
+        L[iz]=_rho*_vp*_vp;
+    }
+
+    // Staggering using arithmetic average
+    this->staggermodel_z(Rz, 1, 1, nz_pml);
+    
+    // In case of free surface
+    if(this->getFs()){
+            L[lpml] *= 0.0;
+    }
+}
+
 
 // =============== 2D ACOUSTIC MODEL CLASS =============== //
 template<typename T>
@@ -226,7 +452,7 @@ ModelAcoustic2D<T>::ModelAcoustic2D(): Model<T>(2) {
 }
 
 template<typename T>
-ModelAcoustic2D<T>::ModelAcoustic2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 1.0, _oz, _fs) {
+ModelAcoustic2D<T>::ModelAcoustic2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 0.0, _oz, _fs) {
     /* Allocate variables */
     Vp = (T *) calloc(1,1);
     R = (T *) calloc(1,1);

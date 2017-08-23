@@ -73,6 +73,44 @@ private:
 
 };
 
+/** The 1D Acoustic WAVES class
+ *
+ */
+template<typename T>
+class WavesAcoustic1D: public Waves<T> {
+public:
+    WavesAcoustic1D();					///< Constructor
+    WavesAcoustic1D(const int _nz, const int _nt, const int _L, const T _dz, const T _dt, const T _oz, const T _ot);	///< Constructor
+    WavesAcoustic1D(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    ~WavesAcoustic1D();					///< Destructor
+    
+    // Time stepping
+    void forwardstepAcceleration(std::shared_ptr<ModelAcoustic1D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with acceleration
+    void forwardstepStress(std::shared_ptr<ModelAcoustic1D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with stress
+
+    // Get functions
+    std::shared_ptr<PmlAcoustic1D<T>> getPml() { return Pml; } ///< Get pml
+    T * getP2() { return P2; }  ///< Get advanced pressure
+    T * getP1() { return P1; }  ///< Get current pressure
+    T * getAz() { return Az; }  ///< Get z-component of acceleration
+
+    void computeABC() { Pml->callcompABC(); } ///< Compute the PML decay constants (needed if changes are made to the Amax, Kmax and Smax)
+    void roll();  ///< Roll the pressure pointers
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelAcoustic1D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+
+    // Record data at receivers functions
+    void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
+
+private:
+    T *P1; // Pressure at time t
+    T *P2; // Pressure at time t+1
+    T *Az; // Acceleration component at time t
+    std::shared_ptr<PmlAcoustic1D<T>> Pml; // Associated PML class
+};
+
+
 /** The 2D Acoustic WAVES class
  *
  */

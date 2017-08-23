@@ -61,7 +61,14 @@ public:
     void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
     void setDim(const int _dim) { dim = _dim; } 	///< Set the dimension
     void setRealized(const bool val) { realized = val; } ///< Set if model is allocated
-    
+
+    // PADDING AND STAGGERING FUNCTIONS 
+    /** Pads 1-D model.
+     * Pads the model by copying the edges over the padded area.  
+     * The size of the padded arrays must be (nx+2*pad).
+     * */
+    void padmodel1d(T *padded, T *model, const int nx, const int pad);
+
     // PADDING AND STAGGERING FUNCTIONS 
     /** Pads 2-D model.
      * Pads the model by copying the edges over the padded area.  
@@ -98,6 +105,52 @@ private:
     bool fs;
     bool realized;  // Set to 1 when the model is allocated to the correct size
 };
+
+// =============== 1D ACOUSTIC MODEL CLASS =============== //
+/** The 1D acoustic model class
+ *
+ */
+template<typename T>
+class ModelAcoustic1D: public Model<T> {
+public:
+    ModelAcoustic1D();	///< Constructor
+    ModelAcoustic1D(const int _nz, const int lpml, const T _dz, const T _oz, const bool _fs);	///< Constructor
+    ModelAcoustic1D(std::string _Vpfile, std::string _Rfile, const int lpml, const bool _fs);	///< Constructor
+    ~ModelAcoustic1D();	///< Destructor
+    
+    // I/O functions
+    void readModel();	 ///< Read a model from file
+    void writeModel(); ///< Write a model to file
+    // Get functions
+    T *getVp() { return Vp; }	///< Get Vp
+    T *getR() { return R; }		///< Get R
+    T *getRz() { return Rz; }		///< Get Rz
+    T *getL() { return L; }		///< Get L
+    std::string getVpfile() { return Vpfile; }
+    std::string getRfile() { return Rfile; }
+    void setVpfile(std::string name) { Vpfile = name; }
+    void setRfile(std::string name) { Rfile = name; }
+
+    /** Stagger model functions. 
+    It creates the padded Rx, Rz and L from the non-padded models R and Vp. 
+    */
+    void staggerModels(); 
+
+    /** Create model
+    It creates an empty model of Vp and R
+    */
+    void createModel();
+    
+private:
+    T *Vp;  ///< P-wave velocity
+    T *R;   ///< Density
+    T *L;   ///< Bulk modulus
+    T *Rz;  ///< Staggered inverse of density in z
+    std::string Vpfile; ///< Filename to vp model
+    std::string Rfile; ///< Filename to density model
+
+};
+
 
 // =============== 2D ACOUSTIC MODEL CLASS =============== //
 /** The 2D acoustic model class

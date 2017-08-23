@@ -119,6 +119,39 @@ void Pml<T>::computeABC()
 }
 
 
+// =============== 1D ACOUSTIC PML CLASS =============== //
+template<typename T>
+PmlAcoustic1D<T>::PmlAcoustic1D(): Pml<T>() {
+    /* Default constructor, not to be used */ 
+    /* Minimal allocation to avoid free from crashing */
+    P_top=(T *) malloc(1);
+    P_bottom=(T *) malloc(1);
+    Azz_top=(T *) malloc(1);
+    Azz_bottom=(T *) malloc(1);
+
+}
+
+template<typename T>
+PmlAcoustic1D<T>::PmlAcoustic1D(const int Lpml, const T dt): Pml<T>(Lpml, dt) {
+
+    /* Allocate variables */
+    P_top=(T *) calloc(Lpml,sizeof(T));
+    P_bottom=(T *) calloc(Lpml,sizeof(T));
+    Azz_top=(T *) calloc(Lpml,sizeof(T));
+    Azz_bottom=(T *) calloc(Lpml,sizeof(T));
+}
+
+template<typename T>
+PmlAcoustic1D<T>::~PmlAcoustic1D() {
+    /* Free variables */
+    free(P_top);
+    free(P_bottom);
+    free(Azz_top);
+    free(Azz_bottom);
+}
+
+
+
 // =============== 2D ACOUSTIC PML CLASS =============== //
 template<typename T>
 PmlAcoustic2D<T>::PmlAcoustic2D(): Pml<T>() {
