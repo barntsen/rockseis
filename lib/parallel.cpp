@@ -131,7 +131,8 @@ void MPImodeling::printWork() {
         }
         else {
             for(auto const& p: work) {
-                Flog << "id: " << p->id << " rank: " << p->MPItag << " proc: " << p->pname << " status: " << p->status << std::endl;
+                //Flog << "id: " << p->id << " rank: " << p->MPItag << " proc: " << p->pname << " status: " << p->status << std::endl; //BUG
+                Flog << "id: " << p->id << " rank: " << p->MPItag << " status: " << p->status << std::endl;
             }
         }
         Flog << "\n\n";
@@ -153,12 +154,12 @@ void MPImodeling::sendWorkToAll() {
 }
 
 void MPImodeling::sendWork(std::shared_ptr<workModeling_t> work, const int rank) {
-	MPI_Status status;
+	//MPI_Status status;
 	// Changing status on work and sending to slave
 	work->status = WORK_RUNNING;
     work->MPItag = rank;
 	MPI_Send(work.get(),1,MPIwork,rank,0,MPI_COMM_WORLD);
-	MPI_Recv(&work->pname[0],MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+	//MPI_Recv(&work->pname[0],MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status); //BUG
 }
 
 void MPImodeling::performWork() {
@@ -211,8 +212,8 @@ workModeling_t MPImodeling::receiveWork() {
 	MPI_Status status;
 	// Receiving
 	MPI_Recv(&work,1,MPIwork,0,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
-    // Send name
-	MPI_Send(this->getName(),MPI_MAX_PROCESSOR_NAME,MPI_CHAR,0,0,MPI_COMM_WORLD);
+    // Send name //BUG
+	//MPI_Send(this->getName(),MPI_MAX_PROCESSOR_NAME,MPI_CHAR,0,0,MPI_COMM_WORLD); //BUG
 	// Updating struct
 	work.MPItag = status.MPI_TAG;
 
