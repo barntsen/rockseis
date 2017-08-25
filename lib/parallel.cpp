@@ -158,7 +158,7 @@ void MPImodeling::sendWork(std::shared_ptr<workModeling_t> work, const int rank)
 	work->status = WORK_RUNNING;
     work->MPItag = rank;
 	MPI_Send(work.get(),1,MPIwork,rank,0,MPI_COMM_WORLD);
-	MPI_Recv(&work->pname,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+	MPI_Recv(&work->pname[0],MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
 }
 
 void MPImodeling::performWork() {
