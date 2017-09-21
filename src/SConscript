@@ -13,31 +13,37 @@ else:
 prefix = env['program_prefix']
 
 ## Programs
-hello_models = env.Program(prefix + 'hello_models','hello_models.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling'],LIBPATH=['../build'])
-env.Install('../bin/',hello_models)
-
-hello_acoustic = env.Program(prefix + 'hello_acoustic','hello_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
-env.Install('../bin/',hello_acoustic)
-
-hello_artm = env.Program(prefix + 'hello_artm','hello_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'rtm', 'image', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
-env.Install('../bin/',hello_artm)
-
-hello3d_artm = env.Program(prefix + 'hello3d_artm','hello3d_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'rtm', 'image', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
-env.Install('../bin/',hello3d_artm)
-
-hello_elastic = env.Program(prefix + 'hello_elastic','hello_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
-env.Install('../bin/',hello_elastic)
-
-hello3d_acoustic = env.Program(prefix + 'hello3d_acoustic','hello3d_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
-env.Install('../bin/',hello3d_acoustic)
-
-hello3d_elastic = env.Program(prefix + 'hello3d_elastic','hello3d_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
-env.Install('../bin/',hello3d_elastic)
-
-
-hello_mada = env.Program(prefix + 'hello_mada','hello_mada.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'config4cpp', 'rsfcpp', 'rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
-env.Install('../bin/',hello_mada)
-
+if(env['TEST']):
+    hello_models = env.Program(prefix + 'hello_models','hello_models.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling'],LIBPATH=['../build'])
+    env.Install('../bin/',hello_models)
+    
+    hello_acoustic = env.Program(prefix + 'hello_acoustic','hello_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+    env.Install('../bin/',hello_acoustic)
+    
+    hello_artm = env.Program(prefix + 'hello_artm','hello_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'rtm', 'image', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+    env.Install('../bin/',hello_artm)
+    
+    hello3d_artm = env.Program(prefix + 'hello3d_artm','hello3d_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'rtm', 'image', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+    env.Install('../bin/',hello3d_artm)
+    
+    hello_elastic = env.Program(prefix + 'hello_elastic','hello_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+    env.Install('../bin/',hello_elastic)
+    
+    hello3d_acoustic = env.Program(prefix + 'hello3d_acoustic','hello3d_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+    env.Install('../bin/',hello3d_acoustic)
+    
+    hello3d_elastic = env.Program(prefix + 'hello3d_elastic','hello3d_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'snap', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+    env.Install('../bin/',hello3d_elastic)
+    
+    hello_mada = env.Program(prefix + 'hello_mada','hello_mada.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'config4cpp', 'rsfcpp', 'rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
+    env.Install('../bin/',hello_mada)
+    
+    hello_parser = env.Program(prefix + 'hello_parser','hello_parser.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
+    env.Install('../bin/',hello_parser)
+    
+    hello_sort = env.Program(prefix + 'hello_sort','hello_sort.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort'],LIBPATH=['../build'])
+    env.Install('../bin/',hello_sort)
+    
 rsf2rss = env.Program(prefix + 'rsf2rss','rsf2rss.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp', 'sort', 'rsfcpp','rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
 env.Install('../bin/',rsf2rss)
 
@@ -53,32 +59,29 @@ env.Install('../bin/',info)
 makesurvey = env.Program(prefix + 'makesurvey','makesurvey.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',makesurvey)
 
-hello_parser = env.Program(prefix + 'hello_parser','hello_parser.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'config4cpp'],LIBPATH=['../build', '../config4cpp/lib'])
-env.Install('../bin/',hello_parser)
-
-hello_sort = env.Program(prefix + 'hello_sort','hello_sort.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort'],LIBPATH=['../build'])
-env.Install('../bin/',hello_sort)
-
 if(env['FFTW']):
     hello_fftw = env.Program(prefix + 'hello_fftw','hello_fftw.cpp',LIBS=['fftw3'],LIBPATH=['../build', '../../fftw-3.3.6-pl2/fftw-build/lib/'])
     env.Install('../bin/',hello_fftw)
 
-mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel', 'utils'],LIBPATH=['../build'])
-mpi.Install('../bin/',mpidbg)
 
-mpiAcousticmod2d = mpi.Program(prefix + 'mpiAcousticmod2d','mpiAcousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
-mpi.Install('../bin/',mpiAcousticmod2d)
+if(env['MPI']):
+    if(env['TEST']):
+        mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel', 'utils'],LIBPATH=['../build'])
+        mpi.Install('../bin/',mpidbg)
 
-mpiAcousticmod3d = mpi.Program(prefix + 'mpiAcousticmod3d','mpiAcousticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
-mpi.Install('../bin/',mpiAcousticmod3d)
-
-mpiElasticmod2d = mpi.Program(prefix + 'mpiElasticmod2d','mpiElasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
-mpi.Install('../bin/',mpiElasticmod2d)
-
-mpiElasticmod3d = mpi.Program(prefix + 'mpiElasticmod3d','mpiElasticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
-mpi.Install('../bin/',mpiElasticmod3d)
-
-mpiAcousticrtm2d = mpi.Program(prefix + 'mpiAcousticrtm2d','mpiAcousticrtm2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image'],LIBPATH=['../build', '../config4cpp/lib'])
-mpi.Install('../bin/',mpiAcousticrtm2d)
-
+    mpiAcousticmod2d = mpi.Program(prefix + 'mpiAcousticmod2d','mpiAcousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
+    mpi.Install('../bin/',mpiAcousticmod2d)
+    
+    mpiAcousticmod3d = mpi.Program(prefix + 'mpiAcousticmod3d','mpiAcousticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
+    mpi.Install('../bin/',mpiAcousticmod3d)
+    
+    mpiElasticmod2d = mpi.Program(prefix + 'mpiElasticmod2d','mpiElasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
+    mpi.Install('../bin/',mpiElasticmod2d)
+    
+    mpiElasticmod3d = mpi.Program(prefix + 'mpiElasticmod3d','mpiElasticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
+    mpi.Install('../bin/',mpiElasticmod3d)
+    
+    mpiAcousticrtm2d = mpi.Program(prefix + 'mpiAcousticrtm2d','mpiAcousticrtm2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image'],LIBPATH=['../build', '../config4cpp/lib'])
+    mpi.Install('../bin/',mpiAcousticrtm2d)
+    
 

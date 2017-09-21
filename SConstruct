@@ -22,16 +22,19 @@ else:
 env['program_prefix'] = "rs" # Prefix for all programs
 
 # Configure (checking libraries for environment)
-### TODO: Add autoconfig for WxWidgets
-env['WX'] = True;
+## Build GUI programs 
+env['WX'] = False;
+## Include FFTW programs
 env['FFTW'] = False;
+## Build test codes
+env['TEST'] = False;
+## MPI
+env['MPI'] = False;
 
 #conf = Configure(env)
 #if conf.CheckLibWithHeader('wx','wx.h','cpp'):
 #	print "Yes"
 #
-
-
 #
 ## CUDA
 #if "CUDA_HOME" in os.environ:
@@ -56,7 +59,6 @@ env['FFTW'] = False;
 #		env.Append(CPPFLAGS = ' -fopenmp')
 #		env.Append(LINKFLAGS = ' -lpthread -fopenmp')
 #
-## MPI
 ### TODO: Add autoconfig of MPI
 #env['MPI'] = True;
 #
