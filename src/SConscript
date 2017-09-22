@@ -59,6 +59,19 @@ env.Install('../bin/',info)
 makesurvey = env.Program(prefix + 'makesurvey','makesurvey.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse'],LIBPATH=['../build', '../config4cpp/lib'])
 env.Install('../bin/',makesurvey)
 
+
+Acousticmod2d = env.Program(prefix + 'Acousticmod2d','Acousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
+env.Install('../bin/',Acousticmod2d)
+
+Acousticmod3d = env.Program(prefix + 'Acousticmod3d','Acousticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
+env.Install('../bin/',Acousticmod3d)
+
+Elasticmod2d = env.Program(prefix + 'Elasticmod2d','Elasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
+env.Install('../bin/',Elasticmod2d)
+
+Elasticmod3d = env.Program(prefix + 'Elasticmod3d','Elasticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
+env.Install('../bin/',Elasticmod3d)
+
 if(env['FFTW']):
     hello_fftw = env.Program(prefix + 'hello_fftw','hello_fftw.cpp',LIBS=['fftw3'],LIBPATH=['../build', '../../fftw-3.3.6-pl2/fftw-build/lib/'])
     env.Install('../bin/',hello_fftw)
