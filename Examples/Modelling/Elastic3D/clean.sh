@@ -1,3 +1,3 @@
 rm -v *.rss
 rm -v log*txt*
-rm -v Results/*.rss
+rm -r -v Results

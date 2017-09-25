@@ -27,7 +27,7 @@ env['WX'] = False;
 ## Include FFTW programs
 env['FFTW'] = False;
 ## Build test codes
-env['TEST'] = False;
+env['TEST'] = True;
 ## MPI
 env['MPI'] = False;
 
