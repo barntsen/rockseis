@@ -76,7 +76,6 @@ if(env['FFTW']):
     hello_fftw = env.Program(prefix + 'hello_fftw','hello_fftw.cpp',LIBS=['fftw3'],LIBPATH=['../build', '../../fftw-3.3.6-pl2/fftw-build/lib/'])
     env.Install('../bin/',hello_fftw)
 
-
 if(env['MPI']):
     if(env['TEST']):
         mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel', 'utils'],LIBPATH=['../build'])
