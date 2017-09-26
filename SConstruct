@@ -29,7 +29,7 @@ env['FFTW'] = False;
 ## Build test codes
 env['TEST'] = True;
 ## MPI
-env['MPI'] = False;
+env['MPI'] = True;
 
 #conf = Configure(env)
 #if conf.CheckLibWithHeader('wx','wx.h','cpp'):

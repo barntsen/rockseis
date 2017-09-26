@@ -18,7 +18,7 @@ using namespace rockseis;
 
 int main(int argc, char** argv) {
     if(argc < 2){
-        PRINT_DOC(# MPI 3d acoustic modelling default configuration file);
+        PRINT_DOC(# 3d acoustic modelling default configuration file);
         PRINT_DOC();
         PRINT_DOC(# Modelling parameters);
         PRINT_DOC(        freesurface = "true";  # True if free surface should be on);

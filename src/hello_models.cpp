@@ -87,15 +87,15 @@ int main()
     }
 
     // Adding a reflector
-    for(iz=22; iz<nz; iz++){
-        for(iy=0; iy<ny; iy++){
-            for(ix=0; ix<nx; ix++){
-                Vp2d[k2d(ix,iz)]= 2500;
-                Vp3d[k3d(ix,iy,iz)]= 2500;
-            }
-        }
-    }
-
+//    for(iz=22; iz<nz; iz++){
+//        for(iy=0; iy<ny; iy++){
+//            for(ix=0; ix<nx; ix++){
+//                Vp2d[k2d(ix,iz)]= 2500;
+//                Vp3d[k3d(ix,iy,iz)]= 2500;
+//            }
+//        }
+//    }
+//
     model2d->setVpfile("Vp2d.rss");
     model2d->setVsfile("Vs2d.rss");
     model2d->setRfile("Rho2d.rss");
