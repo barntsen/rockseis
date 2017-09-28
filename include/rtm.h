@@ -24,6 +24,17 @@
 #define GMAP 1
 #define SMAP 0
 
+#define PIMAGE 0
+#define SIMAGE 1
+
+#define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
+#define ks2D(i,j) ((j)*nxs + (i))
+#define kr2D(i,j) ((j)*nxr + (i))
+
+#define ki3D(i,j,k,l,m,n) ((n)*nhy*nhx*nx*ny*nz + (m)*nhx*nx*ny*nz + (l)*nx*ny*nz + (k)*nx*ny + (j)*nx + (i))
+#define ks3D(i,j,k) ((k)*nxs*nys + (j)*nxs + (i))
+#define kr3D(i,j,k) ((k)*nxr*nyr + (j)*nxr + (i))
+
 namespace rockseis {
 
 // =============== ENUMS =============== //
@@ -93,7 +104,7 @@ template<typename T>
 class RtmAcoustic2D: public Rtm<T> {
 public:
     RtmAcoustic2D();					///< Constructor
-    RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<ImageAcoustic2D<T>> pimage, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataP, int order, int snapinc);					///< Constructor 
+    RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Image2D<T>> pimage, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataP, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs rtm with full snapshoting
     int run_edge(); ///< Runs rtm with edge boundary saving
     int run_optimal(); ///< Runs rtm with optimal checkpointing
@@ -102,12 +113,13 @@ public:
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
     void setDataAz(std::shared_ptr<Data2D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
 
+    void crossCorr(T *ws, int pads, T* wr, int padr);
 
     ~RtmAcoustic2D();	///< Destructor
 
 private:
     std::shared_ptr<ModelAcoustic2D<T>> model;
-    std::shared_ptr<ImageAcoustic2D<T>> pimage;
+    std::shared_ptr<Image2D<T>> pimage;
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> dataP;
     std::shared_ptr<Data2D<T>> dataAz;
@@ -124,7 +136,7 @@ template<typename T>
 class RtmAcoustic3D: public Rtm<T> {
 public:
     RtmAcoustic3D();					///< Constructor
-    RtmAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<ImageAcoustic3D<T>> pimage, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataP, int order, int snapinc);					///< Constructor 
+    RtmAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Image3D<T>> pimage, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataP, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs rtm with full snapshoting
     int run_edge(); ///< Runs rtm with edge boundary saving
     int run_optimal(); ///< Runs rtm with optimal checkpointing
@@ -132,12 +144,13 @@ public:
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
     void setDataP(std::shared_ptr<Data3D<T>> _dataP) { dataP = _dataP; dataPset = true; }
     void setDataAz(std::shared_ptr<Data3D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
+    void crossCorr(T *ws, int pads, T* wr, int padr);
 
     ~RtmAcoustic3D();	///< Destructor
 
 private:
     std::shared_ptr<ModelAcoustic3D<T>> model;
-    std::shared_ptr<ImageAcoustic3D<T>> pimage;
+    std::shared_ptr<Image3D<T>> pimage;
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> dataP;
     std::shared_ptr<Data3D<T>> dataAz;
@@ -147,6 +160,44 @@ private:
     bool dataPset, dataAxset, dataAyset, dataAzset;
 };
 
+/** The 2D Elastic Rtm class
+ *
+ */
+/*
+template<typename T>
+class RtmElastic2D: public Rtm<T> {
+public:
+    RtmElastic2D();					///< Constructor
+    RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<ImageElastic2D<T>> pimage, std::shared_ptr<ImageElastic2D<T>> simage, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataVx,, std::shared_ptr<Data2D<T>> dataVz, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs rtm with full snapshoting
+    int run_optimal(); ///< Runs rtm with optimal checkpointing
+    void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
+    void setDataVx(std::shared_ptr<Data2D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
+    void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setPimage(std::shared_ptr<Data2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
+    void setSimage(std::shared_ptr<Data2D<T>> _simage) { simage = _simage; simageset = true; }
+    void crossCorr_pp(T *ws, int pads, T* wr, int padr);
+    void crossCorr_ps(T *ws, int pads, T* wr, int padr);
+    void crossCorr_ppps(T *ws, int pads, T* wr, int padr);
+
+
+    ~RtmElastic2D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelElastic2D<T>> model;
+    std::shared_ptr<Image2D<T>> pimage;
+    std::shared_ptr<Image2D<T>> simage;
+    std::shared_ptr<Data2D<T>> source;
+    std::shared_ptr<Data2D<T>> dataVx;
+    std::shared_ptr<Data2D<T>> dataVz;
+    bool modelset;
+    bool pimageset;
+    bool simageset;
+    bool sourceset;
+    bool dataVxset, dataVzset;
+};
+*/
 
 }
 #endif //RTM_H

@@ -633,7 +633,7 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesAcoustic3D<T>> waves)
 
     size_t pos = this->checksize*this->check; 
     if(this->incore){
-		if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");
+		if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");
 		memcpy(this->checkpoints+pos, P1, nz_pml*ny_pml*nx_pml*sizeof(T));
 		pos += nz_pml*ny_pml*nx_pml;
 		memcpy(this->checkpoints+pos, P2, nz_pml*ny_pml*nx_pml*sizeof(T));

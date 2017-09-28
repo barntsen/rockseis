@@ -21,9 +21,8 @@ class Image2D: public Model<T> {
 public:
     Image2D(std::string imagefile); ///< Constructor
     Image2D(std::string imagefile, std::shared_ptr<ModelAcoustic2D<T>> model, int nhx, int nhz); 	///< Constructor
-    //Image2D(std::string imagefile, ModelElastic2D<T> model); 	///< Constructor
+    Image2D(std::string imagefile, std::shared_ptr<ModelElastic2D<T>> model, int nhx, int nhz); 	///< Constructor
     //Image2D(std::string imagefile, ModelAcoustic2D<T> model, T apertx); 	///< Constructor
-    //Image2D(std::string imagefile, ModelElastic2D<T> model, T apertx); 	///< Constructor
     ~Image2D();       	///< Destructor
 
     // Get functions
@@ -52,21 +51,6 @@ private:
     bool allocated;
 };
 
-// =============== 2D ACOUSTIC IMAGE CLASS =============== //
-/** The 2D acoustic image class
- *
- */
-template<typename T>
-class ImageAcoustic2D: public Image2D<T> {
-public:
-    ImageAcoustic2D(std::string imagefile); ///< Constructor
-    ImageAcoustic2D(std::string imagefile, std::shared_ptr<ModelAcoustic2D<T>> model, int nhx, int nhz); 	///< Constructor
-    ~ImageAcoustic2D();       	///< Destructor
-
-    // Crosscorrelation 
-    void crossCorr(T *ws, int pads, T* wr, int padr);
-};
-
 // =============== 3D IMAGE CLASS =============== //
 /** The 3D image class
  *
@@ -76,9 +60,7 @@ class Image3D: public Model<T> {
 public:
     Image3D(std::string imagefile); ///< Constructor
     Image3D(std::string imagefile, std::shared_ptr<ModelAcoustic3D<T>> model, int nhx, int nhy, int nhz); 	///< Constructor
-    //Image3D(std::string imagefile, ModelElastic3D<T> model); 	///< Constructor
-    //Image3D(std::string imagefile, ModelAcoustic3D<T> model, T apertx); 	///< Constructor
-    //Image3D(std::string imagefile, ModelElastic3D<T> model, T apertx); 	///< Constructor
+    Image3D(std::string imagefile, std::shared_ptr<ModelElastic3D<T>> model, int nhx, int nhy, int nhz); 	///< Constructor
     ~Image3D();       	///< Destructor
 
     // Get functions
@@ -108,23 +90,6 @@ private:
     std::string imagefile;
     bool allocated;
 };
-
-// =============== 3D ACOUSTIC IMAGE CLASS =============== //
-/** The 3D acoustic image class
- *
- */
-template<typename T>
-class ImageAcoustic3D: public Image3D<T> {
-public:
-    ImageAcoustic3D(std::string imagefile); ///< Constructor
-    ImageAcoustic3D(std::string imagefile, std::shared_ptr<ModelAcoustic3D<T>> model, int nhx, int nhy, int nhz); 	///< Constructor
-    ~ImageAcoustic3D();       	///< Destructor
-
-    // Crosscorrelation 
-    void crossCorr(T *ws, int pads, T* wr, int padr);
-};
-
-
 
 }
 

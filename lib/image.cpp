@@ -97,6 +97,38 @@ Image2D<T>::Image2D(std::string _imagefile, std::shared_ptr<ModelAcoustic2D<T>> 
 }
 
 template<typename T>
+Image2D<T>::Image2D(std::string _imagefile, std::shared_ptr<ModelElastic2D<T>> model, int nhx, int nhz): Model<T>(2)
+{
+    long int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+
+    _nx=model->getNx();
+    _ny=model->getNy();
+    _nz=model->getNz();
+    _dx=model->getDx();
+    _dy=model->getDy();
+    _dz=model->getDz();
+    _ox=model->getOx();
+    _oy=model->getOy();
+    _oz=model->getOz();
+
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setNhx(nhx);
+    this->setNhz(nhz);
+    imagefile = _imagefile;
+    allocated = false;
+}
+
+template<typename T>
 bool Image2D<T>::read()
 {
     bool status;
@@ -369,56 +401,6 @@ Image2D<T>::~Image2D() {
     }
 }
 
-
-/// =============== 2D ACOUSTIC IMAGE CLASS =============== //
-template<typename T>
-ImageAcoustic2D<T>::ImageAcoustic2D(std::string _imagefile, std::shared_ptr<ModelAcoustic2D<T>> model, int nhx, int nhz):Image2D<T>(_imagefile, model, nhx, nhz)
-{
-    // Do nothing
-}
-
-
-template<typename T>
-ImageAcoustic2D<T>::ImageAcoustic2D(std::string _imagefile):Image2D<T>(_imagefile)
-{
-    // Do nothing
-}
-
-template<typename T>
-void ImageAcoustic2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
-{
-    if(!this->getAllocated()) this->allocateImage();
-	int ix, iz, ihx, ihz;
-    T *imagedata = this->getImagedata();
-	int nhx = this->getNhx();
-	int nhz = this->getNhz();
-	int nx = this->getNx();
-	int nxs = nx+2*pads;
-	int nxr = nx+2*padr;
-	int nz = this->getNz();
-	int hx, hz;
-	for (ihx=0; ihx<nhx; ihx++){
-		hx= -(nhx-1)/2 + ihx;
-		for (ihz=0; ihz<nhz; ihz++){
-			hz= -(nhz-1)/2 + ihz;
-			for (ix=0; ix<nx; ix++){
-				if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
-				{
-					for (iz=0; iz<nz; iz++){
-						if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz))
-							imagedata[ki2D(ix,iz,ihx,ihz)] += ws[ks2D(ix-hx+pads, iz-hz+pads)]*wr[kr2D(ix+hx+padr, iz+hz+padr)];
-					}	
-				}
-			}
-		}
-	}
-}
-
-template<typename T>
-ImageAcoustic2D<T>::~ImageAcoustic2D() {
-    // Do nothing
-}
-
 /// =============== 3D IMAGE CLASS =============== //
 
 // constructor
@@ -475,6 +457,39 @@ Image3D<T>::Image3D(std::string imagefile): Model<T>(3)
 
 template<typename T>
 Image3D<T>::Image3D(std::string _imagefile, std::shared_ptr<ModelAcoustic3D<T>> model, int nhx, int nhy, int nhz): Model<T>(3)
+{
+    long int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+
+    _nx=model->getNx();
+    _ny=model->getNy();
+    _nz=model->getNz();
+    _dx=model->getDx();
+    _dy=model->getDy();
+    _dz=model->getDz();
+    _ox=model->getOx();
+    _oy=model->getOy();
+    _oz=model->getOz();
+
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setNhx(nhx);
+    this->setNhy(nhy);
+    this->setNhz(nhz);
+    imagefile = _imagefile;
+    allocated = false;
+}
+
+template<typename T>
+Image3D<T>::Image3D(std::string _imagefile, std::shared_ptr<ModelElastic3D<T>> model, int nhx, int nhy, int nhz): Model<T>(3)
 {
     long int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
@@ -814,72 +829,12 @@ Image3D<T>::~Image3D() {
     allocated = false;
 }
 
-/// =============== 3D ACOUSTIC IMAGE CLASS =============== //
-template<typename T>
-ImageAcoustic3D<T>::ImageAcoustic3D(std::string _imagefile, std::shared_ptr<ModelAcoustic3D<T>> model, int nhx, int nhy, int nhz):Image3D<T>(_imagefile, model, nhx, nhy, nhz)
-{
-    // Do nothing
-}
-
-template<typename T>
-ImageAcoustic3D<T>::ImageAcoustic3D(std::string _imagefile):Image3D<T>(_imagefile)
-{
-    // Do nothing
-}
-
-template<typename T>
-void ImageAcoustic3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
-{
-    if(!this->getAllocated()) this->allocateImage();
-	int ix, iy, iz, ihx, ihy, ihz;
-	int nhx = this->getNhx();
-	int nhy = this->getNhy();
-	int nhz = this->getNhz();
-	int nx = this->getNx();
-	int nxs = nx + 2*pads;
-	int nxr = nx + 2*padr;
-	int ny = this->getNy();
-	int nys = ny + 2*pads;
-	int nyr = ny + 2*padr;
-	int nz = this->getNz();
-	int hx, hy, hz;
-    T* imagedata = this->getImagedata();
-	for (ihx=0; ihx<nhx; ihx++){
-		hx= -(nhx-1)/2 + ihx;
-		for (ihy=0; ihy<nhy; ihy++){
-			hy= -(nhy-1)/2 + ihy;
-			for (ihz=0; ihz<nhz; ihz++){
-				hz= -(nhz-1)/2 + ihz;
-				for (ix=0; ix<nx; ix++){
-					if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
-						for (iy=0; iy<ny; iy++){
-							if( ((iy-hy) >= 0) && ((iy-hy) < ny) && ((iy+hy) >= 0) && ((iy+hy) < ny))
-								for (iz=0; iz<nz; iz++){
-									if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz))
-										imagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += ws[ks3D(ix-hx+pads,iy-hy+pads,iz-hz+pads)]*wr[kr3D(ix+hx+padr,iy+hy+padr,iz+hz+padr)];
-								}	
-						}
-				}
-			}
-		}
-	}
-}
-
-template<typename T>
-ImageAcoustic3D<T>::~ImageAcoustic3D() {
-    // Do nothing
-}
-
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Image2D<float>;
 template class Image2D<double>;
-template class ImageAcoustic2D<float>;
-template class ImageAcoustic2D<double>;
 
 template class Image3D<float>;
 template class Image3D<double>;
-template class ImageAcoustic3D<float>;
-template class ImageAcoustic3D<double>;
 
 }
 

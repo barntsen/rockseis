@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     std::string Precordfile;
     std::shared_ptr<rockseis::Data2D<float>> shot2D;
     std::shared_ptr<rockseis::Data2D<float>> shot2Di;
-    std::shared_ptr<rockseis::ImageAcoustic2D<float>> pimage;
+    std::shared_ptr<rockseis::Image2D<float>> pimage;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
 		mpi.performWork();
 
         // Image
-        pimage = std::make_shared<rockseis::ImageAcoustic2D<float>>(Pimagefile, gmodel, nhx, nhz);
+        pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
         pimage->createEmpty();
 
 		for(unsigned long int i=0; i<ngathers; i++) {
@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
                 size_t ntr = shot2D->getNtrace();
 
                 lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
-                pimage = std::make_shared<rockseis::ImageAcoustic2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
+                pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
 
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();
