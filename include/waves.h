@@ -208,6 +208,7 @@ public:
     std::shared_ptr<PmlElastic2D<T>> getPml() { return Pml; } ///< Get Pml 
     T * getSxx() { return Sxx; }  ///< Get Stress component at time t+1
     T * getSzz() { return Szz; }  ///< Get Stress component at time t+1
+    T * getSxz() { return Sxz; }  ///< Get Stress component at time t+1
 
     T * getVx() { return Vx; }  ///< Get Velocity component at time t+1/2
     T * getVz() { return Vz; }  ///< Get Velocity component at time t+1/2
@@ -248,6 +249,9 @@ public:
     T * getSxx() { return Sxx; }    ///< Get Stress component at time t+1
     T * getSyy() { return Syy; }    ///< Get Stress component at time t+1
     T * getSzz() { return Szz; }    ///< Get Stress component at time t+1
+    T * getSyz() { return Syz; }    ///< Get Stress component at time t+1
+    T * getSxz() { return Sxz; }    ///< Get Stress component at time t+1
+    T * getSxy() { return Sxy; }    ///< Get Stress component at time t+1
     T * getVx() { return Vx; }    ///< Get Velocity component at time t+1/2
     T * getVy() { return Vy; }    ///< Get Velocity component at time t+1/2
     T * getVz() { return Vz; }    ///< Get Velocity component at time t+1/2

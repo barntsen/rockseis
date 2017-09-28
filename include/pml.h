@@ -139,13 +139,13 @@ public:
     
     T *Sxx_left;
     T *Sxx_right;
-    T *Szz_top;
-    T *Szz_bottom;
-    
-    T *Sxzz_top;
-    T *Sxzz_bottom;
     T *Sxzx_left;
     T *Sxzx_right;
+
+    T *Szz_top;
+    T *Szz_bottom;
+    T *Sxzz_top;
+    T *Sxzz_bottom;
     
     T *Vxx_left;
     T *Vxx_right;
@@ -172,26 +172,10 @@ public:
     
     T *Sxx_left;
     T *Sxx_right;
-    T *Syy_front;
-    T *Syy_back;
-    T *Szz_top;
-    T *Szz_bottom;
-    
-    T *Sxzz_top;
-    T *Sxzz_bottom;
-    T *Syzz_top;
-    T *Syzz_bottom;
-    
     T *Sxzx_left;
     T *Sxzx_right;
     T *Sxyx_left;
     T *Sxyx_right;
-    
-    T *Sxyy_front;
-    T *Sxyy_back;
-    T *Syzy_front;
-    T *Syzy_back;
-    
     T *Vxx_left;
     T *Vxx_right;
     T *Vzx_left;
@@ -199,6 +183,12 @@ public:
     T *Vyx_left;
     T *Vyx_right;
     
+    T *Szz_top;
+    T *Szz_bottom;
+    T *Sxzz_top;
+    T *Sxzz_bottom;
+    T *Syzz_top;
+    T *Syzz_bottom;
     T *Vzz_top;
     T *Vzz_bottom;
     T *Vxz_top;
@@ -206,12 +196,18 @@ public:
     T *Vyz_top;
     T *Vyz_bottom;
     
+    T *Syy_front;
+    T *Syy_back;
+    T *Sxyy_front;
+    T *Sxyy_back;
+    T *Syzy_front;
+    T *Syzy_back;
+    T *Vyy_front;
+    T *Vyy_back;
     T *Vxy_front;
     T *Vxy_back;
     T *Vzy_front;
     T *Vzy_back;
-    T *Vyy_front;
-    T *Vyy_back;
 };
 
 }
