@@ -24,9 +24,6 @@
 #define GMAP 1
 #define SMAP 0
 
-#define PIMAGE 0
-#define SIMAGE 1
-
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
 #define ks2D(i,j) ((j)*nxs + (i))
 #define kr2D(i,j) ((j)*nxr + (i))
@@ -163,23 +160,22 @@ private:
 /** The 2D Elastic Rtm class
  *
  */
-/*
 template<typename T>
 class RtmElastic2D: public Rtm<T> {
 public:
     RtmElastic2D();					///< Constructor
-    RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<ImageElastic2D<T>> pimage, std::shared_ptr<ImageElastic2D<T>> simage, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataVx,, std::shared_ptr<Data2D<T>> dataVz, int order, int snapinc);					///< Constructor 
+    RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataVx, std::shared_ptr<Data2D<T>> dataVz, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs rtm with full snapshoting
     int run_optimal(); ///< Runs rtm with optimal checkpointing
     void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataVx(std::shared_ptr<Data2D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
     void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
-    void setPimage(std::shared_ptr<Data2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
-    void setSimage(std::shared_ptr<Data2D<T>> _simage) { simage = _simage; simageset = true; }
-    void crossCorr_pp(T *ws, int pads, T* wr, int padr);
-    void crossCorr_ps(T *ws, int pads, T* wr, int padr);
-    void crossCorr_ppps(T *ws, int pads, T* wr, int padr);
+    void setPimage(std::shared_ptr<Image2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
+    void setSimage(std::shared_ptr<Image2D<T>> _simage) { simage = _simage; simageset = true; }
+    void crossCorr_pp(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr);
+    void crossCorr_ps(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr);
+    void crossCorr_ppps(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr);
 
 
     ~RtmElastic2D();	///< Destructor
@@ -197,7 +193,6 @@ private:
     bool sourceset;
     bool dataVxset, dataVzset;
 };
-*/
 
 }
 #endif //RTM_H

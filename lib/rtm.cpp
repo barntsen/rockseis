@@ -783,7 +783,6 @@ RtmAcoustic3D<T>::~RtmAcoustic3D() {
 
 // =============== ELASTIC 2D RTM CLASS =============== //
 
-/*
 template<typename T>
 RtmElastic2D<T>::RtmElastic2D(){
     sourceset = false;
@@ -812,7 +811,7 @@ template<typename T>
 int RtmElastic2D<T>::run(){
      int result = RTM_ERR;
      if(!pimageset && !simageset) {
-         rswarning("RtmElastic2D::run: No image set");
+         rs_warning("RtmElastic2D::run: No image set");
          return result;
      }
      int nt;
@@ -871,8 +870,8 @@ int RtmElastic2D<T>::run(){
     waves  = std::make_shared<WavesElastic2D<T>>(model, nt, dt, ot);
 
     // Create image
-    if(this->pimageset) image->allocateImage(PIMAGE);
-    if(this->simageset) image->allocateImage(SIMAGE);
+    if(this->pimageset) pimage->allocateImage();
+    if(this->simageset) simage->allocateImage();
 
     Vxsnap->openSnap(this->getSnapfile(), 'r');
     Vxsnap->allocSnap(0);
@@ -899,9 +898,9 @@ int RtmElastic2D<T>::run(){
         if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
             T *Vxr = waves->getVx();
             T *Vzr = waves->getVz();
-            //image->crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            //image->crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            //image->crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            //crossCorr_pp(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            //crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            //crossCorr_ppps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
         }
 
         // Output progress to logfile
@@ -942,8 +941,8 @@ int RtmElastic2D<T>::run_optimal(){
      optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
 
      // Create image
-     image->allocateImage(PIMAGE);
-     image->allocateImage(SIMAGE);
+     pimage->allocateImage();
+     simage->allocateImage();
 
     // Loop over forward time
     do
@@ -981,9 +980,10 @@ int RtmElastic2D<T>::run_optimal(){
             T *wsz = waves_fw->getVz();
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
-            pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
-            simage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
-            psimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
+
+            //crossCorr_pp(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            //crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            //crossCorr_ppps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
 
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
@@ -1004,9 +1004,9 @@ int RtmElastic2D<T>::run_optimal(){
             T *wsz = waves_fw->getVz();
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
-            pimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
-            simage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
-            psimage->crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
+            //crossCorr_pp(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            //crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            //crossCorr_ppps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
         }
         if (whatodo == takeshot)
         {
@@ -1025,7 +1025,6 @@ int RtmElastic2D<T>::run_optimal(){
         //this->writeProgress(capo, nt, 20, 48);
     } while((whatodo != terminate) && (whatodo != error));
 
-
 	//Remove snapshot file
 	optimal->removeCheck();
 
@@ -1037,7 +1036,6 @@ template<typename T>
 RtmElastic2D<T>::~RtmElastic2D() {
     // Nothing here
 }
-*/
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Rtm<float>;
