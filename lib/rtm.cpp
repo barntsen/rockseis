@@ -808,9 +808,98 @@ RtmElastic2D<T>::RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::sh
 }
 
 template<typename T>
+void RtmElastic2D<T>::crossCorr_pp(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr)
+{
+    if(!pimage->getAllocated()) pimage->allocateImage();
+	int ix, iz, ihx, ihz;
+    T *imagedata = pimage->getImagedata();
+    T msxx, mszz, mrxx, mrzz;
+	int nhx = pimage->getNhx();
+	int nhz = pimage->getNhz();
+	int nx = pimage->getNx();
+    T dx = pimage->getDx(); 
+    T dz = pimage->getDz(); 
+	int nxs = nx+2*pads;
+	int nxr = nx+2*padr;
+	int nz = pimage->getNz();
+	int hx, hz;
+	for (ihx=0; ihx<nhx; ihx++){
+		hx= -(nhx-1)/2 + ihx;
+		for (ihz=0; ihz<nhz; ihz++){
+			hz= -(nhz-1)/2 + ihz;
+			for (ix=0; ix<nx; ix++){
+				if( ((ix-hx) >= 1) && ((ix-hx) < nx) && ((ix+hx) >= 1) && ((ix+hx) < nx))
+				{
+					for (iz=0; iz<nz; iz++){
+						if( ((iz-hz) >= 1) && ((iz-hz) < nz) && ((iz+hz) >= 1) && ((iz+hz) < nz))
+                        {
+                            msxx = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx;
+                            mszz = (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz;
+
+                            mrxx = (wrx[kr2D(ix+hx+padr, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr)])/dx;
+                            mrzz = (wrz[kr2D(ix+hx+padr, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr-1)])/dz;
+							imagedata[ki2D(ix,iz,ihx,ihz)] += (msxx + mszz)*(mrxx + mrzz);
+                        }
+					}	
+				}
+			}
+		}
+	}
+}
+
+template<typename T>
+void RtmElastic2D<T>::crossCorr_ps(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr)
+{
+    if(!simage->getAllocated()) simage->allocateImage();
+	int ix, iz, ihx, ihz;
+    T *imagedata = simage->getImagedata();
+    T msxx, mszz, msxz, mrxx, mrzz, mrxz;
+	int nhx = simage->getNhx();
+	int nhz = simage->getNhz();
+	int nx = simage->getNx();
+    T dx = simage->getDx(); 
+    T dz = simage->getDz(); 
+	int nxs = nx+2*pads;
+	int nxr = nx+2*padr;
+	int nz = simage->getNz();
+	int hx, hz;
+	for (ihx=0; ihx<nhx; ihx++){
+		hx= -(nhx-1)/2 + ihx;
+		for (ihz=0; ihz<nhz; ihz++){
+			hz= -(nhz-1)/2 + ihz;
+			for (ix=0; ix<nx; ix++){
+				if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
+				{
+					for (iz=0; iz<nz; iz++){
+                        if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
+                        {
+                            msxx = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx;
+                            mszz = (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz;
+                            msxz = 0.5*(wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz;
+                            msxz += 0.5*(wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz;
+                            msxz += 0.5*(wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx;
+                            msxz += 0.5*(wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
+
+                            mrxx = (wrx[kr2D(ix+hx+padr, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr)])/dx;
+                            mrzz = (wrz[kr2D(ix+hx+padr, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr-1)])/dz;
+                            mrxz = 0.5*(wrx[kr2D(ix+hx+padr, iz+hz+padr+1)] - wrx[kr2D(ix+hx+padr, iz+hz+padr)])/dz;
+                            mrxz += 0.5*(wrx[kr2D(ix+hx+padr-1, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dz;
+                            mrxz += 0.5*(wrz[kr2D(ix+hx+padr+1, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr)])/dx;
+                            mrxz += 0.5*(wrz[kr2D(ix+hx+padr, iz+hz+padr-1)] - wrz[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dx;
+                            imagedata[ki2D(ix,iz,ihx,ihz)] += (-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
+                        }
+                    }	
+				}
+			}
+		}
+	}
+}
+
+
+template<typename T>
 int RtmElastic2D<T>::run(){
      int result = RTM_ERR;
-     if(!pimageset && !simageset) {
+     if(!pimageset || !simageset) {
          rs_warning("RtmElastic2D::run: No image set");
          return result;
      }
@@ -831,12 +920,12 @@ int RtmElastic2D<T>::run(){
      // Create snapshots
      std::shared_ptr<Snapshot2D<T>> Vxsnap;
      Vxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-     Vxsnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
+     Vxsnap->openSnap(this->getSnapfile() + "-vx", 'w'); // Create a new snapshot file
      Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
 
      std::shared_ptr<Snapshot2D<T>> Vzsnap;
      Vzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-     Vzsnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
+     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'w'); // Create a new snapshot file
      Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
 
     // Loop over forward time
@@ -873,10 +962,10 @@ int RtmElastic2D<T>::run(){
     if(this->pimageset) pimage->allocateImage();
     if(this->simageset) simage->allocateImage();
 
-    Vxsnap->openSnap(this->getSnapfile(), 'r');
+    Vxsnap->openSnap(this->getSnapfile() + "-vx", 'r');
     Vxsnap->allocSnap(0);
 
-    Vzsnap->openSnap(this->getSnapfile(), 'r');
+    Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
     Vzsnap->allocSnap(0);
 
     // Loop over reverse time
@@ -899,7 +988,7 @@ int RtmElastic2D<T>::run(){
             T *Vxr = waves->getVx();
             T *Vzr = waves->getVz();
             //crossCorr_pp(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            //crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
             //crossCorr_ppps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
         }
 
@@ -981,9 +1070,9 @@ int RtmElastic2D<T>::run_optimal(){
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
 
-            //crossCorr_pp(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            //crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            //crossCorr_ppps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            crossCorr_pp(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
+            //crossCorr_ps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
+            //crossCorr_ppps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
 
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
@@ -1004,9 +1093,9 @@ int RtmElastic2D<T>::run_optimal(){
             T *wsz = waves_fw->getVz();
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
-            //crossCorr_pp(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            //crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            //crossCorr_ppps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            crossCorr_pp(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
+            //crossCorr_ps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
+            //crossCorr_ppps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
         }
         if (whatodo == takeshot)
         {
@@ -1032,6 +1121,8 @@ int RtmElastic2D<T>::run_optimal(){
     return result;
 }
 
+
+
 template<typename T>
 RtmElastic2D<T>::~RtmElastic2D() {
     // Nothing here
@@ -1044,5 +1135,8 @@ template class RtmAcoustic2D<float>;
 template class RtmAcoustic2D<double>;
 template class RtmAcoustic3D<float>;
 template class RtmAcoustic3D<double>;
+
+template class RtmElastic2D<float>;
+template class RtmElastic2D<double>;
 
 }
