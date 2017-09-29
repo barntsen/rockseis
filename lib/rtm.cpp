@@ -987,8 +987,8 @@ int RtmElastic2D<T>::run(){
         if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
             T *Vxr = waves->getVx();
             T *Vzr = waves->getVz();
-            //crossCorr_pp(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            crossCorr_pp(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            //crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
             //crossCorr_ppps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
         }
 
@@ -1007,6 +1007,10 @@ int RtmElastic2D<T>::run(){
 template<typename T>
 int RtmElastic2D<T>::run_optimal(){
      int result = RTM_ERR;
+     if(!pimageset || !simageset) {
+         rs_warning("RtmElastic2D::run: No image set");
+         return result;
+     }
      int nt;
      float dt;
 	 float ot;
@@ -1073,7 +1077,7 @@ int RtmElastic2D<T>::run_optimal(){
             crossCorr_pp(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
             //crossCorr_ps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
             //crossCorr_ppps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
-
+      
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
             optimal->openCheck(this->getSnapfile(), waves_fw, 'a');

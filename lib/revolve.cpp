@@ -724,8 +724,8 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesElastic2D<T>> waves)
     T *Sxx = waves->getSxx();
     T *Szz = waves->getSzz();
     T *Sxz = waves->getSxz();
-    T *Vx = waves->getSzz();
-    T *Vz = waves->getSzz();
+    T *Vx = waves->getVx();
+    T *Vz = waves->getVz();
     std::shared_ptr<PmlElastic2D<T>> Pml = waves->getPml();
 
     size_t pos = this->checksize*this->check; 
@@ -738,6 +738,12 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesElastic2D<T>> waves)
 		pos += nz_pml*nx_pml;
 
 		memcpy(Sxz, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
+		pos += nz_pml*nx_pml;
+
+		memcpy(Vx, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
+		pos += nz_pml*nx_pml;
+
+		memcpy(Vz, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
 		pos += nz_pml*nx_pml;
 
 		memcpy(Pml->Sxx_left, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
@@ -829,8 +835,8 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesElastic2D<T>> waves)
     T *Sxx = waves->getSxx();
     T *Szz = waves->getSzz();
     T *Sxz = waves->getSxz();
-    T *Vx = waves->getSzz();
-    T *Vz = waves->getSzz();
+    T *Vx = waves->getVx();
+    T *Vz = waves->getVz();
     std::shared_ptr<PmlElastic2D<T>> Pml = waves->getPml();
 
     size_t pos = this->checksize*this->check; 
@@ -843,6 +849,12 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesElastic2D<T>> waves)
 		pos += nz_pml*nx_pml;
 
 		memcpy(this->checkpoints+pos, Sxz, nz_pml*nx_pml*sizeof(T));
+		pos += nz_pml*nx_pml;
+
+		memcpy(this->checkpoints+pos, Vx, nz_pml*nx_pml*sizeof(T));
+		pos += nz_pml*nx_pml;
+
+		memcpy(this->checkpoints+pos, Vz, nz_pml*nx_pml*sizeof(T));
 		pos += nz_pml*nx_pml;
 
 		memcpy(this->checkpoints+pos, Pml->Sxx_left, nz_pml*lpml*sizeof(T));
