@@ -13,6 +13,7 @@ Rtm<T>::Rtm() {
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 0;
+    imagetype = BOTH;
 }
 
 template<typename T>
@@ -36,6 +37,8 @@ Rtm<T>::Rtm(int _order, int _snapinc) {
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 1;
+
+    imagetype = BOTH;
 }
 
 template<typename T>
@@ -808,98 +811,117 @@ RtmElastic2D<T>::RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::sh
 }
 
 template<typename T>
-void RtmElastic2D<T>::crossCorr_pp(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr)
+void RtmElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho)
 {
-    if(!pimage->getAllocated()) pimage->allocateImage();
-	int ix, iz, ihx, ihz;
-    T *imagedata = pimage->getImagedata();
-    T msxx, mszz, mrxx, mrzz;
-	int nhx = pimage->getNhx();
-	int nhz = pimage->getNhz();
-	int nx = pimage->getNx();
-    T dx = pimage->getDx(); 
-    T dz = pimage->getDz(); 
-	int nxs = nx+2*pads;
-	int nxr = nx+2*padr;
-	int nz = pimage->getNz();
-	int hx, hz;
-	for (ihx=0; ihx<nhx; ihx++){
-		hx= -(nhx-1)/2 + ihx;
-		for (ihz=0; ihz<nhz; ihz++){
-			hz= -(nhz-1)/2 + ihz;
-			for (ix=0; ix<nx; ix++){
-				if( ((ix-hx) >= 1) && ((ix-hx) < nx) && ((ix+hx) >= 1) && ((ix+hx) < nx))
-				{
-					for (iz=0; iz<nz; iz++){
-						if( ((iz-hz) >= 1) && ((iz-hz) < nz) && ((iz+hz) >= 1) && ((iz+hz) < nz))
-                        {
-                            msxx = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx;
-                            mszz = (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz;
-
-                            mrxx = (wrx[kr2D(ix+hx+padr, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr)])/dx;
-                            mrzz = (wrz[kr2D(ix+hx+padr, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr-1)])/dz;
-							imagedata[ki2D(ix,iz,ihx,ihz)] += (msxx + mszz)*(mrxx + mrzz);
-                        }
-					}	
-				}
-			}
-		}
-	}
-}
-
-template<typename T>
-void RtmElastic2D<T>::crossCorr_ps(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr)
-{
-    if(!simage->getAllocated()) simage->allocateImage();
-	int ix, iz, ihx, ihz;
-    T *imagedata = simage->getImagedata();
+    int ix, iz, ihx, ihz;
+    T *pimagedata; 
+    T *simagedata;
     T msxx, mszz, msxz, mrxx, mrzz, mrxz;
-	int nhx = simage->getNhx();
-	int nhz = simage->getNhz();
-	int nx = simage->getNx();
-    T dx = simage->getDx(); 
-    T dz = simage->getDz(); 
+    T C33_minus, C33_plus;
+    T C44_minus, C44_plus;
+	int nhx; 
+	int nhz;
+	int nx;
+    T dx;
+    T dz;
+	int nz;
+	int hx, hz;
+
+    rs_imagetype imagetype = this->getImagetype();
+    switch (imagetype) {
+        case PP:
+            if(!pimage->getAllocated()){
+                pimage->allocateImage();
+            }
+            pimagedata = pimage->getImagedata();
+            nhx = pimage->getNhx();
+            nhz = pimage->getNhz();
+            nx = pimage->getNx();
+            nz = pimage->getNz();
+            dx = pimage->getDx(); 
+            dz = pimage->getDz(); 
+            break;
+        case PS: 
+            if(!simage->getAllocated()){
+                simage->allocateImage();
+            }
+            simagedata = simage->getImagedata();
+            nhx = simage->getNhx();
+            nhz = simage->getNhz();
+            nx = simage->getNx();
+            nz = simage->getNz();
+            dx = simage->getDx(); 
+            dz = simage->getDz(); 
+            break;
+        case BOTH:
+            if(!pimage->getAllocated()){
+                pimage->allocateImage();
+            }
+            pimagedata = pimage->getImagedata();
+            if(!simage->getAllocated()){
+                simage->allocateImage();
+            }
+            simagedata = simage->getImagedata();
+            nhx = simage->getNhx();
+            nhz = simage->getNhz();
+            nx = simage->getNx();
+            nz = simage->getNz();
+            dx = simage->getDx(); 
+            dz = simage->getDz(); 
+            break;
+    }
+
 	int nxs = nx+2*pads;
 	int nxr = nx+2*padr;
-	int nz = simage->getNz();
-	int hx, hz;
+
 	for (ihx=0; ihx<nhx; ihx++){
 		hx= -(nhx-1)/2 + ihx;
 		for (ihz=0; ihz<nhz; ihz++){
 			hz= -(nhz-1)/2 + ihz;
 			for (ix=0; ix<nx; ix++){
 				if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
-				{
-					for (iz=0; iz<nz; iz++){
+                {
+                    for (iz=0; iz<nz; iz++){
                         if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
                         {
+                            C33_minus = Rho[km2D(ix-hx, iz-hz)]*Vp[km2D(ix-hx, iz-hz)]*Vp[km2D(ix-hx, iz-hz)];
+                            C33_plus = Rho[km2D(ix+hx, iz+hz)]*Vp[km2D(ix+hx, iz+hz)]*Vp[km2D(ix+hx, iz+hz)];
+                            C44_minus = Rho[km2D(ix-hx, iz-hz)]*Vs[km2D(ix-hx, iz-hz)]*Vs[km2D(ix-hx, iz-hz)];
+                            C44_plus = Rho[km2D(ix+hx, iz+hz)]*Vs[km2D(ix+hx, iz+hz)]*Vs[km2D(ix+hx, iz+hz)];
+
                             msxx = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx;
                             mszz = (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz;
-                            msxz = 0.5*(wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz;
-                            msxz += 0.5*(wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz;
-                            msxz += 0.5*(wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx;
-                            msxz += 0.5*(wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
-
                             mrxx = (wrx[kr2D(ix+hx+padr, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr)])/dx;
                             mrzz = (wrz[kr2D(ix+hx+padr, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr-1)])/dz;
-                            mrxz = 0.5*(wrx[kr2D(ix+hx+padr, iz+hz+padr+1)] - wrx[kr2D(ix+hx+padr, iz+hz+padr)])/dz;
-                            mrxz += 0.5*(wrx[kr2D(ix+hx+padr-1, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dz;
-                            mrxz += 0.5*(wrz[kr2D(ix+hx+padr+1, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr)])/dx;
-                            mrxz += 0.5*(wrz[kr2D(ix+hx+padr, iz+hz+padr-1)] - wrz[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dx;
-                            imagedata[ki2D(ix,iz,ihx,ihz)] += (-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
+
+                            if(imagetype == PP || imagetype == BOTH){
+                                pimagedata[ki2D(ix,iz,ihx,ihz)] += C33_minus*C33_plus*(msxx + mszz) * (mrxx + mrzz);
+                            }
+
+                            if(imagetype == PS || imagetype == BOTH){
+                                msxz = 0.5*(wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz;
+                                msxz += 0.5*(wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz;
+                                msxz += 0.5*(wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx;
+                                msxz += 0.5*(wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
+
+                                mrxz = 0.5*(wrx[kr2D(ix+hx+padr, iz+hz+padr+1)] - wrx[kr2D(ix+hx+padr, iz+hz+padr)])/dz;
+                                mrxz += 0.5*(wrx[kr2D(ix+hx+padr-1, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dz;
+                                mrxz += 0.5*(wrz[kr2D(ix+hx+padr+1, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr)])/dx;
+                                mrxz += 0.5*(wrz[kr2D(ix+hx+padr, iz+hz+padr-1)] - wrz[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dx;
+                                simagedata[ki2D(ix,iz,ihx,ihz)] += C44_minus*C44_plus*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
+                            }
                         }
                     }	
-				}
+                }
 			}
 		}
 	}
 }
 
-
 template<typename T>
 int RtmElastic2D<T>::run(){
      int result = RTM_ERR;
-     if(!pimageset || !simageset) {
+     if(!pimageset && !simageset) {
          rs_warning("RtmElastic2D::run: No image set");
          return result;
      }
@@ -931,19 +953,19 @@ int RtmElastic2D<T>::run(){
     // Loop over forward time
     for(int it=0; it < nt; it++)
     {
-    	// Time stepping
-    	waves->forwardstepVelocity(model, der);
-    	waves->forwardstepStress(model, der);
-    
-    	// Inserting source 
-    	waves->insertSource(model, source, SMAP, it);
-
     	//Writting out results to snapshot files
         Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
         Vxsnap->writeSnap(it);
 
         Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
         Vzsnap->writeSnap(it);
+
+    	// Time stepping
+    	waves->forwardstepVelocity(model, der);
+    	waves->forwardstepStress(model, der);
+    
+    	// Inserting source 
+    	waves->insertSource(model, source, SMAP, it);
 
         // Output progress to logfile
         this->writeProgress(it, 2*nt-1, 20, 48);
@@ -968,12 +990,18 @@ int RtmElastic2D<T>::run(){
     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
     Vzsnap->allocSnap(0);
 
+    // Get models for scaling
+    T *Vp, *Vs, *Rho;
+    Vp = model->getVp();
+    Vs = model->getVs();
+    Rho = model->getR();
+
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
-    	// Time stepping
-    	waves->forwardstepVelocity(model, der);
+    	// Time stepping 
     	waves->forwardstepStress(model, der);
+    	waves->forwardstepVelocity(model, der);
 
     	// Inserting source 
     	waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
@@ -987,9 +1015,7 @@ int RtmElastic2D<T>::run(){
         if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
             T *Vxr = waves->getVx();
             T *Vzr = waves->getVz();
-            crossCorr_pp(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            //crossCorr_ps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
-            //crossCorr_ppps(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml());
+            crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml(), Vp, Vs, Rho);
         }
 
         // Output progress to logfile
@@ -1007,7 +1033,7 @@ int RtmElastic2D<T>::run(){
 template<typename T>
 int RtmElastic2D<T>::run_optimal(){
      int result = RTM_ERR;
-     if(!pimageset || !simageset) {
+     if(!pimageset && !simageset) {
          rs_warning("RtmElastic2D::run: No image set");
          return result;
      }
@@ -1037,6 +1063,12 @@ int RtmElastic2D<T>::run_optimal(){
      pimage->allocateImage();
      simage->allocateImage();
 
+     // Get models for scaling
+     T *Vp, *Vs, *Rho;
+     Vp = model->getVp();
+     Vs = model->getVs();
+     Rho = model->getR();
+
     // Loop over forward time
     do
     {
@@ -1058,8 +1090,8 @@ int RtmElastic2D<T>::run_optimal(){
         if (whatodo == firsturn)
         {
             // Time stepping
-            waves_fw->forwardstepVelocity(model, der);
             waves_fw->forwardstepStress(model, der);
+            waves_fw->forwardstepVelocity(model, der);
 
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, capo);
@@ -1074,9 +1106,7 @@ int RtmElastic2D<T>::run_optimal(){
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
 
-            crossCorr_pp(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
-            //crossCorr_ps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
-            //crossCorr_ppps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
+            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
       
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
@@ -1085,8 +1115,8 @@ int RtmElastic2D<T>::run_optimal(){
         if (whatodo == youturn)
         {
             // Time stepping
-            waves_bw->forwardstepVelocity(model, der);
             waves_bw->forwardstepStress(model, der);
+            waves_bw->forwardstepVelocity(model, der);
 
             // Inserting data
             waves_bw->insertSource(model, dataVx, GMAP, capo);
@@ -1097,9 +1127,7 @@ int RtmElastic2D<T>::run_optimal(){
             T *wsz = waves_fw->getVz();
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
-            crossCorr_pp(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
-            //crossCorr_ps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
-            //crossCorr_ppps(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml());
+            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
         }
         if (whatodo == takeshot)
         {

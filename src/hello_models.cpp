@@ -78,10 +78,10 @@ int main()
             for(ix=0; ix<nx; ix++){
                 R3d[k3d(ix,iy,iz)]= 1;
                 Vp3d[k3d(ix,iy,iz)]= 2000;
-                Vs3d[k3d(ix,iy,iz)]= 1100;
+                Vs3d[k3d(ix,iy,iz)]= 1500;
                 R2d[k2d(ix,iz)]= 1;
                 Vp2d[k2d(ix,iz)]= 2000;
-                Vs2d[k2d(ix,iz)]= 1100;
+                Vs2d[k2d(ix,iz)]= 1500;
             }
         }
     }

@@ -320,6 +320,10 @@ bool Image2D<T>::write()
 	    rs_error("Image2D::writeImage: No file assigned. ");
     }
 
+    if(!this->getAllocated()){
+	    rs_error("Image2D::writeImage: Image is not allocated. ");
+    }
+
     std::shared_ptr<rockseis::File> Fout (new rockseis::File());
     if(strcmp(imagefile.c_str(), "stdout")) {
         Fout->output(imagefile.c_str());
@@ -562,6 +566,10 @@ bool Image3D<T>::write()
     bool status;
     if(imagefile.empty()){
 	    rs_error("Image3D::writeImage: No file assigned. ");
+    }
+
+    if(!this->getAllocated()){
+	    rs_error("Image3D::writeImage: Image is not allocated. ");
     }
 
     std::shared_ptr<rockseis::File> Fout (new rockseis::File());

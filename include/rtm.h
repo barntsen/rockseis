@@ -25,10 +25,12 @@
 #define SMAP 0
 
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
+#define km2D(i,j) ((j)*nx + (i))
 #define ks2D(i,j) ((j)*nxs + (i))
 #define kr2D(i,j) ((j)*nxr + (i))
 
 #define ki3D(i,j,k,l,m,n) ((n)*nhy*nhx*nx*ny*nz + (m)*nhx*nx*ny*nz + (l)*nx*ny*nz + (k)*nx*ny + (j)*nx + (i))
+#define km3D(i,j,k) ((k)*nx*ny + (j)*nx + (i))
 #define ks3D(i,j,k) ((k)*nxs*nys + (j)*nxs + (i))
 #define kr3D(i,j,k) ((k)*nxr*nyr + (j)*nxr + (i))
 
@@ -36,6 +38,7 @@ namespace rockseis {
 
 // =============== ENUMS =============== //
 typedef enum {FULL, OPTIMAL, EDGES} rs_snapmethod; ///< Snapshot saving method
+typedef enum {PP, PS, BOTH} rs_imagetype; ///< Image type 
 
 /** The Progress struct
  *
@@ -64,6 +67,7 @@ public:
     int getSnapinc() { return snapinc; } ///< Get snap increment
     std::string getLogfile() { return logfile; } ///< Get name of logfile
     std::string getSnapfile() { return snapfile; } ///< Sets checkpoint filename
+    rs_imagetype getImagetype() { return imagetype; } ///< Get imagetype
     void setOrder(int _order) { if(_order > 1 && _order < 9)  order = _order;} ///< Set order of FD stencil
     void setSnapinc(int _snapinc) {snapinc = _snapinc;} ///< Set snap increment for recording snapshots
     void setLogfile(std::string name) { logfile = name; } ///< Set name of logfile
@@ -71,6 +75,7 @@ public:
     void setIncore(bool val) { incore = val; } ///< Sets optimal checkpoint incore flag
     void setNcheck(int val) { ncheck = val; } ///< Sets optimal checkpointing number of snaps 
     void setSnapfile(std::string file) { snapfile = file; } ///< Sets checkpoint filename
+    void setImagetype(rs_imagetype type) { imagetype = type; } ///< Set imagetype 
     int getNcheck() { return ncheck; } ///< Gets the number of checkpoints for the optimal checkpointing scheme
     bool getIncore() { return incore; } ///< Gets the incore flag for the optimal checkpointing scheme
     bool createLog(std::string name); ///< Set name of logfile and open for writing
@@ -88,7 +93,8 @@ private:
     std::string logfile; ///< Log file name
     std::ofstream Flog; ///< Logfile
 	Progress prog; ///< Progress counter
-    rs_snapmethod snapmethod; 
+    rs_snapmethod snapmethod; ///< Choice of checkpointing method
+    rs_imagetype imagetype; ///< Choice of imaging condition
     bool incore; ///< Incore flag for optimal checkpointing (No IO)
     int ncheck; ///< Number of checkpoints in optimal checkpointing
     std::string snapfile;
@@ -173,9 +179,7 @@ public:
     void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
     void setPimage(std::shared_ptr<Image2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
     void setSimage(std::shared_ptr<Image2D<T>> _simage) { simage = _simage; simageset = true; }
-    void crossCorr_pp(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr);
-    void crossCorr_ps(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr);
-    void crossCorr_ppps(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr);
+    void crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho);
 
 
     ~RtmElastic2D();	///< Destructor
