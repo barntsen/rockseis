@@ -13,7 +13,6 @@ Rtm<T>::Rtm() {
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 0;
-    imagetype = BOTH;
 }
 
 template<typename T>
@@ -37,8 +36,6 @@ Rtm<T>::Rtm(int _order, int _snapinc) {
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 1;
-
-    imagetype = BOTH;
 }
 
 template<typename T>
@@ -827,48 +824,33 @@ void RtmElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 	int nz;
 	int hx, hz;
 
-    rs_imagetype imagetype = this->getImagetype();
-    switch (imagetype) {
-        case PP:
-            if(!pimage->getAllocated()){
-                pimage->allocateImage();
-            }
-            pimagedata = pimage->getImagedata();
-            nhx = pimage->getNhx();
-            nhz = pimage->getNhz();
-            nx = pimage->getNx();
-            nz = pimage->getNz();
-            dx = pimage->getDx(); 
-            dz = pimage->getDz(); 
-            break;
-        case PS: 
-            if(!simage->getAllocated()){
-                simage->allocateImage();
-            }
-            simagedata = simage->getImagedata();
-            nhx = simage->getNhx();
-            nhz = simage->getNhz();
-            nx = simage->getNx();
-            nz = simage->getNz();
-            dx = simage->getDx(); 
-            dz = simage->getDz(); 
-            break;
-        case BOTH:
-            if(!pimage->getAllocated()){
-                pimage->allocateImage();
-            }
-            pimagedata = pimage->getImagedata();
-            if(!simage->getAllocated()){
-                simage->allocateImage();
-            }
-            simagedata = simage->getImagedata();
-            nhx = simage->getNhx();
-            nhz = simage->getNhz();
-            nx = simage->getNx();
-            nz = simage->getNz();
-            dx = simage->getDx(); 
-            dz = simage->getDz(); 
-            break;
+    if(pimageset){
+        if(!pimage->getAllocated()){
+            pimage->allocateImage();
+        }
+        pimagedata = pimage->getImagedata();
+    }
+    if(simageset){
+        if(!simage->getAllocated()){
+            simage->allocateImage();
+        }
+        simagedata = simage->getImagedata();
+    }
+    // Getting sizes
+    if(pimageset) {
+        nhx = pimage->getNhx();
+        nhz = pimage->getNhz();
+        nx = pimage->getNx();
+        nz = pimage->getNz();
+        dx = pimage->getDx(); 
+        dz = pimage->getDz(); 
+    }else{
+        nhx = simage->getNhx();
+        nhz = simage->getNhz();
+        nx = simage->getNx();
+        nz = simage->getNz();
+        dx = simage->getDx(); 
+        dz = simage->getDz(); 
     }
 
 	int nxs = nx+2*pads;
@@ -894,11 +876,11 @@ void RtmElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
                             mrxx = (wrx[kr2D(ix+hx+padr, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr)])/dx;
                             mrzz = (wrz[kr2D(ix+hx+padr, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr-1)])/dz;
 
-                            if(imagetype == PP || imagetype == BOTH){
+                            if(pimageset){
                                 pimagedata[ki2D(ix,iz,ihx,ihz)] += C33_minus*C33_plus*(msxx + mszz) * (mrxx + mrzz);
                             }
 
-                            if(imagetype == PS || imagetype == BOTH){
+                            if(simageset){
                                 msxz = 0.5*(wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz;
                                 msxz += 0.5*(wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz;
                                 msxz += 0.5*(wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx;

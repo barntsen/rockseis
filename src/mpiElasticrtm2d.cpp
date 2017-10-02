@@ -43,10 +43,13 @@ int main(int argc, char** argv) {
 			PRINT_DOC(incore = "true";  );
 			PRINT_DOC();
 			PRINT_DOC(# Migration parameters);
-			PRINT_DOC(imagetype = "2"; # 0 for PP -  1 for PS -  2 for BOTH);
 			PRINT_DOC(nhx = "1";);
 			PRINT_DOC(nhz = "1";);
 			PRINT_DOC();
+            PRINT_DOC(# Booleans);
+            PRINT_DOC(Pimaging = "true";  # Set these to true if imaging of these events is to be made.);
+            PRINT_DOC(Simaging = "true";); 
+            PRINT_DOC();
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp2d.rss";);
 			PRINT_DOC(Vp = "Vs2d.rss";);
@@ -72,15 +75,20 @@ int main(int argc, char** argv) {
 	int snapmethod;
     float apertx;
     int stype;
-    int itype;
     int nhx=1, nhz=1;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Vsfile;
     std::string Rhofile;
-    std::string Pimagefile;
-    std::string Simagefile;
     std::string Snapfile;
+
+    bool Pimaging;
+    std::string Pimagefile;
+    std::shared_ptr<rockseis::Image2D<float>> pimage;
+
+    bool Simaging;
+    std::string Simagefile;
+    std::shared_ptr<rockseis::Image2D<float>> simage;
 
     std::string Vxrecordfile;
     std::shared_ptr<rockseis::Data2D<float>> Vxdata2D;
@@ -89,9 +97,6 @@ int main(int argc, char** argv) {
     std::string Vzrecordfile;
     std::shared_ptr<rockseis::Data2D<float>> Vzdata2D;
     std::shared_ptr<rockseis::Data2D<float>> Vzdata2Di;
-
-    std::shared_ptr<rockseis::Image2D<float>> pimage;
-    std::shared_ptr<rockseis::Image2D<float>> simage;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -104,26 +109,19 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("order", &order) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("source_type", &stype) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("image_type", &itype) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vs", &Vsfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
-    rockseis::rs_imagetype imagetype = static_cast<rockseis::rs_imagetype>(itype);
-    switch(imagetype){
-        case rockseis::PP:
-            if(Inpar->getPar("Pimagefile", &Pimagefile) == INPARSE_ERR) status = true;
-            break;
-        case rockseis::PS:
-            if(Inpar->getPar("Simagefile", &Simagefile) == INPARSE_ERR) status = true;
-            break;
-
-        case rockseis::BOTH:
-            if(Inpar->getPar("Simagefile", &Simagefile) == INPARSE_ERR) status = true;
-            if(Inpar->getPar("Pimagefile", &Pimagefile) == INPARSE_ERR) status = true;
-            break;
+    if(Inpar->getPar("Pimaging", &Pimaging) == INPARSE_ERR) status = true;
+    if(Pimaging){
+        if(Inpar->getPar("Pimagefile", &Pimagefile) == INPARSE_ERR) status = true;
+    }
+    if(Inpar->getPar("Simaging", &Simaging) == INPARSE_ERR) status = true;
+    if(Simaging){
+        if(Inpar->getPar("Simagefile", &Simagefile) == INPARSE_ERR) status = true;
     }
     if(Inpar->getPar("Snapfile", &Snapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vxrecordfile", &Vxrecordfile) == INPARSE_ERR) status = true;
@@ -182,35 +180,22 @@ int main(int argc, char** argv) {
 		mpi.performWork();
 
         // Images
-        switch(imagetype){
-            case rockseis::PP:
-                pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
-                pimage->createEmpty();
-                for(unsigned long int i=0; i<ngathers; i++) {
-                    pimage->stackImage(Pimagefile + "-" + std::to_string(i));
-                }
-
-                break;
-            case rockseis::PS:
-                simage = std::make_shared<rockseis::Image2D<float>>(Simagefile, gmodel, nhx, nhz);
-                simage->createEmpty();
-                for(unsigned long int i=0; i<ngathers; i++) {
-                    simage->stackImage(Simagefile + "-" + std::to_string(i));
-                }
-
-                break;
-
-            case rockseis::BOTH:
-                pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
-                pimage->createEmpty();
-                simage = std::make_shared<rockseis::Image2D<float>>(Simagefile, gmodel, nhx, nhz);
-                simage->createEmpty();
-                for(unsigned long int i=0; i<ngathers; i++) {
-                    pimage->stackImage(Pimagefile + "-" + std::to_string(i));
-                    simage->stackImage(Simagefile + "-" + std::to_string(i));
-                }
-                break;
+        if(Pimaging){
+            pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
+            pimage->createEmpty();
+            for(unsigned long int i=0; i<ngathers; i++) {
+                pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+            }
         }
+
+        if(Simaging){
+            simage = std::make_shared<rockseis::Image2D<float>>(Simagefile, gmodel, nhx, nhz);
+            simage->createEmpty();
+            for(unsigned long int i=0; i<ngathers; i++) {
+                simage->stackImage(Simagefile + "-" + std::to_string(i));
+            }
+        }
+
 
 		
     }
@@ -277,25 +262,14 @@ int main(int argc, char** argv) {
                 rtm = std::make_shared<rockseis::RtmElastic2D<float>>(lmodel, source, Vxdata2Di, Vzdata2Di, order, snapinc);
    
                 // Setting Image objects
-                rtm->setImagetype(imagetype);
-                switch(imagetype){
-                    case rockseis::PP:
-                        pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-                        rtm->setPimage(pimage);
-                        break;
-                    case rockseis::PS:
-                        simage = std::make_shared<rockseis::Image2D<float>>(Simagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-                        rtm->setSimage(simage);
-                        break;
-                    case rockseis::BOTH:
-                        pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-                        simage = std::make_shared<rockseis::Image2D<float>>(Simagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-
-                        rtm->setPimage(pimage);
-                        rtm->setSimage(simage);
-                        break;
+                if(Pimaging){ 
+                    pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
+                    rtm->setPimage(pimage);
                 }
- 
+                if(Simaging){ 
+                    simage = std::make_shared<rockseis::Image2D<float>>(Simagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
+                    rtm->setSimage(simage);
+                }
 
                 // Setting Snapshot file 
                 rtm->setSnapfile(Snapfile + "-" + std::to_string(work.id));
@@ -322,17 +296,12 @@ int main(int argc, char** argv) {
                 }
 
                 // Output image
-                switch(imagetype){
-                    case rockseis::PP:
-                        pimage->write();
-                        break;
-                    case rockseis::PS:
-                        simage->write();
-                        break;
-                    case rockseis::BOTH:
-                        pimage->write();
-                        simage->write();
-                        break;
+                if(Pimaging){
+                    pimage->write();
+                }
+
+                if(Simaging){
+                    simage->write();
                 }
 
                 // Reset all classes
