@@ -88,6 +88,7 @@ public:
     void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
     void setSnapAx(std::string _snapAx) { snapAx = _snapAx; snapAxset = true; }
     void setSnapAz(std::string _snapAz) { snapAz = _snapAz; snapAzset = true; }
+    bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingAcoustic2D();	///< Destructor
 
@@ -124,6 +125,7 @@ public:
     void setSnapAx(std::string _snapAx) { snapAx = _snapAx; snapAxset = true; }
     void setSnapAy(std::string _snapAy) { snapAy = _snapAy; snapAyset = true; }
     void setSnapAz(std::string _snapAz) { snapAz = _snapAz; snapAzset = true; }
+    bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingAcoustic3D();	///< Destructor
 
@@ -163,6 +165,7 @@ public:
     void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
     void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
     void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingElastic2D();	///< Destructor
 
@@ -205,6 +208,7 @@ public:
     void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
     void setSnapVy(std::string _snapVy) { snapVy = _snapVy; snapVyset = true; }
     void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingElastic3D();	///< Destructor
 

@@ -162,6 +162,33 @@ ModellingAcoustic2D<T>::ModellingAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> 
     snapAzset = false;
 }
 
+
+template<typename T>
+bool ModellingAcoustic2D<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return true;
+    }else{
+        return false;
+    }
+}
+
 template<typename T>
 int ModellingAcoustic2D<T>::run(){
      int result = MOD_ERR;
@@ -172,6 +199,8 @@ int ModellingAcoustic2D<T>::run(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("ModellingElastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
 
      this->createLog(this->getLogfile());
 
@@ -284,6 +313,33 @@ ModellingAcoustic3D<T>::ModellingAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> 
 }
 
 template<typename T>
+bool ModellingAcoustic3D<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNy()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dy = model->getDy();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dy*dy))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return true;
+    }else{
+        return false;
+    }
+}
+
+template<typename T>
 int ModellingAcoustic3D<T>::run(){
      int result = MOD_ERR;
      int nt;
@@ -293,6 +349,8 @@ int ModellingAcoustic3D<T>::run(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("ModellingAcoustic3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
 
      // Create the classes 
      std::shared_ptr<WavesAcoustic3D<T>> waves (new WavesAcoustic3D<T>(model, nt, dt, ot));
@@ -422,6 +480,32 @@ ModellingElastic2D<T>::ModellingElastic2D(std::shared_ptr<ModelElastic2D<T>> _mo
 }
 
 template<typename T>
+bool ModellingElastic2D<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
 int ModellingElastic2D<T>::run(){
      int result = MOD_ERR;
      int nt;
@@ -431,6 +515,9 @@ int ModellingElastic2D<T>::run(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("ModellingElastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+     this->createLog(this->getLogfile());
 
      // Create the classes 
      std::shared_ptr<WavesElastic2D<T>> waves (new WavesElastic2D<T>(model, nt, dt, ot));
@@ -494,6 +581,9 @@ int ModellingElastic2D<T>::run(){
         if(this->snapVzset){ 
             Vzsnap->writeSnap(it);
         }
+
+        // Output progress to logfile
+        this->writeProgress(it, nt-1, 20, 48);
     }	
     
     result=MOD_OK;
@@ -550,6 +640,33 @@ ModellingElastic3D<T>::ModellingElastic3D(std::shared_ptr<ModelElastic3D<T>> _mo
 }
 
 template<typename T>
+bool ModellingElastic3D<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNy()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dy = model->getDy();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dy*dy))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return true;
+    }else{
+        return false;
+    }
+}
+
+template<typename T>
 int ModellingElastic3D<T>::run(){
      int result = MOD_ERR;
      int nt;
@@ -559,6 +676,8 @@ int ModellingElastic3D<T>::run(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("ModellingElastic3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
 
      // Create the classes 
      std::shared_ptr<WavesElastic3D<T>> waves (new WavesElastic3D<T>(model, nt, dt, ot));
