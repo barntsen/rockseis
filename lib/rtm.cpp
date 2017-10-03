@@ -474,6 +474,9 @@ int RtmAcoustic2D<T>::run_optimal(){
 
             // Roll the pointers P1 and P2
             waves_bw->roll();
+
+            // Output progress to logfile
+            this->writeProgress(nt-1-capo, nt-1, 20, 48);
         }
         if (whatodo == takeshot)
         {
@@ -488,8 +491,6 @@ int RtmAcoustic2D<T>::run_optimal(){
             std::cerr << "Error!" << std::endl;
         }
 
-        // Output progress to logfile
-        //this->writeProgress(capo, nt, 20, 48);
     } while((whatodo != terminate) && (whatodo != error));
 
 
@@ -577,6 +578,7 @@ int RtmAcoustic3D<T>::run(){
      dt = source->getDt();
      ot = source->getOt();
 
+	// Create log file
      this->createLog(this->getLogfile());
 
      // Create the classes 
@@ -749,6 +751,9 @@ int RtmAcoustic3D<T>::run_optimal(){
 
             // Roll the pointers P1 and P2
             waves_bw->roll();
+
+            // Output progress to logfile
+            this->writeProgress(nt-1-capo, nt-1, 20, 48);
         }
         if (whatodo == takeshot)
         {
@@ -763,8 +768,6 @@ int RtmAcoustic3D<T>::run_optimal(){
             std::cerr << "Error!" << std::endl;
         }
 
-        // Output progress to logfile
-        //this->writeProgress(capo, nt, 20, 48);
     } while((whatodo != terminate) && (whatodo != error));
 
 
@@ -915,6 +918,7 @@ int RtmElastic2D<T>::run(){
      dt = source->getDt();
      ot = source->getOt();
 
+	// Create log file
      this->createLog(this->getLogfile());
 
      // Create the classes 
@@ -1110,6 +1114,9 @@ int RtmElastic2D<T>::run_optimal(){
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
             crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+
+            // Output progress to logfile
+            this->writeProgress(nt-1-capo, nt-1, 20, 48);
         }
         if (whatodo == takeshot)
         {
@@ -1124,8 +1131,6 @@ int RtmElastic2D<T>::run_optimal(){
             std::cerr << "Error!" << std::endl;
         }
 
-        // Output progress to logfile
-        //this->writeProgress(capo, nt, 20, 48);
     } while((whatodo != terminate) && (whatodo != error));
 
 	//Remove snapshot file
@@ -1318,6 +1323,7 @@ int RtmElastic3D<T>::run(){
      dt = source->getDt();
      ot = source->getOt();
 
+	// Create log file
      this->createLog(this->getLogfile());
 
      // Create the classes 
@@ -1446,6 +1452,7 @@ int RtmElastic3D<T>::run_optimal(){
      dt = source->getDt();
      ot = source->getOt();
 
+	// Create log file
      this->createLog(this->getLogfile());
 
      // Create the classes 
@@ -1534,6 +1541,9 @@ int RtmElastic3D<T>::run_optimal(){
             T *wry = waves_bw->getVy();
             T *wrz = waves_bw->getVz();
             crossCorr(wsx, wsy, wsz, waves_fw->getLpml(), wrx, wry, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+
+            // Output progress to logfile
+            this->writeProgress(nt-1-capo, nt-1, 20, 48);
         }
         if (whatodo == takeshot)
         {
@@ -1548,8 +1558,6 @@ int RtmElastic3D<T>::run_optimal(){
             std::cerr << "Error!" << std::endl;
         }
 
-        // Output progress to logfile
-        //this->writeProgress(capo, nt, 20, 48);
     } while((whatodo != terminate) && (whatodo != error));
 
 	//Remove snapshot file
