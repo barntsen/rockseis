@@ -659,9 +659,9 @@ bool ModellingElastic3D<T>::checkStability(){
     T dt_stab;
     dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dy*dy))+(1/(dz*dz)))*Vpmax); 
     if(dt < dt_stab){
-        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
         return true;
     }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
         return false;
     }
 }

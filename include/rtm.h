@@ -194,5 +194,43 @@ private:
     bool dataVxset, dataVzset;
 };
 
+/** The 3D Elastic Rtm class
+ *
+ */
+template<typename T>
+class RtmElastic3D: public Rtm<T> {
+public:
+    RtmElastic3D();					///< Constructor
+    RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataVx, std::shared_ptr<Data3D<T>> dataVy, std::shared_ptr<Data3D<T>> dataVz, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs rtm with full snapshoting
+    int run_optimal(); ///< Runs rtm with optimal checkpointing
+    void setModel(std::shared_ptr<ModelElastic3D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
+    void setDataVx(std::shared_ptr<Data3D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
+    void setDataVy(std::shared_ptr<Data3D<T>> _dataVy) { dataVy = _dataVy; dataVyset = true; }
+    void setDataVz(std::shared_ptr<Data3D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setPimage(std::shared_ptr<Image3D<T>> _pimage) { pimage = _pimage; pimageset = true; }
+    void setSimage(std::shared_ptr<Image3D<T>> _simage) { simage = _simage; simageset = true; }
+    void crossCorr(T *wsx, T *wsy, T *wsz, int pads, T* wrx, T *wry, T* wrz, int padr, T* Vp, T* Vs, T* Rho);
+
+
+    ~RtmElastic3D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelElastic3D<T>> model;
+    std::shared_ptr<Image3D<T>> pimage;
+    std::shared_ptr<Image3D<T>> simage;
+    std::shared_ptr<Data3D<T>> source;
+    std::shared_ptr<Data3D<T>> dataVx;
+    std::shared_ptr<Data3D<T>> dataVy;
+    std::shared_ptr<Data3D<T>> dataVz;
+    bool modelset;
+    bool pimageset;
+    bool simageset;
+    bool sourceset;
+    bool dataVxset, dataVyset, dataVzset;
+};
+
+
 }
 #endif //RTM_H

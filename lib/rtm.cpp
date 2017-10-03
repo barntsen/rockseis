@@ -1142,6 +1142,428 @@ RtmElastic2D<T>::~RtmElastic2D() {
     // Nothing here
 }
 
+// =============== ELASTIC 3D RTM CLASS =============== //
+
+template<typename T>
+RtmElastic3D<T>::RtmElastic3D(){
+    sourceset = false;
+    dataVxset = false;
+    dataVyset = false;
+    dataVzset = false;
+    modelset = false;
+    pimageset = false;
+    simageset = false;
+}
+
+template<typename T>
+RtmElastic3D<T>::RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> _model, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _dataVx, std::shared_ptr<Data3D<T>> _dataVy, std::shared_ptr<Data3D<T>> _dataVz, int order, int snapinc):Rtm<T>(order, snapinc){
+    source = _source;
+    dataVx = _dataVx;
+    dataVy = _dataVy;
+    dataVz = _dataVz;
+    model = _model;
+    sourceset = true;
+    modelset = true;
+    dataVxset = true;
+    dataVyset = true;
+    dataVzset = true;
+    pimageset = false;
+    simageset = false;
+}
+
+template<typename T>
+void RtmElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, T* wrx, T* wry, T* wrz, int padr, T* Vp, T* Vs, T* Rho)
+{
+    int ix, iy, iz, ihx, ihy, ihz;
+    T *pimagedata; 
+    T *simagedata;
+    T msxx, msyy, mszz, msyz, msxz, msxy, mrxx, mryy, mrzz, mryz, mrxz, mrxy;
+    T C33_minus, C33_plus;
+    T C44_minus, C44_plus;
+	int nhx; 
+	int nhy; 
+	int nhz;
+	int nx;
+	int ny;
+	int nz;
+    T dx;
+    T dy;
+    T dz;
+	int hx, hy,hz;
+
+    if(pimageset){
+        if(!pimage->getAllocated()){
+            pimage->allocateImage();
+        }
+        pimagedata = pimage->getImagedata();
+    }
+    if(simageset){
+        if(!simage->getAllocated()){
+            simage->allocateImage();
+        }
+        simagedata = simage->getImagedata();
+    }
+    // Getting sizes
+    if(pimageset) {
+        nhx = pimage->getNhx();
+        nhy = pimage->getNhy();
+        nhz = pimage->getNhz();
+        nx = pimage->getNx();
+        ny = pimage->getNy();
+        nz = pimage->getNz();
+        dx = pimage->getDx(); 
+        dy = pimage->getDy(); 
+        dz = pimage->getDz(); 
+    }else{
+        nhx = simage->getNhx();
+        nhy = simage->getNhy();
+        nhz = simage->getNhz();
+        nx = simage->getNx();
+        ny = simage->getNy();
+        nz = simage->getNz();
+        dx = simage->getDx(); 
+        dy = simage->getDy(); 
+        dz = simage->getDz(); 
+    }
+
+	int nxs = nx+2*pads;
+	int nxr = nx+2*padr;
+	int nys = ny + 2*pads;
+	int nyr = ny + 2*padr;
+
+    for (ihx=0; ihx<nhx; ihx++){
+        hx= -(nhx-1)/2 + ihx;
+        for (ihy=0; ihy<nhy; ihy++){
+            hy= -(nhy-1)/2 + ihy;
+            for (ihz=0; ihz<nhz; ihz++){
+                hz= -(nhz-1)/2 + ihz;
+                for (ix=0; ix<nx; ix++){
+                    if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
+                        for (iy=0; iy<ny; iy++){
+                            if( ((iy-hy) >= 1) && ((iy-hy) < ny-1) && ((iy+hy) >= 1) && ((iy+hy) < ny-1))
+                                for (iz=0; iz<nz; iz++){
+                                    if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
+
+                                    {
+                                        C33_minus = Rho[km3D(ix-hx, iy-hy, iz-hz)]*Vp[km3D(ix-hx, iy-hy, iz-hz)]*Vp[km3D(ix-hx, iy-hy, iz-hz)];
+                                        C33_plus = Rho[km3D(ix+hx, iy+hy, iz+hz)]*Vp[km3D(ix+hx, iy+hy, iz+hz)]*Vp[km3D(ix+hx, iy+hy, iz+hz)];
+                                        C44_minus = Rho[km3D(ix-hx, iy-hy, iz-hz)]*Vs[km3D(ix-hx, iy-hy, iz-hz)]*Vs[km3D(ix-hx, iy-hy, iz-hz)];
+                                        C44_plus = Rho[km3D(ix+hx, iy+hy, iz+hz)]*Vs[km3D(ix+hx, iy+hy, iz+hz)]*Vs[km3D(ix+hx, iy+hy, iz+hz)];
+
+                                        msxx = (wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads)])/dx;
+                                        msyy = (wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)])/dy;
+                                        mszz = (wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)])/dz;
+                                        mrxx = (wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)])/dx;
+                                        mryy = (wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)])/dy;
+                                        mrzz = (wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)])/dz;
+
+                                        if(pimageset){
+                                            pimagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += C33_minus*C33_plus*(msxx + msyy + mszz) * (mrxx + mryy + mrzz);
+                                        }
+
+                                        if(simageset){
+                                            msyz = 0.5*(wsz[ks3D(ix-hx+pads, iy-hy+pads+1, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dy;
+                                            msyz += 0.5*(wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)] - wsz[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads-1)])/dy;
+                                            msyz += 0.5*(wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads+1)] - wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dz;
+                                            msyz += 0.5*(wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads-1)])/dz;
+
+                                            mryz = 0.5*(wrz[kr3D(ix+hx+padr, iy+hy+padr+1, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dy;
+                                            mryz += 0.5*(wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)] - wrz[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr-1)])/dy;
+                                            mryz += 0.5*(wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr+1)] - wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dz;
+                                            mryz += 0.5*(wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)] - wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr-1)])/dz;
+
+                                            msxz = 0.5*(wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads+1)] - wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dz;
+                                            msxz += 0.5*(wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads)] - wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads-1)])/dz;
+                                            msxz += 0.5*(wsz[ks3D(ix-hx+pads+1, iy-hy+pads, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dx;
+                                            msxz += 0.5*(wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)] - wsz[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads-1)])/dx;
+
+                                            mrxz = 0.5*(wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr+1)] - wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dz;
+                                            mrxz += 0.5*(wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr-1)])/dz;
+                                            mrxz += 0.5*(wrz[kr3D(ix+hx+padr+1, iy+hy+padr, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dx;
+                                            mrxz += 0.5*(wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)] - wrz[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr-1)])/dx;
+
+                                            msxy = 0.5*(wsx[ks3D(ix-hx+pads, iy-hy+pads+1, iz-hz+pads)] - wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dy;
+                                            msxy += 0.5*(wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads)] - wsx[ks3D(ix-hx+pads-1, iy-hy+pads-1, iz-hz+pads)])/dy;
+                                            msxy += 0.5*(wsy[ks3D(ix-hx+pads+1, iy-hy+pads, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dx;
+                                            msxy += 0.5*(wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)] - wsy[ks3D(ix-hx+pads-1, iy-hy+pads-1, iz-hz+pads)])/dx;
+
+                                            mrxy = 0.5*(wrx[kr3D(ix+hx+padr, iy+hy+padr+1, iz+hz+padr)] - wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dy;
+                                            mrxy += 0.5*(wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr-1, iz+hz+padr)])/dy;
+                                            mrxy += 0.5*(wry[kr3D(ix+hx+padr+1, iy+hy+padr, iz+hz+padr)] - wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dx;
+                                            mrxy += 0.5*(wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)] - wry[kr3D(ix+hx+padr-1, iy+hy+padr-1, iz+hz+padr)])/dx;
+
+                                            simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += C44_minus*C44_plus*(-2.0*(msyy*mrzz + mszz*mryy) -2.0*(msxx*mrzz + mszz*mrxx) -2.0*(msyy*mrxx + msxx*mryy) + msyz*mryz + msxz*mrxz + msxy*mrxy);
+                                        }
+                                    }
+                                }	
+                        }
+                }
+            }
+        }
+    }
+}
+
+template<typename T>
+int RtmElastic3D<T>::run(){
+     int result = RTM_ERR;
+     if(!pimageset && !simageset) {
+         rs_warning("RtmElastic3D::run: No image set");
+         return result;
+     }
+     int nt;
+     float dt;
+	 float ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesElastic3D<T>> waves (new WavesElastic3D<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
+
+     // Create snapshots
+     std::shared_ptr<Snapshot3D<T>> Vxsnap;
+     Vxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+     Vxsnap->openSnap(this->getSnapfile() + "-vx", 'w'); // Create a new snapshot file
+     Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
+
+     std::shared_ptr<Snapshot3D<T>> Vysnap;
+     Vysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+     Vysnap->openSnap(this->getSnapfile() + "-vy", 'w'); // Create a new snapshot file
+     Vysnap->setData(waves->getVy(), 0); //Set Vy as snap field
+
+     std::shared_ptr<Snapshot3D<T>> Vzsnap;
+     Vzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'w'); // Create a new snapshot file
+     Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
+
+    // Loop over forward time
+    for(int it=0; it < nt; it++)
+    {
+    	//Writting out results to snapshot files
+        Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
+        Vxsnap->writeSnap(it);
+
+        Vysnap->setData(waves->getVy(), 0); //Set Vy as snap field
+        Vysnap->writeSnap(it);
+
+        Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
+        Vzsnap->writeSnap(it);
+
+    	// Time stepping
+    	waves->forwardstepVelocity(model, der);
+    	waves->forwardstepStress(model, der);
+    
+    	// Inserting source 
+    	waves->insertSource(model, source, SMAP, it);
+
+        // Output progress to logfile
+        this->writeProgress(it, 2*nt-1, 20, 48);
+    }//End of forward loop
+    
+    
+    //Close snapshot file
+    Vxsnap->closeSnap();
+    Vysnap->closeSnap();
+    Vzsnap->closeSnap();
+
+    // Reset waves
+    waves.reset();
+    waves  = std::make_shared<WavesElastic3D<T>>(model, nt, dt, ot);
+
+    // Create image
+    if(this->pimageset) pimage->allocateImage();
+    if(this->simageset) simage->allocateImage();
+
+    Vxsnap->openSnap(this->getSnapfile() + "-vx", 'r');
+    Vxsnap->allocSnap(0);
+
+    Vysnap->openSnap(this->getSnapfile() + "-vy", 'r');
+    Vysnap->allocSnap(0);
+
+    Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
+    Vzsnap->allocSnap(0);
+
+    // Get models for scaling
+    T *Vp, *Vs, *Rho;
+    Vp = model->getVp();
+    Vs = model->getVs();
+    Rho = model->getR();
+
+    // Loop over reverse time
+    for(int it=0; it < nt; it++)
+    {
+    	// Time stepping 
+    	waves->forwardstepStress(model, der);
+    	waves->forwardstepVelocity(model, der);
+
+    	// Inserting source 
+    	waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataVy, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
+
+        //Get forward snapshot
+        Vxsnap->readSnap(nt - 1 - it);
+        Vysnap->readSnap(nt - 1 - it);
+        Vzsnap->readSnap(nt - 1 - it);
+
+        // Do Crosscorrelation
+        if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
+            T *Vxr = waves->getVx();
+            T *Vyr = waves->getVy();
+            T *Vzr = waves->getVz();
+            crossCorr(Vxsnap->getData(0), Vysnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vyr, Vzr, waves->getLpml(), Vp, Vs, Rho);
+        }
+
+        // Output progress to logfile
+        this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
+    }
+    
+	//Remove snapshot file
+	Vxsnap->removeSnap();
+	Vysnap->removeSnap();
+	Vzsnap->removeSnap();
+
+    result=RTM_OK;
+    return result;
+}
+
+template<typename T>
+int RtmElastic3D<T>::run_optimal(){
+     int result = RTM_ERR;
+     if(!pimageset && !simageset) {
+         rs_warning("RtmElastic3D::run: No image set");
+         return result;
+     }
+     int nt;
+     float dt;
+	 float ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesElastic3D<T>> waves_fw (new WavesElastic3D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic3D<T>> waves_bw (new WavesElastic3D<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), waves_fw->getNy_pml(), waves_fw->getNz_pml(), waves_fw->getDx(), waves_fw->getDy(), waves_fw->getDz(), this->getOrder()));
+     std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
+     revolve_action whatodo;
+     int oldcapo,capo;
+     capo = 0;
+
+     // Create checkpoint file
+     optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
+
+     // Create image
+     pimage->allocateImage();
+     simage->allocateImage();
+
+     // Get models for scaling
+     T *Vp, *Vs, *Rho;
+     Vp = model->getVp();
+     Vs = model->getVs();
+     Rho = model->getR();
+
+    // Loop over forward time
+    do
+    {
+        oldcapo=optimal->getCapo();
+        whatodo = optimal->revolve();
+        capo = optimal->getCapo();
+        if (whatodo == advance)
+        {
+            for(int it=oldcapo; it < capo; it++)
+            {
+                // Time stepping
+                waves_fw->forwardstepVelocity(model, der);
+                waves_fw->forwardstepStress(model, der);
+
+                // Inserting source 
+                waves_fw->insertSource(model, source, SMAP, it);
+            }
+        }
+        if (whatodo == firsturn)
+        {
+            // Time stepping
+            waves_fw->forwardstepStress(model, der);
+            waves_fw->forwardstepVelocity(model, der);
+
+            // Inserting source 
+            waves_fw->insertSource(model, source, SMAP, capo);
+
+            // Inserting data
+            waves_bw->insertSource(model, dataVx, GMAP, capo);
+            waves_bw->insertSource(model, dataVz, GMAP, capo);
+
+            // Do Crosscorrelation 
+            T *wsx = waves_fw->getVx();
+            T *wsy = waves_fw->getVy();
+            T *wsz = waves_fw->getVz();
+            T *wrx = waves_bw->getVx();
+            T *wry = waves_bw->getVy();
+            T *wrz = waves_bw->getVz();
+
+            crossCorr(wsx, wsy, wsz, waves_fw->getLpml(), wrx, wry, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+      
+            //Close checkpoint file for w and reopen for rw
+            optimal->closeCheck();
+            optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+        }
+        if (whatodo == youturn)
+        {
+            // Time stepping
+            waves_bw->forwardstepStress(model, der);
+            waves_bw->forwardstepVelocity(model, der);
+
+            // Inserting data
+            waves_bw->insertSource(model, dataVx, GMAP, capo);
+            waves_bw->insertSource(model, dataVy, GMAP, capo);
+            waves_bw->insertSource(model, dataVz, GMAP, capo);
+
+            // Do Crosscorrelation
+            T *wsx = waves_fw->getVx();
+            T *wsy = waves_fw->getVy();
+            T *wsz = waves_fw->getVz();
+            T *wrx = waves_bw->getVx();
+            T *wry = waves_bw->getVy();
+            T *wrz = waves_bw->getVz();
+            crossCorr(wsx, wsy, wsz, waves_fw->getLpml(), wrx, wry, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+        }
+        if (whatodo == takeshot)
+        {
+            optimal->writeCheck(waves_fw);
+        }
+        if (whatodo == restore)
+        {
+            optimal->readCheck(waves_fw);
+        }
+
+        if(whatodo == error){
+            std::cerr << "Error!" << std::endl;
+        }
+
+        // Output progress to logfile
+        //this->writeProgress(capo, nt, 20, 48);
+    } while((whatodo != terminate) && (whatodo != error));
+
+	//Remove snapshot file
+	optimal->removeCheck();
+
+    result=RTM_OK;
+    return result;
+}
+
+template<typename T>
+RtmElastic3D<T>::~RtmElastic3D() {
+    // Nothing here
+}
+
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Rtm<float>;
 template class Rtm<double>;
@@ -1152,5 +1574,7 @@ template class RtmAcoustic3D<double>;
 
 template class RtmElastic2D<float>;
 template class RtmElastic2D<double>;
+template class RtmElastic3D<float>;
+template class RtmElastic3D<double>;
 
 }

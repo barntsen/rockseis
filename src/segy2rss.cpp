@@ -603,7 +603,6 @@ int main(int argc, char* argv[])
     std::shared_ptr<rockseis::Data3D<float>> Bdata;
     Bdata = std::make_shared<rockseis::Data3D<float>>(1, ns, dt, t0);
 
-
     //Using stdout as output 
     Bdata->setFile("stdout");
     // Open data for output
