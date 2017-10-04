@@ -215,6 +215,8 @@ int RtmAcoustic2D<T>::run(){
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
      Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
 
+     this->writeLog("Running 2D Acoustic reverse-time migration with full checkpointing.");
+     this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
     {
@@ -233,7 +235,7 @@ int RtmAcoustic2D<T>::run(){
     	waves->roll();
 
         // Output progress to logfile
-        this->writeProgress(it, 2*nt-1, 20, 48);
+        this->writeProgress(it, nt-1, 20, 48);
     }//End of forward loop
     
     
@@ -250,6 +252,7 @@ int RtmAcoustic2D<T>::run(){
     Psnap->openSnap(this->getSnapfile(), 'r');
     Psnap->allocSnap(0);
 
+     this->writeLog("\nDoing reverse-time Loop.");
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
@@ -273,7 +276,7 @@ int RtmAcoustic2D<T>::run(){
     	waves->roll();
 
         // Output progress to logfile
-        this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
+        this->writeProgress(it, nt-1, 20, 48);
     }
     
 	//Remove snapshot file
@@ -411,7 +414,9 @@ int RtmAcoustic2D<T>::run_optimal(){
      // Create image
      pimage->allocateImage();
 
-
+     this->writeLog("Running 2D Acoustic reverse-time migration with optimal checkpointing.");
+     this->writeLog("Doing forward Loop.");
+     bool reverse = false;
     // Loop over forward time
     do
     {
@@ -431,6 +436,11 @@ int RtmAcoustic2D<T>::run_optimal(){
 
                 // Roll the pointers P1 and P2
                 waves_fw->roll();
+
+                if(!reverse){
+                    // Output progress to logfile
+                    this->writeProgress(it, nt-1, 20, 48);
+                }
             }
         }
         if (whatodo == firsturn)
@@ -454,9 +464,16 @@ int RtmAcoustic2D<T>::run_optimal(){
             waves_fw->roll();
             waves_bw->roll();
 
+            // Output progress to logfile
+            this->writeProgress(capo, nt-1, 20, 48);
+
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
             optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+            reverse = true;
+            // Output progress to logfile
+            this->writeLog("\nDoing reverse-time Loop.");
+            this->writeProgress(0, nt-1, 20, 48);
         }
         if (whatodo == youturn)
         {
@@ -591,6 +608,8 @@ int RtmAcoustic3D<T>::run(){
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
      Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
 
+     this->writeLog("Running 3D Acoustic reverse-time migration with full checkpointing.");
+     this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
     {
@@ -609,7 +628,7 @@ int RtmAcoustic3D<T>::run(){
     	waves->roll();
 
         // Output progress to logfile
-        this->writeProgress(it, 2*nt-1, 20, 48);
+        this->writeProgress(it, nt-1, 20, 48);
     }//End of forward loop
     
     
@@ -626,6 +645,7 @@ int RtmAcoustic3D<T>::run(){
     Psnap->openSnap(this->getSnapfile(), 'r');
     Psnap->allocSnap(0);
 
+     this->writeLog("\nDoing reverse-time Loop.");
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
@@ -645,11 +665,14 @@ int RtmAcoustic3D<T>::run(){
             crossCorr(Psnap->getData(0), 0, wr, waves->getLpml());
         }
 
+        // Output progress to logfile
+        this->writeProgress(it, nt-1, 20, 48);
+
         // Roll the pointers P1 and P2
     	waves->roll();
 
         // Output progress to logfile
-        this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
+        this->writeProgress(it, nt-1, 20, 48);
     }
     
 
@@ -689,6 +712,9 @@ int RtmAcoustic3D<T>::run_optimal(){
      pimage->allocateImage();
 
 
+     this->writeLog("Running 3D Acoustic reverse-time migration with optimal checkpointing.");
+     this->writeLog("Doing forward Loop.");
+     bool reverse = false;
     // Loop over forward time
     do
     {
@@ -708,6 +734,11 @@ int RtmAcoustic3D<T>::run_optimal(){
 
                 // Roll the pointers P1 and P2
                 waves_fw->roll();
+
+                if(!reverse){
+                    // Output progress to logfile
+                    this->writeProgress(it, nt-1, 20, 48);
+                }
             }
         }
         if (whatodo == firsturn)
@@ -734,6 +765,10 @@ int RtmAcoustic3D<T>::run_optimal(){
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
             optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+            reverse = true;
+            // Output progress to logfile
+            this->writeLog("\nDoing reverse-time Loop.");
+            this->writeProgress(0, nt-1, 20, 48);
         }
         if (whatodo == youturn)
         {
@@ -936,6 +971,8 @@ int RtmElastic2D<T>::run(){
      Vzsnap->openSnap(this->getSnapfile() + "-vz", 'w'); // Create a new snapshot file
      Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
 
+     this->writeLog("Running 2D Elastic reverse-time migration with full checkpointing.");
+     this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
     {
@@ -954,7 +991,7 @@ int RtmElastic2D<T>::run(){
     	waves->insertSource(model, source, SMAP, it);
 
         // Output progress to logfile
-        this->writeProgress(it, 2*nt-1, 20, 48);
+        this->writeProgress(it, nt-1, 20, 48);
     }//End of forward loop
     
     
@@ -982,6 +1019,7 @@ int RtmElastic2D<T>::run(){
     Vs = model->getVs();
     Rho = model->getR();
 
+     this->writeLog("\nDoing reverse-time Loop.");
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
@@ -1005,7 +1043,7 @@ int RtmElastic2D<T>::run(){
         }
 
         // Output progress to logfile
-        this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
+        this->writeProgress(it, nt-1, 20, 48);
     }
     
 	//Remove snapshot file
@@ -1055,6 +1093,9 @@ int RtmElastic2D<T>::run_optimal(){
      Vs = model->getVs();
      Rho = model->getR();
 
+     this->writeLog("Running 2D Elastic reverse-time migration with optimal checkpointing.");
+     this->writeLog("Doing forward Loop.");
+     bool reverse = false;
     // Loop over forward time
     do
     {
@@ -1071,7 +1112,13 @@ int RtmElastic2D<T>::run_optimal(){
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
+
+                if(!reverse){
+                    // Output progress to logfile
+                    this->writeProgress(it, nt-1, 20, 48);
+                }
             }
+
         }
         if (whatodo == firsturn)
         {
@@ -1097,6 +1144,10 @@ int RtmElastic2D<T>::run_optimal(){
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
             optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+            reverse = true;
+            // Output progress to logfile
+            this->writeLog("\nDoing reverse-time Loop.");
+            this->writeProgress(0, nt-1, 20, 48);
         }
         if (whatodo == youturn)
         {
@@ -1346,6 +1397,8 @@ int RtmElastic3D<T>::run(){
      Vzsnap->openSnap(this->getSnapfile() + "-vz", 'w'); // Create a new snapshot file
      Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
 
+     this->writeLog("Running 3D Elastic reverse-time migration with full checkpointing.");
+     this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
     {
@@ -1399,6 +1452,7 @@ int RtmElastic3D<T>::run(){
     Vs = model->getVs();
     Rho = model->getR();
 
+     this->writeLog("\nDoing reverse-time Loop.");
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
@@ -1425,7 +1479,7 @@ int RtmElastic3D<T>::run(){
         }
 
         // Output progress to logfile
-        this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
+        this->writeProgress(it, nt-1, 20, 48);
     }
     
 	//Remove snapshot file
@@ -1477,6 +1531,9 @@ int RtmElastic3D<T>::run_optimal(){
      Vs = model->getVs();
      Rho = model->getR();
 
+     this->writeLog("Running 3D Elastic reverse-time migration with optimal checkpointing.");
+     this->writeLog("Doing forward Loop.");
+     bool reverse = false;
     // Loop over forward time
     do
     {
@@ -1493,6 +1550,11 @@ int RtmElastic3D<T>::run_optimal(){
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
+
+                if(!reverse){
+                    // Output progress to logfile
+                    this->writeProgress(it, nt-1, 20, 48);
+                }
             }
         }
         if (whatodo == firsturn)
@@ -1521,6 +1583,10 @@ int RtmElastic3D<T>::run_optimal(){
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
             optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+            reverse = true;
+            // Output progress to logfile
+            this->writeLog("\nDoing reverse-time Loop.");
+            this->writeProgress(0, nt-1, 20, 48);
         }
         if (whatodo == youturn)
         {
