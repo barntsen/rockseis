@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(        freesurface = "true";  # True if free surface should be on);
             PRINT_DOC(            order = "8";  # Order of finite difference stencil 2-8);
             PRINT_DOC(            lpml = "18"; # Size of pml absorbing boundary (should be larger than order + 5 ));
-            PRINT_DOC(            source_type = "PRESSURE"; # Source type );
+            PRINT_DOC(            source_type = "0"; # Source type 0 - pressure. 1 for Vx. 2 for Vy. 3 for Vz.);
             PRINT_DOC(            snapinc = "10"; # Snap interval in multiples of modelling interval);
             PRINT_DOC(            dtrec = "4e-3"; # Recording interval in seconds);
             PRINT_DOC(            apertx = "900"; # Aperture for local model (source is in the middle));
@@ -304,7 +304,7 @@ int main(int argc, char** argv) {
                 }
                 if(Vyrecord){
                     Vydata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                    Vydata3D->setField(rockseis::VX);
+                    Vydata3D->setField(rockseis::VY);
                     // Copy geometry to Data
                     Vydata3D->copyCoords(Shotgeom);
                     Vydata3D->makeMap(lmodel->getGeom());

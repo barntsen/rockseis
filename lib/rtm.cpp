@@ -1282,8 +1282,8 @@ void RtmElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, T* wrx, T* wry,
         dz = simage->getDz(); 
     }
 
-	int nxs = nx+2*pads;
-	int nxr = nx+2*padr;
+	int nxs = nx + 2*pads;
+	int nxr = nx + 2*padr;
 	int nys = ny + 2*pads;
 	int nyr = ny + 2*padr;
 
