@@ -762,6 +762,9 @@ int RtmAcoustic3D<T>::run_optimal(){
             waves_fw->roll();
             waves_bw->roll();
 
+            // Output progress to logfile
+            this->writeProgress(capo, nt-1, 20, 48);
+
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
             optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
@@ -1140,6 +1143,9 @@ int RtmElastic2D<T>::run_optimal(){
             T *wrz = waves_bw->getVz();
 
             crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+
+            // Output progress to logfile
+            this->writeProgress(capo, nt-1, 20, 48);
       
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
@@ -1310,7 +1316,7 @@ void RtmElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, T* wrx, T* wry,
                                         msyy = (wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)])/dy;
                                         mszz = (wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)])/dz;
                                         mrxx = (wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)])/dx;
-                                        mryy = (wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)])/dy;
+                                        mryy = (wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)])/dy;
                                         mrzz = (wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)])/dz;
 
                                         if(pimageset){
@@ -1579,6 +1585,9 @@ int RtmElastic3D<T>::run_optimal(){
             T *wrz = waves_bw->getVz();
 
             crossCorr(wsx, wsy, wsz, waves_fw->getLpml(), wrx, wry, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+
+            // Output progress to logfile
+            this->writeProgress(capo, nt-1, 20, 48);
       
             //Close checkpoint file for w and reopen for rw
             optimal->closeCheck();
