@@ -1420,7 +1420,7 @@ int RtmElastic3D<T>::run(){
     	waves->insertSource(model, source, SMAP, it);
 
         // Output progress to logfile
-        this->writeProgress(it, 2*nt-1, 20, 48);
+        this->writeProgress(it, nt-1, 20, 48);
     }//End of forward loop
     
     
