@@ -21,7 +21,8 @@ wxIMPLEMENT_APP(MyApp);
 // Class implementation of the app
 bool MyApp::OnInit()
 {
-	MainFrame *frame = new MainFrame( "Hello World", wxPoint(50, 50), wxSize(600, 600) );
+	wxString hello = "Hello World";
+	MainFrame *frame = new MainFrame( hello, wxPoint(50, 50), wxSize(600, 600) );
 	frame->Show( true );
 	return true;
 }

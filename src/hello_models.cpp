@@ -37,8 +37,8 @@ int main()
 	float ot;
 
 	nx = 45;
-	ny = 11;
-	nz = 51;
+	ny = 45;
+	nz = 45;
 	dx = 10.;
 	dy = 10.;
 	dz = 10.;
@@ -207,7 +207,7 @@ int main()
 	}
 
 
-    /* Test Get local model function */
+    /* Test Get local model function 
     std::shared_ptr<rockseis::ModelElastic2D<float>> lmodel2d;
     lmodel2d = model2d->getLocal(source2d, 900, SMAP);
     lmodel2d->setVpfile("LVp2d.rss");
@@ -221,6 +221,7 @@ int main()
     lmodel3d->setVsfile("LVs3d.rss");
     lmodel3d->setRfile("LRho3d.rss");
     lmodel3d->writeModel();
+    */
 
 
     return 0;

@@ -1,5 +1,6 @@
 // Include statements
 #include <wx/wxprec.h>
+#include <wx/app.h>
 #ifndef WX_PRECOMP
     #include <wx/wx.h>
 #endif

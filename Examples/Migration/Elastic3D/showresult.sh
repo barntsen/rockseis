@@ -1,9 +1,9 @@
 cd Results
-rsrss2rsf <Pimage2d.rss out=stdout > Pimage2d.rsf
-sfwindow <Pimage2d.rsf | sftransp | sfgrey | sfpen &
+rsrss2rsf <Pimage3d.rss out=stdout > Pimage3d.rsf
+#sfwindow <Pimage3d.rsf f3=22 n3=1 | sftransp | sfgrey | sfpen &
+sfwindow <Pimage3d.rsf f2=22 n2=1 | sftransp | sfimage perc=99 &
 
-rsrss2rsf <Simage2d.rss out=stdout > Simage2d.rsf
-sfwindow <Simage2d.rsf | sftransp | sfgrey | sfpen &
-sfattr < Pimage2d.rsf
-sfattr < Simage2d.rsf
+rsrss2rsf <Simage3d.rss out=stdout > Simage3d.rsf
+#sfwindow <Simage3d.rsf f3=22 n3=1 | sftransp | sfgrey | sfpen &
+sfwindow <Simage3d.rsf f2=22 n2=1 | sftransp | sfimage perc=99 &
 cd ..
