@@ -178,9 +178,6 @@ int main()
         case rockseis::OPTIMAL:
             rtm->run_optimal();
             break;
-        case rockseis::EDGES:
-            rtm->run_edge();
-            break;
         default:
             rockseis::rs_error("Invalid option of snapshot saving."); 
     }

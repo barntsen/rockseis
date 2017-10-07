@@ -137,7 +137,6 @@ public:
     RtmAcoustic3D();					///< Constructor
     RtmAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Image3D<T>> pimage, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataP, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs rtm with full snapshoting
-    int run_edge(); ///< Runs rtm with edge boundary saving
     int run_optimal(); ///< Runs rtm with optimal checkpointing
     void setModel(std::shared_ptr<ModelAcoustic3D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
