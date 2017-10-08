@@ -79,7 +79,7 @@ T Interp<T>::interp_sinc_int1d(T *mod, T d1)
     T interpoint;
 
     interpoint=0.0;
-    for(i=0; i<6 ; i++){
+    for(i=0; i < 6 ; i++){
         interpoint=interpoint+mod[i]*sinc(((2.0-i)+d1))*sinc(((2.0-i)+d1)/3.0);
     }
     return (interpoint);
@@ -129,7 +129,7 @@ void Interp<T>::interp(std::shared_ptr<Data2D<T>> from, std::shared_ptr<Data2D<T
                 data2[ind2(j,i)] = 0.0;
                 continue;
             }
-            if(i0 > (n1 + 2*this->pad - 1)){
+            if(i0 > (n1 + 2*this->pad - 6)){
                 data2[ind2(j,i)] = 0.0;
                 continue;
             }
