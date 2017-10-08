@@ -171,7 +171,7 @@ void Der<T>::ddx_fw(T *f){
                 f1 = f2 + ind(ix,0,0);
                 c = coeffs + cind(ix);
                 df1[0] = (f1[ind(+1, 0, 0)]- f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<ix; io++){
+                for(int io=1; io<ix+1; io++){
                     df1[0] += (f1[ind(io+1, 0, 0)] - f1[ind(-io, 0, 0)])*c[io];
                 }
                 df1[0] /= dx;
@@ -223,7 +223,7 @@ void Der<T>::ddy_fw(T *f){
                 df1 = df2 + ind(ix,0,0);
                 f1 = f2 + ind(ix,0,0);
                 df1[0] = (f1[ind(0, +1, 0)]-f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<iy; io++){
+                for(int io=1; io<iy+1; io++){
                     df1[0] += (f1[ind(0, io+1, 0)]-f1[ind(0, -io, 0)])*c[io];
                 }
                 df1[0] /= dy;
@@ -284,7 +284,7 @@ void Der<T>::ddz_fw(T *f){
                 df1 = df2 + ind(ix,0,0);
                 f1 = f2 + ind(ix,0,0);
                 df1[0] = (f1[ind(0, 0, +1)]-f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<iz; io++){
+                for(int io=1; io<iz+1; io++){
                     df1[0] += (f1[ind(0, 0, io+1)]-f1[ind(0, 0, -io)])*c[io];
                 }
                 df1[0] /= dz;
@@ -387,7 +387,7 @@ void Der<T>::ddx_bw(T *f){
                 f1 = f2 + ind(ix,0,0);
                 c = coeffs + cind(nx-ix-1);
                 df1[0] = (f1[ind(0, 0, 0)]- f1[ind(-1, 0, 0)])*c[0];
-                for(int io=1; io<nx-ix-1; io++){
+                for(int io=1; io<nx-ix; io++){
                     df1[0] += (f1[ind(io, 0, 0)]-f1[ind(-(io+1), 0, 0)])*c[io];
                 }
                 df1[0] /= dx;
@@ -408,6 +408,11 @@ void Der<T>::ddy_bw(T *f){
     for(int iz=0; iz < nz; iz++){
         df3 = df + ind(0,0,iz);
         f3 = f + ind(0,0,iz);
+        df2 = df3;
+        for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            df1[0] = 0.0;
+        }
         for(int iy=1; iy < order; iy++){
             df2 = df3 + ind(0,iy,0);
             f2 = f3 + ind(0,iy,0);
@@ -423,12 +428,7 @@ void Der<T>::ddy_bw(T *f){
             }
         }
 
-        df2 = df3;
-        for(int ix=0; ix < nx; ix++){
-            df1 = df2 + ind(ix,0,0);
-            df1[0] = 0.0;
-        }
-            
+           
         c = coeffs + cind(order-1);
         for(int iy=order; iy < ny-order; iy++){
             df2 = df3 + ind(0,iy,0);
@@ -451,7 +451,7 @@ void Der<T>::ddy_bw(T *f){
                 df1 = df2 + ind(ix,0,0);
                 f1 = f2 + ind(ix,0,0);
                 df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, -1, 0)])*c[0];
-                for(int io=1; io<ny-iy-1; io++){
+                for(int io=1; io<ny-iy; io++){
                     df1[0] += (f1[ind(0, io, 0)]-f1[ind(0, -(io+1), 0)])*c[io];
                 }
                 df1[0] /= dy;
@@ -468,6 +468,15 @@ void Der<T>::ddz_bw(T *f){
     T* c;
    
     // Compute derivative
+    df3 = df;
+    for(int iy=0; iy < ny; iy++){
+	    df2 = df3 + ind(0,iy,0);
+	    for(int ix=0; ix < nx; ix++){
+		    df1 = df2 + ind(ix,0,0);
+		    df1[0] = 0.0;
+	    }
+    }
+
     for(int iz=1; iz < order; iz++){
         df3 = df + ind(0,0,iz);
         f3 = f + ind(0,0,iz);
@@ -485,17 +494,6 @@ void Der<T>::ddz_bw(T *f){
                 df1[0] /= dz;
             }
         }
-    }
-
-    df3 = df;
-    for(int iy=0; iy < ny; iy++){
-	    df2 = df3 + ind(0,iy,0);
-	    f2 = f3 + ind(0,iy,0);
-	    for(int ix=0; ix < nx; ix++){
-		    df1 = df2 + ind(ix,0,0);
-		    f1 = f2 + ind(ix,0,0);
-		    df1[0] = 0.0;
-	    }
     }
  
     c = coeffs + cind(order-1);
@@ -528,7 +526,7 @@ void Der<T>::ddz_bw(T *f){
                 df1 = df2 + ind(ix,0,0);
                 f1 = f2 + ind(ix,0,0);
                 df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, 0, -1)])*c[0];
-                for(int io=1; io<nz-iz-1; io++){
+                for(int io=1; io<nz-iz; io++){
                     df1[0] += (f1[ind(0, 0, io)]-f1[ind(0, 0, -(io+1))])*c[io];
                 }
                 df1[0] /= dz;
