@@ -1931,6 +1931,7 @@ void ModelElastic3D<T>::staggerModels(){
                 Rx[ind_pml(ix,iy,lpml)] *= 2.0;
                 Ry[ind_pml(ix,iy,lpml)] *= 2.0;
                 L[ind_pml(ix,iy,lpml)] *= 0.0;
+                L2M[ind_pml(ix,iy,lpml)] *= 0.0;
             }
         }
     }
