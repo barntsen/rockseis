@@ -129,7 +129,8 @@ void Interp<T>::interp(std::shared_ptr<Data2D<T>> from, std::shared_ptr<Data2D<T
                 data2[ind2(j,i)] = 0.0;
                 continue;
             }
-            if(i0 > (n1 + 2*this->pad - 6)){
+            //if(i0 > (n1 + 2*this->pad - 6)){
+            if(i0 > (n1 - 6)){
                 data2[ind2(j,i)] = 0.0;
                 continue;
             }

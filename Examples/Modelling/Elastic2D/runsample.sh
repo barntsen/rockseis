@@ -2,4 +2,4 @@ sh makesurvey.sh
 if [ ! -d "Results" ]; then
     mkdir Results
 fi
-rsElasticmod2d mod.cfg 
+valgrind rsElasticmod2d mod.cfg 
