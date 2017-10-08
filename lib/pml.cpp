@@ -47,8 +47,8 @@ Pml<T>::~Pml() {
 
 template<typename T>
 Pml<T>::Pml(const int _Lpml, const T _dt) {
-    Amax = 47.1;
-    Smax = 3375.;
+    Amax = 150.;
+    Smax = 1200.;
     Kmax = 2.;
     dt = _dt;
     Lpml = _Lpml;

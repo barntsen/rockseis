@@ -157,7 +157,7 @@ void Der<T>::ddx_fw(T *f){
     T* df2, *f2;
     T* df3, *f3;
     T* c;
-    
+
     // Compute derivative
     for(int iz=0; iz < nz; iz++){
         df3 = df + ind(0,0,iz);
