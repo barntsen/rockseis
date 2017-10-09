@@ -55,7 +55,7 @@ public:
     void setLogfile(std::string name) { logfile = name; } ///< Set name of logfile
     bool createLog(std::string name); ///< Set name of logfile and open for writing
     void writeLog(std::string text);  ///< Write string to log file
-    void writeLog(char * text); ///< Write c_string to log file
+    void writeLog(const char * text); ///< Write c_string to log file
     void writeProgressbar(int x, int n, int r, int w);
     void writeProgress(int x, int n, int r, int w);
 

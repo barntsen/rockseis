@@ -57,7 +57,7 @@ void Modelling<T>::writeLog(std::string text){
 }
 
 template<typename T>
-void Modelling<T>::writeLog(char *text){
+void Modelling<T>::writeLog(const char *text){
     if(!logfile.empty()){
         Flog.open(logfile.c_str(), std::ios::app);
         if(!Flog.fail())

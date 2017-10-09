@@ -62,7 +62,7 @@ void Rtm<T>::writeLog(std::string text){
 }
 
 template<typename T>
-void Rtm<T>::writeLog(char *text){
+void Rtm<T>::writeLog(const char *text){
     if(!logfile.empty()){
         Flog.open(logfile.c_str(), std::ios::app);
         if(!Flog.fail())
@@ -161,12 +161,12 @@ RtmAcoustic2D<T>::RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std:
     pimageset = true;
 }
 
-template<typename T>
+	template<typename T>
 void RtmAcoustic2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 {
-    if(!pimage->getAllocated()) pimage->allocateImage();
+	if(!pimage->getAllocated()) pimage->allocateImage();
 	int ix, iz, ihx, ihz;
-    T *imagedata = pimage->getImagedata();
+	T *imagedata = pimage->getImagedata();
 	int nhx = pimage->getNhx();
 	int nhz = pimage->getNhz();
 	int nx = pimage->getNx();
@@ -263,7 +263,7 @@ int RtmAcoustic2D<T>::run(){
     	// Inserting source 
     	waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
 
-        //Get forward snapshot
+        //Read forward snapshot
         Psnap->readSnap(nt - 1 - it);
 
         // Do Crosscorrelation
@@ -360,7 +360,7 @@ int RtmAcoustic2D<T>::run_edge(){
     	// Inserting source 
     	waves_bw->insertSource(model, dataP, GMAP, (nt - 1 - it));
 
-        //Get forward edges
+        //Read forward edges
         Psnap->setData(waves_fw->getP2(), 0); //Set Pressure as snap field
         Psnap->readEdge(nt - 1 - it);
 
@@ -548,7 +548,7 @@ RtmAcoustic3D<T>::RtmAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> _model, std:
 template<typename T>
 void RtmAcoustic3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 {
-    if(!pimage->getAllocated()) pimage->allocateImage();
+	if(!pimage->getAllocated()) pimage->allocateImage();
 	int ix, iy, iz, ihx, ihy, ihz;
 	int nhx = pimage->getNhx();
 	int nhy = pimage->getNhy();
@@ -561,7 +561,7 @@ void RtmAcoustic3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 	int nyr = ny + 2*padr;
 	int nz = pimage->getNz();
 	int hx, hy, hz;
-    T* imagedata = pimage->getImagedata();
+	T* imagedata = pimage->getImagedata();
 	for (ihx=0; ihx<nhx; ihx++){
 		hx= -(nhx-1)/2 + ihx;
 		for (ihy=0; ihy<nhy; ihy++){
@@ -656,7 +656,7 @@ int RtmAcoustic3D<T>::run(){
     	// Inserting source 
     	waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
 
-        //Get forward snapshot
+        //Read forward snapshot
         Psnap->readSnap(nt - 1 - it);
 
         // Do Crosscorrelation
@@ -851,48 +851,48 @@ RtmElastic2D<T>::RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::sh
 template<typename T>
 void RtmElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho)
 {
-    int ix, iz, ihx, ihz;
-    T *pimagedata; 
-    T *simagedata;
-    T msxx, mszz, msxz, mrxx, mrzz, mrxz;
-    T C33_minus, C33_plus;
-    T C44_minus, C44_plus;
+	int ix, iz, ihx, ihz;
+	T *pimagedata = NULL; 
+	T *simagedata = NULL;
+	T msxx, mszz, msxz, mrxx, mrzz, mrxz;
+	T C33_minus, C33_plus;
+	T C44_minus, C44_plus;
 	int nhx; 
 	int nhz;
 	int nx;
-    T dx;
-    T dz;
+	T dx;
+	T dz;
 	int nz;
 	int hx, hz;
 
-    if(pimageset){
-        if(!pimage->getAllocated()){
-            pimage->allocateImage();
-        }
-        pimagedata = pimage->getImagedata();
-    }
-    if(simageset){
-        if(!simage->getAllocated()){
-            simage->allocateImage();
-        }
-        simagedata = simage->getImagedata();
-    }
-    // Getting sizes
-    if(pimageset) {
-        nhx = pimage->getNhx();
-        nhz = pimage->getNhz();
-        nx = pimage->getNx();
-        nz = pimage->getNz();
-        dx = pimage->getDx(); 
-        dz = pimage->getDz(); 
-    }else{
-        nhx = simage->getNhx();
-        nhz = simage->getNhz();
-        nx = simage->getNx();
-        nz = simage->getNz();
-        dx = simage->getDx(); 
-        dz = simage->getDz(); 
-    }
+	if(pimageset){
+		if(!pimage->getAllocated()){
+			pimage->allocateImage();
+		}
+		pimagedata = pimage->getImagedata();
+	}
+	if(simageset){
+		if(!simage->getAllocated()){
+			simage->allocateImage();
+		}
+		simagedata = simage->getImagedata();
+	}
+	// Getting sizes
+	if(pimageset) {
+		nhx = pimage->getNhx();
+		nhz = pimage->getNhz();
+		nx = pimage->getNx();
+		nz = pimage->getNz();
+		dx = pimage->getDx(); 
+		dz = pimage->getDz(); 
+	}else{
+		nhx = simage->getNhx();
+		nhz = simage->getNhz();
+		nx = simage->getNx();
+		nz = simage->getNz();
+		dx = simage->getDx(); 
+		dz = simage->getDz(); 
+	}
 
 	int nxs = nx+2*pads;
 	int nxr = nx+2*padr;
@@ -903,39 +903,39 @@ void RtmElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 			hz= -(nhz-1)/2 + ihz;
 			for (ix=0; ix<nx; ix++){
 				if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
-                {
-                    for (iz=0; iz<nz; iz++){
-                        if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
-                        {
-                            C33_minus = Rho[km2D(ix-hx, iz-hz)]*Vp[km2D(ix-hx, iz-hz)]*Vp[km2D(ix-hx, iz-hz)];
-                            C33_plus = Rho[km2D(ix+hx, iz+hz)]*Vp[km2D(ix+hx, iz+hz)]*Vp[km2D(ix+hx, iz+hz)];
-                            C44_minus = Rho[km2D(ix-hx, iz-hz)]*Vs[km2D(ix-hx, iz-hz)]*Vs[km2D(ix-hx, iz-hz)];
-                            C44_plus = Rho[km2D(ix+hx, iz+hz)]*Vs[km2D(ix+hx, iz+hz)]*Vs[km2D(ix+hx, iz+hz)];
+				{
+					for (iz=0; iz<nz; iz++){
+						if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
+						{
+							C33_minus = Rho[km2D(ix-hx, iz-hz)]*Vp[km2D(ix-hx, iz-hz)]*Vp[km2D(ix-hx, iz-hz)];
+							C33_plus = Rho[km2D(ix+hx, iz+hz)]*Vp[km2D(ix+hx, iz+hz)]*Vp[km2D(ix+hx, iz+hz)];
+							C44_minus = Rho[km2D(ix-hx, iz-hz)]*Vs[km2D(ix-hx, iz-hz)]*Vs[km2D(ix-hx, iz-hz)];
+							C44_plus = Rho[km2D(ix+hx, iz+hz)]*Vs[km2D(ix+hx, iz+hz)]*Vs[km2D(ix+hx, iz+hz)];
 
-                            msxx = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx;
-                            mszz = (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz;
-                            mrxx = (wrx[kr2D(ix+hx+padr, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr)])/dx;
-                            mrzz = (wrz[kr2D(ix+hx+padr, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr-1)])/dz;
+							msxx = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx;
+							mszz = (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz;
+							mrxx = (wrx[kr2D(ix+hx+padr, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr)])/dx;
+							mrzz = (wrz[kr2D(ix+hx+padr, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr-1)])/dz;
 
-                            if(pimageset){
-                                pimagedata[ki2D(ix,iz,ihx,ihz)] += C33_minus*C33_plus*(msxx + mszz) * (mrxx + mrzz);
-                            }
+							if(pimageset){
+								pimagedata[ki2D(ix,iz,ihx,ihz)] += C33_minus*C33_plus*(msxx + mszz) * (mrxx + mrzz);
+							}
 
-                            if(simageset){
-                                msxz = 0.5*(wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz;
-                                msxz += 0.5*(wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz;
-                                msxz += 0.5*(wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx;
-                                msxz += 0.5*(wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
+							if(simageset){
+								msxz = 0.5*(wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz;
+								msxz += 0.5*(wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz;
+								msxz += 0.5*(wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx;
+								msxz += 0.5*(wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
 
-                                mrxz = 0.5*(wrx[kr2D(ix+hx+padr, iz+hz+padr+1)] - wrx[kr2D(ix+hx+padr, iz+hz+padr)])/dz;
-                                mrxz += 0.5*(wrx[kr2D(ix+hx+padr-1, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dz;
-                                mrxz += 0.5*(wrz[kr2D(ix+hx+padr+1, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr)])/dx;
-                                mrxz += 0.5*(wrz[kr2D(ix+hx+padr, iz+hz+padr-1)] - wrz[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dx;
-                                simagedata[ki2D(ix,iz,ihx,ihz)] += C44_minus*C44_plus*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
-                            }
-                        }
-                    }	
-                }
+								mrxz = 0.5*(wrx[kr2D(ix+hx+padr, iz+hz+padr+1)] - wrx[kr2D(ix+hx+padr, iz+hz+padr)])/dz;
+								mrxz += 0.5*(wrx[kr2D(ix+hx+padr-1, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dz;
+								mrxz += 0.5*(wrz[kr2D(ix+hx+padr+1, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr)])/dx;
+								mrxz += 0.5*(wrz[kr2D(ix+hx+padr, iz+hz+padr-1)] - wrz[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dx;
+								simagedata[ki2D(ix,iz,ihx,ihz)] += C44_minus*C44_plus*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
+							}
+						}
+					}	
+				}
 			}
 		}
 	}
@@ -943,14 +943,14 @@ void RtmElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 
 template<typename T>
 int RtmElastic2D<T>::run(){
-     int result = RTM_ERR;
-     if(!pimageset && !simageset) {
-         rs_warning("RtmElastic2D::run: No image set");
-         return result;
-     }
-     int nt;
-     float dt;
-	 float ot;
+	int result = RTM_ERR;
+	if(!pimageset && !simageset) {
+		rs_warning("RtmElastic2D::run: No image set");
+		return result;
+	}
+	int nt;
+	float dt;
+	float ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1034,7 +1034,7 @@ int RtmElastic2D<T>::run(){
     	waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
     	waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
 
-        //Get forward snapshot
+        //Read forward snapshot
         Vxsnap->readSnap(nt - 1 - it);
         Vzsnap->readSnap(nt - 1 - it);
 
@@ -1236,133 +1236,133 @@ RtmElastic3D<T>::RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> _model, std::sh
 template<typename T>
 void RtmElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, T* wrx, T* wry, T* wrz, int padr, T* Vp, T* Vs, T* Rho)
 {
-    int ix, iy, iz, ihx, ihy, ihz;
-    T *pimagedata; 
-    T *simagedata;
-    T msxx, msyy, mszz, msyz, msxz, msxy, mrxx, mryy, mrzz, mryz, mrxz, mrxy;
-    T C33_minus, C33_plus;
-    T C44_minus, C44_plus;
+	int ix, iy, iz, ihx, ihy, ihz;
+	T *pimagedata = NULL; 
+	T *simagedata = NULL;
+	T msxx, msyy, mszz, msyz, msxz, msxy, mrxx, mryy, mrzz, mryz, mrxz, mrxy;
+	T C33_minus, C33_plus;
+	T C44_minus, C44_plus;
 	int nhx; 
 	int nhy; 
 	int nhz;
 	int nx;
 	int ny;
 	int nz;
-    T dx;
-    T dy;
-    T dz;
+	T dx;
+	T dy;
+	T dz;
 	int hx, hy,hz;
 
-    if(pimageset){
-        if(!pimage->getAllocated()){
-            pimage->allocateImage();
-        }
-        pimagedata = pimage->getImagedata();
-    }
-    if(simageset){
-        if(!simage->getAllocated()){
-            simage->allocateImage();
-        }
-        simagedata = simage->getImagedata();
-    }
-    // Getting sizes
-    if(pimageset) {
-        nhx = pimage->getNhx();
-        nhy = pimage->getNhy();
-        nhz = pimage->getNhz();
-        nx = pimage->getNx();
-        ny = pimage->getNy();
-        nz = pimage->getNz();
-        dx = pimage->getDx(); 
-        dy = pimage->getDy(); 
-        dz = pimage->getDz(); 
-    }else{
-        nhx = simage->getNhx();
-        nhy = simage->getNhy();
-        nhz = simage->getNhz();
-        nx = simage->getNx();
-        ny = simage->getNy();
-        nz = simage->getNz();
-        dx = simage->getDx(); 
-        dy = simage->getDy(); 
-        dz = simage->getDz(); 
-    }
+	if(pimageset){
+		if(!pimage->getAllocated()){
+			pimage->allocateImage();
+		}
+		pimagedata = pimage->getImagedata();
+	}
+	if(simageset){
+		if(!simage->getAllocated()){
+			simage->allocateImage();
+		}
+		simagedata = simage->getImagedata();
+	}
+	// Getting sizes
+	if(pimageset) {
+		nhx = pimage->getNhx();
+		nhy = pimage->getNhy();
+		nhz = pimage->getNhz();
+		nx = pimage->getNx();
+		ny = pimage->getNy();
+		nz = pimage->getNz();
+		dx = pimage->getDx(); 
+		dy = pimage->getDy(); 
+		dz = pimage->getDz(); 
+	}else{
+		nhx = simage->getNhx();
+		nhy = simage->getNhy();
+		nhz = simage->getNhz();
+		nx = simage->getNx();
+		ny = simage->getNy();
+		nz = simage->getNz();
+		dx = simage->getDx(); 
+		dy = simage->getDy(); 
+		dz = simage->getDz(); 
+	}
 
 	int nxs = nx + 2*pads;
 	int nxr = nx + 2*padr;
 	int nys = ny + 2*pads;
 	int nyr = ny + 2*padr;
 
-    for (ihx=0; ihx<nhx; ihx++){
-        hx= -(nhx-1)/2 + ihx;
-        for (ihy=0; ihy<nhy; ihy++){
-            hy= -(nhy-1)/2 + ihy;
-            for (ihz=0; ihz<nhz; ihz++){
-                hz= -(nhz-1)/2 + ihz;
-                for (ix=0; ix<nx; ix++){
-                    if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
-                        for (iy=0; iy<ny; iy++){
-                            if( ((iy-hy) >= 1) && ((iy-hy) < ny-1) && ((iy+hy) >= 1) && ((iy+hy) < ny-1))
-                                for (iz=0; iz<nz; iz++){
-                                    if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
+	for (ihx=0; ihx<nhx; ihx++){
+		hx= -(nhx-1)/2 + ihx;
+		for (ihy=0; ihy<nhy; ihy++){
+			hy= -(nhy-1)/2 + ihy;
+			for (ihz=0; ihz<nhz; ihz++){
+				hz= -(nhz-1)/2 + ihz;
+				for (ix=0; ix<nx; ix++){
+					if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
+						for (iy=0; iy<ny; iy++){
+							if( ((iy-hy) >= 1) && ((iy-hy) < ny-1) && ((iy+hy) >= 1) && ((iy+hy) < ny-1))
+								for (iz=0; iz<nz; iz++){
+									if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
 
-                                    {
-                                        C33_minus = Rho[km3D(ix-hx, iy-hy, iz-hz)]*Vp[km3D(ix-hx, iy-hy, iz-hz)]*Vp[km3D(ix-hx, iy-hy, iz-hz)];
-                                        C33_plus = Rho[km3D(ix+hx, iy+hy, iz+hz)]*Vp[km3D(ix+hx, iy+hy, iz+hz)]*Vp[km3D(ix+hx, iy+hy, iz+hz)];
-                                        C44_minus = Rho[km3D(ix-hx, iy-hy, iz-hz)]*Vs[km3D(ix-hx, iy-hy, iz-hz)]*Vs[km3D(ix-hx, iy-hy, iz-hz)];
-                                        C44_plus = Rho[km3D(ix+hx, iy+hy, iz+hz)]*Vs[km3D(ix+hx, iy+hy, iz+hz)]*Vs[km3D(ix+hx, iy+hy, iz+hz)];
+									{
+										C33_minus = Rho[km3D(ix-hx, iy-hy, iz-hz)]*Vp[km3D(ix-hx, iy-hy, iz-hz)]*Vp[km3D(ix-hx, iy-hy, iz-hz)];
+										C33_plus = Rho[km3D(ix+hx, iy+hy, iz+hz)]*Vp[km3D(ix+hx, iy+hy, iz+hz)]*Vp[km3D(ix+hx, iy+hy, iz+hz)];
+										C44_minus = Rho[km3D(ix-hx, iy-hy, iz-hz)]*Vs[km3D(ix-hx, iy-hy, iz-hz)]*Vs[km3D(ix-hx, iy-hy, iz-hz)];
+										C44_plus = Rho[km3D(ix+hx, iy+hy, iz+hz)]*Vs[km3D(ix+hx, iy+hy, iz+hz)]*Vs[km3D(ix+hx, iy+hy, iz+hz)];
 
-                                        msxx = (wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads)])/dx;
-                                        msyy = (wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)])/dy;
-                                        mszz = (wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)])/dz;
-                                        mrxx = (wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)])/dx;
-                                        mryy = (wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)])/dy;
-                                        mrzz = (wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)])/dz;
+										msxx = (wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads)])/dx;
+										msyy = (wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)])/dy;
+										mszz = (wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)])/dz;
+										mrxx = (wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)])/dx;
+										mryy = (wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)])/dy;
+										mrzz = (wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)])/dz;
 
-                                        if(pimageset){
-                                            pimagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += C33_minus*C33_plus*(msxx + msyy + mszz) * (mrxx + mryy + mrzz);
-                                        }
+										if(pimageset){
+											pimagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += C33_minus*C33_plus*(msxx + msyy + mszz) * (mrxx + mryy + mrzz);
+										}
 
-                                        if(simageset){
-                                            msyz = 0.5*(wsz[ks3D(ix-hx+pads, iy-hy+pads+1, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dy;
-                                            msyz += 0.5*(wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)] - wsz[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads-1)])/dy;
-                                            msyz += 0.5*(wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads+1)] - wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dz;
-                                            msyz += 0.5*(wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads-1)])/dz;
+										if(simageset){
+											msyz = 0.5*(wsz[ks3D(ix-hx+pads, iy-hy+pads+1, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dy;
+											msyz += 0.5*(wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)] - wsz[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads-1)])/dy;
+											msyz += 0.5*(wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads+1)] - wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dz;
+											msyz += 0.5*(wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads-1)])/dz;
 
-                                            mryz = 0.5*(wrz[kr3D(ix+hx+padr, iy+hy+padr+1, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dy;
-                                            mryz += 0.5*(wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)] - wrz[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr-1)])/dy;
-                                            mryz += 0.5*(wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr+1)] - wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dz;
-                                            mryz += 0.5*(wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)] - wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr-1)])/dz;
+											mryz = 0.5*(wrz[kr3D(ix+hx+padr, iy+hy+padr+1, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dy;
+											mryz += 0.5*(wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)] - wrz[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr-1)])/dy;
+											mryz += 0.5*(wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr+1)] - wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dz;
+											mryz += 0.5*(wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)] - wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr-1)])/dz;
 
-                                            msxz = 0.5*(wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads+1)] - wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dz;
-                                            msxz += 0.5*(wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads)] - wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads-1)])/dz;
-                                            msxz += 0.5*(wsz[ks3D(ix-hx+pads+1, iy-hy+pads, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dx;
-                                            msxz += 0.5*(wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)] - wsz[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads-1)])/dx;
+											msxz = 0.5*(wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads+1)] - wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dz;
+											msxz += 0.5*(wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads)] - wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads-1)])/dz;
+											msxz += 0.5*(wsz[ks3D(ix-hx+pads+1, iy-hy+pads, iz-hz+pads)] - wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dx;
+											msxz += 0.5*(wsz[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads-1)] - wsz[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads-1)])/dx;
 
-                                            mrxz = 0.5*(wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr+1)] - wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dz;
-                                            mrxz += 0.5*(wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr-1)])/dz;
-                                            mrxz += 0.5*(wrz[kr3D(ix+hx+padr+1, iy+hy+padr, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dx;
-                                            mrxz += 0.5*(wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)] - wrz[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr-1)])/dx;
+											mrxz = 0.5*(wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr+1)] - wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dz;
+											mrxz += 0.5*(wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr-1)])/dz;
+											mrxz += 0.5*(wrz[kr3D(ix+hx+padr+1, iy+hy+padr, iz+hz+padr)] - wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dx;
+											mrxz += 0.5*(wrz[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr-1)] - wrz[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr-1)])/dx;
 
-                                            msxy = 0.5*(wsx[ks3D(ix-hx+pads, iy-hy+pads+1, iz-hz+pads)] - wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dy;
-                                            msxy += 0.5*(wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads)] - wsx[ks3D(ix-hx+pads-1, iy-hy+pads-1, iz-hz+pads)])/dy;
-                                            msxy += 0.5*(wsy[ks3D(ix-hx+pads+1, iy-hy+pads, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dx;
-                                            msxy += 0.5*(wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)] - wsy[ks3D(ix-hx+pads-1, iy-hy+pads-1, iz-hz+pads)])/dx;
+											msxy = 0.5*(wsx[ks3D(ix-hx+pads, iy-hy+pads+1, iz-hz+pads)] - wsx[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dy;
+											msxy += 0.5*(wsx[ks3D(ix-hx+pads-1, iy-hy+pads, iz-hz+pads)] - wsx[ks3D(ix-hx+pads-1, iy-hy+pads-1, iz-hz+pads)])/dy;
+											msxy += 0.5*(wsy[ks3D(ix-hx+pads+1, iy-hy+pads, iz-hz+pads)] - wsy[ks3D(ix-hx+pads, iy-hy+pads, iz-hz+pads)])/dx;
+											msxy += 0.5*(wsy[ks3D(ix-hx+pads, iy-hy+pads-1, iz-hz+pads)] - wsy[ks3D(ix-hx+pads-1, iy-hy+pads-1, iz-hz+pads)])/dx;
 
-                                            mrxy = 0.5*(wrx[kr3D(ix+hx+padr, iy+hy+padr+1, iz+hz+padr)] - wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dy;
-                                            mrxy += 0.5*(wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr-1, iz+hz+padr)])/dy;
-                                            mrxy += 0.5*(wry[kr3D(ix+hx+padr+1, iy+hy+padr, iz+hz+padr)] - wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dx;
-                                            mrxy += 0.5*(wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)] - wry[kr3D(ix+hx+padr-1, iy+hy+padr-1, iz+hz+padr)])/dx;
+											mrxy = 0.5*(wrx[kr3D(ix+hx+padr, iy+hy+padr+1, iz+hz+padr)] - wrx[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dy;
+											mrxy += 0.5*(wrx[kr3D(ix+hx+padr-1, iy+hy+padr, iz+hz+padr)] - wrx[kr3D(ix+hx+padr-1, iy+hy+padr-1, iz+hz+padr)])/dy;
+											mrxy += 0.5*(wry[kr3D(ix+hx+padr+1, iy+hy+padr, iz+hz+padr)] - wry[kr3D(ix+hx+padr, iy+hy+padr, iz+hz+padr)])/dx;
+											mrxy += 0.5*(wry[kr3D(ix+hx+padr, iy+hy+padr-1, iz+hz+padr)] - wry[kr3D(ix+hx+padr-1, iy+hy+padr-1, iz+hz+padr)])/dx;
 
-                                            simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += C44_minus*C44_plus*(-2.0*(msyy*mrzz + mszz*mryy) -2.0*(msxx*mrzz + mszz*mrxx) -2.0*(msyy*mrxx + msxx*mryy) + msyz*mryz + msxz*mrxz + msxy*mrxy);
-                                        }
-                                    }
-                                }	
-                        }
-                }
-            }
-        }
-    }
+											simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] += C44_minus*C44_plus*(-2.0*(msyy*mrzz + mszz*mryy) -2.0*(msxx*mrzz + mszz*mrxx) -2.0*(msyy*mrxx + msxx*mryy) + msyz*mryz + msxz*mrxz + msxy*mrxy);
+										}
+									}
+								}	
+						}
+				}
+			}
+		}
+	}
 }
 
 template<typename T>
@@ -1471,7 +1471,7 @@ int RtmElastic3D<T>::run(){
     	waves->insertSource(model, dataVy, GMAP, (nt - 1 - it));
     	waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
 
-        //Get forward snapshot
+        //Read forward snapshot
         Vxsnap->readSnap(nt - 1 - it);
         Vysnap->readSnap(nt - 1 - it);
         Vzsnap->readSnap(nt - 1 - it);
