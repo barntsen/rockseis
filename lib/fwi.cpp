@@ -167,6 +167,7 @@ FwiAcoustic2D<T>::FwiAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std:
 template<typename T>
 void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T* Vp, T* Rho)
 {
+    if(!vpgradset && !rhogradset) rs_error("FwiAcoustic2D:crossCorr: No gradient set in fwi class");
     if(!vpgrad->getAllocated()) vpgrad->allocateImage();
     if(!rhograd->getAllocated()) rhograd->allocateImage();
     int ix, iz;
@@ -285,6 +286,8 @@ int FwiAcoustic2D<T>::run(){
             T* wrz = waves->getAz(); 
             crossCorr(Psnap->getData(0), 0, wrp, wrx, wrz, waves->getLpml(), model->getVp(), model->getR());
         }
+        // Record wavelet gradient
+        waves->recordData(this->wavgrad, SMAP, nt-1-it);
 
         // Roll the pointers P1 and P2
     	waves->roll();
@@ -387,6 +390,9 @@ int FwiAcoustic2D<T>::run_edge(){
             crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
         }
 
+        // Record wavelet gradient
+        waves_bw->recordData(this->wavgrad, SMAP, nt-1-it);
+
         // Roll the pointers P1 and P2
     	waves_fw->roll();
     	waves_bw->roll();
@@ -478,6 +484,9 @@ int FwiAcoustic2D<T>::run_optimal(){
             T* wrz = waves_bw->getAz(); 
             crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
 
+            // Record wavelet gradient
+            waves_bw->recordData(this->wavgrad, SMAP, capo);
+
             // Roll the pointers P1 and P2
             waves_fw->roll();
             waves_bw->roll();
@@ -508,6 +517,9 @@ int FwiAcoustic2D<T>::run_optimal(){
             T* wrx = waves_bw->getAx(); 
             T* wrz = waves_bw->getAz(); 
             crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
+
+            // Record wavelet gradient
+            waves_bw->recordData(this->wavgrad, SMAP, capo);
 
             // Roll the pointers P1 and P2
             waves_bw->roll();
@@ -571,6 +583,7 @@ FwiAcoustic3D<T>::FwiAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> _model, std:
 template<typename T>
 void FwiAcoustic3D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wry, T*wrz, int padr, T* Vp, T* Rho)
 {
+    if(!vpgradset && !rhogradset) rs_error("FwiAcoustic3D:crossCorr: No gradient set in fwi class");
 	if(!vpgrad->getAllocated()) vpgrad->allocateImage();
     if(!rhograd->getAllocated()) rhograd->allocateImage();
 	int ix, iy, iz;

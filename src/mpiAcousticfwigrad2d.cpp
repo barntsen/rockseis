@@ -141,6 +141,11 @@ int main(int argc, char** argv) {
 
         // Get number of shots
         size_t ngathers =  Sort->getNensemb();
+
+        // Wavelet gradient
+        wavgrad = std::make_shared<rockseis::Data2D<float>>(1, source->getNt(), source->getDt(), 0.0);
+        wavgrad->setFile(Wavgradfile);
+        wavgrad->createEmpty(ngathers);
         
 		// Create work queue
 		for(unsigned long int i=0; i<ngathers; i++) {
@@ -148,6 +153,7 @@ int main(int argc, char** argv) {
 			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,{'\0'}});
 			mpi.addWork(work);
 		}
+
 
 		// Perform work in parallel
 		mpi.performWork();
@@ -208,6 +214,13 @@ int main(int argc, char** argv) {
                 fwi->setVpgrad(vpgrad);
                 fwi->setRhograd(rhograd);
 
+                wavgrad = std::make_shared<rockseis::Data2D<float>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
+                wavgrad->setField(rockseis::PRESSURE);
+                // Copy geometry
+                wavgrad->copyCoords(source);
+                wavgrad->makeMap(lmodel->getGeom(), SMAP);
+                fwi->setWavgrad(wavgrad);
+
                 // Setting Snapshot file 
                 fwi->setSnapfile(Psnapfile + "-" + std::to_string(work.id));
 
@@ -238,6 +251,7 @@ int main(int argc, char** argv) {
                 // Output gradients
                 vpgrad->write();
                 rhograd->write();
+                wavgrad->putTrace(Wavgradfile, work.id);
                 
                 // Reset all classes
                 shot2D.reset();
