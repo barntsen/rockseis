@@ -458,7 +458,7 @@ void Data2D<T>::putTrace(std::string filename, size_t number)
     size_t n1 = Fdata->getN(1);
     T d1 = Fdata->getD(1);
     T o1 = Fdata->getO(1);
-    size_t n2 = 1;
+    size_t n2 = 1; // Only write one trace!
     if(n1 != this->getNt()) rs_error("Data2D::putTrace: Number of samples in trace and datafile mismatch.");
     if(d1 != this->getDt()) rs_error("Data2D::putTrace: Sampling interval in trace and datafile mismatch.");
     if(o1 != this->getOt()) rs_error("Data2D::putTrace: Origin in trace and datafile mismatch.");
@@ -865,6 +865,46 @@ void Data3D<T>::createEmpty(size_t ntr)
         this->writeTraces();
     }
     this->close();
+}
+
+template<typename T>
+void Data3D<T>::putTrace(std::string filename, size_t number)
+{
+    if(number > this->getNtrace()-1) rs_error("Data3D::putTrace: Trying to put a trace with number that is larger than ntrace");
+
+    bool status;
+    std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
+    status = Fdata->append(filename);
+    if(status == FILE_ERR) rs_error("Data3D::putTrace: Error opening output data file.");
+    rs_datatype datatype = Fdata->getType(); 
+    if(datatype != DATA3D) rs_error("Data3D::putTrace: Datafile must be of type Data3D.");
+    //Get gather size information
+    size_t n1 = Fdata->getN(1);
+    T d1 = Fdata->getD(1);
+    T o1 = Fdata->getO(1);
+    size_t n2 = 1; // Only write one trace!
+    if(n1 != this->getNt()) rs_error("Data3D::putTrace: Number of samples in trace and datafile mismatch.");
+    if(d1 != this->getDt()) rs_error("Data3D::putTrace: Sampling interval in trace and datafile mismatch.");
+    if(o1 != this->getOt()) rs_error("Data3D::putTrace: Origin in trace and datafile mismatch.");
+
+    //Write gather
+    Point3D<T> *scoords = (this->getGeom())->getScoords();
+    Point3D<T> *gcoords = (this->getGeom())->getGcoords();
+    T *tracedata = this->getData();
+    size_t traceno;
+    for (size_t j=0; j < n2; j++){
+        traceno = number;
+        Fdata->seekp(Fdata->getStartofdata() + traceno*(n1+NHEAD3D)*sizeof(T));
+        Fdata->write(&scoords[j].x, 1);
+        Fdata->write(&scoords[j].y, 1);
+        Fdata->write(&scoords[j].z, 1);
+        Fdata->write(&gcoords[j].x, 1);
+        Fdata->write(&gcoords[j].y, 1);
+        Fdata->write(&gcoords[j].z, 1);
+        Fdata->write(&tracedata[j*n1], n1);
+    }
+
+    if(Fdata->getFail()) rs_error("Data3D::PutTrace: Error writting gather to output file");
 }
 
 // destructor

@@ -127,6 +127,7 @@ public:
     bool readTraces(); ///< Read a number of traces
     bool writeTraces(); /// Writes data and coordinates to the end of the file
     void createEmpty(size_t ntr); ///< Create empty dataset with ntr traces
+    void putTrace(std::string filename, size_t number); ///< Writes a trace with a specific number to a file
 
 private:
     std::shared_ptr<Geometry3D<T>> geometry;  // Data geometry 

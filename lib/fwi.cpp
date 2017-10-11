@@ -712,6 +712,9 @@ int FwiAcoustic3D<T>::run(){
             crossCorr(Psnap->getData(0), 0, wrp, wrx, wry, wrz, waves->getLpml(), model->getVp(), model->getR());
         }
 
+        // Record wavelet gradient
+        waves->recordData(this->wavgrad, SMAP, nt-1-it);
+
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
 
@@ -808,6 +811,9 @@ int FwiAcoustic3D<T>::run_optimal(){
             T* wrz = waves_bw->getAz(); 
             crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wry, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
 
+            // Record wavelet gradient
+            waves_bw->recordData(this->wavgrad, SMAP, capo);
+
             // Roll the pointers P1 and P2
             waves_fw->roll();
             waves_bw->roll();
@@ -839,6 +845,9 @@ int FwiAcoustic3D<T>::run_optimal(){
             T* wry = waves_bw->getAy(); 
             T* wrz = waves_bw->getAz(); 
             crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wry, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
+
+            // Record wavelet gradient
+            waves_bw->recordData(this->wavgrad, SMAP, capo);
 
             // Roll the pointers P1 and P2
             waves_bw->roll();
