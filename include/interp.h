@@ -29,6 +29,7 @@ public:
     T interp_bs_int1d(T *mod, T d1);
     T interp_ln_int1d(T *mod, T d1);
     T interp_sinc_int1d(T *mod, T d1);
+    int interp_seekindex(const T *vector, const int n, const T value);
     void interp(std::shared_ptr<Data2D<T>> from, std::shared_ptr<Data2D<T>> to);
     void interp(std::shared_ptr<Data3D<T>> from, std::shared_ptr<Data3D<T>> to);
 

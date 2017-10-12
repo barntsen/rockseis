@@ -75,6 +75,8 @@ public:
     void setSnapfile(std::string file) { snapfile = file; } ///< Sets checkpoint filename
     int getNcheck() { return ncheck; } ///< Gets the number of checkpoints for the optimal checkpointing scheme
     bool getIncore() { return incore; } ///< Gets the incore flag for the optimal checkpointing scheme
+    rs_fwimisfit getMisfit_type() { return misfit_type; }  ///< Gets misfit type
+    void setMisfit_type(rs_fwimisfit type) { misfit_type = type;} ///< Sets fwi misfit type
     bool createLog(std::string name); ///< Set name of logfile and open for writing
     void writeLog(std::string text);  ///< Write string to log file
     void writeLog(const char * text); ///< Write c_string to log file
@@ -92,6 +94,7 @@ private:
 	Progress prog; ///< Progress counter
     rs_snapmethod snapmethod; ///< Choice of checkpointing method
     bool incore; ///< Incore flag for optimal checkpointing (No IO)
+    rs_fwimisfit misfit_type; ///< Misfit type can be either difference or correlation
     int ncheck; ///< Number of checkpoints in optimal checkpointing
     std::string snapfile;
 };
@@ -114,9 +117,14 @@ public:
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
     void setDataAz(std::shared_ptr<Data2D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
+    void setDatamodP(std::shared_ptr<Data2D<T>> _datamodP) { datamodP = _datamodP; datamodPset = true; }
+    void setDatamodAz(std::shared_ptr<Data2D<T>> _datamodAz) { datamodAz = _datamodAz; datamodAzset = true; }
+    void setDataresP(std::shared_ptr<Data2D<T>> _dataresP) { dataresP = _dataresP; dataresPset = true; }
+    void setDataresAz(std::shared_ptr<Data2D<T>> _dataresAz) { dataresAz = _dataresAz; dataresAzset = true; }
 
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho);
 
+    void computeResiduals();
     ~FwiAcoustic2D();	///< Destructor
 
 private:
@@ -127,12 +135,18 @@ private:
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> dataP;
     std::shared_ptr<Data2D<T>> dataAz;
+    std::shared_ptr<Data2D<T>> datamodP;
+    std::shared_ptr<Data2D<T>> datamodAz;
+    std::shared_ptr<Data2D<T>> dataresP;
+    std::shared_ptr<Data2D<T>> dataresAz;
     bool modelset;
     bool wavgradset;
     bool vpgradset;
     bool rhogradset;
     bool sourceset;
-    bool dataPset, dataAxset, dataAzset;
+    bool dataPset, dataAzset;
+    bool datamodPset, datamodAzset;
+    bool dataresPset, dataresAzset;
 };
 
 /** The 3D Acoustic Fwi class
@@ -164,12 +178,18 @@ private:
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> dataP;
     std::shared_ptr<Data3D<T>> dataAz;
+    std::shared_ptr<Data2D<T>> datamodP;
+    std::shared_ptr<Data2D<T>> datamodAz;
+    std::shared_ptr<Data2D<T>> dataresP;
+    std::shared_ptr<Data2D<T>> dataresAz;
     bool modelset;
     bool vpgradset;
     bool rhogradset;
     bool wavgradset;
     bool sourceset;
-    bool dataPset, dataAxset, dataAyset, dataAzset;
+    bool dataPset, dataAzset;
+    bool datamodPset, datamodAzset;
+    bool dataresPset, dataresAzset;
 };
 
 /** The 2D Elastic Fwi class
@@ -204,6 +224,10 @@ private:
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> dataVx;
     std::shared_ptr<Data2D<T>> dataVz;
+    std::shared_ptr<Data2D<T>> datamodVx;
+    std::shared_ptr<Data2D<T>> datamodVz;
+    std::shared_ptr<Data2D<T>> dataresVx;
+    std::shared_ptr<Data2D<T>> dataresVz;
     bool modelset;
     bool vpgradset;
     bool vsgradset;
@@ -211,6 +235,8 @@ private:
     bool wavgradset;
     bool sourceset;
     bool dataVxset, dataVzset;
+    bool datamodVxset, datamodVzset;
+    bool dataresVxset, dataresVzset;
 };
 
 /** The 3D Elastic Fwi class
@@ -254,6 +280,8 @@ private:
     bool wavgradset;
     bool sourceset;
     bool dataVxset, dataVyset, dataVzset;
+    bool datamodVxset, datamodVyset, datamodVzset;
+    bool dataresVxset, dataresVyset, dataresVzset;
 };
 
 

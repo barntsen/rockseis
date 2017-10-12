@@ -37,19 +37,22 @@ int main(int argc, char** argv) {
 			PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
 			PRINT_DOC();
 			PRINT_DOC(# Checkpointing parameters);
-			PRINT_DOC(snapmethod = "0";  );
-			PRINT_DOC(nsnaps = "11";);
-			PRINT_DOC(incore = "true";  );
+			PRINT_DOC(snapmethod = "0"; # 0 - fullcheckpointing; 1 - optimal checkpointing );
+			PRINT_DOC(misfit_type= "0"; # 0 - Difference; 1 - Correlation );
+			PRINT_DOC(nsnaps = "11"; # Number of checkpoints to store);
+			PRINT_DOC(incore = "true"; # Do checkpointing in memory);
 			PRINT_DOC();
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp2d.rss";);
 			PRINT_DOC(Rho = "Rho2d.rss";);
 			PRINT_DOC(Wavelet = "Wav2d.rss";);
-			PRINT_DOC(Presidualfile = "Pshots2d.rss";);
-			PRINT_DOC(Vpgradfile = "Vpgrad2d.rss";);
-			PRINT_DOC(Rhogradfile = "Rhograd2d.rss";);
-			PRINT_DOC(Wavgradfile = "Wavgrad2d.rss";);
-			PRINT_DOC(Psnapfile = "Psnaps2d.rss";);
+			PRINT_DOC(Precordfile = "Prec2d.rss"; # Input observed data);
+			PRINT_DOC(Pmodelledfile = "Pmod2d.rss"; # File to output modelled data);
+			PRINT_DOC(Presidualfile = "Pres2d.rss"; # File to output residuals);
+			PRINT_DOC(Vpgradfile = "Vpgrad2d.rss"; # File to output gradient with respect to Vp);
+			PRINT_DOC(Rhogradfile = "Rhograd2d.rss"; # File to output gradient with respect to Rho);
+			PRINT_DOC(Wavgradfile = "Wavgrad2d.rss"; # File to output gradient with respect to Wav);
+			PRINT_DOC(Psnapfile = "Psnaps2d.rss"; # File to output temporary snapshots);
 			PRINT_DOC();
 		}
         exit(1);
@@ -63,6 +66,7 @@ int main(int argc, char** argv) {
 	int snapinc;
 	int nsnaps = 0;
 	int snapmethod;
+	int misfit_type;
     float apertx;
     int nhx=1, nhz=1;
     std::string Waveletfile;
@@ -72,9 +76,15 @@ int main(int argc, char** argv) {
     std::string Rhogradfile;
     std::string Wavgradfile;
     std::string Psnapfile;
+    std::string Precordfile;
+    std::string Pmodelledfile;
     std::string Presidualfile;
     std::shared_ptr<rockseis::Data2D<float>> shot2D;
     std::shared_ptr<rockseis::Data2D<float>> shot2Di;
+    std::shared_ptr<rockseis::Data2D<float>> shotmod2D;
+    std::shared_ptr<rockseis::Data2D<float>> shotmod2Di;
+    std::shared_ptr<rockseis::Data2D<float>> shotres2D;
+    std::shared_ptr<rockseis::Data2D<float>> shotres2Di;
     std::shared_ptr<rockseis::Image2D<float>> vpgrad;
     std::shared_ptr<rockseis::Image2D<float>> rhograd;
     std::shared_ptr<rockseis::Data2D<float>> wavgrad;
@@ -98,7 +108,9 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Vpgradfile", &Vpgradfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Rhogradfile", &Rhogradfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavgradfile", &Wavgradfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Presidualfile", &Presidualfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Pmodelledfile", &Pmodelledfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapmethod", &snapmethod) == INPARSE_ERR) status = true;
     rockseis::rs_snapmethod checkpoint = static_cast<rockseis::rs_snapmethod>(snapmethod);
     switch(checkpoint){
@@ -108,11 +120,11 @@ int main(int argc, char** argv) {
             if(Inpar->getPar("nsnaps", &nsnaps) == INPARSE_ERR) status = true;
             if(Inpar->getPar("incore", &incore) == INPARSE_ERR) status = true;
             break;
-        case rockseis::EDGES:
-            break;
         default:
             rockseis::rs_error("Invalid option of snapshot saving (snapmethod)."); 
     }
+    if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
+    rockseis::rs_fwimisfit fwimisfit = static_cast<rockseis::rs_fwimisfit>(misfit_type);
 
 	if(status == true){
 		rs_error("Program terminated due to input errors.");
@@ -120,7 +132,7 @@ int main(int argc, char** argv) {
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
-    Sort->setDatafile(Presidualfile);
+    Sort->setDatafile(Precordfile);
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelAcoustic2D<float>> gmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
@@ -135,7 +147,7 @@ int main(int argc, char** argv) {
 
 	if(mpi.getRank() == 0) {
 		// Master
-        Sort->createShotmap(Presidualfile); 
+        Sort->createShotmap(Precordfile); 
         Sort->writeKeymap();
         Sort->writeSortmap();
 
@@ -146,6 +158,17 @@ int main(int argc, char** argv) {
         wavgrad = std::make_shared<rockseis::Data2D<float>>(1, source->getNt(), source->getDt(), 0.0);
         wavgrad->setFile(Wavgradfile);
         wavgrad->createEmpty(ngathers);
+
+        // Create a data class for the recorded data
+        std::shared_ptr<rockseis::Data2D<float>> shot2D (new rockseis::Data2D<float>(Precordfile));
+        // Create modelling and residual data files
+        shotmod2D = std::make_shared<rockseis::Data2D<float>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+        shotmod2D->setFile(Pmodelledfile);
+        shotmod2D->createEmpty(shot2D->getNtrace());
+
+        shotres2D = std::make_shared<rockseis::Data2D<float>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+        shotres2D->setFile(Presidualfile);
+        shotres2D->createEmpty(shot2D->getNtrace());
         
 		// Create work queue
 		for(unsigned long int i=0; i<ngathers; i++) {
@@ -153,7 +176,6 @@ int main(int argc, char** argv) {
 			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,{'\0'}});
 			mpi.addWork(work);
 		}
-
 
 		// Perform work in parallel
 		mpi.performWork();
@@ -204,7 +226,21 @@ int main(int argc, char** argv) {
                 interp->interp(shot2D, shot2Di);
                 shot2Di->makeMap(lmodel->getGeom(), GMAP);
 
+                // Create fwi object
                 fwi = std::make_shared<rockseis::FwiAcoustic2D<float>>(lmodel, source, shot2Di, order, snapinc);
+
+                // Create modelled and residual data objects 
+                shotmod2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotmod2D->copyCoords(shot2D);
+                shotmod2D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDatamodP(shotmod2D);
+                shotres2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotres2D->copyCoords(shot2D);
+                shotres2D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDataresP(shotres2D);
+                
+                // Setting misfit type
+                fwi->setMisfit_type(fwimisfit);
 
                 // Creating gradient objects
                 vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
@@ -234,15 +270,13 @@ int main(int argc, char** argv) {
                 // Stagger model
                 lmodel->staggerModels();
 
+                // Run simulation
                 switch(checkpoint){
                     case rockseis::FULL:
                         fwi->run();
                         break;
                     case rockseis::OPTIMAL:
                         fwi->run_optimal();
-                        break;
-                    case rockseis::EDGES:
-                        fwi->run_edge();
                         break;
                     default:
                         rockseis::rs_error("Invalid option of snapshot saving."); 
@@ -252,10 +286,26 @@ int main(int argc, char** argv) {
                 vpgrad->write();
                 rhograd->write();
                 wavgrad->putTrace(Wavgradfile, work.id);
+
+                // Output modelled and residual data
+                shotmod2Di = std::make_shared<rockseis::Data2D<float>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+                shotmod2Di->setFile(Pmodelledfile);
+                interp->interp(shotmod2D, shotmod2Di);
+                Sort->put2DGather(shotmod2Di, work.id);
+
+                shotres2Di = std::make_shared<rockseis::Data2D<float>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+                shotres2Di->setFile(Presidualfile);
+                interp->interp(shotres2D, shotres2Di);
+                Sort->put2DGather(shotres2Di, work.id);
+
                 
                 // Reset all classes
                 shot2D.reset();
                 shot2Di.reset();
+                shotmod2D.reset();
+                shotmod2Di.reset();
+                shotres2D.reset();
+                shotres2Di.reset();
                 lmodel.reset();
                 vpgrad.reset();
                 rhograd.reset();

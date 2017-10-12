@@ -13,6 +13,7 @@ Fwi<T>::Fwi() {
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 0;
+    misfit_type = DIFFERENCE;
 }
 
 template<typename T>
@@ -36,6 +37,8 @@ Fwi<T>::Fwi(int _order, int _snapinc) {
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 1;
+
+    misfit_type = DIFFERENCE;
 }
 
 template<typename T>
@@ -206,6 +209,63 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
 }
 
 template<typename T>
+void FwiAcoustic2D<T>::computeResiduals(){
+    size_t ntr = datamodP->getNtrace();
+    if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    size_t nt = datamodP->getNt();
+    if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+    T* mod = datamodP->getData();
+    T* rec = dataP->getData();
+    T* res = dataresP->getData();
+    size_t itr, it;
+    Index I(nt, ntr);
+    switch(this->getMisfit_type()){
+        case DIFFERENCE:
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                   res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+                }
+            }
+            break;
+        case CORRELATION:
+            T norm1, norm2, norm3;
+            for(itr=0; itr<ntr; itr++){
+                norm1 = 0.0;
+                norm2 = 0.0;
+                norm3 = 0.0;
+                
+                for(it=0; it<nt; it++){
+                   norm1 += mod[I(it, itr)]*mod[I(it, itr)];
+                   norm2 += rec[I(it, itr)]*rec[I(it, itr)];
+                   norm3 += mod[I(it, itr)]*rec[I(it, itr)];
+                }
+
+                norm1 = sqrt(norm1);
+                norm2 = sqrt(norm2);
+                if(norm1 ==0 ) norm1= 1.0;
+                if(norm2 ==0 ) norm2= 1.0;
+                norm3 /= (norm1*norm2);
+
+                for(it=0; it<nt; it++){
+                    res[I(it, itr)]=(-1.0)*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
+                }
+            }
+
+            break;
+        default:
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+                }
+            }
+            break;
+    }
+}
+
+template<typename T>
 int FwiAcoustic2D<T>::run(){
      int result = FWI_ERR;
      int nt;
@@ -215,6 +275,7 @@ int FwiAcoustic2D<T>::run(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+     if(!this->datamodPset || !this->dataresPset) rs_error("FwiAcoustic2D::run: datamodP and dataresP must be set before running the simulation.");
 
      this->createLog(this->getLogfile());
 
@@ -240,6 +301,11 @@ int FwiAcoustic2D<T>::run(){
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
+        // Recording data 
+        if(this->datamodPset){
+            waves->recordData(this->datamodP, GMAP, it);
+        }
+
     	//Writting out results to snapshot file
         Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
         Psnap->writeSnap(it);
@@ -259,8 +325,12 @@ int FwiAcoustic2D<T>::run(){
     waves.reset();
     waves  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot);
 
-    // Create image
+    // Create images 
     vpgrad->allocateImage();
+    rhograd->allocateImage();
+
+    // Compute residuals
+    computeResiduals();
 
     Psnap->openSnap(this->getSnapfile(), 'r');
     Psnap->allocSnap(0);
@@ -273,8 +343,8 @@ int FwiAcoustic2D<T>::run(){
     	waves->forwardstepAcceleration(model, der);
     	waves->forwardstepStress(model, der);
 
-    	// Inserting source 
-    	waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
+    	// Inserting residuals
+    	waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
 
         //Read forward snapshot
         Psnap->readSnap(nt - 1 - it);
@@ -294,111 +364,6 @@ int FwiAcoustic2D<T>::run(){
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
-    }
-    
-	//Remove snapshot file
-	Psnap->removeSnap();
-
-    result=FWI_OK;
-    return result;
-}
-
-template<typename T>
-int FwiAcoustic2D<T>::run_edge(){
-     int result = FWI_ERR;
-     int nt;
-     float dt;
-	 float ot;
-
-     nt = source->getNt();
-     dt = source->getDt();
-     ot = source->getOt();
-
-     this->createLog(this->getLogfile());
-
-     // Create the classes 
-     std::shared_ptr<WavesAcoustic2D<T>> waves_fw (new WavesAcoustic2D<T>(model, nt, dt, ot));
-     std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
-
-     // Create snapshots
-     std::shared_ptr<Snapshot2D<T>> Psnap;
-     Psnap = std::make_shared<Snapshot2D<T>>(waves_fw, this->getSnapinc());
-     Psnap->setData(waves_fw->getP1(), 0); //Set Pressure as snap field
-     Psnap->openEdge(this->getSnapfile(), 'w'); // Create a new snapshot file
-
-    // Loop over forward time
-    for(int it=0; it < nt; it++)
-    {
-    	// Time stepping
-    	waves_fw->forwardstepAcceleration(model, der);
-    	waves_fw->forwardstepStress(model, der);
-    
-    	// Inserting source 
-    	waves_fw->insertSource(model, source, SMAP, it);
-
-    	//Writting out results to snapshot file
-        Psnap->setData(waves_fw->getP1(), 0); //Set Pressure as snap field
-        Psnap->writeEdge(it);
-
-    	// Roll the pointers P1 and P2
-    	waves_fw->roll();
-
-        // Output progress to logfile
-        this->writeProgress(it, 2*nt-1, 20, 48);
-    }//End of forward loop
-    
-    
-    //Close snapshot file
-    Psnap->closeSnap();
-
-    // Reset waves_fw
-    waves_fw.reset();
-    waves_fw  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot);
-    std::shared_ptr<WavesAcoustic2D<T>> waves_bw (new WavesAcoustic2D<T>(model, nt, dt, ot));
-
-    // Create image
-    vpgrad->allocateImage();
-
-    Psnap.reset();
-    Psnap = std::make_shared<Snapshot2D<T>>(waves_fw, this->getSnapinc());
-    Psnap->setData(waves_fw->getP2(), 0); //Set Pressure as snap field
-    Psnap->openEdge(this->getSnapfile(), 'r');
-
-    // Loop over reverse time
-    for(int it=0; it < nt; it++)
-    {
-    	// Time stepping
-    	waves_fw->forwardstepAcceleration(model, der);
-    	waves_fw->forwardstepStress(model, der);
-
-    	waves_bw->forwardstepAcceleration(model, der);
-    	waves_bw->forwardstepStress(model, der);
-
-    	// Inserting source 
-    	waves_bw->insertSource(model, dataP, GMAP, (nt - 1 - it));
-
-        //Read forward edges
-        Psnap->setData(waves_fw->getP2(), 0); //Set Pressure as snap field
-        Psnap->readEdge(nt - 1 - it);
-
-        // Do Crosscorrelation
-        if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-            T *wsp = waves_fw->getP1();
-            T *wrp = waves_bw->getP1();
-            T* wrx = waves_bw->getAx(); 
-            T* wrz = waves_bw->getAz(); 
-            crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
-        }
-
-        // Record wavelet gradient
-        waves_bw->recordData(this->wavgrad, SMAP, nt-1-it);
-
-        // Roll the pointers P1 and P2
-    	waves_fw->roll();
-    	waves_bw->roll();
-
-        // Output progress to logfile
-        this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
     }
     
 	//Remove snapshot file
@@ -456,6 +421,11 @@ int FwiAcoustic2D<T>::run_optimal(){
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
 
+                // Recording data 
+                if(this->datamodPset && !reverse){
+                    waves_fw->recordData(this->datamodP, GMAP, it);
+                }
+
                 // Roll the pointers P1 and P2
                 waves_fw->roll();
 
@@ -474,8 +444,16 @@ int FwiAcoustic2D<T>::run_optimal(){
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, capo);
 
+            // Recording data 
+            if(this->datamodPset){
+                waves_fw->recordData(this->datamodP, GMAP, capo);
+            }
+
+            // Compute residuals
+            computeResiduals();
+
             // Inserting data
-            waves_bw->insertSource(model, dataP, GMAP, capo);
+            waves_bw->insertSource(model, dataresP, GMAP, capo);
 
             /* Do Crosscorrelation */
             T *wsp = waves_fw->getP1();
@@ -509,7 +487,7 @@ int FwiAcoustic2D<T>::run_optimal(){
             waves_bw->forwardstepStress(model, der);
 
             // Inserting data
-            waves_bw->insertSource(model, dataP, GMAP, capo);
+            waves_bw->insertSource(model, dataresP, GMAP, capo);
 
             /* Do Crosscorrelation */
             T *wsp = waves_fw->getP1();
@@ -1488,7 +1466,7 @@ int FwiElastic3D<T>::run(){
     	waves->forwardstepStress(model, der);
     	waves->forwardstepVelocity(model, der);
 
-    	// Inserting source 
+    	// Inserting residuals
     	waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
     	waves->insertSource(model, dataVy, GMAP, (nt - 1 - it));
     	waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));

@@ -33,6 +33,41 @@ Interp<T>::~Interp(){
 }
 
 template<typename T>
+int interp_seekindex(const T *vector, const int n, const T value)
+/*< Find interpolation position through binary search >*/
+{
+	int Mid;
+	int High;
+	int Low;
+
+	High=n-1;
+	Low=0;
+
+        if(value<=vector[Low]){
+		return (Low);
+	}
+        if(value>=vector[High]){
+		return (High);
+	}
+
+	while(1){
+		Mid=(High+Low)/2;
+		if(value==vector[Mid]){
+			return (Mid);
+		}
+		if(value>vector[Mid]){
+			Low=Mid;
+		}
+		else{
+			High=Mid;
+		}
+		if((High-Low)<2){
+			return (Low);
+		}
+	}
+}
+
+template<typename T>
 T Interp<T>::interp_ln_int1d(T *mod, T d1)
 /*<Linear interpolation function in 1d >*/
 {
@@ -129,8 +164,7 @@ void Interp<T>::interp(std::shared_ptr<Data2D<T>> from, std::shared_ptr<Data2D<T
                 data2[ind2(j,i)] = 0.0;
                 continue;
             }
-            //if(i0 > (n1 + 2*this->pad - 6)){
-            if(i0 > (n1 - 6)){
+            if((i0  + (2*this->pad)-1) > (n1-1)){
                 data2[ind2(j,i)] = 0.0;
                 continue;
             }
