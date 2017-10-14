@@ -27,34 +27,33 @@ int main(int argc, char** argv) {
 
     if(argc < 2){
         if(mpi.getRank() == 0){
-			PRINT_DOC(# MPI 2d acoustic fullwaveform inversion gradient computation configuration file);
+			PRINT_DOC(# MPI 3d acoustic fullwaveform inversion gradient computation configuration file);
 			PRINT_DOC();
 			PRINT_DOC(# Modelling parameters);
 			PRINT_DOC(freesurface = "false";  # True if free surface should be on);
 			PRINT_DOC(order = "8";  # Order of finite difference stencil);
-			PRINT_DOC(lpml = "18"; # Size of pml absorbing boundary (should be larger than order + 5 ));
+			PRINT_DOC(lpml = "10"; # Size of pml absorbing boundary );
 			PRINT_DOC(snapinc = "4"; # Snap interval in multiples of modelling interval);
-			PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
+			PRINT_DOC(apertx = "1000"; # Aperture for local model (source is in the middle));
+			PRINT_DOC(aperty = "1000"; # Aperture for local model (source is in the middle));
 			PRINT_DOC();
 			PRINT_DOC(# Checkpointing parameters);
 			PRINT_DOC(snapmethod = "0"; # 0 - fullcheckpointing; 1 - optimal checkpointing );
+			PRINT_DOC(misfit_type= "0"; # 0 - Difference; 1 - Correlation );
 			PRINT_DOC(nsnaps = "11"; # Number of checkpoints to store);
 			PRINT_DOC(incore = "true"; # Do checkpointing in memory);
 			PRINT_DOC();
-			PRINT_DOC(# Fwi parameters);
-			PRINT_DOC(misfit_type= "0"; # 0 - Difference; 1 - Correlation );
-			PRINT_DOC();
 			PRINT_DOC(# Files);
-			PRINT_DOC(Vp = "Vp2d.rss";);
-			PRINT_DOC(Rho = "Rho2d.rss";);
-			PRINT_DOC(Wavelet = "Wav2d.rss";);
-			PRINT_DOC(Precordfile = "Prec2d.rss"; # Input observed data);
-			PRINT_DOC(Pmodelledfile = "Pmod2d.rss"; # File to output modelled data);
-			PRINT_DOC(Presidualfile = "Pres2d.rss"; # File to output residuals);
-			PRINT_DOC(Vpgradfile = "Vpgrad2d.rss"; # File to output gradient with respect to Vp);
-			PRINT_DOC(Rhogradfile = "Rhograd2d.rss"; # File to output gradient with respect to Rho);
-			PRINT_DOC(Wavgradfile = "Wavgrad2d.rss"; # File to output gradient with respect to Wav);
-			PRINT_DOC(Psnapfile = "Psnaps2d.rss"; # File to output temporary snapshots);
+			PRINT_DOC(Vp = "Vp3d.rss";);
+			PRINT_DOC(Rho = "Rho3d.rss";);
+			PRINT_DOC(Wavelet = "Wav3d.rss";);
+			PRINT_DOC(Precordfile = "Prec3d.rss"; # Input observed data);
+			PRINT_DOC(Pmodelledfile = "Pmod3d.rss"; # File to output modelled data);
+			PRINT_DOC(Presidualfile = "Pres3d.rss"; # File to output residuals);
+			PRINT_DOC(Vpgradfile = "Vpgrad3d.rss"; # File to output gradient with respect to Vp);
+			PRINT_DOC(Rhogradfile = "Rhograd3d.rss"; # File to output gradient with respect to Rho);
+			PRINT_DOC(Wavgradfile = "Wavgrad3d.rss"; # File to output gradient with respect to Wav);
+			PRINT_DOC(Psnapfile = "Psnaps3d.rss"; # File to output temporary snapshots);
 			PRINT_DOC();
 		}
         exit(1);
@@ -69,8 +68,8 @@ int main(int argc, char** argv) {
 	int nsnaps = 0;
 	int snapmethod;
 	int misfit_type;
-    float apertx;
-    int nhx=1, nhz=1;
+    float apertx, aperty;
+    int nhx=1, nhy=1, nhz=1;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Rhofile;
@@ -81,15 +80,15 @@ int main(int argc, char** argv) {
     std::string Precordfile;
     std::string Pmodelledfile;
     std::string Presidualfile;
-    std::shared_ptr<rockseis::Data2D<float>> shot2D;
-    std::shared_ptr<rockseis::Data2D<float>> shot2Di;
-    std::shared_ptr<rockseis::Data2D<float>> shotmod2D;
-    std::shared_ptr<rockseis::Data2D<float>> shotmod2Di;
-    std::shared_ptr<rockseis::Data2D<float>> shotres2D;
-    std::shared_ptr<rockseis::Data2D<float>> shotres2Di;
-    std::shared_ptr<rockseis::Image2D<float>> vpgrad;
-    std::shared_ptr<rockseis::Image2D<float>> rhograd;
-    std::shared_ptr<rockseis::Data2D<float>> wavgrad;
+    std::shared_ptr<rockseis::Data3D<float>> shot3D;
+    std::shared_ptr<rockseis::Data3D<float>> shot3Di;
+    std::shared_ptr<rockseis::Data3D<float>> shotmod3D;
+    std::shared_ptr<rockseis::Data3D<float>> shotmod3Di;
+    std::shared_ptr<rockseis::Data3D<float>> shotres3D;
+    std::shared_ptr<rockseis::Data3D<float>> shotres3Di;
+    std::shared_ptr<rockseis::Image3D<float>> vpgrad;
+    std::shared_ptr<rockseis::Image3D<float>> rhograd;
+    std::shared_ptr<rockseis::Data3D<float>> wavgrad;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -106,6 +105,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("aperty", &aperty) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vpgradfile", &Vpgradfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Rhogradfile", &Rhogradfile) == INPARSE_ERR) status = true;
@@ -137,12 +137,12 @@ int main(int argc, char** argv) {
     Sort->setDatafile(Precordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> gmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelAcoustic3D<float>> gmodel (new rockseis::ModelAcoustic3D<float>(Vpfile, Rhofile, lpml ,fs));
     // Create a local model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> lmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelAcoustic3D<float>> lmodel (new rockseis::ModelAcoustic3D<float>(Vpfile, Rhofile, lpml ,fs));
 
     // Create a data class for the source wavelet
-	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Waveletfile));
+	std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(Waveletfile));
 
     // Create an interpolation class
     std::shared_ptr<rockseis::Interp<float>> interp (new rockseis::Interp<float>(SINC));
@@ -157,20 +157,20 @@ int main(int argc, char** argv) {
         size_t ngathers =  Sort->getNensemb();
 
         // Wavelet gradient
-        wavgrad = std::make_shared<rockseis::Data2D<float>>(1, source->getNt(), source->getDt(), 0.0);
+        wavgrad = std::make_shared<rockseis::Data3D<float>>(1, source->getNt(), source->getDt(), 0.0);
         wavgrad->setFile(Wavgradfile);
         wavgrad->createEmpty(ngathers);
 
         // Create a data class for the recorded data
-        std::shared_ptr<rockseis::Data2D<float>> shot2D (new rockseis::Data2D<float>(Precordfile));
+        std::shared_ptr<rockseis::Data3D<float>> shot3D (new rockseis::Data3D<float>(Precordfile));
         // Create modelling and residual data files
-        shotmod2D = std::make_shared<rockseis::Data2D<float>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
-        shotmod2D->setFile(Pmodelledfile);
-        shotmod2D->createEmpty(shot2D->getNtrace());
+        shotmod3D = std::make_shared<rockseis::Data3D<float>>(1, shot3D->getNt(), shot3D->getDt(), shot3D->getOt());
+        shotmod3D->setFile(Pmodelledfile);
+        shotmod3D->createEmpty(shot3D->getNtrace());
 
-        shotres2D = std::make_shared<rockseis::Data2D<float>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
-        shotres2D->setFile(Presidualfile);
-        shotres2D->createEmpty(shot2D->getNtrace());
+        shotres3D = std::make_shared<rockseis::Data3D<float>>(1, shot3D->getNt(), shot3D->getDt(), shot3D->getOt());
+        shotres3D->setFile(Presidualfile);
+        shotres3D->createEmpty(shot3D->getNtrace());
         
 		// Create work queue
 		for(unsigned long int i=0; i<ngathers; i++) {
@@ -183,10 +183,10 @@ int main(int argc, char** argv) {
 		mpi.performWork();
 
         // Image
-        vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile, gmodel, nhx, nhz);
+        vpgrad = std::make_shared<rockseis::Image3D<float>>(Vpgradfile, gmodel, nhx, nhy, nhz);
         vpgrad->createEmpty();
 
-        rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile, gmodel, nhx, nhz);
+        rhograd = std::make_shared<rockseis::Image3D<float>>(Rhogradfile, gmodel, nhx, nhy, nhz);
         rhograd->createEmpty();
 
 		for(unsigned long int i=0; i<ngathers; i++) {
@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
     }
     else {
         /* Slave */
-        std::shared_ptr<rockseis::FwiAcoustic2D<float>> fwi;
+        std::shared_ptr<rockseis::FwiAcoustic3D<float>> fwi;
         while(1) {
             workModeling_t work = mpi.receiveWork();
 
@@ -213,46 +213,46 @@ int main(int argc, char** argv) {
                 Sort->readSortmap();
 
                 // Get the shot
-                shot2D = Sort->get2DGather(work.id);
-                size_t ntr = shot2D->getNtrace();
+                shot3D = Sort->get3DGather(work.id);
+                size_t ntr = shot3D->getNtrace();
 
-                lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
+                lmodel = gmodel->getLocal(shot3D, apertx, aperty, SMAP);
 
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();
-                source->copyCoords(shot2D);
+                source->copyCoords(shot3D);
                 source->makeMap(lmodel->getGeom(), SMAP);
 
                 // Interpolate shot
-                shot2Di = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(shot2D, shot2Di);
-                shot2Di->makeMap(lmodel->getGeom(), GMAP);
+                shot3Di = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(shot3D, shot3Di);
+                shot3Di->makeMap(lmodel->getGeom(), GMAP);
 
                 // Create fwi object
-                fwi = std::make_shared<rockseis::FwiAcoustic2D<float>>(lmodel, source, shot2Di, order, snapinc);
+                fwi = std::make_shared<rockseis::FwiAcoustic3D<float>>(lmodel, source, shot3Di, order, snapinc);
 
                 // Create modelled and residual data objects 
-                shotmod2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                shotmod2D->copyCoords(shot2D);
-                shotmod2D->makeMap(lmodel->getGeom(), GMAP);
-                fwi->setDatamodP(shotmod2D);
-                shotres2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                shotres2D->copyCoords(shot2D);
-                shotres2D->makeMap(lmodel->getGeom(), GMAP);
-                fwi->setDataresP(shotres2D);
+                shotmod3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotmod3D->copyCoords(shot3D);
+                shotmod3D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDatamodP(shotmod3D);
+                shotres3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotres3D->copyCoords(shot3D);
+                shotres3D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDataresP(shotres3D);
                 
                 // Setting misfit type
                 fwi->setMisfit_type(fwimisfit);
 
                 // Creating gradient objects
-                vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-                rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
+                vpgrad = std::make_shared<rockseis::Image3D<float>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhy, nhz);
+                rhograd = std::make_shared<rockseis::Image3D<float>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, nhx, nhy, nhz);
 
                 // Setting up gradient objects in fwi class
                 fwi->setVpgrad(vpgrad);
                 fwi->setRhograd(rhograd);
 
-                wavgrad = std::make_shared<rockseis::Data2D<float>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
+                wavgrad = std::make_shared<rockseis::Data3D<float>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
                 wavgrad->setField(rockseis::PRESSURE);
                 // Copy geometry
                 wavgrad->copyCoords(source);
@@ -290,24 +290,24 @@ int main(int argc, char** argv) {
                 wavgrad->putTrace(Wavgradfile, work.id);
 
                 // Output modelled and residual data
-                shotmod2Di = std::make_shared<rockseis::Data2D<float>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
-                shotmod2Di->setFile(Pmodelledfile);
-                interp->interp(shotmod2D, shotmod2Di);
-                Sort->put2DGather(shotmod2Di, work.id);
+                shotmod3Di = std::make_shared<rockseis::Data3D<float>>(ntr, shot3D->getNt(), shot3D->getDt(), shot3D->getOt());
+                shotmod3Di->setFile(Pmodelledfile);
+                interp->interp(shotmod3D, shotmod3Di);
+                Sort->put3DGather(shotmod3Di, work.id);
 
-                shotres2Di = std::make_shared<rockseis::Data2D<float>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
-                shotres2Di->setFile(Presidualfile);
-                interp->interp(shotres2D, shotres2Di);
-                Sort->put2DGather(shotres2Di, work.id);
+                shotres3Di = std::make_shared<rockseis::Data3D<float>>(ntr, shot3D->getNt(), shot3D->getDt(), shot3D->getOt());
+                shotres3Di->setFile(Presidualfile);
+                interp->interp(shotres3D, shotres3Di);
+                Sort->put3DGather(shotres3Di, work.id);
 
                 
                 // Reset all classes
-                shot2D.reset();
-                shot2Di.reset();
-                shotmod2D.reset();
-                shotmod2Di.reset();
-                shotres2D.reset();
-                shotres2Di.reset();
+                shot3D.reset();
+                shot3Di.reset();
+                shotmod3D.reset();
+                shotmod3Di.reset();
+                shotres3D.reset();
+                shotres3Di.reset();
                 lmodel.reset();
                 vpgrad.reset();
                 rhograd.reset();

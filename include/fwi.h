@@ -34,6 +34,8 @@
 #define ks3D(i,j,k) ((k)*nxs*nys + (j)*nxs + (i))
 #define kr3D(i,j,k) ((k)*nxr*nyr + (j)*nxr + (i))
 
+#define kwav(i,j) ((j)*nt + (i))
+
 namespace rockseis {
 
 // =============== ENUMS =============== //
@@ -166,7 +168,12 @@ public:
     void setRhograd(std::shared_ptr<Image3D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
     void setDataP(std::shared_ptr<Data3D<T>> _dataP) { dataP = _dataP; dataPset = true; }
     void setDataAz(std::shared_ptr<Data3D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
+    void setDatamodP(std::shared_ptr<Data3D<T>> _datamodP) { datamodP = _datamodP; datamodPset = true; }
+    void setDatamodAz(std::shared_ptr<Data3D<T>> _datamodAz) { datamodAz = _datamodAz; datamodAzset = true; }
+    void setDataresP(std::shared_ptr<Data3D<T>> _dataresP) { dataresP = _dataresP; dataresPset = true; }
+    void setDataresAz(std::shared_ptr<Data3D<T>> _dataresAz) { dataresAz = _dataresAz; dataresAzset = true; }
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wry, T* wrz, int padr, T *vp, T* rho);
+    void computeResiduals();
 
     ~FwiAcoustic3D();	///< Destructor
 
@@ -178,10 +185,10 @@ private:
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> dataP;
     std::shared_ptr<Data3D<T>> dataAz;
-    std::shared_ptr<Data2D<T>> datamodP;
-    std::shared_ptr<Data2D<T>> datamodAz;
-    std::shared_ptr<Data2D<T>> dataresP;
-    std::shared_ptr<Data2D<T>> dataresAz;
+    std::shared_ptr<Data3D<T>> datamodP;
+    std::shared_ptr<Data3D<T>> datamodAz;
+    std::shared_ptr<Data3D<T>> dataresP;
+    std::shared_ptr<Data3D<T>> dataresAz;
     bool modelset;
     bool vpgradset;
     bool rhogradset;
@@ -206,11 +213,16 @@ public:
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataVx(std::shared_ptr<Data2D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
     void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setDatamodVx(std::shared_ptr<Data2D<T>> _datamodVx) { datamodVx = _datamodVx; datamodVxset = true; }
+    void setDatamodVz(std::shared_ptr<Data2D<T>> _datamodVz) { datamodVz = _datamodVz; datamodVzset = true; }
+    void setDataresVx(std::shared_ptr<Data2D<T>> _dataresVx) { dataresVx = _dataresVx; dataresVxset = true; }
+    void setDataresVz(std::shared_ptr<Data2D<T>> _dataresVz) { dataresVz = _dataresVz; dataresVzset = true; }
     void setWavgrad(std::shared_ptr<Data2D<T>> _wavgrad) { wavgrad = _wavgrad; wavgradset = true; }
     void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setVsgrad(std::shared_ptr<Image2D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
-    void crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho);
+    void crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho, int it);
+    void computeResiduals();
 
 
     ~FwiElastic2D();	///< Destructor

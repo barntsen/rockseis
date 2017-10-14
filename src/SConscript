@@ -111,3 +111,5 @@ if(env['MPI']):
     mpiAcousticfwigrad3d = mpi.Program(prefix + 'mpiAcousticfwigrad3d','mpiAcousticfwigrad3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image'],LIBPATH=['../build', '../config4cpp/lib'])
     mpi.Install('../bin/',mpiAcousticfwigrad3d)
 
+    mpiElasticfwigrad2d = mpi.Program(prefix + 'mpiElasticfwigrad2d','mpiElasticfwigrad2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image'],LIBPATH=['../build', '../config4cpp/lib'])
+    mpi.Install('../bin/',mpiElasticfwigrad2d)

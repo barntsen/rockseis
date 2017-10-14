@@ -289,7 +289,7 @@ int FwiAcoustic2D<T>::run(){
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
      Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
 
-     this->writeLog("Running 2D Acoustic reverse-time migration with full checkpointing.");
+     this->writeLog("Running 2D Acoustic full-waveform inversion gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -401,7 +401,7 @@ int FwiAcoustic2D<T>::run_optimal(){
      // Create image
      vpgrad->allocateImage();
 
-     this->writeLog("Running 2D Acoustic reverse-time migration with optimal checkpointing.");
+     this->writeLog("Running 2D Acoustic full-waveform inversion gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
      bool reverse = false;
     // Loop over forward time
@@ -607,6 +607,63 @@ void FwiAcoustic3D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wry, T*wrz
 }
 
 template<typename T>
+void FwiAcoustic3D<T>::computeResiduals(){
+    size_t ntr = datamodP->getNtrace();
+    if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    size_t nt = datamodP->getNt();
+    if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+    T* mod = datamodP->getData();
+    T* rec = dataP->getData();
+    T* res = dataresP->getData();
+    size_t itr, it;
+    Index I(nt, ntr);
+    switch(this->getMisfit_type()){
+        case DIFFERENCE:
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                   res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+                }
+            }
+            break;
+        case CORRELATION:
+            T norm1, norm2, norm3;
+            for(itr=0; itr<ntr; itr++){
+                norm1 = 0.0;
+                norm2 = 0.0;
+                norm3 = 0.0;
+                
+                for(it=0; it<nt; it++){
+                   norm1 += mod[I(it, itr)]*mod[I(it, itr)];
+                   norm2 += rec[I(it, itr)]*rec[I(it, itr)];
+                   norm3 += mod[I(it, itr)]*rec[I(it, itr)];
+                }
+
+                norm1 = sqrt(norm1);
+                norm2 = sqrt(norm2);
+                if(norm1 ==0 ) norm1= 1.0;
+                if(norm2 ==0 ) norm2= 1.0;
+                norm3 /= (norm1*norm2);
+
+                for(it=0; it<nt; it++){
+                    res[I(it, itr)]=(-1.0)*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
+                }
+            }
+
+            break;
+        default:
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+                }
+            }
+            break;
+    }
+}
+
+template<typename T>
 int FwiAcoustic3D<T>::run(){
      int result = FWI_ERR;
      int nt;
@@ -630,7 +687,7 @@ int FwiAcoustic3D<T>::run(){
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
      Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
 
-     this->writeLog("Running 3D Acoustic reverse-time migration with full checkpointing.");
+     this->writeLog("Running 3D Acoustic full-waveform inversion gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -641,6 +698,11 @@ int FwiAcoustic3D<T>::run(){
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
+
+        // Recording data 
+        if(this->datamodPset){
+            waves->recordData(this->datamodP, GMAP, it);
+        }
 
     	//Writting out results to snapshot file
         Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
@@ -663,6 +725,10 @@ int FwiAcoustic3D<T>::run(){
 
     // Create image
     vpgrad->allocateImage();
+    rhograd->allocateImage();
+
+    // Compute residuals
+    computeResiduals();
 
     Psnap->openSnap(this->getSnapfile(), 'r');
     Psnap->allocSnap(0);
@@ -676,7 +742,7 @@ int FwiAcoustic3D<T>::run(){
     	waves->forwardstepStress(model, der);
 
     	// Inserting source 
-    	waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
 
         //Read forward snapshot
         Psnap->readSnap(nt - 1 - it);
@@ -740,7 +806,7 @@ int FwiAcoustic3D<T>::run_optimal(){
      vpgrad->allocateImage();
 
 
-     this->writeLog("Running 3D Acoustic reverse-time migration with optimal checkpointing.");
+     this->writeLog("Running 3D Acoustic full-waveform inversion gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
      bool reverse = false;
     // Loop over forward time
@@ -760,6 +826,11 @@ int FwiAcoustic3D<T>::run_optimal(){
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
 
+                // Recording data 
+                if(this->datamodPset && !reverse){
+                    waves_fw->recordData(this->datamodP, GMAP, it);
+                }
+
                 // Roll the pointers P1 and P2
                 waves_fw->roll();
 
@@ -778,8 +849,16 @@ int FwiAcoustic3D<T>::run_optimal(){
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, capo);
 
-            // Inserting data
-            waves_bw->insertSource(model, dataP, GMAP, capo);
+            // Recording data 
+            if(this->datamodPset){
+                waves_fw->recordData(this->datamodP, GMAP, capo);
+            }
+
+            // Compute residuals
+            computeResiduals();
+
+            // Inserting residuals
+            waves_bw->insertSource(model, dataresP, GMAP, capo);
 
             /* Do Crosscorrelation */
             T *wsp = waves_fw->getP1();
@@ -813,8 +892,8 @@ int FwiAcoustic3D<T>::run_optimal(){
             waves_bw->forwardstepAcceleration(model, der);
             waves_bw->forwardstepStress(model, der);
 
-            // Inserting data
-            waves_bw->insertSource(model, dataP, GMAP, capo);
+            // Inserting residuals
+            waves_bw->insertSource(model, dataresP, GMAP, capo);
 
             /* Do Crosscorrelation */
             T *wsp = waves_fw->getP1();
@@ -888,17 +967,23 @@ FwiElastic2D<T>::FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::sh
     vsgradset = false;
     rhogradset = false;
     wavgradset = false;
+    datamodVxset = false;
+    datamodVzset = false;
+    dataresVxset = false;
+    dataresVzset = false;
 }
 
 template<typename T>
-void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho)
+void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho, int it)
 {
 	int ix, iz;
 	T *vpgraddata = NULL; 
 	T *vsgraddata = NULL;
+	T *wavgraddata = NULL;
+	//T *rhograddata = NULL;
 	T msxx, mszz, msxz, mrxx, mrzz, mrxz;
-	T C33_minus, C33_plus;
-	T C44_minus, C44_plus;
+	T vpscale;
+	T vsscale;
 	int nx;
 	T dx;
 	T dz;
@@ -916,36 +1001,52 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 		}
 		vsgraddata = vsgrad->getImagedata();
 	}
+
+    int nt;
+    int ntrace;
+    int i;
+    Point2D<int> *map;
+    
+	if(wavgradset){
+		wavgraddata = wavgrad->getData();
+        nt = wavgrad->getNt();
+        ntrace = wavgrad->getNtrace();
+        map = (wavgrad->getGeom())->getSmap();
+	}
+
 	// Getting sizes
 	if(vpgradset) {
 		nx = vpgrad->getNx();
 		nz = vpgrad->getNz();
 		dx = vpgrad->getDx(); 
 		dz = vpgrad->getDz(); 
-	}else{
+	}else if(vsgradset){
 		nx = vsgrad->getNx();
 		nz = vsgrad->getNz();
 		dx = vsgrad->getDx(); 
 		dz = vsgrad->getDz(); 
+    }else{
+		nx = rhograd->getNx();
+		nz = rhograd->getNz();
+		dx = rhograd->getDx(); 
+		dz = rhograd->getDz(); 
 	}
 
 	int nxs = nx+2*pads;
 	int nxr = nx+2*padr;
 
+
     for (ix=0; ix<nx; ix++){
         for (iz=0; iz<nz; iz++){
-            C33_minus = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
-            C33_plus = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
-            C44_minus = Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)];
-            C44_plus = Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)];
-
+            vpscale = -2.0*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+            vsscale = 2.0*Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)];
             msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
             mszz = (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads, iz+pads-1)])/dz;
             mrxx = (wrx[kr2D(ix+padr, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr)])/dx;
             mrzz = (wrz[kr2D(ix+padr, iz+padr)] - wrz[kr2D(ix+padr, iz+padr-1)])/dz;
 
             if(vpgradset){
-                vpgraddata[ki2D(ix,iz)] += C33_minus*C33_plus*(msxx + mszz) * (mrxx + mrzz);
+                vpgraddata[ki2D(ix,iz)] += vpscale*(msxx + mszz) * (mrxx + mrzz);
             }
 
             if(vsgradset){
@@ -958,10 +1059,104 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
                 mrxz += 0.5*(wrx[kr2D(ix+padr-1, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr-1)])/dz;
                 mrxz += 0.5*(wrz[kr2D(ix+padr+1, iz+padr)] - wrz[kr2D(ix+padr, iz+padr)])/dx;
                 mrxz += 0.5*(wrz[kr2D(ix+padr, iz+padr-1)] - wrz[kr2D(ix+padr-1, iz+padr-1)])/dx;
-                vsgraddata[ki2D(ix,iz)] += C44_minus*C44_plus*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
+                vsgraddata[ki2D(ix,iz)] += vsscale*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
+            }
+            if(wavgradset){
+                for (i=0; i < ntrace; i++) 
+                {
+                    if((map[i].x == ix) && (map[i].y == iz))
+                    {
+                        //wavgraddata[kwav(it,i)] = (mrxx + mrzz);
+                    }
+                }
             }
         }
     }	
+}
+
+template<typename T>
+void FwiElastic2D<T>::computeResiduals(){
+    size_t ntr = datamodVx->getNtrace();
+    if(dataVx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresVx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    size_t nt = datamodVx->getNt();
+    if(dataVx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresVx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+    if(dataVz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresVz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    if(dataVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+
+
+    T* modx = datamodVx->getData();
+    T* recx = dataVx->getData();
+    T* resx = dataresVx->getData();
+
+    T* modz = datamodVz->getData();
+    T* recz = dataVz->getData();
+    T* resz = dataresVz->getData();
+    size_t itr, it;
+    Index I(nt, ntr);
+    switch(this->getMisfit_type()){
+        case DIFFERENCE:
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                   resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
+                   resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
+                }
+            }
+            break;
+        case CORRELATION:
+            T xnorm1, xnorm2, xnorm3;
+            T znorm1, znorm2, znorm3;
+            for(itr=0; itr<ntr; itr++){
+                xnorm1 = 0.0;
+                xnorm2 = 0.0;
+                xnorm3 = 0.0;
+                
+                znorm1 = 0.0;
+                znorm2 = 0.0;
+                znorm3 = 0.0;
+                for(it=0; it<nt; it++){
+                    xnorm1 += modx[I(it, itr)]*modx[I(it, itr)];
+                    xnorm2 += recx[I(it, itr)]*recx[I(it, itr)];
+                    xnorm3 += modx[I(it, itr)]*recx[I(it, itr)];
+
+                    znorm1 += modz[I(it, itr)]*modz[I(it, itr)];
+                    znorm2 += recz[I(it, itr)]*recz[I(it, itr)];
+                    znorm3 += modz[I(it, itr)]*recz[I(it, itr)];
+                }
+
+                xnorm1 = sqrt(xnorm1);
+                xnorm2 = sqrt(xnorm2);
+                if(xnorm1 ==0 ) xnorm1= 1.0;
+                if(xnorm2 ==0 ) xnorm2= 1.0;
+                xnorm3 /= (xnorm1*xnorm2);
+
+                znorm1 = sqrt(znorm1);
+                znorm2 = sqrt(znorm2);
+                if(znorm1 ==0 ) znorm1= 1.0;
+                if(znorm2 ==0 ) znorm2= 1.0;
+                znorm3 /= (znorm1*znorm2);
+
+
+                for(it=0; it<nt; it++){
+                    resx[I(it, itr)]=(-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3);
+                    resz[I(it, itr)]=(-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3);
+                }
+            }
+            break;
+        default:
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                   resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
+                   resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
+                }
+            }
+            break;
+    }
 }
 
 template<typename T>
@@ -997,7 +1192,7 @@ int FwiElastic2D<T>::run(){
      Vzsnap->openSnap(this->getSnapfile() + "-vz", 'w'); // Create a new snapshot file
      Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
 
-     this->writeLog("Running 2D Elastic reverse-time migration with full checkpointing.");
+     this->writeLog("Running 2D Elastic full-waveform inversion gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -1016,6 +1211,16 @@ int FwiElastic2D<T>::run(){
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
+        // Recording data (Vx)
+        if(this->datamodVxset){
+            waves->recordData(this->datamodVx, GMAP, it);
+        }
+
+        // Recording data (Vy)
+        if(this->datamodVzset){
+            waves->recordData(this->datamodVz, GMAP, it);
+        }
+
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }//End of forward loop
@@ -1032,12 +1237,16 @@ int FwiElastic2D<T>::run(){
     // Create image
     if(this->vpgradset) vpgrad->allocateImage();
     if(this->vsgradset) vsgrad->allocateImage();
+    if(this->rhogradset) rhograd->allocateImage();
 
     Vxsnap->openSnap(this->getSnapfile() + "-vx", 'r');
     Vxsnap->allocSnap(0);
 
     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
     Vzsnap->allocSnap(0);
+
+    // Compute Residuals
+    computeResiduals();
 
     // Get models for scaling
     T *Vp, *Vs, *Rho;
@@ -1053,9 +1262,9 @@ int FwiElastic2D<T>::run(){
     	waves->forwardstepStress(model, der);
     	waves->forwardstepVelocity(model, der);
 
-    	// Inserting source 
-    	waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
+    	// Inserting residuals
+    	waves->insertSource(model, dataresVx, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataresVz, GMAP, (nt - 1 - it));
 
         //Read forward snapshot
         Vxsnap->readSnap(nt - 1 - it);
@@ -1065,7 +1274,7 @@ int FwiElastic2D<T>::run(){
         if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
             T *Vxr = waves->getVx();
             T *Vzr = waves->getVz();
-            crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml(), Vp, Vs, Rho);
+            crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml(), Vp, Vs, Rho, (nt - 1 - it));
         }
 
         // Output progress to logfile
@@ -1119,7 +1328,7 @@ int FwiElastic2D<T>::run_optimal(){
      Vs = model->getVs();
      Rho = model->getR();
 
-     this->writeLog("Running 2D Elastic reverse-time migration with optimal checkpointing.");
+     this->writeLog("Running 2D Elastic full-waveform inversion gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
      bool reverse = false;
     // Loop over forward time
@@ -1139,6 +1348,16 @@ int FwiElastic2D<T>::run_optimal(){
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
 
+                // Recording data (Vx)
+                if(this->datamodVxset && !reverse){
+                    waves_fw->recordData(this->datamodVx, GMAP, it);
+                }
+
+                // Recording data (Vy)
+                if(this->datamodVzset && !reverse){
+                    waves_fw->recordData(this->datamodVz, GMAP, it);
+                }
+
                 if(!reverse){
                     // Output progress to logfile
                     this->writeProgress(it, nt-1, 20, 48);
@@ -1155,9 +1374,22 @@ int FwiElastic2D<T>::run_optimal(){
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, capo);
 
-            // Inserting data
-            waves_bw->insertSource(model, dataVx, GMAP, capo);
-            waves_bw->insertSource(model, dataVz, GMAP, capo);
+            // Recording data (Vx)
+            if(this->datamodVxset){
+                waves_fw->recordData(this->datamodVx, GMAP, capo);
+            }
+
+            // Recording data (Vy)
+            if(this->datamodVzset){
+                waves_fw->recordData(this->datamodVz, GMAP, capo);
+            }
+
+            // Compute Residuals
+            computeResiduals();
+
+            // Inserting residuals
+            waves_bw->insertSource(model, dataresVx, GMAP, capo);
+            waves_bw->insertSource(model, dataresVz, GMAP, capo);
 
             // Do Crosscorrelation 
             T *wsx = waves_fw->getVx();
@@ -1165,7 +1397,7 @@ int FwiElastic2D<T>::run_optimal(){
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
 
-            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho, capo);
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -1184,16 +1416,16 @@ int FwiElastic2D<T>::run_optimal(){
             waves_bw->forwardstepStress(model, der);
             waves_bw->forwardstepVelocity(model, der);
 
-            // Inserting data
-            waves_bw->insertSource(model, dataVx, GMAP, capo);
-            waves_bw->insertSource(model, dataVz, GMAP, capo);
+            // Inserting residuals
+            waves_bw->insertSource(model, dataresVx, GMAP, capo);
+            waves_bw->insertSource(model, dataresVz, GMAP, capo);
 
             // Do Crosscorrelation
             T *wsx = waves_fw->getVx();
             T *wsz = waves_fw->getVz();
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
-            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho, capo);
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);
@@ -1403,7 +1635,7 @@ int FwiElastic3D<T>::run(){
      Vzsnap->openSnap(this->getSnapfile() + "-vz", 'w'); // Create a new snapshot file
      Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
 
-     this->writeLog("Running 3D Elastic reverse-time migration with full checkpointing.");
+     this->writeLog("Running 3D Elastic full-waveform inversion gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -1442,6 +1674,7 @@ int FwiElastic3D<T>::run(){
     // Create image
     if(this->vpgradset) vpgrad->allocateImage();
     if(this->vsgradset) vsgrad->allocateImage();
+    if(this->rhogradset) rhograd->allocateImage();
 
     Vxsnap->openSnap(this->getSnapfile() + "-vx", 'r');
     Vxsnap->allocSnap(0);
@@ -1537,7 +1770,7 @@ int FwiElastic3D<T>::run_optimal(){
      Vs = model->getVs();
      Rho = model->getR();
 
-     this->writeLog("Running 3D Elastic reverse-time migration with optimal checkpointing.");
+     this->writeLog("Running 3D Elastic full-waveform inversion gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
      bool reverse = false;
     // Loop over forward time

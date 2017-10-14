@@ -27,12 +27,13 @@ int main(int argc, char** argv) {
 
     if(argc < 2){
         if(mpi.getRank() == 0){
-			PRINT_DOC(# MPI 2d acoustic fullwaveform inversion gradient computation configuration file);
+			PRINT_DOC(# MPI 2d elastic reverse-time migration configuration file);
 			PRINT_DOC();
 			PRINT_DOC(# Modelling parameters);
 			PRINT_DOC(freesurface = "false";  # True if free surface should be on);
 			PRINT_DOC(order = "8";  # Order of finite difference stencil);
 			PRINT_DOC(lpml = "18"; # Size of pml absorbing boundary (should be larger than order + 5 ));
+            PRINT_DOC(source_type = "0"; # Source type 0 - pressure. 1 for Vx. 3 for Vz.);
 			PRINT_DOC(snapinc = "4"; # Snap interval in multiples of modelling interval);
 			PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
 			PRINT_DOC();
@@ -41,20 +42,26 @@ int main(int argc, char** argv) {
 			PRINT_DOC(nsnaps = "11"; # Number of checkpoints to store);
 			PRINT_DOC(incore = "true"; # Do checkpointing in memory);
 			PRINT_DOC();
+            PRINT_DOC(# Booleans);
 			PRINT_DOC(# Fwi parameters);
 			PRINT_DOC(misfit_type= "0"; # 0 - Difference; 1 - Correlation );
-			PRINT_DOC();
+            PRINT_DOC();
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp2d.rss";);
+			PRINT_DOC(Vp = "Vs2d.rss";);
 			PRINT_DOC(Rho = "Rho2d.rss";);
 			PRINT_DOC(Wavelet = "Wav2d.rss";);
-			PRINT_DOC(Precordfile = "Prec2d.rss"; # Input observed data);
-			PRINT_DOC(Pmodelledfile = "Pmod2d.rss"; # File to output modelled data);
-			PRINT_DOC(Presidualfile = "Pres2d.rss"; # File to output residuals);
 			PRINT_DOC(Vpgradfile = "Vpgrad2d.rss"; # File to output gradient with respect to Vp);
+			PRINT_DOC(Vsgradfile = "Vsgrad2d.rss"; # File to output gradient with respect to Vs);
 			PRINT_DOC(Rhogradfile = "Rhograd2d.rss"; # File to output gradient with respect to Rho);
 			PRINT_DOC(Wavgradfile = "Wavgrad2d.rss"; # File to output gradient with respect to Wav);
-			PRINT_DOC(Psnapfile = "Psnaps2d.rss"; # File to output temporary snapshots);
+            PRINT_DOC(Vxrecordfile = "Vxshot.rss";);
+			PRINT_DOC(Vxmodelledfile = "Vxmod2d.rss"; # File to output modelled data);
+			PRINT_DOC(Vxresidualfile = "Vxres2d.rss"; # File to output residuals);
+            PRINT_DOC(Vzrecordfile = "Vzshot.rss";);
+			PRINT_DOC(Vzmodelledfile = "Vzmod2d.rss"; # File to output modelled data);
+			PRINT_DOC(Vzresidualfile = "Vzres2d.rss"; # File to output residuals);
+            PRINT_DOC(Snapfile = "snaps.rss";);
 			PRINT_DOC();
 		}
         exit(1);
@@ -70,26 +77,49 @@ int main(int argc, char** argv) {
 	int snapmethod;
 	int misfit_type;
     float apertx;
+    int stype;
     int nhx=1, nhz=1;
     std::string Waveletfile;
     std::string Vpfile;
+    std::string Vsfile;
     std::string Rhofile;
+    std::string Snapfile;
+
     std::string Vpgradfile;
-    std::string Rhogradfile;
-    std::string Wavgradfile;
-    std::string Psnapfile;
-    std::string Precordfile;
-    std::string Pmodelledfile;
-    std::string Presidualfile;
-    std::shared_ptr<rockseis::Data2D<float>> shot2D;
-    std::shared_ptr<rockseis::Data2D<float>> shot2Di;
-    std::shared_ptr<rockseis::Data2D<float>> shotmod2D;
-    std::shared_ptr<rockseis::Data2D<float>> shotmod2Di;
-    std::shared_ptr<rockseis::Data2D<float>> shotres2D;
-    std::shared_ptr<rockseis::Data2D<float>> shotres2Di;
     std::shared_ptr<rockseis::Image2D<float>> vpgrad;
+
+    std::string Vsgradfile;
+    std::shared_ptr<rockseis::Image2D<float>> vsgrad;
+
+    std::string Rhogradfile;
     std::shared_ptr<rockseis::Image2D<float>> rhograd;
+
+    std::string Wavgradfile;
     std::shared_ptr<rockseis::Data2D<float>> wavgrad;
+
+    std::string Vxrecordfile;
+    std::shared_ptr<rockseis::Data2D<float>> Vxdata2D;
+    std::shared_ptr<rockseis::Data2D<float>> Vxdata2Di;
+
+    std::string Vxmodelledfile;
+    std::shared_ptr<rockseis::Data2D<float>> Vxdatamod2D;
+    std::shared_ptr<rockseis::Data2D<float>> Vxdatamod2Di;
+
+    std::string Vxresidualfile;
+    std::shared_ptr<rockseis::Data2D<float>> Vxdatares2D;
+    std::shared_ptr<rockseis::Data2D<float>> Vxdatares2Di;
+
+    std::string Vzrecordfile;
+    std::shared_ptr<rockseis::Data2D<float>> Vzdata2D;
+    std::shared_ptr<rockseis::Data2D<float>> Vzdata2Di;
+
+    std::string Vzmodelledfile;
+    std::shared_ptr<rockseis::Data2D<float>> Vzdatamod2D;
+    std::shared_ptr<rockseis::Data2D<float>> Vzdatamod2Di;
+
+    std::string Vzresidualfile;
+    std::shared_ptr<rockseis::Data2D<float>> Vzdatares2D;
+    std::shared_ptr<rockseis::Data2D<float>> Vzdatares2Di;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -101,18 +131,24 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("order", &order) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("source_type", &stype) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vs", &Vsfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vpgradfile", &Vpgradfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vsgradfile", &Vsgradfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Rhogradfile", &Rhogradfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavgradfile", &Wavgradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Presidualfile", &Presidualfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Pmodelledfile", &Pmodelledfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Snapfile", &Snapfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vxrecordfile", &Vxrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vxresidualfile", &Vxresidualfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vxmodelledfile", &Vxmodelledfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vzrecordfile", &Vzrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vzresidualfile", &Vzresidualfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vzmodelledfile", &Vzmodelledfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapmethod", &snapmethod) == INPARSE_ERR) status = true;
     rockseis::rs_snapmethod checkpoint = static_cast<rockseis::rs_snapmethod>(snapmethod);
     switch(checkpoint){
@@ -134,12 +170,12 @@ int main(int argc, char** argv) {
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
-    Sort->setDatafile(Precordfile);
+    Sort->setDatafile(Vxrecordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> gmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelElastic2D<float>> gmodel (new rockseis::ModelElastic2D<float>(Vpfile, Vsfile, Rhofile, lpml ,fs));
     // Create a local model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> lmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelElastic2D<float>> lmodel (new rockseis::ModelElastic2D<float>(Vpfile, Vsfile, Rhofile, lpml ,fs));
 
     // Create a data class for the source wavelet
 	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Waveletfile));
@@ -149,7 +185,7 @@ int main(int argc, char** argv) {
 
 	if(mpi.getRank() == 0) {
 		// Master
-        Sort->createShotmap(Precordfile); 
+        Sort->createShotmap(Vxrecordfile); 
         Sort->writeKeymap();
         Sort->writeSortmap();
 
@@ -162,15 +198,23 @@ int main(int argc, char** argv) {
         wavgrad->createEmpty(ngathers);
 
         // Create a data class for the recorded data
-        std::shared_ptr<rockseis::Data2D<float>> shot2D (new rockseis::Data2D<float>(Precordfile));
-        // Create modelling and residual data files
-        shotmod2D = std::make_shared<rockseis::Data2D<float>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
-        shotmod2D->setFile(Pmodelledfile);
-        shotmod2D->createEmpty(shot2D->getNtrace());
+        std::shared_ptr<rockseis::Data2D<float>> Vxdata2D (new rockseis::Data2D<float>(Vxrecordfile));
 
-        shotres2D = std::make_shared<rockseis::Data2D<float>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
-        shotres2D->setFile(Presidualfile);
-        shotres2D->createEmpty(shot2D->getNtrace());
+        // Create modelling and residual data files
+        Vxdatamod2D = std::make_shared<rockseis::Data2D<float>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+        Vxdatamod2D->setFile(Vxmodelledfile);
+        Vxdatamod2D->createEmpty(Vxdata2D->getNtrace());
+        Vxdatares2D = std::make_shared<rockseis::Data2D<float>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+        Vxdatares2D->setFile(Vxresidualfile);
+        Vxdatares2D->createEmpty(Vxdata2D->getNtrace());
+
+        Vzdatamod2D = std::make_shared<rockseis::Data2D<float>>(1, Vzdata2D->getNt(), Vzdata2D->getDt(), Vzdata2D->getOt());
+        Vzdatamod2D->setFile(Vzmodelledfile);
+        Vzdatamod2D->createEmpty(Vzdata2D->getNtrace());
+        Vzdatares2D = std::make_shared<rockseis::Data2D<float>>(1, Vzdata2D->getNt(), Vzdata2D->getDt(), Vzdata2D->getOt());
+        Vzdatares2D->setFile(Vzresidualfile);
+        Vzdatares2D->createEmpty(Vzdata2D->getNtrace());
+        
         
 		// Create work queue
 		for(unsigned long int i=0; i<ngathers; i++) {
@@ -182,21 +226,25 @@ int main(int argc, char** argv) {
 		// Perform work in parallel
 		mpi.performWork();
 
-        // Image
+        // Images
         vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile, gmodel, nhx, nhz);
         vpgrad->createEmpty();
+
+        vsgrad = std::make_shared<rockseis::Image2D<float>>(Vsgradfile, gmodel, nhx, nhz);
+        vsgrad->createEmpty();
 
         rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile, gmodel, nhx, nhz);
         rhograd->createEmpty();
 
-		for(unsigned long int i=0; i<ngathers; i++) {
+        for(unsigned long int i=0; i<ngathers; i++) {
             vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
             rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
         }
     }
     else {
         /* Slave */
-        std::shared_ptr<rockseis::FwiAcoustic2D<float>> fwi;
+        std::shared_ptr<rockseis::FwiElastic2D<float>> fwi;
         while(1) {
             workModeling_t work = mpi.receiveWork();
 
@@ -213,43 +261,60 @@ int main(int argc, char** argv) {
                 Sort->readSortmap();
 
                 // Get the shot
-                shot2D = Sort->get2DGather(work.id);
-                size_t ntr = shot2D->getNtrace();
+                Sort->setDatafile(Vxrecordfile);
+                Vxdata2D = Sort->get2DGather(work.id);
+                size_t ntr = Vxdata2D->getNtrace();
 
-                lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
+                Sort->setDatafile(Vzrecordfile);
+                Vzdata2D = Sort->get2DGather(work.id);
+
+                lmodel = gmodel->getLocal(Vxdata2D, apertx, SMAP);
 
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();
-                source->copyCoords(shot2D);
+                source->copyCoords(Vxdata2D);
                 source->makeMap(lmodel->getGeom(), SMAP);
 
+                //Setting sourcetype 
+                switch(stype){
+                    case 0:
+                        source->setField(PRESSURE);
+                        break;
+                    case 1:
+                        source->setField(VX);
+                        break;
+                    case 3:
+                        source->setField(VZ);
+                        break;
+                    default:
+                        rs_error("Unknown source type: ", std::to_string(stype));
+                        break;
+                }
+
                 // Interpolate shot
-                shot2Di = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(shot2D, shot2Di);
-                shot2Di->makeMap(lmodel->getGeom(), GMAP);
+                Vxdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(Vxdata2D, Vxdata2Di);
+                Vxdata2Di->makeMap(lmodel->getGeom(), GMAP);
+                Vxdata2Di->setField(rockseis::VX);
 
-                // Create fwi object
-                fwi = std::make_shared<rockseis::FwiAcoustic2D<float>>(lmodel, source, shot2Di, order, snapinc);
+                Vzdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(Vzdata2D, Vzdata2Di);
+                Vzdata2Di->makeMap(lmodel->getGeom(), GMAP);
+                Vzdata2Di->setField(rockseis::VZ);
 
-                // Create modelled and residual data objects 
-                shotmod2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                shotmod2D->copyCoords(shot2D);
-                shotmod2D->makeMap(lmodel->getGeom(), GMAP);
-                fwi->setDatamodP(shotmod2D);
-                shotres2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                shotres2D->copyCoords(shot2D);
-                shotres2D->makeMap(lmodel->getGeom(), GMAP);
-                fwi->setDataresP(shotres2D);
-                
+                fwi = std::make_shared<rockseis::FwiElastic2D<float>>(lmodel, source, Vxdata2Di, Vzdata2Di, order, snapinc);
+
                 // Setting misfit type
                 fwi->setMisfit_type(fwimisfit);
 
                 // Creating gradient objects
                 vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
+                vsgrad = std::make_shared<rockseis::Image2D<float>>(Vsgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
                 rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-
+   
                 // Setting up gradient objects in fwi class
                 fwi->setVpgrad(vpgrad);
+                fwi->setVsgrad(vsgrad);
                 fwi->setRhograd(rhograd);
 
                 wavgrad = std::make_shared<rockseis::Data2D<float>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
@@ -260,7 +325,7 @@ int main(int argc, char** argv) {
                 fwi->setWavgrad(wavgrad);
 
                 // Setting Snapshot file 
-                fwi->setSnapfile(Psnapfile + "-" + std::to_string(work.id));
+                fwi->setSnapfile(Snapfile + "-" + std::to_string(work.id));
 
                 // Setting Snapshot parameters
                 fwi->setNcheck(nsnaps);
@@ -272,7 +337,6 @@ int main(int argc, char** argv) {
                 // Stagger model
                 lmodel->staggerModels();
 
-                // Run simulation
                 switch(checkpoint){
                     case rockseis::FULL:
                         fwi->run();
@@ -290,26 +354,42 @@ int main(int argc, char** argv) {
                 wavgrad->putTrace(Wavgradfile, work.id);
 
                 // Output modelled and residual data
-                shotmod2Di = std::make_shared<rockseis::Data2D<float>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
-                shotmod2Di->setFile(Pmodelledfile);
-                interp->interp(shotmod2D, shotmod2Di);
-                Sort->put2DGather(shotmod2Di, work.id);
+                Vxdatamod2Di = std::make_shared<rockseis::Data2D<float>>(ntr, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+                Vxdatamod2Di->setFile(Vxmodelledfile);
+                interp->interp(Vxdatamod2D, Vxdatamod2Di);
+                Sort->put2DGather(Vxdatamod2Di, work.id);
 
-                shotres2Di = std::make_shared<rockseis::Data2D<float>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
-                shotres2Di->setFile(Presidualfile);
-                interp->interp(shotres2D, shotres2Di);
-                Sort->put2DGather(shotres2Di, work.id);
+                Vxdatares2Di = std::make_shared<rockseis::Data2D<float>>(ntr, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+                Vxdatares2Di->setFile(Vxresidualfile);
+                interp->interp(Vxdatares2D, Vxdatares2Di);
+                Sort->put2DGather(Vxdatares2Di, work.id);
 
-                
+                Vzdatamod2Di = std::make_shared<rockseis::Data2D<float>>(ntr, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+                Vzdatamod2Di->setFile(Vzmodelledfile);
+                interp->interp(Vzdatamod2D, Vzdatamod2Di);
+                Sort->put2DGather(Vzdatamod2Di, work.id);
+
+                Vzdatares2Di = std::make_shared<rockseis::Data2D<float>>(ntr, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+                Vzdatares2Di->setFile(Vzresidualfile);
+                interp->interp(Vzdatares2D, Vzdatares2Di);
+                Sort->put2DGather(Vzdatares2Di, work.id);
+
                 // Reset all classes
-                shot2D.reset();
-                shot2Di.reset();
-                shotmod2D.reset();
-                shotmod2Di.reset();
-                shotres2D.reset();
-                shotres2Di.reset();
+                Vxdata2D.reset();
+                Vxdata2Di.reset();
+                Vxdatamod2D.reset();
+                Vxdatamod2Di.reset();
+                Vxdatares2D.reset();
+                Vxdatares2Di.reset();
+                Vzdata2D.reset();
+                Vzdata2Di.reset();
+                Vzdatamod2D.reset();
+                Vzdatamod2Di.reset();
+                Vzdatares2D.reset();
+                Vzdatares2Di.reset();
                 lmodel.reset();
                 vpgrad.reset();
+                vsgrad.reset();
                 rhograd.reset();
                 wavgrad.reset();
                 fwi.reset();
