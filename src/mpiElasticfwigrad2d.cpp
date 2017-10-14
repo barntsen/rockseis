@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
         wavgrad->setFile(Wavgradfile);
         wavgrad->createEmpty(ngathers);
 
-        // Create a data class for the recorded data
+        // Create a data class for the recorded data in order to get parameters from file
         std::shared_ptr<rockseis::Data2D<float>> Vxdata2D (new rockseis::Data2D<float>(Vxrecordfile));
 
         // Create modelling and residual data files
@@ -208,12 +208,12 @@ int main(int argc, char** argv) {
         Vxdatares2D->setFile(Vxresidualfile);
         Vxdatares2D->createEmpty(Vxdata2D->getNtrace());
 
-        Vzdatamod2D = std::make_shared<rockseis::Data2D<float>>(1, Vzdata2D->getNt(), Vzdata2D->getDt(), Vzdata2D->getOt());
+        Vzdatamod2D = std::make_shared<rockseis::Data2D<float>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
         Vzdatamod2D->setFile(Vzmodelledfile);
-        Vzdatamod2D->createEmpty(Vzdata2D->getNtrace());
-        Vzdatares2D = std::make_shared<rockseis::Data2D<float>>(1, Vzdata2D->getNt(), Vzdata2D->getDt(), Vzdata2D->getOt());
+        Vzdatamod2D->createEmpty(Vxdata2D->getNtrace());
+        Vzdatares2D = std::make_shared<rockseis::Data2D<float>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
         Vzdatares2D->setFile(Vzresidualfile);
-        Vzdatares2D->createEmpty(Vzdata2D->getNtrace());
+        Vzdatares2D->createEmpty(Vxdata2D->getNtrace());
         
         
 		// Create work queue
@@ -302,7 +302,27 @@ int main(int argc, char** argv) {
                 Vzdata2Di->makeMap(lmodel->getGeom(), GMAP);
                 Vzdata2Di->setField(rockseis::VZ);
 
+                // Create fwi object
                 fwi = std::make_shared<rockseis::FwiElastic2D<float>>(lmodel, source, Vxdata2Di, Vzdata2Di, order, snapinc);
+
+                // Create modelled and residual data objects 
+                Vxdatamod2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Vxdatamod2D->copyCoords(Vxdata2D);
+                Vxdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDatamodVx(Vxdatamod2D);
+                Vxdatares2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Vxdatares2D->copyCoords(Vxdata2D);
+                Vxdatares2D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDataresVx(Vxdatares2D);
+
+                Vzdatamod2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Vzdatamod2D->copyCoords(Vzdata2D);
+                Vzdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDatamodVz(Vzdatamod2D);
+                Vzdatares2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Vzdatares2D->copyCoords(Vzdata2D);
+                Vzdatares2D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDataresVz(Vzdatares2D);
 
                 // Setting misfit type
                 fwi->setMisfit_type(fwimisfit);
@@ -350,6 +370,7 @@ int main(int argc, char** argv) {
 
                 // Output gradients
                 vpgrad->write();
+                vsgrad->write();
                 rhograd->write();
                 wavgrad->putTrace(Wavgradfile, work.id);
 

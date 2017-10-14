@@ -1036,8 +1036,8 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 	int nxr = nx+2*padr;
 
 
-    for (ix=0; ix<nx; ix++){
-        for (iz=0; iz<nz; iz++){
+    for (ix=1; ix<nx-1; ix++){
+        for (iz=1; iz<nz-1; iz++){
             vpscale = -2.0*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)];
             vsscale = 2.0*Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)];
             msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
@@ -1066,7 +1066,7 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
                 {
                     if((map[i].x == ix) && (map[i].y == iz))
                     {
-                        //wavgraddata[kwav(it,i)] = (mrxx + mrzz);
+                        wavgraddata[kwav(it,i)] = (mrxx + mrzz);
                     }
                 }
             }
@@ -1087,8 +1087,6 @@ void FwiElastic2D<T>::computeResiduals(){
     if(dataresVz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
     if(dataVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
     if(dataresVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
-
-
 
     T* modx = datamodVx->getData();
     T* recx = dataVx->getData();
@@ -1140,7 +1138,6 @@ void FwiElastic2D<T>::computeResiduals(){
                 if(znorm1 ==0 ) znorm1= 1.0;
                 if(znorm2 ==0 ) znorm2= 1.0;
                 znorm3 /= (znorm1*znorm2);
-
 
                 for(it=0; it<nt; it++){
                     resx[I(it, itr)]=(-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3);
@@ -1321,6 +1318,7 @@ int FwiElastic2D<T>::run_optimal(){
      // Create image
      vpgrad->allocateImage();
      vsgrad->allocateImage();
+     rhograd->allocateImage();
 
      // Get models for scaling
      T *Vp, *Vs, *Rho;
