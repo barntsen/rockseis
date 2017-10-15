@@ -1038,7 +1038,7 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 
     for (ix=1; ix<nx-1; ix++){
         for (iz=1; iz<nz-1; iz++){
-            vpscale = -2.0*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+            vpscale = 2.0*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)];
             vsscale = 2.0*Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)];
             msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
             mszz = (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads, iz+pads-1)])/dz;
@@ -1095,14 +1095,15 @@ void FwiElastic2D<T>::computeResiduals(){
     T* modz = datamodVz->getData();
     T* recz = dataVz->getData();
     T* resz = dataresVz->getData();
+    T dt = dataVx->getDt();
     size_t itr, it;
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
         case DIFFERENCE:
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
-                   resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
-                   resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
+                   resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
+                   resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
                 }
             }
             break;
@@ -1139,17 +1140,17 @@ void FwiElastic2D<T>::computeResiduals(){
                 if(znorm2 ==0 ) znorm2= 1.0;
                 znorm3 /= (znorm1*znorm2);
 
-                for(it=0; it<nt; it++){
-                    resx[I(it, itr)]=(-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3);
-                    resz[I(it, itr)]=(-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3);
+                for(it=1; it<nt; it++){
+                    resx[I(it, itr)]=dt*((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3)) + resx[I(it-1, itr)];
+                    resz[I(it, itr)]=dt*((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3)) +resz[I(it-1, itr)];
                 }
             }
             break;
         default:
             for(itr=0; itr<ntr; itr++){
-                for(it=0; it<nt; it++){
-                   resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
-                   resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
+                for(it=1; it<nt; it++){
+                   resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
+                   resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
                 }
             }
             break;
@@ -1213,7 +1214,7 @@ int FwiElastic2D<T>::run(){
             waves->recordData(this->datamodVx, GMAP, it);
         }
 
-        // Recording data (Vy)
+        // Recording data (Vz)
         if(this->datamodVzset){
             waves->recordData(this->datamodVz, GMAP, it);
         }
@@ -1351,7 +1352,7 @@ int FwiElastic2D<T>::run_optimal(){
                     waves_fw->recordData(this->datamodVx, GMAP, it);
                 }
 
-                // Recording data (Vy)
+                // Recording data (Vz)
                 if(this->datamodVzset && !reverse){
                     waves_fw->recordData(this->datamodVz, GMAP, it);
                 }

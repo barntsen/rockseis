@@ -309,19 +309,23 @@ int main(int argc, char** argv) {
                 Vxdatamod2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Vxdatamod2D->copyCoords(Vxdata2D);
                 Vxdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+                Vxdatamod2D->setField(rockseis::VX);
                 fwi->setDatamodVx(Vxdatamod2D);
                 Vxdatares2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Vxdatares2D->copyCoords(Vxdata2D);
                 Vxdatares2D->makeMap(lmodel->getGeom(), GMAP);
+                Vxdatares2D->setField(rockseis::VX);
                 fwi->setDataresVx(Vxdatares2D);
 
                 Vzdatamod2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Vzdatamod2D->copyCoords(Vzdata2D);
                 Vzdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+                Vzdatamod2D->setField(rockseis::VZ);
                 fwi->setDatamodVz(Vzdatamod2D);
                 Vzdatares2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Vzdatares2D->copyCoords(Vzdata2D);
                 Vzdatares2D->makeMap(lmodel->getGeom(), GMAP);
+                Vzdatares2D->setField(rockseis::VZ);
                 fwi->setDataresVz(Vzdatares2D);
 
                 // Setting misfit type
@@ -339,6 +343,7 @@ int main(int argc, char** argv) {
 
                 wavgrad = std::make_shared<rockseis::Data2D<float>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
                 wavgrad->setField(rockseis::PRESSURE);
+
                 // Copy geometry
                 wavgrad->copyCoords(source);
                 wavgrad->makeMap(lmodel->getGeom(), SMAP);
