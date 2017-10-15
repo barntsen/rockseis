@@ -14,7 +14,7 @@ sfmath <Vs2d.rsf x=pert.rsf output="in+x" out=stdout > Vs2d_pert.rsf
 rsrsf2rss <Vs2d_pert.rsf > Vs2d_pert.rss
 
 rsrss2rsf <../../Models/Rho2d.rss out=stdout > Rho2d.rsf
-sfspike <Rho2d.rsf k3=25 l3=26 mag=0. | sfsmooth rect3=5 out=stdout > pert.rsf
+sfspike <Rho2d.rsf k3=25 l3=26 k1=30 l1=35 mag=-300. | sfsmooth rect1=5 rect3=5 out=stdout > pert.rsf
 sfmath <Rho2d.rsf x=pert.rsf output="in+x" out=stdout > Rho2d_pert.rsf 
 rsrsf2rss <Rho2d_pert.rsf > Rho2d_pert.rss
 

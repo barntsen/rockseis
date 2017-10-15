@@ -974,14 +974,14 @@ FwiElastic2D<T>::FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::sh
 }
 
 template<typename T>
-void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho, int it)
+void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, T* rsxx, T* rszz, T* rsxz, int padr, T* Vp, T* Vs, T* Rho, T* Rx, T* Rz, int it)
 {
 	int ix, iz;
 	T *vpgraddata = NULL; 
 	T *vsgraddata = NULL;
 	T *wavgraddata = NULL;
-	//T *rhograddata = NULL;
-	T msxx, mszz, msxz, mrxx, mrzz, mrxz;
+	T *rhograddata = NULL;
+	T msxx, mszz, msxz, mrxx, mrzz, mrxz, uderx, uderz;
 	T vpscale;
 	T vsscale;
 	int nx;
@@ -1000,6 +1000,12 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 			vsgrad->allocateImage();
 		}
 		vsgraddata = vsgrad->getImagedata();
+	}
+	if(rhogradset){
+		if(!rhograd->getAllocated()){
+			rhograd->allocateImage();
+		}
+		rhograddata = rhograd->getImagedata();
 	}
 
     int nt;
@@ -1069,6 +1075,19 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
                         wavgraddata[kwav(it,i)] = (mrxx + mrzz);
                     }
                 }
+            }
+
+            if(rhogradset){
+                uderx = 0.5*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxx[kr2D(ix+padr+1, iz+padr)] - rsxx[kr2D(ix+padr, iz+padr)])/dx;
+                uderx += 0.5*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxx[kr2D(ix+padr, iz+padr)] - rsxx[kr2D(ix+padr-1, iz+padr)])/dx;
+                uderx += 0.5*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr, iz+padr-1)])/dz;
+                uderx += 0.5*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxz[kr2D(ix+padr-1, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dz;
+
+                uderz = 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr)])/dx;
+                uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rsxz[kr2D(ix+padr, iz+padr-1)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dx;
+                uderz += 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rszz[kr2D(ix+padr, iz+padr+1)] - rszz[kr2D(ix+padr, iz+padr)])/dz;
+                uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rszz[kr2D(ix+padr, iz+padr)] - rszz[kr2D(ix+padr, iz+padr-1)])/dz;
+                rhograddata[ki2D(ix,iz)] -= uderx + uderz;
             }
         }
     }	
@@ -1247,10 +1266,12 @@ int FwiElastic2D<T>::run(){
     computeResiduals();
 
     // Get models for scaling
-    T *Vp, *Vs, *Rho;
+    T *Vp, *Vs, *Rho, *Rx, *Rz;
     Vp = model->getVp();
     Vs = model->getVs();
     Rho = model->getR();
+    Rx = model->getRx();
+    Rz = model->getRz();
 
      this->writeLog("\nDoing reverse-time Loop.");
     // Loop over reverse time
@@ -1272,7 +1293,10 @@ int FwiElastic2D<T>::run(){
         if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
             T *Vxr = waves->getVx();
             T *Vzr = waves->getVz();
-            crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml(), Vp, Vs, Rho, (nt - 1 - it));
+            T *Sxxr = waves->getSxx();
+            T *Sxzr = waves->getSxz();
+            T *Szzr = waves->getSzz();
+            crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, Sxxr, Szzr, Sxzr, waves->getLpml(), Vp, Vs, Rho, Rx, Rz, (nt - 1 - it));
         }
 
         // Output progress to logfile
@@ -1322,10 +1346,12 @@ int FwiElastic2D<T>::run_optimal(){
      rhograd->allocateImage();
 
      // Get models for scaling
-     T *Vp, *Vs, *Rho;
+     T *Vp, *Vs, *Rho, *Rx, *Rz;
      Vp = model->getVp();
      Vs = model->getVs();
      Rho = model->getR();
+     Rx = model->getRx();
+     Rz = model->getRz();
 
      this->writeLog("Running 2D Elastic full-waveform inversion gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
@@ -1395,8 +1421,10 @@ int FwiElastic2D<T>::run_optimal(){
             T *wsz = waves_fw->getVz();
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
-
-            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho, capo);
+            T *Sxxr = waves_bw->getSxx();
+            T *Szzr = waves_bw->getSzz();
+            T *Sxzr = waves_bw->getSxz();
+            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, Sxxr, Szzr, Sxzr, waves_bw->getLpml(), Vp, Vs, Rho, Rx, Rz, capo);
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -1424,7 +1452,10 @@ int FwiElastic2D<T>::run_optimal(){
             T *wsz = waves_fw->getVz();
             T *wrx = waves_bw->getVx();
             T *wrz = waves_bw->getVz();
-            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho, capo);
+            T *Sxxr = waves_bw->getSxx();
+            T *Szzr = waves_bw->getSzz();
+            T *Sxzr = waves_bw->getSxz();
+            crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, Sxxr, Szzr, Sxzr, waves_bw->getLpml(), Vp, Vs, Rho, Rx, Rz, capo);
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);

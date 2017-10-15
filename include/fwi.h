@@ -221,7 +221,7 @@ public:
     void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setVsgrad(std::shared_ptr<Image2D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
-    void crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho, int it);
+    void crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, T* rsxx, T* rszz, T* rsxz, int padr, T* Vp, T* Vs, T* Rho, T* Rx, T* Rz, int it);
     void computeResiduals();
 
 
