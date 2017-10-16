@@ -43,6 +43,11 @@ int main(int argc, char** argv) {
 			PRINT_DOC(incore = "true"; # Do checkpointing in memory);
 			PRINT_DOC();
             PRINT_DOC(# Booleans);
+            PRINT_DOC(Vpgrad = "true";  # Set these to true if imaging of these events is to be made.);
+            PRINT_DOC(Vsgrad = "true"; );
+            PRINT_DOC(Rhograd = "true"; ); 
+            PRINT_DOC(Wavgrad = "true"; );
+			PRINT_DOC();
 			PRINT_DOC(# Fwi parameters);
 			PRINT_DOC(misfit_type= "0"; # 0 - Difference; 1 - Correlation );
             PRINT_DOC();
@@ -71,6 +76,7 @@ int main(int argc, char** argv) {
 	int lpml;
 	bool fs;
     bool incore = false;
+    bool Vpgrad, Vsgrad, Rhograd, Wavgrad;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
@@ -138,10 +144,22 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vpgradfile", &Vpgradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vsgradfile", &Vsgradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Rhogradfile", &Rhogradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Wavgradfile", &Wavgradfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vpgrad", &Vpgrad) == INPARSE_ERR) status = true;
+    if(Vpgrad){
+        if(Inpar->getPar("Vpgradfile", &Vpgradfile) == INPARSE_ERR) status = true;
+    }
+    if(Inpar->getPar("Vsgrad", &Vsgrad) == INPARSE_ERR) status = true;
+    if(Vsgrad){
+        if(Inpar->getPar("Vsgradfile", &Vsgradfile) == INPARSE_ERR) status = true;
+    }
+    if(Inpar->getPar("Rhograd", &Rhograd) == INPARSE_ERR) status = true;
+    if(Rhograd){
+        if(Inpar->getPar("Rhogradfile", &Rhogradfile) == INPARSE_ERR) status = true;
+    }
+    if(Inpar->getPar("Wavgrad", &Wavgrad) == INPARSE_ERR) status = true;
+    if(Wavgrad){
+        if(Inpar->getPar("Wavgradfile", &Wavgradfile) == INPARSE_ERR) status = true;
+    }
     if(Inpar->getPar("Snapfile", &Snapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vxrecordfile", &Vxrecordfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vxresidualfile", &Vxresidualfile) == INPARSE_ERR) status = true;
@@ -192,10 +210,12 @@ int main(int argc, char** argv) {
         // Get number of shots
         size_t ngathers =  Sort->getNensemb();
 
-        // Wavelet gradient
-        wavgrad = std::make_shared<rockseis::Data2D<float>>(1, source->getNt(), source->getDt(), 0.0);
-        wavgrad->setFile(Wavgradfile);
-        wavgrad->createEmpty(ngathers);
+        // Create empty file for wavelet gradients
+        if(Wavgrad){
+            wavgrad = std::make_shared<rockseis::Data2D<float>>(1, source->getNt(), source->getDt(), 0.0);
+            wavgrad->setFile(Wavgradfile);
+            wavgrad->createEmpty(ngathers);
+        }
 
         // Create a data class for the recorded data in order to get parameters from file
         std::shared_ptr<rockseis::Data2D<float>> Vxdata2D (new rockseis::Data2D<float>(Vxrecordfile));
@@ -214,8 +234,7 @@ int main(int argc, char** argv) {
         Vzdatares2D = std::make_shared<rockseis::Data2D<float>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
         Vzdatares2D->setFile(Vzresidualfile);
         Vzdatares2D->createEmpty(Vxdata2D->getNtrace());
-        
-        
+       
 		// Create work queue
 		for(unsigned long int i=0; i<ngathers; i++) {
 			// Work struct
@@ -227,19 +246,31 @@ int main(int argc, char** argv) {
 		mpi.performWork();
 
         // Images
-        vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile, gmodel, nhx, nhz);
-        vpgrad->createEmpty();
+        if(Vpgrad){
+            vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile, gmodel, nhx, nhz);
+            vpgrad->createEmpty();
+        }
+        if(Vsgrad){
 
-        vsgrad = std::make_shared<rockseis::Image2D<float>>(Vsgradfile, gmodel, nhx, nhz);
-        vsgrad->createEmpty();
+            vsgrad = std::make_shared<rockseis::Image2D<float>>(Vsgradfile, gmodel, nhx, nhz);
+            vsgrad->createEmpty();
+        }
+        if(Rhograd){
 
-        rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile, gmodel, nhx, nhz);
-        rhograd->createEmpty();
+            rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile, gmodel, nhx, nhz);
+            rhograd->createEmpty();
+        }
 
         for(unsigned long int i=0; i<ngathers; i++) {
-            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-            vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
-            rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+            if(Vpgrad){
+                vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            }
+            if(Vsgrad){
+                vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
+            }
+            if(Rhograd){
+                rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+            }
         }
     }
     else {
@@ -331,23 +362,42 @@ int main(int argc, char** argv) {
                 // Setting misfit type
                 fwi->setMisfit_type(fwimisfit);
 
-                // Creating gradient objects
-                vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-                vsgrad = std::make_shared<rockseis::Image2D<float>>(Vsgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-                rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-   
-                // Setting up gradient objects in fwi class
+                // Creating gradient objects and setting them up in fwi class
+                if(Vpgrad){
+                    vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
                 fwi->setVpgrad(vpgrad);
+                }
+                if(Vsgrad){
+                    vsgrad = std::make_shared<rockseis::Image2D<float>>(Vsgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
                 fwi->setVsgrad(vsgrad);
+                }
+                if(Rhograd){
+                    rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
                 fwi->setRhograd(rhograd);
+                }
+   
 
-                wavgrad = std::make_shared<rockseis::Data2D<float>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
-                wavgrad->setField(rockseis::PRESSURE);
-
-                // Copy geometry
-                wavgrad->copyCoords(source);
-                wavgrad->makeMap(lmodel->getGeom(), SMAP);
-                fwi->setWavgrad(wavgrad);
+                if(Wavgrad){
+                    wavgrad = std::make_shared<rockseis::Data2D<float>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
+                    // Copy geometry
+                    wavgrad->copyCoords(source);
+                    wavgrad->makeMap(lmodel->getGeom(), SMAP);
+                    switch(stype){
+                        case 0:
+                            wavgrad->setField(PRESSURE);
+                            break;
+                        case 1:
+                            wavgrad->setField(VX);
+                            break;
+                        case 3:
+                            wavgrad->setField(VZ);
+                            break;
+                        default:
+                            rs_error("Unknown wavgrad type: ", std::to_string(stype));
+                            break;
+                    }
+                    fwi->setWavgrad(wavgrad);
+                }
 
                 // Setting Snapshot file 
                 fwi->setSnapfile(Snapfile + "-" + std::to_string(work.id));
@@ -374,10 +424,18 @@ int main(int argc, char** argv) {
                 }
 
                 // Output gradients
-                vpgrad->write();
-                vsgrad->write();
-                rhograd->write();
-                wavgrad->putTrace(Wavgradfile, work.id);
+                if(Vpgrad){
+                    vpgrad->write();
+                }
+                if(Vsgrad){
+                    vsgrad->write();
+                }
+                if(Rhograd){
+                    rhograd->write();
+                }
+                if(Wavgrad){
+                    wavgrad->putTrace(Wavgradfile, work.id);
+                }
 
                 // Output modelled and residual data
                 Vxdatamod2Di = std::make_shared<rockseis::Data2D<float>>(ntr, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());

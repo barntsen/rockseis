@@ -976,6 +976,7 @@ FwiElastic2D<T>::FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::sh
 template<typename T>
 void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, T* rsxx, T* rszz, T* rsxz, int padr, T* Vp, T* Vs, T* Rho, T* Rx, T* Rz, int it)
 {
+    if(!vpgradset && !vsgradset && !rhogradset && !wavgradset) rs_error("FwiElastic2D<T>::crossCorr: No gradient set for computation.");
 	int ix, iz;
 	T *vpgraddata = NULL; 
 	T *vsgraddata = NULL;
@@ -984,6 +985,8 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, T* rsx
 	T msxx, mszz, msxz, mrxx, mrzz, mrxz, uderx, uderz;
 	T vpscale;
 	T vsscale;
+    T rhoscale1;
+    T rhoscale2;
 	int nx;
 	T dx;
 	T dz;
@@ -1046,6 +1049,8 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, T* rsx
         for (iz=1; iz<nz-1; iz++){
             vpscale = 2.0*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)];
             vsscale = 2.0*Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)];
+            rhoscale1 = Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+            rhoscale2 = Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)];
             msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
             mszz = (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads, iz+pads-1)])/dz;
             mrxx = (wrx[kr2D(ix+padr, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr)])/dx;
@@ -1055,7 +1060,7 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, T* rsx
                 vpgraddata[ki2D(ix,iz)] += vpscale*(msxx + mszz) * (mrxx + mrzz);
             }
 
-            if(vsgradset){
+            if(vsgradset || rhogradset){
                 msxz = 0.5*(wsx[ks2D(ix+pads, iz+pads+1)] - wsx[ks2D(ix+pads, iz+pads)])/dz;
                 msxz += 0.5*(wsx[ks2D(ix+pads-1, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads-1)])/dz;
                 msxz += 0.5*(wsz[ks2D(ix+pads+1, iz+pads)] - wsz[ks2D(ix+pads, iz+pads)])/dx;
@@ -1065,15 +1070,42 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, T* rsx
                 mrxz += 0.5*(wrx[kr2D(ix+padr-1, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr-1)])/dz;
                 mrxz += 0.5*(wrz[kr2D(ix+padr+1, iz+padr)] - wrz[kr2D(ix+padr, iz+padr)])/dx;
                 mrxz += 0.5*(wrz[kr2D(ix+padr, iz+padr-1)] - wrz[kr2D(ix+padr-1, iz+padr-1)])/dx;
+            }
+
+            if(vsgradset){
                 vsgraddata[ki2D(ix,iz)] += vsscale*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
             }
             if(wavgradset){
-                for (i=0; i < ntrace; i++) 
-                {
-                    if((map[i].x == ix) && (map[i].y == iz))
-                    {
-                        wavgraddata[kwav(it,i)] = (mrxx + mrzz);
-                    }
+                switch(wavgrad->getField()){
+                    case PRESSURE:
+                        for (i=0; i < ntrace; i++) 
+                        {
+                            if((map[i].x == ix) && (map[i].y == iz))
+                            {
+                                wavgraddata[kwav(it,i)] = (mrxx + mrzz);
+                            }
+                        }
+                        break;
+                    case VX:
+                        for (i=0; i < ntrace; i++) 
+                        {
+                            if((map[i].x == ix) && (map[i].y == iz))
+                            {
+                                wavgraddata[kwav(it,i)] = 0.5*(wrx[kr2D(ix+padr, iz+padr)] + wrx[kr2D(ix+padr-1, iz+padr)]);
+                            }
+                        }
+                        break;
+                    case VZ:
+                        for (i=0; i < ntrace; i++) 
+                        {
+                            if((map[i].x == ix) && (map[i].y == iz))
+                            {
+                                wavgraddata[kwav(it,i)] = 0.5*(wrz[kr2D(ix+padr, iz+padr)] + wrz[kr2D(ix+padr, iz+padr-1)]);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
 
@@ -1088,6 +1120,8 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, T* rsx
                 uderz += 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rszz[kr2D(ix+padr, iz+padr+1)] - rszz[kr2D(ix+padr, iz+padr)])/dz;
                 uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rszz[kr2D(ix+padr, iz+padr)] - rszz[kr2D(ix+padr, iz+padr-1)])/dz;
                 rhograddata[ki2D(ix,iz)] -= uderx + uderz;
+                rhograddata[ki2D(ix,iz)] += rhoscale1*(msxx + mszz) * (mrxx + mrzz);
+                rhograddata[ki2D(ix,iz)] += rhoscale2*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
             }
         }
     }	
@@ -1290,14 +1324,12 @@ int FwiElastic2D<T>::run(){
         Vzsnap->readSnap(nt - 1 - it);
 
         // Do Crosscorrelation
-        if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
-            T *Vxr = waves->getVx();
-            T *Vzr = waves->getVz();
-            T *Sxxr = waves->getSxx();
-            T *Sxzr = waves->getSxz();
-            T *Szzr = waves->getSzz();
-            crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, Sxxr, Szzr, Sxzr, waves->getLpml(), Vp, Vs, Rho, Rx, Rz, (nt - 1 - it));
-        }
+        T *Vxr = waves->getVx();
+        T *Vzr = waves->getVz();
+        T *Sxxr = waves->getSxx();
+        T *Sxzr = waves->getSxz();
+        T *Szzr = waves->getSzz();
+        crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, Sxxr, Szzr, Sxzr, waves->getLpml(), Vp, Vs, Rho, Rx, Rz, (nt - 1 - it));
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
