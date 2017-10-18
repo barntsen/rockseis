@@ -77,14 +77,16 @@ MPImodeling::~MPImodeling() {
 
 void MPImodeling::initTypes() {
 	// Work type
-	int count = 4;
-	int lengths[4] = {1,1,1,MPI_MAX_PROCESSOR_NAME};
-	MPI_Datatype types[4] = {MPI_UNSIGNED_LONG,MPI_INT,MPI_INT,MPI_CHAR};
-	MPI_Aint offsets[4];
+	int count = 6;
+	int lengths[6] = {1,1,1,MPI_MAX_PROCESSOR_NAME,1, 1};
+	MPI_Datatype types[6] = {MPI_UNSIGNED_LONG,MPI_INT,MPI_INT,MPI_CHAR,MPI_LONG_INT,MPI_LONG_INT};
+	MPI_Aint offsets[6];
 	offsets[0] = offsetof(workModeling_t,id);
 	offsets[1] = offsetof(workModeling_t,status);
 	offsets[2] = offsetof(workModeling_t,MPItag);
 	offsets[3] = offsetof(workModeling_t,pname);
+	offsets[4] = offsetof(workModeling_t,start);
+	offsets[5] = offsetof(workModeling_t,end);
 	MPI_Type_create_struct(count,lengths,offsets,types,&MPIwork);
 	MPI_Type_commit(&MPIwork);
 
@@ -107,37 +109,146 @@ std::shared_ptr<workModeling_t> MPImodeling::getWork(){
 			return p;
 		}
 	}
-
 	return NULL;
 }
 
+unsigned long int MPImodeling::getJobsleft(){
+	int jobs_left = 0;
+	for(auto const& p: work) {
+		if(p->status == WORK_NOT_STARTED) {
+			jobs_left++;
+		}
+	}
+
+	return jobs_left;
+}
+
 void MPImodeling::addWork(std::shared_ptr<workModeling_t> _work) {
+	// Set start and end times to 0
+	_work->start=0;
+	_work->end=0;
+	// Add to queue
 	work.push_back(_work);
 }
 
 void MPImodeling::printWork() {
-    std::string logfilename = this->getLogfile(); 
+	std::string logfilename = this->getLogfile(); 
 
-    if(!logfilename.empty()){
-        std::ofstream Flog; 
-        Flog.open(logfilename);
-        if(!Flog.is_open()) rs_error("MPImodeling::printWork: Error writting to MPI log file.");
+	// Variables
+	char buffer[256],start[256],end[256];
+	time_t runtime,now;
 
-        Flog << "=========================\n";
-        Flog << "       WORK QUEUE\n";
+	if(!logfilename.empty()){
+		std::ofstream Flog; 
+		Flog.open(logfilename);
+		if(!Flog.is_open()) rs_error("MPImodeling::printWork: Error writting to MPI log file.");
 
-        if(work.size() == 0) {
-            Flog << "No work in queue\n";
-        }
-        else {
-            for(auto const& p: work) {
-                //Flog << "id: " << p->id << " rank: " << p->MPItag << " proc: " << p->pname << " status: " << p->status << std::endl; //BUG
-                Flog << "id: " << p->id << " rank: " << p->MPItag << " status: " << p->status << std::endl;
-            }
-        }
-        Flog << "\n\n";
-        Flog.close();
-    }
+		// Seeking to beginning of file
+		Flog.seekp(0);
+
+		// Title in file
+		Flog << "*******************************\n";
+		Flog << "*                             *\n";
+		Flog << "*    MPI QUEUE STATUS FILE    *\n";
+		Flog << "*                             *\n";
+		Flog << "*******************************\n";
+		Flog << "\n";
+
+		// CPU information
+		Flog << "CPU INFORMATION\n";
+		// Number of CPUs
+		snprintf(buffer,256,"# CPU: %d \n",this->getNrank());
+		Flog << buffer;
+		Flog << "\n";
+
+		// Job information
+		Flog << "JOB INFORMATION\n";
+		snprintf(buffer,256,"Jobs: %lu, #Remaining jobs: %lu\n\n",work.size(),this->getJobsleft());
+		Flog << buffer;
+		Flog << "#JobID: CPUID Status (0=not started, 1=running, 2=finished). \n";
+		if(work.size() == 0) {
+			Flog << "No work in queue\n";
+		}
+		else {
+			for(auto const& p: work) {
+				// Converting time to readable format	
+				strcpy(start,ctime(&p->start));
+				strcpy(end,ctime(&p->end));
+				start[strlen(start)-1] = '\0';
+				end[strlen(end)-1] = '\0';
+
+				// Writing beginning of status line
+				snprintf(buffer,256,"#%04lu:  %04d  %d  start: ",p->id, p->MPItag, p->status);
+				Flog << buffer;
+
+				// Start time
+				if(p->start == 0) Flog << "N/A";	
+				else Flog << start;
+
+				// End time
+				Flog << ", end: ";
+				if(p->end == 0) 	Flog << "N/A";
+				else Flog << end;
+
+				// Runtime
+				Flog << ", runtime: ";
+				if(p->start == 0 && p->end == 0) {
+					Flog << "N/A";
+				}
+				else {
+					// Calculating runtime
+					if(p->end <= 0) runtime = time(NULL) - p->start;
+					else runtime = p->end - p->start;
+
+					if(runtime < 600) {
+						// Less than 10min, printing out sec and min
+						snprintf(buffer,256,"%ld",runtime);
+						Flog << buffer;
+						Flog << " sec (";
+						snprintf(buffer,256,"%ld",runtime/60);
+						Flog << buffer;
+						Flog << " min)";
+					}
+					else if(runtime >= 600 && runtime < (3600*12)) {
+						// Less than 12 hours, printing out min and hour
+						snprintf(buffer,256,"%5.2f", (float) runtime/60);
+						Flog << buffer;
+						Flog << " min (";
+						snprintf(buffer,256,"%4.2f",(float) runtime/3600);
+						Flog << buffer;
+						Flog << " h)";
+					}
+					else {
+						// Long runtimes, printing out hour and days
+						snprintf(buffer,256,"%5.2f",(float) runtime/3600);
+						Flog << buffer;
+						Flog << " h (";
+						snprintf(buffer,256,"%4.2f",(float) runtime/86400);
+						Flog << buffer;
+						Flog << " d)";
+					}
+
+					// Printing out running flag if necessary
+					if(p->end <= 0) {
+						Flog << " (r)";
+					}
+				}
+
+				// New line
+				Flog << "\n";
+			}
+
+			// Details summary at end of file
+			now = time(NULL);
+			strcpy(start,ctime(&now));
+			start[strlen(start)-1] = '\0';
+			snprintf(buffer,256,"Jobs: %lu, #Remaining jobs: %lu\n\n",work.size(), this->getJobsleft());
+			Flog << buffer;
+			Flog << "Last updated: "; Flog << start; Flog << "\n\n";
+			Flog.close();
+		}
+
+	}
 }
 
 void MPImodeling::sendWorkToAll() {
@@ -157,9 +268,9 @@ void MPImodeling::sendWork(std::shared_ptr<workModeling_t> work, const int rank)
 	//MPI_Status status;
 	// Changing status on work and sending to slave
 	work->status = WORK_RUNNING;
+	work->start = time(NULL);
     work->MPItag = rank;
 	MPI_Send(work.get(),1,MPIwork,rank,0,MPI_COMM_WORLD);
-	//MPI_Recv(&work->pname[0],MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status); //BUG
 }
 
 void MPImodeling::performWork() {
@@ -251,6 +362,7 @@ void MPImodeling::checkResult(workResult_t result) {
 	else {
 		// Job finished successfully
 		work[result.id]->status = WORK_FINISHED;
+		work[result.id]->end = time(NULL);
 	}
 }
 

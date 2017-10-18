@@ -7,11 +7,12 @@
 #include <memory>
 #include <iostream>
 #include <fstream>
+#include <time.h>
 #include "utils.h"
 
 #define WORK_NOT_STARTED 0
-#define WORK_FINISHED 1
-#define WORK_RUNNING 2
+#define WORK_RUNNING 1
+#define WORK_FINISHED 2
 #define WORK_FAILED 3
 #define MPI_TAG_DIE 10
 #define MPI_TAG_NO_WORK 11
@@ -24,6 +25,8 @@ typedef struct {
 	int status;
 	int MPItag;
     char pname[MPI_MAX_PROCESSOR_NAME];
+	time_t start;
+	time_t end;
 }  workModeling_t;
 
 typedef struct {
@@ -32,7 +35,6 @@ typedef struct {
 	int fromRank;
 	int MPItag;
 }  workResult_t;
-
 
 // =============== PARENT MPI CLASS =============== //
 /** The parent MPI class
@@ -52,6 +54,7 @@ public:
 
 	// Set functions
     void setLogfile(std::string name) { logfile = name; }    ///< Set log file name
+
 
 	// Send and receive functions
 	virtual void performWork() = 0;
@@ -101,6 +104,7 @@ private:
 	workResult_t receiveResult();						///< Receive result from slaves
 	void checkResult(workResult_t result);					///< Check result and update work queue
 	std::shared_ptr<workModeling_t> getWork();				///< Get work that has not started
+	unsigned long int getJobsleft();             ///< Return number of jobs left
 };
 
 }

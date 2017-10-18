@@ -1,5 +1,18 @@
-=========================
-       WORK QUEUE
-id: 0 rank: 1 status: 1
+***********************************
+*                                 *
+*    CLUSTER QUEUE STATUS FILE    *
+*                                 *
+***********************************
 
+CPU INFORMATION
+# CPU: 2 
+
+JOB INFORMATION
+Jobs: 1, #Remaining jobs: 0
+
+#JobID: CPUID Status (0=not started, 1=running, 2=finished). 
+#0000:  0001  1  start: Tue Oct 17 17:14:19 2017, end: Tue Oct 17 17:22:29 2017, runtime: 490 sec (8 min)
+Jobs: 1, #Remaining jobs: 0
+
+Last updated: Tue Oct 17 17:22:29 2017
 
