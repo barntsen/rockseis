@@ -1024,10 +1024,10 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
 		rhograddata = rhograd->getImagedata();
 	}
 
-    int nt;
-    int ntrace;
-    int i;
-    Point2D<int> *map;
+    int nt=0;
+    int ntrace=0;
+    int i=0;
+    Point2D<int> *map=NULL;
     
 	if(wavgradset){
 		wavgraddata = wavgrad->getData();
