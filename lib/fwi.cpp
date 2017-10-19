@@ -1300,14 +1300,6 @@ int FwiElastic2D<T>::run(){
     // Compute Residuals
     computeResiduals();
 
-    // Get models for scaling
-    T *Vp, *Vs, *Rho, *Rx, *Rz;
-    Vp = model->getVp();
-    Vs = model->getVs();
-    Rho = model->getR();
-    Rx = model->getRx();
-    Rz = model->getRz();
-
      this->writeLog("\nDoing reverse-time Loop.");
     // Loop over reverse time
     for(int it=0; it < nt; it++)
@@ -1372,14 +1364,6 @@ int FwiElastic2D<T>::run_optimal(){
     if(this->vpgradset) vpgrad->allocateImage();
     if(this->vsgradset) vsgrad->allocateImage();
     if(this->rhogradset) rhograd->allocateImage();
-
-     // Get models for scaling
-     T *Vp, *Vs, *Rho, *Rx, *Rz;
-     Vp = model->getVp();
-     Vs = model->getVs();
-     Rho = model->getR();
-     Rx = model->getRx();
-     Rz = model->getRz();
 
      this->writeLog("Running 2D Elastic full-waveform inversion gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
