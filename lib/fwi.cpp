@@ -995,7 +995,7 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
 	T *vsgraddata = NULL;
 	T *wavgraddata = NULL;
 	T *rhograddata = NULL;
-	T msxx, mszz, msxz, mrxx, mrzz, mrxz, uderx, uderz;
+	T msxx=0, mszz=0, msxz=0, mrxx=0, mrzz=0, mrxz=0, uderx=0, uderz=0;
 	T vpscale;
 	T vsscale;
     T rhoscale1;
@@ -1551,7 +1551,7 @@ void FwiElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr
 	T *wavgraddata = NULL;
 	T *rhograddata = NULL;
 
-	T msxx, msyy, mszz, msyz, msxz, msxy, mrxx, mryy, mrzz, mryz, mrxz, mrxy, uderx, udery, uderz;
+	T msxx=0, msyy=0, mszz=0, msyz=0, msxz=0, msxy=0, mrxx=0, mryy=0, mrzz=0, mryz=0, mrxz=0, mrxy=0, uderx=0, udery=0, uderz=0;
 	T vpscale;
 	T vsscale;
     T rhoscale1;
