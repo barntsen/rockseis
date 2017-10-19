@@ -1657,8 +1657,6 @@ void FwiElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr
                     mrxy += 0.5*(wrx[kr3D(ix+padr-1, iy+padr, iz+padr)] - wrx[kr3D(ix+padr-1, iy+padr-1, iz+padr)])/dy;
                     mrxy += 0.5*(wry[kr3D(ix+padr+1, iy+padr, iz+padr)] - wry[kr3D(ix+padr, iy+padr, iz+padr)])/dx;
                     mrxy += 0.5*(wry[kr3D(ix+padr, iy+padr-1, iz+padr)] - wry[kr3D(ix+padr-1, iy+padr-1, iz+padr)])/dx;
-
-                    vsgraddata[ki3D(ix,iy,iz)] += vsscale*(-2.0*(msyy*mrzz + mszz*mryy) -2.0*(msxx*mrzz + mszz*mrxx) -2.0*(msyy*mrxx + msxx*mryy) + msyz*mryz + msxz*mrxz + msxy*mrxy);
                 }
                 if(vsgradset){
                     vsgraddata[ki3D(ix,iy,iz)] += vsscale*(-2.0*(msyy*mrzz + mszz*mryy) -2.0*(msxx*mrzz + mszz*mrxx) -2.0*(msyy*mrxx + msxx*mryy) + msyz*mryz + msxz*mrxz + msxy*mrxy);
