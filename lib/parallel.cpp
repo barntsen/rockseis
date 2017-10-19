@@ -113,10 +113,10 @@ std::shared_ptr<workModeling_t> MPImodeling::getWork(){
 }
 
 unsigned long int MPImodeling::getJobsleft(){
-	int jobs_left = 0;
+	int jobs_left = work.size();
 	for(auto const& p: work) {
-		if(p->status == WORK_NOT_STARTED) {
-			jobs_left++;
+		if(p->status == WORK_FINISHED) {
+			jobs_left--;
 		}
 	}
 
@@ -178,9 +178,18 @@ void MPImodeling::printWork() {
 				end[strlen(end)-1] = '\0';
 
 				// Writing beginning of status line
-				snprintf(buffer,256,"#%04lu:  %04d  %d  start: ",p->id, p->MPItag, p->status);
+				snprintf(buffer,256,"#%04lu:",p->id);  
 				Flog << buffer;
-
+                // Writting rank 
+				if(p->MPItag == 0) 
+                {
+                    Flog << "  N/A ";	
+                }else{
+				    snprintf(buffer,256,"  %04d", p->MPItag);
+				    Flog << buffer;
+                }
+                snprintf(buffer, 256, "  %d  start: ", p->status);
+			    Flog << buffer;
 				// Start time
 				if(p->start == 0) Flog << "N/A";	
 				else Flog << start;

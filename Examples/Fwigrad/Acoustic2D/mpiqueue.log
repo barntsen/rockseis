@@ -1,8 +1,8 @@
-***********************************
-*                                 *
-*    CLUSTER QUEUE STATUS FILE    *
-*                                 *
-***********************************
+*******************************
+*                             *
+*    MPI QUEUE STATUS FILE    *
+*                             *
+*******************************
 
 CPU INFORMATION
 # CPU: 4 
@@ -11,12 +11,12 @@ JOB INFORMATION
 Jobs: 5, #Remaining jobs: 0
 
 #JobID: CPUID Status (0=not started, 1=running, 2=finished). 
-#0000:  0001  2  start: Tue Oct 17 19:18:44 2017, end: Tue Oct 17 19:18:46 2017, runtime: 2 sec (0 min)
-#0001:  0002  2  start: Tue Oct 17 19:18:44 2017, end: Tue Oct 17 19:18:46 2017, runtime: 2 sec (0 min)
-#0002:  0003  2  start: Tue Oct 17 19:18:44 2017, end: Tue Oct 17 19:18:46 2017, runtime: 2 sec (0 min)
-#0003:  0002  2  start: Tue Oct 17 19:18:46 2017, end: Tue Oct 17 19:18:48 2017, runtime: 2 sec (0 min)
-#0004:  0003  2  start: Tue Oct 17 19:18:46 2017, end: Tue Oct 17 19:18:48 2017, runtime: 2 sec (0 min)
+#0000:  0001  2  start: Thu Oct 19 23:25:01 2017, end: Thu Oct 19 23:25:03 2017, runtime: 2 sec (0 min)
+#0001:  0002  2  start: Thu Oct 19 23:25:01 2017, end: Thu Oct 19 23:25:03 2017, runtime: 2 sec (0 min)
+#0002:  0003  2  start: Thu Oct 19 23:25:01 2017, end: Thu Oct 19 23:25:03 2017, runtime: 2 sec (0 min)
+#0003:  0002  2  start: Thu Oct 19 23:25:03 2017, end: Thu Oct 19 23:25:05 2017, runtime: 2 sec (0 min)
+#0004:  0003  2  start: Thu Oct 19 23:25:03 2017, end: Thu Oct 19 23:25:05 2017, runtime: 2 sec (0 min)
 Jobs: 5, #Remaining jobs: 0
 
-Last updated: Tue Oct 17 19:18:48 2017
+Last updated: Thu Oct 19 23:25:05 2017
 
