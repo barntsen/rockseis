@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 
     if(argc < 2){
         if(mpi.getRank() == 0){
-			PRINT_DOC(# MPI 2d elastic reverse-time migration configuration file);
+			PRINT_DOC(# MPI 2d elastic full-waveform inversion gradient configuration file);
 			PRINT_DOC();
 			PRINT_DOC(# Modelling parameters);
 			PRINT_DOC(freesurface = "false";  # True if free surface should be on);
@@ -52,18 +52,18 @@ int main(int argc, char** argv) {
 			PRINT_DOC(misfit_type= "0"; # 0 - Difference; 1 - Correlation );
             PRINT_DOC();
 			PRINT_DOC(# Files);
-			PRINT_DOC(Vp = "Vp2d.rss";);
-			PRINT_DOC(Vp = "Vs2d.rss";);
-			PRINT_DOC(Rho = "Rho2d.rss";);
-			PRINT_DOC(Wavelet = "Wav2d.rss";);
+			PRINT_DOC(Vp = "Vp2d.rss"; # Input Vp model);
+			PRINT_DOC(Vs = "Vs2d.rss"; # Input Vs model);
+			PRINT_DOC(Rho = "Rho2d.rss"; # Input Rho model);
+			PRINT_DOC(Wavelet = "Wav2d.rss"; # Input Wav model);
 			PRINT_DOC(Vpgradfile = "Vpgrad2d.rss"; # File to output gradient with respect to Vp);
 			PRINT_DOC(Vsgradfile = "Vsgrad2d.rss"; # File to output gradient with respect to Vs);
 			PRINT_DOC(Rhogradfile = "Rhograd2d.rss"; # File to output gradient with respect to Rho);
 			PRINT_DOC(Wavgradfile = "Wavgrad2d.rss"; # File to output gradient with respect to Wav);
-            PRINT_DOC(Vxrecordfile = "Vxshot.rss";);
+            PRINT_DOC(Vxrecordfile = "Vxshot.rss"; # Input observed data);
 			PRINT_DOC(Vxmodelledfile = "Vxmod2d.rss"; # File to output modelled data);
 			PRINT_DOC(Vxresidualfile = "Vxres2d.rss"; # File to output residuals);
-            PRINT_DOC(Vzrecordfile = "Vzshot.rss";);
+            PRINT_DOC(Vzrecordfile = "Vzshot.rss"; # Input observed data);
 			PRINT_DOC(Vzmodelledfile = "Vzmod2d.rss"; # File to output modelled data);
 			PRINT_DOC(Vzresidualfile = "Vzres2d.rss"; # File to output residuals);
             PRINT_DOC(Snapfile = "snaps.rss";);

@@ -221,7 +221,7 @@ public:
     void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setVsgrad(std::shared_ptr<Image2D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
-    void crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, T* rsxx, T* rszz, T* rsxz, int padr, T* Vp, T* Vs, T* Rho, T* Rx, T* Rz, int it);
+    void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void computeResiduals();
 
 
@@ -266,12 +266,19 @@ public:
     void setDataVx(std::shared_ptr<Data3D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
     void setDataVy(std::shared_ptr<Data3D<T>> _dataVy) { dataVy = _dataVy; dataVyset = true; }
     void setDataVz(std::shared_ptr<Data3D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setDatamodVx(std::shared_ptr<Data3D<T>> _datamodVx) { datamodVx = _datamodVx; datamodVxset = true; }
+    void setDatamodVy(std::shared_ptr<Data3D<T>> _datamodVy) { datamodVy = _datamodVy; datamodVyset = true; }
+    void setDatamodVz(std::shared_ptr<Data3D<T>> _datamodVz) { datamodVz = _datamodVz; datamodVzset = true; }
+    void setDataresVx(std::shared_ptr<Data3D<T>> _dataresVx) { dataresVx = _dataresVx; dataresVxset = true; }
+    void setDataresVy(std::shared_ptr<Data3D<T>> _dataresVy) { dataresVy = _dataresVy; dataresVyset = true; }
+    void setDataresVz(std::shared_ptr<Data3D<T>> _dataresVz) { dataresVz = _dataresVz; dataresVzset = true; }
+
     void setWavgrad(std::shared_ptr<Data3D<T>> _wavgrad) { wavgrad = _wavgrad; wavgradset = true; }
     void setVpgrad(std::shared_ptr<Image3D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setVsgrad(std::shared_ptr<Image3D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
     void setRhograd(std::shared_ptr<Image3D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
-    void crossCorr(T *wsx, T *wsy, T *wsz, int pads, T* wrx, T *wry, T* wrz, int padr, T* Vp, T* Vs, T* Rho);
-
+    void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesElastic3D<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
+    void computeResiduals();
 
     ~FwiElastic3D();	///< Destructor
 
@@ -283,8 +290,14 @@ private:
     std::shared_ptr<Data3D<T>> wavgrad;
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> dataVx;
+    std::shared_ptr<Data3D<T>> datamodVx;
+    std::shared_ptr<Data3D<T>> dataresVx;
     std::shared_ptr<Data3D<T>> dataVy;
+    std::shared_ptr<Data3D<T>> datamodVy;
+    std::shared_ptr<Data3D<T>> dataresVy;
     std::shared_ptr<Data3D<T>> dataVz;
+    std::shared_ptr<Data3D<T>> datamodVz;
+    std::shared_ptr<Data3D<T>> dataresVz;
     bool modelset;
     bool vpgradset;
     bool vsgradset;
