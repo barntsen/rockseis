@@ -43,7 +43,6 @@ public:
     T getOz() { return geometry->getO(3); }		///< Get Oz
     std::shared_ptr<Geometry<T>> getGeom() { return geometry; } ///< Get geometry
     bool getRealized() { return realized; } ///< Check if model is allocated
-    
     // Set functions
     void setNx(const int _nx) { geometry->setN(1, _nx); }	///< Set Nx
     void setNy(const int _ny) { geometry->setN(2, _ny); }	///< Set Ny
@@ -94,6 +93,10 @@ public:
      *  Uses an arithmetic running average
      * */
     void staggermodel_z(T *model, const int nx, const int ny, const int nz); 
+
+protected:
+    T getMin(T* Model); ///< Finds minimum of a model (to be used with model arrays only)
+    T getMax(T* Model); ///< Finds maximum of a model (to be used with model arrays only)
 
 private:
     int dim; 
@@ -178,6 +181,10 @@ public:
     void setVpfile(std::string name) { Vpfile = name; }
     void setRfile(std::string name) { Rfile = name; }
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
+    T getMinVp() {return this->getMin(Vp); } ///< Returns min Vp
+    T getMinR() {return this->getMin(R); } ///< Returns min R
+    T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
+    T getMaxR() {return this->getMax(R); } ///< Returns max R
 
     /** Stagger model functions. 
     It creates the padded Rx, Rz and L from the non-padded models R and Vp. 
@@ -226,6 +233,10 @@ public:
     std::string getRfile() { return Rfile; }
     void setVpfile(std::string name) { Vpfile = name; }
     void setRfile(std::string name) { Rfile = name; }
+    T getMinVp() {return this->getMin(Vp); } ///< Returns min Vp
+    T getMinR() {return this->getMin(R); } ///< Returns min R
+    T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
+    T getMaxR() {return this->getMax(R); } ///< Returns max R
 
     std::shared_ptr<rockseis::ModelAcoustic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperturex, T aperturey, bool map);
 
@@ -238,6 +249,7 @@ public:
     It creates an empty model of Vp and R
     */
     void createModel();
+
 
 private:
     T *Vp;  ///< P-wave velocity
@@ -281,6 +293,12 @@ public:
     void setVpfile(std::string name) { Vpfile = name; }
     void setVsfile(std::string name) { Vsfile = name; }
     void setRfile(std::string name) { Rfile = name; }
+    T getMinVp() {return this->getMin(Vp); } ///< Returns min Vp
+    T getMinVs() {return this->getMin(Vs); } ///< Returns min Vs
+    T getMinR() {return this->getMin(R); } ///< Returns min R
+    T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
+    T getMaxVs() {return this->getMax(Vs); } ///< Returns max Vs
+    T getMaxR() {return this->getMax(R); } ///< Returns max R
     /** Stagger model functions. 
     It creates the padded Rx, Rz, L, L2M and M from the non-padded models R, Vp and Vs. 
     */
@@ -340,6 +358,12 @@ public:
     void setVpfile(std::string name) { Vpfile = name; }
     void setVsfile(std::string name) { Vsfile = name; }
     void setRfile(std::string name) { Rfile = name; }
+    T getMinVp() {return this->getMin(Vp); } ///< Returns min Vp
+    T getMinVs() {return this->getMin(Vs); } ///< Returns min Vs
+    T getMinR() {return this->getMin(R); } ///< Returns min R
+    T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
+    T getMaxVs() {return this->getMax(Vs); } ///< Returns max Vs
+    T getMaxR() {return this->getMax(R); } ///< Returns max R
 
     std::shared_ptr<rockseis::ModelElastic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperture_x, T aperture_y, bool map);
 

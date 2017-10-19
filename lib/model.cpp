@@ -232,6 +232,36 @@ void Model<T>::staggermodel_z(T *model, const int nx, const int ny, const int nz
     }
 }
 
+template <typename T>
+T Model<T>::getMax(T *model){
+    int i;
+
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    T max = model[0];
+    for(i=1; i<nx*ny*nz; i++){
+        if(model[i] > max) max = model[i];
+    }
+    return max;
+}
+
+template <typename T>
+T Model<T>::getMin(T *model){
+    int i;
+
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    T min = model[0];
+    for(i=1; i<nx*ny*nz; i++){
+        if(model[i] < min) min = model[i];
+    }
+    return min;
+}
+
 // =============== 1D ACOUSTIC MODEL CLASS =============== //
 template<typename T>
 ModelAcoustic1D<T>::ModelAcoustic1D(): Model<T>(2) {

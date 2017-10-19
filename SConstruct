@@ -76,6 +76,7 @@ env.Append(CPPPATH=['../include'])
 env.Append(CPPPATH=['../config4cpp/include'])
 env.Append(CPPPATH=['../config4cpp/src'])
 env.Append(CPPPATH=['../madagascar/include'])
+env.Append(CPPPATH=['../lbfgs'])
 env.Append(CPPPATH=['../../fftw-3.3.6-pl2/fftw-build/include/'])
 env.Append(LIBPATH=['../build'])
 
