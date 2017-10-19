@@ -1416,7 +1416,7 @@ int FwiElastic2D<T>::run_optimal(){
                 waves_fw->recordData(this->datamodVx, GMAP, capo);
             }
 
-            // Recording data (Vy)
+            // Recording data (Vz)
             if(this->datamodVzset){
                 waves_fw->recordData(this->datamodVz, GMAP, capo);
             }
@@ -1907,6 +1907,21 @@ int FwiElastic3D<T>::run(){
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
+        // Recording data (Vx)
+        if(this->datamodVxset){
+            waves->recordData(this->datamodVx, GMAP, it);
+        }
+
+        // Recording data (Vy)
+        if(this->datamodVyset){
+            waves->recordData(this->datamodVy, GMAP, it);
+        }
+
+        // Recording data (Vz)
+        if(this->datamodVzset){
+            waves->recordData(this->datamodVz, GMAP, it);
+        }
+
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }//End of forward loop
@@ -1935,6 +1950,9 @@ int FwiElastic3D<T>::run(){
     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
     Vzsnap->allocSnap(0);
 
+    // Compute Residuals
+    computeResiduals();
+
      this->writeLog("\nDoing reverse-time Loop.");
     // Loop over reverse time
     for(int it=0; it < nt; it++)
@@ -1944,9 +1962,9 @@ int FwiElastic3D<T>::run(){
     	waves->forwardstepVelocity(model, der);
 
     	// Inserting residuals
-    	waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataVy, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataresVx, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataresVy, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataresVz, GMAP, (nt - 1 - it));
 
         //Read forward snapshot
         Vxsnap->readSnap(nt - 1 - it);
@@ -2026,6 +2044,21 @@ int FwiElastic3D<T>::run_optimal(){
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
 
+                // Recording data (Vx)
+                if(this->datamodVxset && !reverse){
+                    waves_fw->recordData(this->datamodVx, GMAP, it);
+                }
+
+                // Recording data (Vy)
+                if(this->datamodVyset && !reverse){
+                    waves_fw->recordData(this->datamodVy, GMAP, it);
+                }
+
+                // Recording data (Vz)
+                if(this->datamodVzset && !reverse){
+                    waves_fw->recordData(this->datamodVz, GMAP, it);
+                }
+
                 if(!reverse){
                     // Output progress to logfile
                     this->writeProgress(it, nt-1, 20, 48);
@@ -2041,9 +2074,28 @@ int FwiElastic3D<T>::run_optimal(){
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, capo);
 
-            // Inserting data
-            waves_bw->insertSource(model, dataVx, GMAP, capo);
-            waves_bw->insertSource(model, dataVz, GMAP, capo);
+            // Recording data (Vx)
+            if(this->datamodVxset){
+                waves_fw->recordData(this->datamodVx, GMAP, capo);
+            }
+
+            // Recording data (Vy)
+            if(this->datamodVyset){
+                waves_fw->recordData(this->datamodVy, GMAP, capo);
+            }
+
+            // Recording data (Vz)
+            if(this->datamodVzset){
+                waves_fw->recordData(this->datamodVz, GMAP, capo);
+            }
+
+            // Compute Residuals
+            computeResiduals();
+
+            // Inserting residuals
+            waves_bw->insertSource(model, dataresVx, GMAP, capo);
+            waves_bw->insertSource(model, dataresVy, GMAP, capo);
+            waves_bw->insertSource(model, dataresVz, GMAP, capo);
 
             // Do Crosscorrelation 
             T *wsx = waves_fw->getVx();
@@ -2069,10 +2121,10 @@ int FwiElastic3D<T>::run_optimal(){
             waves_bw->forwardstepStress(model, der);
             waves_bw->forwardstepVelocity(model, der);
 
-            // Inserting data
-            waves_bw->insertSource(model, dataVx, GMAP, capo);
-            waves_bw->insertSource(model, dataVy, GMAP, capo);
-            waves_bw->insertSource(model, dataVz, GMAP, capo);
+            // Inserting residuals
+            waves_bw->insertSource(model, dataresVx, GMAP, capo);
+            waves_bw->insertSource(model, dataresVy, GMAP, capo);
+            waves_bw->insertSource(model, dataresVz, GMAP, capo);
 
             // Do Crosscorrelation
             T *wsx = waves_fw->getVx();
