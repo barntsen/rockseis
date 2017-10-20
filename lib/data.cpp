@@ -871,7 +871,8 @@ void Data3D<T>::createEmpty(size_t ntr)
 template<typename T>
 void Data3D<T>::putTrace(std::string filename, size_t number)
 {
-    if(number > this->getNtrace()-1) rs_error("Data3D::putTrace: Trying to put a trace with number that is larger than ntrace");
+    size_t traceno;
+    traceno = number;
 
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
@@ -888,13 +889,13 @@ void Data3D<T>::putTrace(std::string filename, size_t number)
     if(d1 != this->getDt()) rs_error("Data3D::putTrace: Sampling interval in trace and datafile mismatch.");
     if(o1 != this->getOt()) rs_error("Data3D::putTrace: Origin in trace and datafile mismatch.");
 
+    if(traceno > (Fdata->getN(2)-1)) rs_error("Data3D::putTrace: Trying to put a trace with number that is larger than number of traces in file. ", std::to_string(traceno));
+
     //Write gather
     Point3D<T> *scoords = (this->getGeom())->getScoords();
     Point3D<T> *gcoords = (this->getGeom())->getGcoords();
     T *tracedata = this->getData();
-    size_t traceno;
     for (size_t j=0; j < n2; j++){
-        traceno = number;
         Fdata->seekp(Fdata->getStartofdata() + traceno*(n1+NHEAD3D)*sizeof(T));
         Fdata->write(&scoords[j].x, 1);
         Fdata->write(&scoords[j].y, 1);
