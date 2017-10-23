@@ -1,14 +1,6 @@
 # SConstruct initializing
 import os
-Import('env')
-
-# Cloning compile environment
-lbfgs = env.Clone()
-
-#-- Objective C environment
-envc = Environment(ENV=os.environ, CC = 'gcc', CXX='g++') 
-envc.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
-#envc.Append(CPPFLAGS=' -g -Wall' ) # For debugging
+Import('envc')
 
 # Setup
 libdir = '../build/'

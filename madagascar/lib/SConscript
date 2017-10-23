@@ -1,15 +1,11 @@
 # SConstruct initializing
 import os
 Import('env')
+Import('envc')
 	
 builddir = '../build/'
 
-
-#-- Objective C environment
-envc = Environment(ENV=os.environ, CC = 'gcc', CXX='g++') 
-envc.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
-#envc.Append(CPPFLAGS=' -g -Wall' ) # For debugging
-#
+# Adding library path
 envc.Append(CPPPATH=['../include'])
 
 # Library

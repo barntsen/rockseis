@@ -2,12 +2,7 @@
 import os
 import sys
 Import('env')
-
-# Cloning environments for different compilers
-if sys.platform == 'darwin' :    # Mac
-    mpi = env.Clone(CC='mpicc', CXX='mpic++')
-else:
-    mpi = env.Clone(CC='mpicc', CXX='mpicxx')
+Import('mpi')
 
 # Setup
 prefix = env['program_prefix']
