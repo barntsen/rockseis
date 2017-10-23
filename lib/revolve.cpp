@@ -393,6 +393,7 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic3
     nz_pml=waves->getNz_pml();
     lpml = waves->getLpml();
     this->checksize = 2*nz_pml*nx_pml*ny_pml + 4*nz_pml*ny_pml*lpml + 4*nz_pml*nx_pml*lpml + 4*nx_pml*ny_pml*lpml;
+    rs_warning("Revolve<T>::openCheck::Required memory per core: ", std::to_string(this->checksize));
     this->createCheck(_filename, flag); 
 }
 
@@ -420,6 +421,7 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesElastic3D
     nz_pml=waves->getNz_pml();
     lpml = waves->getLpml();
     this->checksize = 9*nz_pml*nx_pml*ny_pml + 12*nz_pml*ny_pml*lpml + 12*nz_pml*nx_pml*lpml + 12*nx_pml*ny_pml*lpml;
+    rs_warning("Revolve<T>::openCheck::Required memory per core: ", std::to_string(this->checksize));
     this->createCheck(_filename, flag); 
 }
 
