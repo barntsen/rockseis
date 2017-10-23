@@ -4,10 +4,13 @@
 // Include statements
 #include <vector>
 #include <mpi.h>
+#include <cstddef>
 #include <memory>
 #include <iostream>
 #include <fstream>
 #include <time.h>
+#include <stdio.h>
+#include <string.h>
 #include "utils.h"
 
 #define WORK_NOT_STARTED 0
