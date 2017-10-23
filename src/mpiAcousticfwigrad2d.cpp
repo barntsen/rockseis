@@ -189,9 +189,11 @@ int main(int argc, char** argv) {
         rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile, gmodel, nhx, nhz);
         rhograd->createEmpty();
 
-		for(unsigned long int i=0; i<ngathers; i++) {
+        for(unsigned long int i=0; i<ngathers; i++) {
             vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            remove_file(Vpgradfile + "-" + std::to_string(i));
             rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+            remove_file(Rhogradfile + "-" + std::to_string(i));
         }
     }
     else {

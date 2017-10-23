@@ -72,6 +72,15 @@ void rs_warning(std::string msg1, std::string msg2,  std::string msg3){
     std::cerr << "Warning: " << msg1 << msg2 << msg3 << std::endl;
 }
 
+// Removing file
+void remove_file(std::string filename) {
+	if(!filename.empty()){
+		if( remove( filename.c_str() ) != 0 ){
+			rs_error( "remove_file: Error deleting file: ", filename);
+		}
+	}
+}
+
 
 // =============== INITIALIZING TEMPLATE STRUCTS =============== //
 template struct Point2D<int>;

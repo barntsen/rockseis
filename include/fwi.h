@@ -141,6 +141,7 @@ private:
     std::shared_ptr<Data2D<T>> datamodAz;
     std::shared_ptr<Data2D<T>> dataresP;
     std::shared_ptr<Data2D<T>> dataresAz;
+    std::shared_ptr<Data2D<T>> dataweight;
     bool modelset;
     bool wavgradset;
     bool vpgradset;
@@ -149,6 +150,7 @@ private:
     bool dataPset, dataAzset;
     bool datamodPset, datamodAzset;
     bool dataresPset, dataresAzset;
+    bool dataweightset;
 };
 
 /** The 3D Acoustic Fwi class
@@ -189,6 +191,7 @@ private:
     std::shared_ptr<Data3D<T>> datamodAz;
     std::shared_ptr<Data3D<T>> dataresP;
     std::shared_ptr<Data3D<T>> dataresAz;
+    std::shared_ptr<Data3D<T>> dataweight;
     bool modelset;
     bool vpgradset;
     bool rhogradset;
@@ -197,6 +200,7 @@ private:
     bool dataPset, dataAzset;
     bool datamodPset, datamodAzset;
     bool dataresPset, dataresAzset;
+    bool dataweightset;
 };
 
 /** The 2D Elastic Fwi class
@@ -240,6 +244,8 @@ private:
     std::shared_ptr<Data2D<T>> datamodVz;
     std::shared_ptr<Data2D<T>> dataresVx;
     std::shared_ptr<Data2D<T>> dataresVz;
+    std::shared_ptr<Data2D<T>> dataweight;
+    bool dataweightset;
     bool modelset;
     bool vpgradset;
     bool vsgradset;
@@ -298,6 +304,7 @@ private:
     std::shared_ptr<Data3D<T>> dataVz;
     std::shared_ptr<Data3D<T>> datamodVz;
     std::shared_ptr<Data3D<T>> dataresVz;
+    std::shared_ptr<Data3D<T>> dataweight;
     bool modelset;
     bool vpgradset;
     bool vsgradset;
@@ -307,6 +314,7 @@ private:
     bool dataVxset, dataVyset, dataVzset;
     bool datamodVxset, datamodVyset, datamodVzset;
     bool dataresVxset, dataresVyset, dataresVzset;
+    bool dataweightset;
 };
 
 

@@ -152,6 +152,9 @@ FwiAcoustic2D<T>::FwiAcoustic2D(){
     vpgradset = false;
     rhogradset = false;
     wavgradset = false;
+    datamodPset = false;
+    dataresPset = false;
+    dataweightset = false;
 }
 
 template<typename T>
@@ -165,6 +168,9 @@ FwiAcoustic2D<T>::FwiAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std:
     vpgradset = false;
     rhogradset = false;
     wavgradset = false;
+    datamodPset = false;
+    dataresPset = false;
+    dataweightset = false;
 }
 
 template<typename T>
@@ -220,6 +226,11 @@ void FwiAcoustic2D<T>::computeResiduals(){
     T* mod = datamodP->getData();
     T* rec = dataP->getData();
     T* res = dataresP->getData();
+    T* wei = NULL;
+    if(dataweightset) 
+    {
+        wei = dataweight->getData();
+    }
     size_t itr, it;
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
@@ -227,6 +238,10 @@ void FwiAcoustic2D<T>::computeResiduals(){
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
                    res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+                   if(dataweightset)
+                   {
+                       res[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
             break;
@@ -251,6 +266,10 @@ void FwiAcoustic2D<T>::computeResiduals(){
 
                 for(it=0; it<nt; it++){
                     res[I(it, itr)]=(-1.0)*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
+                   if(dataweightset)
+                   {
+                       res[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
 
@@ -259,6 +278,10 @@ void FwiAcoustic2D<T>::computeResiduals(){
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
                     res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+                   if(dataweightset)
+                   {
+                       res[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
             break;
@@ -543,6 +566,9 @@ FwiAcoustic3D<T>::FwiAcoustic3D(){
     vpgradset = false;
     rhogradset = false;
     wavgradset = false;
+    datamodPset = false;
+    dataresPset = false;
+    dataweightset = false;
 }
 
 template<typename T>
@@ -550,12 +576,15 @@ FwiAcoustic3D<T>::FwiAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> _model, std:
     source = _source;
     dataP = _dataP;
     model = _model;
+    modelset = true;
     sourceset = true;
     dataPset = true;
-    modelset = true;
+    datamodPset = false;
+    dataresPset = false;
     vpgradset = false;
     rhogradset = false;
     wavgradset = false;
+    dataweightset = false;
 }
 
 template<typename T>
@@ -618,6 +647,11 @@ void FwiAcoustic3D<T>::computeResiduals(){
     T* mod = datamodP->getData();
     T* rec = dataP->getData();
     T* res = dataresP->getData();
+    T *wei = NULL;
+    if(dataweightset)
+    {
+        wei = dataweight->getData();
+    }
     size_t itr, it;
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
@@ -625,6 +659,10 @@ void FwiAcoustic3D<T>::computeResiduals(){
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
                    res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+                   if(dataweightset)
+                   {
+                       res[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
             break;
@@ -649,6 +687,10 @@ void FwiAcoustic3D<T>::computeResiduals(){
 
                 for(it=0; it<nt; it++){
                     res[I(it, itr)]=(-1.0)*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
+                   if(dataweightset)
+                   {
+                       res[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
 
@@ -951,6 +993,11 @@ FwiElastic2D<T>::FwiElastic2D(){
     modelset = false;
     vpgradset = false;
     vsgradset = false;
+    datamodVxset = false;
+    datamodVzset = false;
+    dataresVxset = false;
+    dataresVzset = false;
+    dataweightset = false;
 }
 
 template<typename T>
@@ -971,6 +1018,7 @@ FwiElastic2D<T>::FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::sh
     datamodVzset = false;
     dataresVxset = false;
     dataresVzset = false;
+    dataweightset = false;
 }
 
 template<typename T>
@@ -1149,6 +1197,11 @@ void FwiElastic2D<T>::computeResiduals(){
     T* modz = datamodVz->getData();
     T* recz = dataVz->getData();
     T* resz = dataresVz->getData();
+    T *wei = NULL;
+    if(dataweightset)
+    {
+        wei = dataweight->getData();
+    }
     T dt = dataVx->getDt();
     size_t itr, it;
     Index I(nt, ntr);
@@ -1158,6 +1211,11 @@ void FwiElastic2D<T>::computeResiduals(){
                 for(it=0; it<nt; it++){
                    resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
                    resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                   if(dataweightset)
+                   {
+                       resx[I(it, itr)] *= wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
             break;
@@ -1197,6 +1255,11 @@ void FwiElastic2D<T>::computeResiduals(){
                 for(it=1; it<nt; it++){
                     resx[I(it, itr)]=dt*((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3)) + resx[I(it-1, itr)];
                     resz[I(it, itr)]=dt*((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3)) +resz[I(it-1, itr)];
+                   if(dataweightset)
+                   {
+                       resx[I(it, itr)] *= wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
             break;
@@ -1205,6 +1268,11 @@ void FwiElastic2D<T>::computeResiduals(){
                 for(it=1; it<nt; it++){
                    resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
                    resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                   if(dataweightset)
+                   {
+                       resx[I(it, itr)] *= wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
             break;
@@ -1502,6 +1570,13 @@ FwiElastic3D<T>::FwiElastic3D(){
     vpgradset = false;
     vsgradset = false;
     wavgradset = false;
+    datamodVxset = false;
+    datamodVyset = false;
+    datamodVzset = false;
+    dataresVxset = false;
+    dataresVyset = false;
+    dataresVzset = false;
+    dataweightset = false;
 }
 
 template<typename T>
@@ -1520,6 +1595,13 @@ FwiElastic3D<T>::FwiElastic3D(std::shared_ptr<ModelElastic3D<T>> _model, std::sh
     vpgradset = false;
     vsgradset = false;
     wavgradset = false;
+    datamodVxset = false;
+    datamodVyset = false;
+    datamodVzset = false;
+    dataresVxset = false;
+    dataresVyset = false;
+    dataresVzset = false;
+    dataweightset = false;
 }
 
 template<typename T>
@@ -1766,6 +1848,11 @@ void FwiElastic3D<T>::computeResiduals(){
     T* modz = datamodVz->getData();
     T* recz = dataVz->getData();
     T* resz = dataresVz->getData();
+    T *wei = NULL;
+    if(dataweightset)
+    {
+        wei = dataweight->getData();
+    }
     T dt = dataVx->getDt();
     size_t itr, it;
     Index I(nt, ntr);
@@ -1776,6 +1863,12 @@ void FwiElastic3D<T>::computeResiduals(){
                    resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
                    resy[I(it, itr)] = dt*(mody[I(it, itr)] - recy[I(it, itr)]) + resy[I(it-1, itr)];
                    resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                   if(dataweightset)
+                   {
+                       resx[I(it, itr)] *= wei[I(it, itr)];
+                       resy[I(it, itr)] *= wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
             break;
@@ -1831,6 +1924,12 @@ void FwiElastic3D<T>::computeResiduals(){
                     resx[I(it, itr)]=dt*((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3)) + resx[I(it-1, itr)];
                     resy[I(it, itr)]=dt*((-1.0)*((recy[I(it, itr)]/(ynorm1*ynorm2)) - (mody[I(it, itr)]/(ynorm1*ynorm1))*ynorm3)) + resy[I(it-1, itr)];
                     resz[I(it, itr)]=dt*((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3)) +resz[I(it-1, itr)];
+                   if(dataweightset)
+                   {
+                       resx[I(it, itr)] *= wei[I(it, itr)];
+                       resy[I(it, itr)] *= wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
             break;
@@ -1840,6 +1939,12 @@ void FwiElastic3D<T>::computeResiduals(){
                    resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
                    resy[I(it, itr)] = dt*(mody[I(it, itr)] - recy[I(it, itr)]) + resy[I(it-1, itr)];
                    resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                   if(dataweightset)
+                   {
+                       resx[I(it, itr)] *= wei[I(it, itr)];
+                       resy[I(it, itr)] *= wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)];
+                   }
                 }
             }
             break;

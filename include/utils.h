@@ -78,5 +78,7 @@ void rs_warning(std::string);
 void rs_warning(std::string, std::string);
 void rs_warning(std::string, std::string, std::string);
 
+void remove_file(std::string);
+
 }
 #endif //UTILS_H

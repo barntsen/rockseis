@@ -292,12 +292,15 @@ int main(int argc, char** argv) {
         for(unsigned long int i=0; i<ngathers; i++) {
             if(Vpgrad){
                 vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+                remove_file(Vpgradfile + "-" + std::to_string(i));
             }
             if(Vsgrad){
                 vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
+                remove_file(Vsgradfile + "-" + std::to_string(i));
             }
             if(Rhograd){
                 rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+                remove_file(Rhogradfile + "-" + std::to_string(i));
             }
         }
     }

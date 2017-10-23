@@ -2,7 +2,8 @@
 #include <rsf.hh>
 #include "file.h"
 #include "data.h"
-#include <config4cpp/Configuration.h>
+#include "utils.h"
+#include "inparse.h"
 
 #define MAXDIM 8
 
@@ -512,21 +513,46 @@ int main(int argc, char* argv[])
     FILE *file;
     off_t pos, start, nsegy=0;
     bool status = false;
+    std::string Datatype;
 
-//    if(argc == 1){
-//        rockseis::rs_error("Need to provide a configuration file name.");
-//    }
-//
-//	// Parse parameters from file
-//	config4cpp::Configuration *  cfg = config4cpp::Configuration::create();
-//	const char *     scope = "";
-//    try {
-//        cfg->parse(argv[1]);
-//    } catch(const config4cpp::ConfigurationException & ex) {
-//        std::cerr << ex.c_str() << std::endl;
-//        cfg->destroy();
-//        return 1;
-//    }
+    std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
+    if(argc < 2) {
+        PRINT_DOC(# RSSEGY2RSS - Convert SEGY to RSS files);
+        PRINT_DOC(# Default configuration file for rssegy2rss);
+        PRINT_DOC();
+        PRINT_DOC(#Parameters );
+        PRINT_DOC(Datatype = "DATA3D";   # Options are DATA2D; or DATA3D);
+
+        rockseis::rs_error("No configuration file given");
+    }
+
+    /* Get parameters from input */
+    if(Inpar->parse(argv[1]) == INPARSE_ERR) 
+    {
+        rockseis::rs_error("Parse error on input config file", argv[1]);
+    }
+    status = false; 
+    if(Inpar->getPar("Datatype", &Datatype) == INPARSE_ERR) status = true;
+
+    if(status == true){
+        rockseis::rs_error("Program terminated due to input errors.");
+    }
+
+    int type = -1; 
+    if(!Datatype.compare("DATA2D"))
+    {
+        type = 2;
+    }
+    if(!Datatype.compare("DATA3D"))
+    {
+        type = 3;
+    }
+    if(type == -1)
+    {
+        type = 3;
+    }
+
+    rockseis::rs_datatype dtype = static_cast<rockseis::rs_datatype>(type);
 
     //Using stdin as input 
     file = stdin;
@@ -600,45 +626,93 @@ int main(int argc, char* argv[])
     t0 = segykey("delrt", trace)/1000.;
     free(trace);
 
-    std::shared_ptr<rockseis::Data3D<float>> Bdata;
-    Bdata = std::make_shared<rockseis::Data3D<float>>(1, ns, dt, t0);
+    std::shared_ptr<rockseis::Data2D<float>> Bdata2D = NULL;
+    std::shared_ptr<rockseis::Data3D<float>> Bdata3D = NULL;
 
-    //Using stdout as output 
-    Bdata->setFile("stdout");
-    // Open data for output
-    status = Bdata->open("o");
-    if(status == FILE_ERR) rockseis::rs_error("Error opening file for writting");
+    rockseis::Point2D<float> *scoords2D = NULL;
+    rockseis::Point2D<float> *gcoords2D = NULL;
+    rockseis::Point3D<float> *scoords3D = NULL;
+    rockseis::Point3D<float> *gcoords3D = NULL;
+    float *ftrace;
 
-    rockseis::Point3D<float> *scoords = (Bdata->getGeom())->getScoords();
-    rockseis::Point3D<float> *gcoords = (Bdata->getGeom())->getGcoords();
-    nsegy = SF_HDRBYTES + ns*4;
-    trace = sf_charalloc (nsegy);
-    float *ftrace = Bdata->getData();
-    for (size_t i=0; i < ntr; i++)
-    {
-        if(nsegy != fread(trace, 1, nsegy, file)){
-            std::cerr << "Error reading data in segy file.\n";
-            exit(1);
-        }
-        // Get coordinates from header
-        sx = segykey("sx", trace);
-        sy = segykey("sy", trace);
-        sz = segykey("selev", trace);
-        gx = segykey("gx", trace);
-        gy = segykey("gy", trace);
-        gz = segykey("gelev", trace);
-        scoords[0].x = fscalco * sx;
-        scoords[0].y = fscalco * sy;
-        scoords[0].z = fscalel * sz;
-        gcoords[0].x = fscalco * gx;
-        gcoords[0].y = fscalco * gy;
-        gcoords[0].z = fscalel * gz;
-		segy2trace(trace + SF_HDRBYTES, ftrace, ns, format);
-        Bdata->writeTraces();
-    }	
-    Bdata->close();
+    switch(dtype){
+        case rockseis::DATA2D:
+            Bdata2D = std::make_shared<rockseis::Data2D<float>>(1, ns, dt, t0);
+            scoords2D = (Bdata2D->getGeom())->getScoords();
+            gcoords2D = (Bdata2D->getGeom())->getGcoords();
+            //Using stdout as output 
+            Bdata2D->setFile("stdout");
+            // Open data for output
+            status = Bdata2D->open("o");
+            if(status == FILE_ERR) rockseis::rs_error("Error opening file for writting");
+
+            nsegy = SF_HDRBYTES + ns*4;
+            trace = sf_charalloc (nsegy);
+            ftrace = Bdata2D->getData();
+            for (size_t i=0; i < ntr; i++)
+            {
+                if(nsegy != fread(trace, 1, nsegy, file)){
+                    std::cerr << "Error reading data in segy file.\n";
+                    exit(1);
+                }
+                // Get coordinates from header
+                sx = segykey("sx", trace);
+                sz = segykey("selev", trace);
+                gx = segykey("gx", trace);
+                gz = segykey("gelev", trace);
+                scoords2D[0].x = fscalco * sx;
+                scoords2D[0].y = fscalel * sz;
+                gcoords2D[0].x = fscalco * gx;
+                gcoords2D[0].y = fscalel * gz;
+                segy2trace(trace + SF_HDRBYTES, ftrace, ns, format);
+                Bdata2D->writeTraces();
+            }	
+            Bdata2D->close();
+
+            break;
+        case rockseis::DATA3D:
+            Bdata3D = std::make_shared<rockseis::Data3D<float>>(1, ns, dt, t0);
+            scoords3D = (Bdata3D->getGeom())->getScoords();
+            gcoords3D = (Bdata3D->getGeom())->getGcoords();
+            //Using stdout as output 
+            Bdata3D->setFile("stdout");
+            // Open data for output
+            status = Bdata3D->open("o");
+            if(status == FILE_ERR) rockseis::rs_error("Error opening file for writting");
+
+            nsegy = SF_HDRBYTES + ns*4;
+            trace = sf_charalloc (nsegy);
+            ftrace = Bdata3D->getData();
+            for (size_t i=0; i < ntr; i++)
+            {
+                if(nsegy != fread(trace, 1, nsegy, file)){
+                    std::cerr << "Error reading data in segy file.\n";
+                    exit(1);
+                }
+                // Get coordinates from header
+                sx = segykey("sx", trace);
+                sy = segykey("sy", trace);
+                sz = segykey("selev", trace);
+                gx = segykey("gx", trace);
+                gy = segykey("gy", trace);
+                gz = segykey("gelev", trace);
+                scoords3D[0].x = fscalco * sx;
+                scoords3D[0].y = fscalco * sy;
+                scoords3D[0].z = fscalel * sz;
+                gcoords3D[0].x = fscalco * gx;
+                gcoords3D[0].y = fscalco * gy;
+                gcoords3D[0].z = fscalel * gz;
+                segy2trace(trace + SF_HDRBYTES, ftrace, ns, format);
+                Bdata3D->writeTraces();
+            }	
+            Bdata3D->close();
+            break;
+        default:
+            rockseis::rs_error("Invalid data type.");
+            break;
+    }
+
     free (trace);
-
     exit (0);
 }
 

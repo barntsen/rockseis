@@ -191,7 +191,9 @@ int main(int argc, char** argv) {
 
 		for(unsigned long int i=0; i<ngathers; i++) {
             vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            remove_file(Vpgradfile + "-" + std::to_string(i));
             rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+            remove_file(Rhogradfile + "-" + std::to_string(i));
         }
     }
     else {
