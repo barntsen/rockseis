@@ -649,7 +649,9 @@ Opt::Opt(const int n)
 //####### Opt Destructor
 Opt::~Opt()
 {
+    free(f);
 	opt_param_free(this->param);
+	opt_result_free(this->result);
 }
 
 void Opt::opt_set_initial_guess(double *x) 
