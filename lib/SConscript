@@ -30,5 +30,6 @@ fwi = env.Library(builddir + 'fwi',['fwi.cpp', 'pml.cpp', 'der.cpp', 'waves.cpp'
 revolve = env.Library(builddir + 'revolve',['revolve.cpp', 'waves.cpp', 'file.cpp'])
 snap = env.Library(builddir + 'snap',['snap.cpp', 'waves.cpp', 'file.cpp'])
 image = env.Library(builddir + 'image',['image.cpp'])
+opt = env.Library(builddir + 'opt',['opt.cpp'])
 if(env['MPI']):
     parallel = mpi.Library(builddir + 'parallel',['parallel.cpp'])

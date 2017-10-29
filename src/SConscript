@@ -41,6 +41,12 @@ if(env['TEST']):
 
     hello_lbfgs = env.Program(prefix + 'hello_lbfgs','hello_lbfgs.cpp', LIBS=['lbfgs'], LIBPATH=['../build'])
     env.Install('../bin',hello_lbfgs)
+
+    hello_opt = env.Program(prefix + 'hello_opt','hello_opt.cpp', LIBS=['opt'], LIBPATH=['../build'])
+    env.Install('../bin',hello_opt)
+
+    hello_jacob = env.Program(prefix + 'hello_jacob','hello_jacob.cpp', LIBS=['lbfgs', 'file', 'utils', 'geometry', 'model', 'data', 'inparse', 'image'], LIBPATH=['../build', '../config4cpp/lib'])
+    env.Install('../bin',hello_jacob)
     
 rsf2rss = env.Program(prefix + 'rsf2rss','rsf2rss.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp', 'sort', 'rsfcpp','rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
 env.Install('../bin/',rsf2rss)
