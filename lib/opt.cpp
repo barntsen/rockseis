@@ -650,8 +650,8 @@ Opt::Opt(const int n)
 Opt::~Opt()
 {
     free(f);
-	opt_param_free(this->param);
-	opt_result_free(this->result);
+	opt_param_free(param);
+	opt_result_free(result);
 }
 
 void Opt::opt_set_initial_guess(double *x) 
