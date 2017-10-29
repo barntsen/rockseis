@@ -228,6 +228,7 @@ int ModellingAcoustic2D<T>::run(){
         Azsnap->setData(waves->getAz(), 0); //Set Az as the field to snap
     }
 
+     this->writeLog("Running 2D Acoustic modelling.");
     // Loop over time
     for(int it=0; it < nt; it++)
     {
@@ -271,6 +272,7 @@ int ModellingAcoustic2D<T>::run(){
         this->writeProgress(it, nt-1, 20, 48);
     }	
 
+    this->writeLog("Modelling is complete.");
     result=MOD_OK;
     return result;
 }
@@ -385,6 +387,7 @@ int ModellingAcoustic3D<T>::run(){
         Azsnap->setData(waves->getAz(), 0); //Set Az as the field to snap
     }
 
+     this->writeLog("Running 3D Acoustic modelling.");
     // Loop over time
     for(int it=0; it < nt; it++)
     {
@@ -436,6 +439,7 @@ int ModellingAcoustic3D<T>::run(){
         this->writeProgress(it, nt-1, 20, 48);
     }	
     
+    this->writeLog("Modelling is complete.");
     result=MOD_OK;
     return result;
 }
@@ -544,6 +548,7 @@ int ModellingElastic2D<T>::run(){
         Vzsnap->setData(waves->getVz(), 0); //Set Vz as field to snap
     }
 
+     this->writeLog("Running 2D Elastic modelling.");
     // Loop over time
     for(int it=0; it < nt; it++)
     {
@@ -586,6 +591,7 @@ int ModellingElastic2D<T>::run(){
         this->writeProgress(it, nt-1, 20, 48);
     }	
     
+    this->writeLog("Modelling is complete.");
     result=MOD_OK;
     return result;
 }
@@ -714,6 +720,7 @@ int ModellingElastic3D<T>::run(){
         Vzsnap->setData(waves->getVz(), 0); //Set Vz as field to snap
     }
 
+     this->writeLog("Running 3D Elastic modelling.");
     // Loop over time
     for(int it=0; it < nt; it++)
     {
@@ -765,6 +772,7 @@ int ModellingElastic3D<T>::run(){
         this->writeProgress(it, nt-1, 20, 48);
     }	
     
+    this->writeLog("Modelling is complete.");
     result=MOD_OK;
     return result;
 }

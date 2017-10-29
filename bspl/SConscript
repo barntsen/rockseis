@@ -1,0 +1,12 @@
+# SConstruct initializing
+import os
+Import('envc')
+
+# Setup
+libdir = '../build/'
+
+#  Library
+bspl_lib = 'bspl.c'
+libmains = Split(bspl_lib)
+
+envc.Library(libdir + 'bspl', libmains)

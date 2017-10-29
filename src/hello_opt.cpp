@@ -63,6 +63,6 @@ int main(int argc, char* argv[]) {
     char buffer[512];
     snprintf(buffer,512,"L-BFGS algorithm finished with return status:\n%s\n",opt->getMsg());
     fprintf(stderr, "%s", buffer);
-
-	//exit(0);
+    
+    return 0;
 }
