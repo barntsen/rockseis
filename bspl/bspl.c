@@ -450,6 +450,7 @@ void bspl_bisp1d(float *mod, bspl_1dspline spline)
 	int i1, l, l1;
 	float arg;
 	float h[6];
+    for(i1=0; i1<6; i1++) h[1]=0.0;
 	float sp = 0.0;
 
 	int nx=spline->ntx;
