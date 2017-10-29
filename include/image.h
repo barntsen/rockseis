@@ -35,6 +35,7 @@ public:
     void setNhx(int nhx) { (this->getGeom())->setN(4, nhx); }
     void setNhz(int nhz) { (this->getGeom())->setN(6, nhz); }
     void setAllocated(bool flag) { allocated = flag; } ///< Sets allocated image flag 
+    void setImagefile(std::string file) { imagefile = file; }  ///< Sets name of file
 
     // File input/output
     /** Read and write image files */
@@ -75,6 +76,7 @@ public:
     void setNhy(int nhy) { (this->getGeom())->setN(5, nhy); }
     void setNhz(int nhz) { (this->getGeom())->setN(6, nhz); }
     void setAllocated(bool flag) { allocated = flag; } ///< Sets allocated image flag 
+    void setImagefile(std::string file) { imagefile = file; }  ///< Sets name of file
 
     // File input/output
     /** Read and write image files */
