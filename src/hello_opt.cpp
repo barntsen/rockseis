@@ -39,17 +39,16 @@ int main(int argc, char* argv[]) {
 	/* L-BFGS parameters */
     int N=1;
 
-    //std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(N));
-    rockseis::Opt opt(N);
+    std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(N));
 
 	/* Initialize the parameters for the L-BFGS optimization. */
 
     /* Initialize x */
     double x[1];
     x[0] = 1;
-    opt.opt_set_initial_guess(&x[0]);
+    opt->opt_set_initial_guess(&x[0]);
 
-    opt.setGtol(0.9);
+    opt->setGtol(0.9);
 
     /*
        Start the L-BFGS optimization; this will invoke the callback functions
@@ -57,13 +56,13 @@ int main(int argc, char* argv[]) {
        */
     //opt->opt_steepest_descent(evaluate, progress);
     //opt->opt_conjugate_gradient_pr(evaluate, progress);
-    opt.opt_lbfgs(evaluate, progress);
+    opt->opt_lbfgs(evaluate, progress);
     //opt->opt_heat_bath(evaluate, progress);
 
     /* Report the result. */
     char buffer[512];
-    snprintf(buffer,512,"L-BFGS algorithm finished with return status:\n%s\n",opt.getMsg());
+    snprintf(buffer,512,"L-BFGS algorithm finished with return status:\n%s\n",opt->getMsg());
     fprintf(stderr, "%s", buffer);
 
-	exit(0);
+	//exit(0);
 }
