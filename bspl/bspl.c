@@ -479,7 +479,7 @@ void bspl_bisp1d(float *mod, bspl_1dspline spline)
 		sp = 0.0;
 		for(i1=1; i1<=kx1; i1++){
 			l1 = l1+1;
-			sp = sp + spline->c[l1-1]*h[i1-1];
+			sp = sp + h[i1-1] * spline->c[l1-1];
 		}  
 		mod[i-1] = sp;
 	}
