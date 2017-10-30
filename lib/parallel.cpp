@@ -342,6 +342,8 @@ void MPImodeling::sendResult(workModeling_t _work) {
 
 	result.id = _work.id;
 	result.status = _work.status;
+    result.fromRank = this->getRank();
+    result.MPItag = _work.MPItag;
 
 	MPI_Send(&result,1,MPIresult,0,0,MPI_COMM_WORLD);
 
