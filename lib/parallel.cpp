@@ -79,7 +79,7 @@ void MPImodeling::initTypes() {
 	// Work type
 	int count = 5;
 	int lengths[5] = {1,1,1,1,1};
-	MPI_Datatype types[6] = {MPI_LONG_INT,MPI_INT,MPI_INT,MPI_LONG_INT,MPI_LONG_INT};
+	MPI_Datatype types[6] = {MPI_LONG_INT,MPI_INT,MPI_INT,MPI_UNSIGNED_LONG,MPI_UNSIGNED_LONG};
 	MPI_Aint offsets[6];
 	offsets[0] = offsetof(workModeling_t,id);
 	offsets[1] = offsetof(workModeling_t,status);
