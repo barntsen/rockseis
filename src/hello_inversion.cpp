@@ -5,11 +5,13 @@
 using namespace rockseis;
 
 int main(int argc, char** argv) {
-    int status;
-    Inversion<float> inv = Inversion<float>(&argc,argv);
-    status = inv.runAcousticfwigrad2d();
 
-    std::cerr << status << std::endl;
+	// Initializing MPI
+    std::shared_ptr<MPImodeling> mpi (new MPImodeling(&argc,&argv));
+
+    Inversion<float> inv = Inversion<float>();
+    inv.runAcousticfwigrad2d(mpi);
+
     return 0;
 }
 
