@@ -33,3 +33,4 @@ image = env.Library(builddir + 'image',['image.cpp', 'model.cpp'])
 opt = env.Library(builddir + 'opt',['opt.cpp'])
 if(env['MPI']):
     parallel = mpi.Library(builddir + 'parallel',['parallel.cpp'])
+    inversion = mpi.Library(builddir + 'inversion',['inversion.cpp'])
