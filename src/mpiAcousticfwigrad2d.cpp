@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC(Psnapfile = "Psnaps2d.rss"; # File to output temporary snapshots);
 			PRINT_DOC();
 		}
-        exit(1);
+        return 1;
     }
     bool status;
 	/* General input parameters */

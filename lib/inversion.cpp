@@ -5,8 +5,10 @@ namespace rockseis {
 
 // =============== ABSTRACT MODEL CLASS =============== //
 template<typename T>
-Inversion<T>::Inversion() {
-
+Inversion<T>::Inversion(int *argc, char **argv) {
+    fwicfg = "fwi.cfg";
+	// Initializing MPI
+    mpi = std::make_shared<MPImodeling>(argc,&argv);
 }
 
 template<typename T>
@@ -15,7 +17,7 @@ Inversion<T>::~Inversion() {
 }
 
 template<typename T>
-void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
+int Inversion<T>::runAcousticfwigrad2d() {
     bool status;
 	/* General input parameters */
 	int lpml;
@@ -279,8 +281,7 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
             }
         }
     }
-
-
+    return 0;
 }
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //

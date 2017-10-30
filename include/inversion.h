@@ -28,12 +28,13 @@ namespace rockseis {
 template<typename T>
 class Inversion {
 public:
-    Inversion(); ///<Constructor
+    Inversion(int *argc, char **argv); ///<Constructor
     ~Inversion(); ///<Destructor
-    void runAcousticfwigrad2d(MPImodeling *mpi);
+    int runAcousticfwigrad2d();
 
 private:
     std::string fwicfg;
+    std::shared_ptr<MPImodeling> mpi;
 };
 
 }
