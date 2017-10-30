@@ -11,12 +11,12 @@ JOB INFORMATION
 Jobs: 5, #Remaining jobs: 0
 
 #JobID: CPUID Status (0=not started, 1=running, 2=finished). 
-#0000:  0001  2  start: Mon Oct 30 21:46:22 2017, end: Mon Oct 30 21:46:24 2017, runtime: 2 sec (0 min)
-#0001:  0002  2  start: Mon Oct 30 21:46:22 2017, end: Mon Oct 30 21:46:24 2017, runtime: 2 sec (0 min)
-#0002:  0003  2  start: Mon Oct 30 21:46:22 2017, end: Mon Oct 30 21:46:24 2017, runtime: 2 sec (0 min)
-#0003:  0003  2  start: Mon Oct 30 21:46:24 2017, end: Mon Oct 30 21:46:26 2017, runtime: 2 sec (0 min)
-#0004:  0001  2  start: Mon Oct 30 21:46:24 2017, end: Mon Oct 30 21:46:26 2017, runtime: 2 sec (0 min)
+#0000:  0001  2  start: Mon Oct 30 22:28:41 2017, end: Mon Oct 30 22:28:43 2017, runtime: 2 sec (0 min)
+#0001:  0002  2  start: Mon Oct 30 22:28:41 2017, end: Mon Oct 30 22:28:43 2017, runtime: 2 sec (0 min)
+#0002:  0003  2  start: Mon Oct 30 22:28:41 2017, end: Mon Oct 30 22:28:43 2017, runtime: 2 sec (0 min)
+#0003:  0003  2  start: Mon Oct 30 22:28:43 2017, end: Mon Oct 30 22:28:45 2017, runtime: 2 sec (0 min)
+#0004:  0002  2  start: Mon Oct 30 22:28:43 2017, end: Mon Oct 30 22:28:45 2017, runtime: 2 sec (0 min)
 Jobs: 5, #Remaining jobs: 0
 
-Last updated: Mon Oct 30 21:46:26 2017
+Last updated: Mon Oct 30 22:28:45 2017
 

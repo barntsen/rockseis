@@ -24,16 +24,15 @@
 namespace rockseis {
 // =============== MPI WORK STRUCTS =============== //
 typedef struct {
-	unsigned long id;
+	long int id;
 	int status;
 	int MPItag;
-    char pname[MPI_MAX_PROCESSOR_NAME];
 	time_t start;
 	time_t end;
 }  workModeling_t;
 
 typedef struct {
-	unsigned long int id;
+	long int id;
 	int status;
 	int fromRank;
 	int MPItag;

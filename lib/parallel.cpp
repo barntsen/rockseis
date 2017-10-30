@@ -77,23 +77,22 @@ MPImodeling::~MPImodeling() {
 
 void MPImodeling::initTypes() {
 	// Work type
-	int count = 6;
-	int lengths[6] = {1,1,1,MPI_MAX_PROCESSOR_NAME,1, 1};
-	MPI_Datatype types[6] = {MPI_UNSIGNED_LONG,MPI_INT,MPI_INT,MPI_CHAR,MPI_LONG_INT,MPI_LONG_INT};
+	int count = 5;
+	int lengths[5] = {1,1,1,1,1};
+	MPI_Datatype types[6] = {MPI_LONG_INT,MPI_INT,MPI_INT,MPI_LONG_INT,MPI_LONG_INT};
 	MPI_Aint offsets[6];
 	offsets[0] = offsetof(workModeling_t,id);
 	offsets[1] = offsetof(workModeling_t,status);
 	offsets[2] = offsetof(workModeling_t,MPItag);
-	offsets[3] = offsetof(workModeling_t,pname);
-	offsets[4] = offsetof(workModeling_t,start);
-	offsets[5] = offsetof(workModeling_t,end);
+	offsets[3] = offsetof(workModeling_t,start);
+	offsets[4] = offsetof(workModeling_t,end);
 	MPI_Type_create_struct(count,lengths,offsets,types,&MPIwork);
 	MPI_Type_commit(&MPIwork);
 
 	// Result type
 	int countR = 4;
 	int lengthsR[4] = {1,1,1,1};
-	MPI_Datatype typesR[4] = {MPI_UNSIGNED_LONG,MPI_INT,MPI_INT,MPI_INT};
+	MPI_Datatype typesR[4] = {MPI_LONG_INT,MPI_INT,MPI_INT,MPI_INT};
 	MPI_Aint offsetsR[4];
 	offsetsR[0] = offsetof(workResult_t,id);
 	offsetsR[1] = offsetof(workResult_t,status);
@@ -332,8 +331,6 @@ workModeling_t MPImodeling::receiveWork() {
 	MPI_Status status;
 	// Receiving
 	MPI_Recv(&work,1,MPIwork,0,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
-    // Send name //BUG
-	//MPI_Send(this->getName(),MPI_MAX_PROCESSOR_NAME,MPI_CHAR,0,0,MPI_COMM_WORLD); //BUG
 	// Updating struct
 	work.MPItag = status.MPI_TAG;
 

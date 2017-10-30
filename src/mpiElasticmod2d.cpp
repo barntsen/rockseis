@@ -184,7 +184,7 @@ int main(int argc, char** argv) {
         }
 
 		// Create work queue
-		for(unsigned long int i=0; i<ngathers; i++) {
+		for(long int i=0; i<ngathers; i++) {
 			// Work struct
 			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
 			mpi.addWork(work);
