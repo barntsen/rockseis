@@ -22,6 +22,10 @@
 #include "sort.h"
 #include <inparse.h>
 
+#define RUN_F_GRAD 0
+#define RUN_BS_PROJ 1
+#define BREAK_LOOP 2
+
 namespace rockseis {
 
 // ##### INVERSION CLASS

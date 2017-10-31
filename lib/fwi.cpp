@@ -14,6 +14,7 @@ Fwi<T>::Fwi() {
 	prog.current = 0;
     prog.persec = 0;
     misfit_type = DIFFERENCE;
+    misfit = 0.0;
 }
 
 template<typename T>
@@ -39,6 +40,7 @@ Fwi<T>::Fwi(int _order, int _snapinc) {
     prog.persec = 1;
 
     misfit_type = DIFFERENCE;
+    misfit = 0.0;
 }
 
 template<typename T>
@@ -215,6 +217,81 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
 }
 
 template<typename T>
+void FwiAcoustic2D<T>::computeMisfit(){
+    size_t ntr = datamodP->getNtrace();
+    if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    size_t nt = datamodP->getNt();
+    if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+
+    T* mod = datamodP->getData();
+    T* rec = dataP->getData();
+    T* wei = NULL;
+    if(dataweightset) 
+    {
+        wei = dataweight->getData();
+    }
+    size_t itr, it;
+    T res = 0.0;
+    T misfit = 0.0;
+    Index I(nt, ntr);
+    switch(this->getMisfit_type()){
+        case DIFFERENCE:
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                   res = mod[I(it, itr)] - rec[I(it, itr)];
+                   if(dataweightset)
+                   {
+                       res *= wei[I(it, itr)];
+                   }
+                   misfit += 0.5*res*res;
+                }
+            }
+            break;
+        case CORRELATION:
+            T norm1, norm2;
+            for(itr=0; itr<ntr; itr++){
+                norm1 = 0.0;
+                norm2 = 0.0;
+                
+                for(it=0; it<nt; it++){
+                   norm1 += mod[I(it, itr)]*mod[I(it, itr)];
+                   norm2 += rec[I(it, itr)]*rec[I(it, itr)];
+                }
+
+                norm1 = sqrt(norm1);
+                norm2 = sqrt(norm2);
+                if(norm1 ==0 ) norm1= 1.0;
+                if(norm2 ==0 ) norm2= 1.0;
+
+                for(it=0; it<nt; it++){
+                    res = (-1.0)*(mod[I(it, itr)]*rec[I(it, itr)]/(norm1*norm2));
+                   if(dataweightset)
+                   {
+                       res *= wei[I(it, itr)];
+                   }
+                   misfit += res;
+                }
+            }
+
+            break;
+        default:
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                   res = mod[I(it, itr)] - rec[I(it, itr)];
+                   if(dataweightset)
+                   {
+                       res *= wei[I(it, itr)];
+                   }
+                   misfit += 0.5*res*res;
+                }
+            }
+            break;
+    }
+    // Set the final misfit value
+    this->setMisfit(misfit);
+}
+
+template<typename T>
 void FwiAcoustic2D<T>::computeResiduals(){
     size_t ntr = datamodP->getNtrace();
     if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
@@ -240,7 +317,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
                    res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
                    if(dataweightset)
                    {
-                       res[I(it, itr)] *= wei[I(it, itr)];
+                       res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -268,7 +345,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
                     res[I(it, itr)]=(-1.0)*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
                    if(dataweightset)
                    {
-                       res[I(it, itr)] *= wei[I(it, itr)];
+                       res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -280,7 +357,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
                     res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
                    if(dataweightset)
                    {
-                       res[I(it, itr)] *= wei[I(it, itr)];
+                       res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -351,6 +428,9 @@ int FwiAcoustic2D<T>::run(){
     // Create images 
     vpgrad->allocateImage();
     rhograd->allocateImage();
+
+    // Compute msifit
+    computeMisfit();
 
     // Compute residuals
     computeResiduals();
@@ -471,6 +551,9 @@ int FwiAcoustic2D<T>::run_optimal(){
             if(this->datamodPset){
                 waves_fw->recordData(this->datamodP, GMAP, capo);
             }
+
+            // Compute msifit
+            computeMisfit();
 
             // Compute residuals
             computeResiduals();
@@ -661,7 +744,7 @@ void FwiAcoustic3D<T>::computeResiduals(){
                    res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
                    if(dataweightset)
                    {
-                       res[I(it, itr)] *= wei[I(it, itr)];
+                       res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -689,7 +772,7 @@ void FwiAcoustic3D<T>::computeResiduals(){
                     res[I(it, itr)]=(-1.0)*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
                    if(dataweightset)
                    {
-                       res[I(it, itr)] *= wei[I(it, itr)];
+                       res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -699,6 +782,10 @@ void FwiAcoustic3D<T>::computeResiduals(){
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
                     res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+                   if(dataweightset)
+                   {
+                       res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                   }
                 }
             }
             break;
@@ -1213,8 +1300,8 @@ void FwiElastic2D<T>::computeResiduals(){
                    resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
                    if(dataweightset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)];
+                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -1257,8 +1344,8 @@ void FwiElastic2D<T>::computeResiduals(){
                     resz[I(it, itr)]=dt*((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3)) +resz[I(it-1, itr)];
                    if(dataweightset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)];
+                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -1270,8 +1357,8 @@ void FwiElastic2D<T>::computeResiduals(){
                    resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
                    if(dataweightset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)];
+                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -1865,9 +1952,9 @@ void FwiElastic3D<T>::computeResiduals(){
                    resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
                    if(dataweightset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)];
-                       resy[I(it, itr)] *= wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)];
+                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resy[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -1926,9 +2013,9 @@ void FwiElastic3D<T>::computeResiduals(){
                     resz[I(it, itr)]=dt*((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3)) +resz[I(it-1, itr)];
                    if(dataweightset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)];
-                       resy[I(it, itr)] *= wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)];
+                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resy[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }
@@ -1941,9 +2028,9 @@ void FwiElastic3D<T>::computeResiduals(){
                    resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
                    if(dataweightset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)];
-                       resy[I(it, itr)] *= wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)];
+                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resy[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
                 }
             }

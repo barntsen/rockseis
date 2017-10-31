@@ -40,13 +40,17 @@ public:
 	void append(); ///< Open standard output for writting without overwritting
 	bool append(std::string filename); ///< Open a file for writting without overwritting
 	void close();  ///< Close file
-	
-	// Write functions
-	void writeHeader(); ///< Output header to file
+
+    void createEmpty(); /// Create an empty file with size taken from geometry and precision given by data_format.
+
+    // Seek functions
 	void seekp(off_t pos) { fstream.seekp(pos); }
 	void seekg(off_t pos) { fstream.seekg(pos); }
 	void seekp(off_t pos, std::ios_base::seekdir way) { fstream.seekp(pos, way); }
 	void seekg(off_t pos, std::ios_base::seekdir way) { fstream.seekg(pos, way); }
+	
+	// Write functions
+	void writeHeader(); ///< Output header to file
 
 	void write(char *buffer, size_t n); ///< Writes n chars to file
 	void write(char *buffer, size_t n, off_t pos); ///< Writes n chars to file starting from pos

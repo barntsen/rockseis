@@ -14,4 +14,4 @@ sfmath <Rho2d.rsf x=pert.rsf output="in+x" out=stdout > Rho2d_pert.rsf
 rsrsf2rss <Rho2d_pert.rsf > Rho2d_pert.rss
 
 mpirun -np 4 rsmpiAcousticmod2d mod.cfg 
-#mpirun -np 4 rsmpiAcousticfwigrad2d fwi.cfg 
+mpirun -np 4 rsmpiAcousticfwigrad2d fwi.cfg 

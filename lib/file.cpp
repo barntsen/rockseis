@@ -149,6 +149,35 @@ void File::close()
 	fstream.close();
 }
 
+void File::createEmpty()
+{
+    if(data_format < 0) rs_error("File::createEmpty: data_fomat not set!");
+    if(Nheader && header_format < 0) rs_error("File::createEmpty: header_fomat not set!");
+    size_t Ntot = geometry->getNtot();
+    size_t N1 = geometry->getN(1);
+    size_t N2 = Ntot/N1;
+    char ch = {0};
+    long long i,j,k; 
+    writeHeader();
+    seekp(startofdata);
+    for(i=0; i < N2; i++){
+        // Write header values
+        if(Nheader){
+            for(j=0; j < Nheader; j++){
+                for(k=0; k < header_format; k++){
+                    write(&ch, 1);
+                }
+            }
+        }
+        // Write data values
+        for(j=0; j < N1; j++){
+            for(k=0; k < data_format; k++){
+                 write(&ch, 1);
+            }
+        }
+    }
+}
+
 void File::writeHeader()
 {
 	//Get current position 

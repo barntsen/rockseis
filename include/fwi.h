@@ -75,6 +75,8 @@ public:
     void setIncore(bool val) { incore = val; } ///< Sets optimal checkpoint incore flag
     void setNcheck(int val) { ncheck = val; } ///< Sets optimal checkpointing number of snaps 
     void setSnapfile(std::string file) { snapfile = file; } ///< Sets checkpoint filename
+    void setMisfit(T val) { misfit = val; } ///< Sets data misfit value
+    T getMisfit() { return misfit; }   ///< Gets misfit value
     int getNcheck() { return ncheck; } ///< Gets the number of checkpoints for the optimal checkpointing scheme
     bool getIncore() { return incore; } ///< Gets the incore flag for the optimal checkpointing scheme
     rs_fwimisfit getMisfit_type() { return misfit_type; }  ///< Gets misfit type
@@ -99,6 +101,7 @@ private:
     rs_fwimisfit misfit_type; ///< Misfit type can be either difference or correlation
     int ncheck; ///< Number of checkpoints in optimal checkpointing
     std::string snapfile;
+    T misfit; ///< Misfit value
 };
 
 /** The 2D Acoustic Fwi class
@@ -126,6 +129,7 @@ public:
 
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho);
 
+    void computeMisfit();
     void computeResiduals();
     ~FwiAcoustic2D();	///< Destructor
 

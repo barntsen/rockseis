@@ -54,6 +54,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC(Vpgradfile = "Vpgrad2d.rss"; # File to output gradient with respect to Vp);
 			PRINT_DOC(Rhogradfile = "Rhograd2d.rss"; # File to output gradient with respect to Rho);
 			PRINT_DOC(Wavgradfile = "Wavgrad2d.rss"; # File to output gradient with respect to Wav);
+			PRINT_DOC(Misfitfile = "Misfit.rss"; # File to output data misfit values);
 			PRINT_DOC(Psnapfile = "Psnaps2d.rss"; # File to output temporary snapshots);
 			PRINT_DOC();
 		}
@@ -77,6 +78,7 @@ int main(int argc, char** argv) {
     std::string Vpgradfile;
     std::string Rhogradfile;
     std::string Wavgradfile;
+    std::string Misfitfile;
     std::string Psnapfile;
     std::string Precordfile;
     std::string Pmodelledfile;
@@ -110,6 +112,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Vpgradfile", &Vpgradfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Rhogradfile", &Rhogradfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavgradfile", &Wavgradfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Misfitfile", &Misfitfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Presidualfile", &Presidualfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Pmodelledfile", &Pmodelledfile) == INPARSE_ERR) status = true;
@@ -147,6 +150,9 @@ int main(int argc, char** argv) {
     // Create an interpolation class
     std::shared_ptr<rockseis::Interp<float>> interp (new rockseis::Interp<float>(SINC));
 
+    // Create a file to output data misfit values
+    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
+
 	if(mpi.getRank() == 0) {
 		// Master
         Sort->createShotmap(Precordfile); 
@@ -160,6 +166,14 @@ int main(int argc, char** argv) {
         wavgrad = std::make_shared<rockseis::Data2D<float>>(1, source->getNt(), source->getDt(), 0.0);
         wavgrad->setFile(Wavgradfile);
         wavgrad->createEmpty(ngathers);
+
+        // Misfit file creation
+        Fmisfit->output(Misfitfile);
+        Fmisfit->setN(1,ngathers);
+        Fmisfit->setD(1,1.0);
+        Fmisfit->setData_format(sizeof(float));
+        Fmisfit->createEmpty();
+        Fmisfit->close();
 
         // Create a data class for the recorded data
         std::shared_ptr<rockseis::Data2D<float>> shot2D (new rockseis::Data2D<float>(Precordfile));
@@ -291,6 +305,12 @@ int main(int argc, char** argv) {
                 rhograd->write();
                 wavgrad->putTrace(Wavgradfile, work.id);
 
+                // Output misfit
+                Fmisfit->append(Misfitfile);
+                float val = fwi->getMisfit();
+                Fmisfit->write(&val, 1, work.id*sizeof(float));
+                Fmisfit->close();
+
                 // Output modelled and residual data
                 shotmod2Di = std::make_shared<rockseis::Data2D<float>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
                 shotmod2Di->setFile(Pmodelledfile);
@@ -301,7 +321,6 @@ int main(int argc, char** argv) {
                 shotres2Di->setFile(Presidualfile);
                 interp->interp(shotres2D, shotres2Di);
                 Sort->put2DGather(shotres2Di, work.id);
-
                 
                 // Reset all classes
                 shot2D.reset();
