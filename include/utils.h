@@ -11,7 +11,7 @@
 #define SMAP 0
 #define GMAP 1
 
-#define PRINT_DOC(s) std::cerr << (#s) << std::endl;
+#define PRINT_DOC(s) std::cout << (#s) << std::endl;
 
 namespace rockseis {
 
