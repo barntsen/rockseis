@@ -1,6 +1,7 @@
 #include <valarray>
 #include <rsf.hh>
 #include "file.h"
+#include "util.h"
 
 #define MAXDIM 8
 
@@ -11,8 +12,8 @@ int main(int argc, char* argv[])
     bool status;
     status = in->input();
     if(status == FILE_ERR){
-	    std::cout << "Error reading from input file. \n";
-	    exit(1);
+        rockseis::rs_error("rsrss2rsf: Error opening file for input.");
+        std::cerr << status << std::endl;
     }
 
     madagascar::oRSF out;

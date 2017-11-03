@@ -38,13 +38,17 @@ bool File::input()
     memset(buffer, 0, sizeof(buffer));
     fstream.open("/dev/stdin", std::ios::in | std::ios::binary);
     if(fstream.fail()){
+        rs_warning("File::input: file failed to open.");
         status = FILE_ERR; 
     }else{
         //Read header and check if file is of Rockseis format
+        fstream.seekg(0);
         fstream.read(&buffer[0], MAGIC_NUMBER_LENGTH*sizeof(char));
         if(strcmp(buffer, MAGIC_NUMBER))
         {
             // Fail 
+            std::cerr << buffer << std::endl;
+            rs_error("File::input(): File is not a RSS file.");
             status = FILE_ERR;
         }else{
             //Success
