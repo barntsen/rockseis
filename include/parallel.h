@@ -93,6 +93,7 @@ public:
 	void performWork();					///< Perform all work in work queue
 	workModeling_t receiveWork();				///< Receive work from slave
 	void sendResult(workModeling_t _work);			///< Send result to master
+    void clearWork() { work.clear(); } ///< Clears all elements of work
 private:
 	// Variables
 	MPI_Datatype MPIwork;					// MPI type for work

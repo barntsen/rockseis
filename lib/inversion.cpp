@@ -164,6 +164,16 @@ void Inversion<T>::runAcousticfwigrad2d(std::shared_ptr<MPImodeling> mpi) {
             rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
             remove_file(Rhogradfile + "-" + std::to_string(i));
         }
+        // Clear work vector to prepare for next work
+        mpi->clearWork();
+        shot2D.reset();
+        shotmod2D.reset();
+        shotres2D.reset();
+        lmodel.reset();
+        vpgrad.reset();
+        rhograd.reset();
+        wavgrad.reset();
+
     }
     else {
         /* Slave */
