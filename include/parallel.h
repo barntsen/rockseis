@@ -57,6 +57,7 @@ public:
 	// Set functions
     void setLogfile(std::string name) { logfile = name; }    ///< Set log file name
 
+    void finalize() { MPI_Finalize(); } ///< Finalize MPI
 
 	// Send and receive functions
 	virtual void performWork() = 0;

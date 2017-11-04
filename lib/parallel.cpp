@@ -36,6 +36,9 @@ MPI::MPI(int *argc, char ***argv) {
 }
 
 MPI::~MPI() {
+    int flag;
+    MPI_Finalized(&flag);
+    if(!flag) MPI_Finalize();
 }
 
 int MPI::getNrank() {
@@ -51,7 +54,7 @@ int MPI::getRank() {
 }
 
 void MPI::stopSlaves() {
-	for(int i=0; i<nrank; i++) {
+	for(int i=1; i<nrank; i++) {
 		MPI_Send(0,0,MPI_INT,i,MPI_TAG_DIE,MPI_COMM_WORLD);
 	}
 }
@@ -276,7 +279,7 @@ void MPImodeling::sendWork(std::shared_ptr<workModeling_t> work, const int rank)
 	// Changing status on work and sending to slave
 	work->status = WORK_RUNNING;
 	work->start = time(NULL);
-    work->MPItag = rank;
+    work->MPItag = 0;
 	MPI_Send(work.get(),1,MPIwork,rank,0,MPI_COMM_WORLD);
 }
 
@@ -352,9 +355,8 @@ workResult_t MPImodeling::receiveResult() {
 	workResult_t result;
 	MPI_Status status;
 	// Receiving 
-	MPI_Recv(&result,1,MPIresult,MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&status);
+	MPI_Recv(&result,1,MPIresult,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
 	// Updating struct
-	result.fromRank = status.MPI_SOURCE;
 	result.MPItag = status.MPI_TAG;
 
 	return result;
@@ -362,8 +364,10 @@ workResult_t MPImodeling::receiveResult() {
 
 void MPImodeling::checkResult(workResult_t result) {
 	if(result.status != WORK_FINISHED) {
-		// Job failed
-		work[result.id]->status = WORK_NOT_STARTED;
+        if(result.fromRank != 0){
+            // Job failed
+            work[result.id]->status = WORK_NOT_STARTED;
+        }
 	}
 	else {
 		// Job finished successfully

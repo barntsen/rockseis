@@ -2,4 +2,4 @@ sh makesurvey.sh
 if [ ! -d "Results" ]; then
     mkdir Results
 fi
-rsAcousticmod2d mod.cfg 
+mpirun rsmpiAcousticmod2d mod.cfg 
