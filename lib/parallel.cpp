@@ -36,7 +36,6 @@ MPI::MPI(int *argc, char ***argv) {
 }
 
 MPI::~MPI() {
-	MPI_Finalize();
 }
 
 int MPI::getNrank() {

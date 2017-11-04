@@ -7,7 +7,7 @@ using namespace rockseis;
 
 /* Global variables */
 std::shared_ptr<MPImodeling> mpi;
-Inversion<float> inv = Inversion<float>();
+std::shared_ptr<Inversion<float>> inv;
 std::string vplsfile = "vp_ls.rss";
 std::string rholsfile = "rho_ls.rss";
 std::string sourcelsfile = "source_ls.rss";
@@ -52,7 +52,7 @@ void evaluate(rockseis::OptInstancePtr instance)
     task = RUN_F_GRAD;
     std::cerr << "Rank: " << mpi->getRank() << ": Giving order to run gradient." << std::endl; 
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    inv.runAcousticfwigrad2d(mpi);
+    inv->runAcousticfwigrad2d(mpi);
 
     //Read gradient
     std::shared_ptr<rockseis::ModelAcoustic2D<float>> modelgrad (new rockseis::ModelAcoustic2D<float>(vpgradfile, rhogradfile, 1 ,0));
@@ -94,6 +94,8 @@ int main(int argc, char** argv) {
     // Initializing MPI
     mpi = std::make_shared<rockseis::MPImodeling>(&argc,&argv);
     int task; 
+
+    inv = std::make_shared<rockseis::Inversion<float>>();
 
     //MASTER
     if(mpi->getRank() == 0){
@@ -154,7 +156,7 @@ int main(int argc, char** argv) {
             {
                 case RUN_F_GRAD:
                     std::cerr << "Rank: " << mpi->getRank() << ": Running gradient." << std::endl; 
-                    inv.runAcousticfwigrad2d(mpi);
+                    inv->runAcousticfwigrad2d(mpi);
                     break;
                 case BREAK_LOOP:
                     std::cerr << "Rank: " << mpi->getRank() << ": Leaving the loop." << std::endl; 
@@ -166,7 +168,9 @@ int main(int argc, char** argv) {
             }
         }
 
-        return 0;
     }
+
+	MPI_Finalize();
+    return 0;
 }
 
