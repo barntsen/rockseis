@@ -346,7 +346,6 @@ void MPImodeling::sendResult(workModeling_t _work) {
     result.MPItag = _work.MPItag;
 
 	MPI_Send(&result,1,MPIresult,0,0,MPI_COMM_WORLD);
-
 }
 
 workResult_t MPImodeling::receiveResult() {
@@ -354,7 +353,7 @@ workResult_t MPImodeling::receiveResult() {
 	workResult_t result;
 	MPI_Status status;
 	// Receiving 
-	MPI_Recv(&result,1,MPIresult,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+	MPI_Recv(&result,1,MPIresult,MPI_ANY_SOURCE,0,MPI_COMM_WORLD,&status);
 	// Updating struct
 	result.fromRank = status.MPI_SOURCE;
 	result.MPItag = status.MPI_TAG;

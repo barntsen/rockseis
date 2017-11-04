@@ -144,7 +144,7 @@ void Inversion<T>::runAcousticfwigrad2d(std::shared_ptr<MPImodeling> mpi) {
 		// Create work queue
 		for(long int i=0; i<ngathers; i++) {
 			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0});
+			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
 			mpi->addWork(work);
 		}
 
@@ -166,6 +166,7 @@ void Inversion<T>::runAcousticfwigrad2d(std::shared_ptr<MPImodeling> mpi) {
         }
         // Clear work vector to prepare for next work
         mpi->clearWork();
+        Sort.reset();
         shot2D.reset();
         shotmod2D.reset();
         shotres2D.reset();
