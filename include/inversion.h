@@ -34,7 +34,9 @@ class Inversion {
 public:
     Inversion(); ///<Constructor
     ~Inversion(); ///<Destructor
-    void runAcousticfwigrad2d(std::shared_ptr<MPImodeling> mpi);
+    void runAcousticfwigrad2d(MPImodeling *mpi);
+
+    //void runAcousticfwigrad2d(std::shared_ptr<MPImodeling> mpi);
 
 private:
     std::string fwicfg;

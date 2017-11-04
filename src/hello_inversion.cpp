@@ -6,7 +6,8 @@
 using namespace rockseis;
 
 /* Global variables */
-std::shared_ptr<MPImodeling> mpi;
+//std::shared_ptr<MPImodeling> mpi;
+MPImodeling *mpi;
 std::shared_ptr<Inversion<float>> inv;
 std::string vplsfile = "vp_ls.rss";
 std::string rholsfile = "rho_ls.rss";
@@ -92,7 +93,8 @@ void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
 int main(int argc, char** argv) {
 
     // Initializing MPI
-    mpi = std::make_shared<rockseis::MPImodeling>(&argc,&argv);
+    //mpi = std::make_shared<rockseis::MPImodeling>(&argc,&argv);
+    mpi =  new rockseis::MPImodeling(&argc,&argv);
     int task; 
 
     inv = std::make_shared<rockseis::Inversion<float>>();
@@ -170,7 +172,7 @@ int main(int argc, char** argv) {
 
     }
 
-	MPI_Finalize();
+    delete mpi;
     return 0;
 }
 
