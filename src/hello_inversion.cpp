@@ -127,8 +127,8 @@ int main(int argc, char** argv) {
         model0->writeModel();
         source0->setFile(sourcelsfile);
         source0->write();
-
         opt->setGtol(0.9);
+        opt->setMax_linesearch(1);
 
         // Start the L-BFGS optimization; this will invoke the callback functions evaluate() and progress() when necessary.
         //
