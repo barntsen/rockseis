@@ -46,7 +46,7 @@ class MPI {
 public:
 	MPI();					///< Default constructor
 	MPI(int *argc, char ***argv);		///< Constructor with input parameters
-	~MPI();					///< Destructor
+	virtual ~MPI();					///< Destructor
 
 	// Get functions
 	int getNrank();				///< Get number of processors

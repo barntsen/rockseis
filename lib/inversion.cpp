@@ -13,7 +13,6 @@ template<typename T>
 Inversion<T>::~Inversion() {
 }
 
-//void Inversion<T>::runAcousticfwigrad2d(std::shared_ptr<MPImodeling> mpi) {
 template<typename T>
 void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
     bool status;
