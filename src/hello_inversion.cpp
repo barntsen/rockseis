@@ -7,14 +7,12 @@
 using namespace rockseis;
 
 /// TO DO: 
-//Add data weight and mute 
+//Add mute 
 //Add functions to save line search files 
 //Add B-spline possibilites 
 //Make parameter loading possible
 /* Global variables */
-//std::shared_ptr<MPImodeling> mpi;
-MPImodeling *mpi;
-std::shared_ptr<Inversion<float>> inv;
+std::shared_ptr<InversionAcoustic2D<float>> inv;
 std::string vplsfile = "vp_ls.rss";
 std::string rholsfile = "rho_ls.rss";
 std::string sourcelsfile = "source_ls.rss";
@@ -52,7 +50,6 @@ void evaluate(rockseis::OptInstancePtr instance)
     int i;
     int N = (lsmodel->getGeom())->getNtot();
     float k=K;
-    std::cerr << "In evaluate: N: " << N << std::endl;
     for(i=0; i< N; i++)
     {
         vpls[i] = vp0[i] + x[i]*k;
@@ -64,9 +61,8 @@ void evaluate(rockseis::OptInstancePtr instance)
     // Start new gradient evaluation
     int task;
     task = RUN_F_GRAD;
-    std::cerr << "Rank: " << mpi->getRank() << ": Giving order to run gradient." << std::endl; 
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    inv->runAcousticfwigrad2d(mpi);
+    inv->runAcousticfwigrad2d();
 
     //Read gradient
     std::shared_ptr<rockseis::ModelAcoustic2D<float>> modelgrad (new rockseis::ModelAcoustic2D<float>(vpgradfile, rhogradfile, 1 ,0));
@@ -107,21 +103,122 @@ void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
 int main(int argc, char** argv) {
 
     // Initializing MPI
-    //mpi = std::make_shared<rockseis::MPImodeling>(&argc,&argv);
-    mpi =  new rockseis::MPImodeling(&argc,&argv);
+    MPImodeling mpi(&argc,&argv);
     int task; 
 
-    inv = std::make_shared<rockseis::Inversion<float>>();
+    // Initialize Inversion class
+    inv = std::make_shared<rockseis::InversionAcoustic2D<float>>(&mpi);
+	/* General input parameters */
+    bool status;
+	int lpml;
+	bool fs;
+    bool incore = false;
+    bool dataweight;
+	int order;
+	int snapinc;
+	int nsnaps = 0;
+	int snapmethod;
+	int misfit_type;
+    float apertx;
+    std::string Waveletfile;
+    std::string Vpfile;
+    std::string Rhofile;
+    std::string Vpgradfile;
+    std::string Rhogradfile;
+    std::string Wavgradfile;
+    std::string Dataweightfile;
+    std::string Misfitfile;
+    std::string Psnapfile;
+    std::string Precordfile;
+    std::string Pmodelledfile;
+    std::string Presidualfile;
+    /* Get parameters from configuration file */
+    std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
+    if(Inpar->parse(argv[1]) == INPARSE_ERR) 
+    {
+        rs_error("Parse error on input config file", argv[1]);
+    }
+    status = false; 
+    if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("order", &order) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vpgradfile", &Vpgradfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Rhogradfile", &Rhogradfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Wavgradfile", &Wavgradfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Misfitfile", &Misfitfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Presidualfile", &Presidualfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Pmodelledfile", &Pmodelledfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("snapmethod", &snapmethod) == INPARSE_ERR) status = true;
+    rockseis::rs_snapmethod checkpoint = static_cast<rockseis::rs_snapmethod>(snapmethod);
+    switch(checkpoint){
+        case rockseis::FULL:
+            break;
+        case rockseis::OPTIMAL:
+            if(Inpar->getPar("nsnaps", &nsnaps) == INPARSE_ERR) status = true;
+            if(Inpar->getPar("incore", &incore) == INPARSE_ERR) status = true;
+            break;
+        default:
+            rockseis::rs_error("Invalid option of snapshot saving (snapmethod)."); 
+    }
+    if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
+    rockseis::rs_fwimisfit fwimisfit = static_cast<rockseis::rs_fwimisfit>(misfit_type);
+
+    if(Inpar->getPar("dataweight", &dataweight) == INPARSE_ERR) status = true;
+    if(dataweight){
+        if(Inpar->getPar("Dataweightfile", &Dataweightfile) == INPARSE_ERR) status = true;
+    }
+
+	if(status == true){
+		rs_error("Program terminated due to input errors.");
+	}
+
+    inv->setOrder(order);
+    inv->setLpml(lpml);
+    inv->setFs(fs);
+    inv->setSnapinc(snapinc);
+
+    inv->setDataweight(dataweight);
+    inv->setDataweightfile(Dataweightfile);
+    inv->setVpfile(Vpfile);
+    inv->setRhofile(Rhofile);
+    inv->setWaveletfile(Waveletfile);
+    inv->setMisfitfile(Misfitfile);
+    inv->setPsnapfile(Psnapfile);
+    inv->setPrecordfile(Precordfile);
+    inv->setPmodelledfile(Pmodelledfile);
+    inv->setPresidualfile(Presidualfile);
+    inv->setApertx(apertx);
+    inv->setSnapmethod(checkpoint);
+    inv->setNsnaps(nsnaps);
+    inv->setIncore(incore);
+    inv->setMisfit_type(fwimisfit);
+
+    inv->setVpgradfile(Vpgradfile);
+    inv->setRhogradfile(Rhogradfile);
+    inv->setWavgradfile(Wavgradfile);
 
     //MASTER
-    if(mpi->getRank() == 0){
+    if(mpi.getRank() == 0){
+        // Create a sort class and map over shots
+        std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
+        Sort->setDatafile(Precordfile);
+        Sort->createShotmap(Precordfile); 
+        Sort->writeKeymap();
+        Sort->writeSortmap();
+
         // Get input model
         std::shared_ptr<rockseis::ModelAcoustic2D<float>> model0 (new rockseis::ModelAcoustic2D<float>(vp0file, rho0file, 1 ,0));
         std::shared_ptr<rockseis::Data2D<float>> source0 (new rockseis::Data2D<float>(source0file));
 
         // L-BFGS parameters
         int N=(model0->getGeom())->getNtot();
-        std::cerr << "In main: N: " << N << std::endl;
         std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(2*N));
 
         /* Initialize the parameters for the L-BFGS optimization. */
@@ -129,18 +226,9 @@ int main(int argc, char** argv) {
         /* Initialize x */
         double *x = (double *) calloc(2*N, sizeof(double));
         //float *vp, *rho;
-        model0->readModel();
-        //vp = model0->getVp(); 
-        //rho = model0->getR(); 
-        //int i;
-        //float k=K;
-        //for(i=0; i< N; i++)
-        //{
-         //   x[i] = vp[i]/k;
-         //   x[N+i] = rho[i]/k;
-        //}
         opt->opt_set_initial_guess(x);
         // Copy initial model to linesearch model
+        model0->readModel();
         model0->setVpfile(vplsfile);
         model0->setRfile(rholsfile);
         model0->writeModel();
@@ -155,7 +243,6 @@ int main(int argc, char** argv) {
 
         // Send message for slaves to quit
         task = BREAK_LOOP;
-        std::cerr << "Rank: " << mpi->getRank() << ": Giving order to break the loop." << std::endl; 
         MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
         /* Report the result. */
@@ -163,7 +250,7 @@ int main(int argc, char** argv) {
         snprintf(buffer,512,"L-BFGS algorithm finished with return status:\n%s\n",opt->getMsg());
         fprintf(stderr, "%s", buffer);
 
-        //SLAVE
+    //SLAVE
     }else{
         bool stop = false;
         while(1)
@@ -172,11 +259,9 @@ int main(int argc, char** argv) {
             switch(task)
             {
                 case RUN_F_GRAD:
-                    std::cerr << "Rank: " << mpi->getRank() << ": Running gradient." << std::endl; 
-                    inv->runAcousticfwigrad2d(mpi);
+                    inv->runAcousticfwigrad2d();
                     break;
                 case BREAK_LOOP:
-                    std::cerr << "Rank: " << mpi->getRank() << ": Leaving the loop." << std::endl; 
                     stop = true;
                     break;
             }
@@ -187,7 +272,6 @@ int main(int argc, char** argv) {
 
     }
 
-    delete mpi;
     return 0;
 }
 

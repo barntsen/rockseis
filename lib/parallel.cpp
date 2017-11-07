@@ -37,6 +37,7 @@ MPI::MPI(int *argc, char ***argv) {
 
 MPI::~MPI() {
 	// Nothing
+    MPI_Finalize();
 }
 
 int MPI::getNrank() {
@@ -72,7 +73,6 @@ MPImodeling::MPImodeling(int *argc, char ***argv): MPI(argc,argv) {
 }
 
 MPImodeling::~MPImodeling() {
-    MPI_Finalize();
 }
 
 void MPImodeling::initTypes() {

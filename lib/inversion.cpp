@@ -3,131 +3,82 @@
 
 namespace rockseis {
 
-// =============== ABSTRACT MODEL CLASS =============== //
+// =============== ABSTRACT INVERSION CLASS =============== //
 template<typename T>
 Inversion<T>::Inversion() {
-    fwicfg = "fwi.cfg";
+    //Do nothing
+}
+
+template<typename T>
+Inversion<T>::Inversion(MPImodeling *_mpi) {
+    mpi = _mpi;
 }
 
 template<typename T>
 Inversion<T>::~Inversion() {
+    //Do nothing
+}
+
+// =============== 2D ACOUSTIC INVERSION CLASS =============== //
+//
+template<typename T>
+InversionAcoustic2D<T>::InversionAcoustic2D() {
+    // Do nothing
 }
 
 template<typename T>
-void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
-    bool status;
-	/* General input parameters */
-	int lpml;
-	bool fs;
-    bool incore = false;
-    bool dataweight;
-	int order;
-	int snapinc;
-	int nsnaps = 0;
-	int snapmethod;
-	int misfit_type;
-    float apertx;
-    int nhx=1, nhz=1;
-    std::string Waveletfile;
-    std::string Vpfile;
-    std::string Rhofile;
-    std::string Vpgradfile;
-    std::string Rhogradfile;
-    std::string Wavgradfile;
-    std::string Dataweightfile;
-    std::string Misfitfile;
-    std::string Psnapfile;
-    std::string Precordfile;
-    std::string Pmodelledfile;
-    std::string Presidualfile;
-    std::shared_ptr<rockseis::Data2D<float>> shot2D;
-    std::shared_ptr<rockseis::Data2D<float>> shot2Di;
-    std::shared_ptr<rockseis::Data2D<float>> shotmod2D;
-    std::shared_ptr<rockseis::Data2D<float>> shotmod2Di;
-    std::shared_ptr<rockseis::Data2D<float>> shotres2D;
-    std::shared_ptr<rockseis::Data2D<float>> shotres2Di;
-    std::shared_ptr<rockseis::Data2D<float>> shotweight2D;
-    std::shared_ptr<rockseis::Data2D<float>> shotweight2Di;
-    std::shared_ptr<rockseis::Image2D<float>> vpgrad;
-    std::shared_ptr<rockseis::Image2D<float>> rhograd;
-    std::shared_ptr<rockseis::Data2D<float>> wavgrad;
+InversionAcoustic2D<T>::InversionAcoustic2D(MPImodeling *mpi): Inversion<T>(mpi) {
+    // Do nothing
+}
 
-    /* Get parameters from configuration file */
-    std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
-    if(Inpar->parse(this->fwicfg.c_str()) == INPARSE_ERR) 
-    {
-        rs_error("Parse error on input config file", this->fwicfg.c_str());
-    }
-    status = false; 
-    if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("order", &order) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vpgradfile", &Vpgradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Rhogradfile", &Rhogradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Wavgradfile", &Wavgradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Misfitfile", &Misfitfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Presidualfile", &Presidualfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Pmodelledfile", &Pmodelledfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("snapmethod", &snapmethod) == INPARSE_ERR) status = true;
-    rockseis::rs_snapmethod checkpoint = static_cast<rockseis::rs_snapmethod>(snapmethod);
-    switch(checkpoint){
-        case rockseis::FULL:
-            break;
-        case rockseis::OPTIMAL:
-            if(Inpar->getPar("nsnaps", &nsnaps) == INPARSE_ERR) status = true;
-            if(Inpar->getPar("incore", &incore) == INPARSE_ERR) status = true;
-            break;
-        default:
-            rockseis::rs_error("Invalid option of snapshot saving (snapmethod)."); 
-    }
-    if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
-    rockseis::rs_fwimisfit fwimisfit = static_cast<rockseis::rs_fwimisfit>(misfit_type);
+template<typename T>
+InversionAcoustic2D<T>::~InversionAcoustic2D() {
+    //Do nothing
+}
 
-    if(Inpar->getPar("dataweight", &dataweight) == INPARSE_ERR) status = true;
-    if(dataweight){
-        if(Inpar->getPar("Dataweightfile", &Dataweightfile) == INPARSE_ERR) status = true;
-    }
-
-	if(status == true){
-		rs_error("Program terminated due to input errors.");
-	}
+template<typename T>
+void InversionAcoustic2D<T>::runAcousticfwigrad2d() {
+    MPImodeling *mpi = this->getMpi();
+    std::shared_ptr<rockseis::Data2D<T>> shot2D;
+    std::shared_ptr<rockseis::Data2D<T>> shot2Di;
+    std::shared_ptr<rockseis::Data2D<T>> shotmod2D;
+    std::shared_ptr<rockseis::Data2D<T>> shotmod2Di;
+    std::shared_ptr<rockseis::Data2D<T>> shotres2D;
+    std::shared_ptr<rockseis::Data2D<T>> shotres2Di;
+    std::shared_ptr<rockseis::Data2D<T>> shotweight2D;
+    std::shared_ptr<rockseis::Data2D<T>> shotweight2Di;
+    std::shared_ptr<rockseis::Image2D<T>> vpgrad;
+    std::shared_ptr<rockseis::Image2D<T>> rhograd;
+    std::shared_ptr<rockseis::Data2D<T>> wavgrad;
 
     // Create a sort class
-    std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
+    std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
     Sort->setDatafile(Precordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> gmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
     // Create a local model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> lmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelAcoustic2D<T>> lmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
 
     // Create a data class for the source wavelet
-	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Waveletfile));
+	std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(Waveletfile));
 
     // Create an interpolation class
-    std::shared_ptr<rockseis::Interp<float>> interp (new rockseis::Interp<float>(SINC));
+    std::shared_ptr<rockseis::Interp<T>> interp (new rockseis::Interp<T>(SINC));
 
     // Create a file to output data misfit values
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
 
 	if(mpi->getRank() == 0) {
 		// Master
-        Sort->createShotmap(Precordfile); 
-        Sort->writeKeymap();
-        Sort->writeSortmap();
 
-        // Get number of shots
+        // Get shot map
+        Sort->readKeymap();
+        Sort->readSortmap();
         size_t ngathers =  Sort->getNensemb();
 
         // Wavelet gradient
-        wavgrad = std::make_shared<rockseis::Data2D<float>>(1, source->getNt(), source->getDt(), 0.0);
+        wavgrad = std::make_shared<rockseis::Data2D<T>>(1, source->getNt(), source->getDt(), 0.0);
         wavgrad->setFile(Wavgradfile);
         wavgrad->createEmpty(ngathers);
 
@@ -135,18 +86,18 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
         Fmisfit->output(Misfitfile);
         Fmisfit->setN(1,ngathers);
         Fmisfit->setD(1,1.0);
-        Fmisfit->setData_format(sizeof(float));
+        Fmisfit->setData_format(sizeof(T));
         Fmisfit->createEmpty();
         Fmisfit->close();
 
         // Create a data class for the recorded data
-        std::shared_ptr<rockseis::Data2D<float>> shot2D (new rockseis::Data2D<float>(Precordfile));
+        std::shared_ptr<rockseis::Data2D<T>> shot2D (new rockseis::Data2D<T>(Precordfile));
         // Create modelling and residual data files
-        shotmod2D = std::make_shared<rockseis::Data2D<float>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+        shotmod2D = std::make_shared<rockseis::Data2D<T>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
         shotmod2D->setFile(Pmodelledfile);
         shotmod2D->createEmpty(shot2D->getNtrace());
 
-        shotres2D = std::make_shared<rockseis::Data2D<float>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+        shotres2D = std::make_shared<rockseis::Data2D<T>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
         shotres2D->setFile(Presidualfile);
         shotres2D->createEmpty(shot2D->getNtrace());
         
@@ -161,10 +112,10 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
 		mpi->performWork();
 
         // Image
-        vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile, gmodel, nhx, nhz);
+        vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
         vpgrad->createEmpty();
 
-        rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile, gmodel, nhx, nhz);
+        rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile, gmodel, 1, 1);
         rhograd->createEmpty();
 
         for(long int i=0; i<ngathers; i++) {
@@ -176,7 +127,7 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
     }
     else {
         /* Slave */
-        std::shared_ptr<rockseis::FwiAcoustic2D<float>> fwi;
+        std::shared_ptr<rockseis::FwiAcoustic2D<T>> fwi;
         while(1) {
             workModeling_t work = mpi->receiveWork();
 
@@ -211,43 +162,43 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
                 source->makeMap(lmodel->getGeom(), SMAP);
 
                 // Interpolate shot
-                shot2Di = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shot2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(shot2D, shot2Di);
                 shot2Di->makeMap(lmodel->getGeom(), GMAP);
 
                 // Create fwi object
-                fwi = std::make_shared<rockseis::FwiAcoustic2D<float>>(lmodel, source, shot2Di, order, snapinc);
+                fwi = std::make_shared<rockseis::FwiAcoustic2D<T>>(lmodel, source, shot2Di, this->getOrder(), this->getSnapinc());
 
                 // Create modelled and residual data objects 
-                shotmod2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotmod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 shotmod2D->copyCoords(shot2D);
                 shotmod2D->makeMap(lmodel->getGeom(), GMAP);
                 fwi->setDatamodP(shotmod2D);
-                shotres2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotres2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 shotres2D->copyCoords(shot2D);
                 shotres2D->makeMap(lmodel->getGeom(), GMAP);
                 fwi->setDataresP(shotres2D);
 
                 // Interpolate weight
                 if(dataweight){
-                    shotweight2Di = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    shotweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                     interp->interp(shotweight2D, shotweight2Di);
                     shotweight2Di->makeMap(lmodel->getGeom(), GMAP);
                     fwi->setDataweight(shotweight2Di);
                 }
                 
                 // Setting misfit type
-                fwi->setMisfit_type(fwimisfit);
+                fwi->setMisfit_type(this->getMisfit_type());
 
                 // Creating gradient objects
-                vpgrad = std::make_shared<rockseis::Image2D<float>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
-                rhograd = std::make_shared<rockseis::Image2D<float>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
+                vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
 
                 // Setting up gradient objects in fwi class
                 fwi->setVpgrad(vpgrad);
                 fwi->setRhograd(rhograd);
 
-                wavgrad = std::make_shared<rockseis::Data2D<float>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
+                wavgrad = std::make_shared<rockseis::Data2D<T>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
                 wavgrad->setField(rockseis::PRESSURE);
                 // Copy geometry
                 wavgrad->copyCoords(source);
@@ -258,8 +209,8 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
                 fwi->setSnapfile(Psnapfile + "-" + std::to_string(work.id));
 
                 // Setting Snapshot parameters
-                fwi->setNcheck(nsnaps);
-                fwi->setIncore(incore);
+                fwi->setNcheck(this->getNsnaps());
+                fwi->setIncore(this->getIncore());
 
                 // Set logfile
                 fwi->setLogfile("log.txt-" + std::to_string(work.id));
@@ -268,7 +219,7 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
                 lmodel->staggerModels();
 
                 // Run simulation
-                switch(checkpoint){
+                switch(this->getSnapmethod()){
                     case rockseis::FULL:
                         fwi->run();
                         break;
@@ -286,17 +237,17 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
 
                 // Output misfit
                 Fmisfit->append(Misfitfile);
-                float val = fwi->getMisfit();
-                Fmisfit->write(&val, 1, work.id*sizeof(float));
+                T val = fwi->getMisfit();
+                Fmisfit->write(&val, 1, work.id*sizeof(T));
                 Fmisfit->close();
 
                 // Output modelled and residual data
-                shotmod2Di = std::make_shared<rockseis::Data2D<float>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+                shotmod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
                 shotmod2Di->setFile(Pmodelledfile);
                 interp->interp(shotmod2D, shotmod2Di);
                 Sort->put2DGather(shotmod2Di, work.id);
 
-                shotres2Di = std::make_shared<rockseis::Data2D<float>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+                shotres2Di = std::make_shared<rockseis::Data2D<T>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
                 shotres2Di->setFile(Presidualfile);
                 interp->interp(shotres2D, shotres2Di);
                 Sort->put2DGather(shotres2Di, work.id);
@@ -328,6 +279,9 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Inversion<float>;
 template class Inversion<double>;
+
+template class InversionAcoustic2D<float>;
+template class InversionAcoustic2D<double>;
 
 }
 
