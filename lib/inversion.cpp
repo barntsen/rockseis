@@ -20,6 +20,7 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
 	int lpml;
 	bool fs;
     bool incore = false;
+    bool dataweight;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
@@ -33,6 +34,7 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
     std::string Vpgradfile;
     std::string Rhogradfile;
     std::string Wavgradfile;
+    std::string Dataweightfile;
     std::string Misfitfile;
     std::string Psnapfile;
     std::string Precordfile;
@@ -44,6 +46,8 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
     std::shared_ptr<rockseis::Data2D<float>> shotmod2Di;
     std::shared_ptr<rockseis::Data2D<float>> shotres2D;
     std::shared_ptr<rockseis::Data2D<float>> shotres2Di;
+    std::shared_ptr<rockseis::Data2D<float>> shotweight2D;
+    std::shared_ptr<rockseis::Data2D<float>> shotweight2Di;
     std::shared_ptr<rockseis::Image2D<float>> vpgrad;
     std::shared_ptr<rockseis::Image2D<float>> rhograd;
     std::shared_ptr<rockseis::Data2D<float>> wavgrad;
@@ -85,6 +89,11 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
     }
     if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
     rockseis::rs_fwimisfit fwimisfit = static_cast<rockseis::rs_fwimisfit>(misfit_type);
+
+    if(Inpar->getPar("dataweight", &dataweight) == INPARSE_ERR) status = true;
+    if(dataweight){
+        if(Inpar->getPar("Dataweightfile", &Dataweightfile) == INPARSE_ERR) status = true;
+    }
 
 	if(status == true){
 		rs_error("Program terminated due to input errors.");
@@ -184,8 +193,15 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
                 Sort->readSortmap();
 
                 // Get the shot
+                Sort->setDatafile(Precordfile);
                 shot2D = Sort->get2DGather(work.id);
                 size_t ntr = shot2D->getNtrace();
+
+                // Get the weight
+                if(dataweight){
+                    Sort->setDatafile(Dataweightfile);
+                    shotweight2D = Sort->get2DGather(work.id);
+                }
 
                 lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
 
@@ -211,6 +227,14 @@ void Inversion<T>::runAcousticfwigrad2d(MPImodeling *mpi) {
                 shotres2D->copyCoords(shot2D);
                 shotres2D->makeMap(lmodel->getGeom(), GMAP);
                 fwi->setDataresP(shotres2D);
+
+                // Interpolate weight
+                if(dataweight){
+                    shotweight2Di = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    interp->interp(shotweight2D, shotweight2Di);
+                    shotweight2Di->makeMap(lmodel->getGeom(), GMAP);
+                    fwi->setDataweight(shotweight2Di);
+                }
                 
                 // Setting misfit type
                 fwi->setMisfit_type(fwimisfit);
