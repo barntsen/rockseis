@@ -32,8 +32,8 @@ env['TEST'] = True;
 env['MPI'] = True;
 
 # Compiler flags
-env.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
-#env.Append(CPPFLAGS=' -g -Wall' ) # For debugging
+#env.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
+env.Append(CPPFLAGS=' -g -Wall' ) # For debugging
 
 # Include path
 env.Append(CPPPATH=['../include'])
@@ -51,15 +51,15 @@ else:
     mpi = env.Clone(CC='mpicc', CXX='mpicxx')
     
 envc = Environment(ENV=os.environ, CC = 'gcc', CXX='g++') 
-envc.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
-#envc.Append(CPPFLAGS=' -g -Wall' ) # For debugging
+#envc.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
+envc.Append(CPPFLAGS=' -g -Wall' ) # For debugging
 
 # Programs
+SConscript('bspl/SConscript','envc')
 SConscript('lib/SConscript', 'env mpi')
 SConscript('src/SConscript','env mpi')
 SConscript('dev/SConscript','env')
 SConscript('gui/SConscript','env')
 SConscript('config4cpp/src/SConscript','env')
 SConscript('madagascar/lib/SConscript','env envc')
-SConscript('bspl/SConscript','envc')
 

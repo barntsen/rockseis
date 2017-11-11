@@ -15,16 +15,32 @@
 #include "waves.h"
 #include "der.h"
 #include "snap.h"
-#include "bspl.h"
 #include "interp.h"
 #include "parallel.h"
 #include "fwi.h"
 #include "sort.h"
-#include <inparse.h>
+#include "bspl.h"
 
 #define RUN_F_GRAD 0
 #define RUN_BS_PROJ 1
 #define BREAK_LOOP 2
+
+#define VPLSFILE "vp_ls.rss"
+#define RHOLSFILE "rho_ls.rss"
+#define SOURCELSFILE "source_ls.rss"
+
+#define VP0FILE "vp_0.rss"
+#define RHO0FILE "rho_0.rss"
+#define SOURCE0FILE "source_0.rss"
+
+#define VPGRADFILE "vp_grad.rss"
+#define RHOGRADFILE "rho_grad.rss"
+#define SOURCEGRADFILE "source_grad.rss"
+
+#define VPPROJGRADFILE "vp_proj_grad.rss"
+#define RHOPROJGRADFILE "rho_proj_grad.rss"
+
+#define MISFITFILE "misfit.rss"
 
 namespace rockseis {
 
@@ -53,9 +69,10 @@ public:
     void setMisfit_type(rs_fwimisfit val) { misfit_type = val; }
     rs_snapmethod getSnapmethod() { return snapmethod; } 
     void setSnapmethod(rs_snapmethod val) { snapmethod = val; }
-
-
-
+    double getDtx() { return dtx; }
+    double getDtz() { return dtz; }
+    void setDtx(double val) { dtx = val; }
+    void setDtz(double val) { dtz = val; }
 
 private:
 	int lpml;
@@ -67,8 +84,8 @@ private:
     rs_fwimisfit misfit_type;
     rs_snapmethod snapmethod;
     MPImodeling *mpi;
+    double dtx, dty, dtz;
 };
-
 
 // ##### ACOUSTIC 2D INVERSION CLASS
 template<typename T>
@@ -122,7 +139,7 @@ public:
 
     // Run gradient
     void runAcousticfwigrad2d();
-
+    void runBsprojection2d();
 
 private:
     bool dataweight;

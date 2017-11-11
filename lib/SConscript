@@ -31,6 +31,7 @@ revolve = env.Library(builddir + 'revolve',['revolve.cpp', 'waves.cpp', 'file.cp
 snap = env.Library(builddir + 'snap',['snap.cpp', 'waves.cpp', 'file.cpp'])
 image = env.Library(builddir + 'image',['image.cpp', 'model.cpp'])
 opt = env.Library(builddir + 'opt',['opt.cpp'])
+bspl = env.Library(builddir + 'bspl',['bspl.cpp'])
 if(env['MPI']):
     parallel = mpi.Library(builddir + 'parallel',['parallel.cpp'])
-    inversion = mpi.Library(builddir + 'inversion',['inversion.cpp'])
+    inversion = mpi.Library(builddir + 'inversion',['inversion.cpp'], LIBS=['bspl'])

@@ -124,7 +124,10 @@ void InversionAcoustic2D<T>::runAcousticfwigrad2d() {
             rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
             remove_file(Rhogradfile + "-" + std::to_string(i));
         }
-    }
+
+		//Clear work vector 
+		mpi->clearWork();
+	}
     else {
         /* Slave */
         std::shared_ptr<rockseis::FwiAcoustic2D<T>> fwi;
@@ -272,9 +275,132 @@ void InversionAcoustic2D<T>::runAcousticfwigrad2d() {
             }
         }
     }
-    //Clear work vector 
-    mpi->clearWork();
 }
+
+template<typename T>
+void InversionAcoustic2D<T>::runBsprojection2d() {
+    MPImodeling *mpi = this->getMpi();
+	float vpsum = 0.0; // Sum over splines
+	float rhosum = 0.0; // Sum over splines
+	float *global_stack;
+    float *c;
+    float *wrk;
+
+	// Get gradients
+	std::shared_ptr<rockseis::ModelAcoustic2D<T>> grad (new rockseis::ModelAcoustic2D<T>(Vpgradfile, Rhogradfile, this->getLpml() ,this->getFs()));
+
+	// Read model
+	grad->readModel();
+	
+	T *vpgrad, *rhograd;
+	vpgrad = grad->getVp();
+	rhograd = grad->getR();
+
+    /* Initializing spline */
+    std::shared_ptr<rockseis::Bspl> spline (new rockseis::Bspl(grad->getNx(), 1, grad->getNz(), grad->getDx(), 1.0, grad->getDz(), this->getDtx(), 1.0, this->getDtz(), 3, 2));
+    int nc = spline->getNc();
+
+	/* Allocating projection arrays */
+	float *vpproj= (float *) calloc(grad->getNx()*grad->getNz(), sizeof(float));
+	if(vpproj==NULL){
+		rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate projection array (vpproj)");
+	}
+	float *rhoproj= (float *) calloc(grad->getNx()*grad->getNz(), sizeof(float));
+	if(rhoproj==NULL){
+		rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate projection array (rhoproj)");
+	}
+
+    if(mpi->getRank() == 0) {
+		// Master
+
+		// Create work queue
+		for(long int i=0; i<nc; i++) {
+			// Work struct
+			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
+			mpi->addWork(work);
+		}
+
+		// Perform work in parallel
+		mpi->performWork();
+
+		//Clear work vector 
+		mpi->clearWork();
+
+		global_stack= (float *) calloc(grad->getNx()*grad->getNz(), sizeof(float));
+		if(global_stack==NULL){
+			rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate global stack array");
+		}
+
+		/* Starting reduce operation */
+		MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
+
+		/* Output spline */
+        std::shared_ptr<File> Fout (new File());
+        Fout->output(VPPROJGRADFILE);
+        Fout->setN(1,nc);
+        Fout->setData_format(sizeof(float));
+        Fout->write(global_stack, nc);
+        Fout->close();
+
+		for(long int i=0; i< nc; i++){
+			global_stack[i] = 0.0;
+		}
+		/* Starting reduce operation */
+		MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
+
+		/* Output spline */
+        Fout->output(RHOPROJGRADFILE);
+        Fout->setN(1,nc);
+        Fout->setData_format(sizeof(float));
+        Fout->write(global_stack, nc);
+        Fout->close();
+
+       }else {
+        /* Slave */
+        std::shared_ptr<rockseis::FwiAcoustic2D<T>> fwi;
+        while(1) {
+            workModeling_t work = mpi->receiveWork();
+
+            if(work.MPItag == MPI_TAG_DIE) {
+                break;
+            }
+
+            if(work.MPItag == MPI_TAG_NO_WORK) {
+                mpi->sendNoWork(0);
+            }
+            else {
+                // Do work
+                c = spline->getSpline();
+                wrk = spline->getMod();
+				c[work.id]=1.0; // Projection point
+				spline->bisp(); // Evaluate spline for this coefficient
+				vpsum = 0.0;
+				rhosum = 0.0;
+				for(long int i=0; i<nc; i++){
+						vpsum += wrk[i]*vpgrad[i];
+						rhosum += wrk[i]*rhograd[i];
+				}
+				vpproj[work.id]=vpsum;
+				rhoproj[work.id]=rhosum;
+				c[work.id]=0.0; // Reset coefficient to 0
+			}
+
+			// Send result back
+			work.status = WORK_FINISHED;
+			mpi->sendResult(work);		
+		}
+
+		global_stack= (float *) calloc(grad->getNx()*grad->getNz(), sizeof(float));
+		if(global_stack==NULL){
+			rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate global stack array");
+		}
+
+		/* Starting reduce operation */
+		MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
+		MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
+	   }
+}
+
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Inversion<float>;

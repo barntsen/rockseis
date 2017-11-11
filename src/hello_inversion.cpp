@@ -1,7 +1,8 @@
 #include <iostream>
 #include <mpi.h>
-#include "inversion.h"
 #include "opt.h"
+#include "inversion.h"
+#include "inparse.h"
 #define K 400
 
 using namespace rockseis;
@@ -11,21 +12,9 @@ using namespace rockseis;
 //Add functions to save line search files 
 //Add B-spline possibilites 
 //Make parameter loading possible
+//
 /* Global variables */
 std::shared_ptr<InversionAcoustic2D<float>> inv;
-std::string vplsfile = "vp_ls.rss";
-std::string rholsfile = "rho_ls.rss";
-std::string sourcelsfile = "source_ls.rss";
-
-std::string vp0file = "vp_0.rss";
-std::string rho0file = "rho_0.rss";
-std::string source0file = "source_0.rss";
-
-std::string vpgradfile = "vp_grad.rss";
-std::string rhogradfile = "rho_grad.rss";
-std::string sourcegradfile = "source_grad.rss";
-
-std::string misfitfile = "misfit.rss";
 
 /* Global functions */
 void evaluate(rockseis::OptInstancePtr instance)
@@ -34,10 +23,10 @@ void evaluate(rockseis::OptInstancePtr instance)
     double *x = instance->x;
     double *g = instance->g;
     // Models
-    std::shared_ptr<rockseis::ModelAcoustic2D<float>> model0 (new rockseis::ModelAcoustic2D<float>(vp0file, rho0file, 1 ,0));
-    std::shared_ptr<rockseis::Data2D<float>> source0 (new rockseis::Data2D<float>(source0file));
-    std::shared_ptr<rockseis::ModelAcoustic2D<float>> lsmodel (new rockseis::ModelAcoustic2D<float>(vplsfile, rholsfile, 1 ,0));
-    std::shared_ptr<rockseis::Data2D<float>> lssource (new rockseis::Data2D<float>(sourcelsfile));
+    std::shared_ptr<rockseis::ModelAcoustic2D<float>> model0 (new rockseis::ModelAcoustic2D<float>(VP0FILE, RHO0FILE, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<float>> source0 (new rockseis::Data2D<float>(SOURCE0FILE));
+    std::shared_ptr<rockseis::ModelAcoustic2D<float>> lsmodel (new rockseis::ModelAcoustic2D<float>(VPLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<float>> lssource (new rockseis::Data2D<float>(SOURCELSFILE));
 
     // Write linesearch model
     model0->readModel();
@@ -48,8 +37,10 @@ void evaluate(rockseis::OptInstancePtr instance)
     vpls = lsmodel->getVp(); 
     rhols = lsmodel->getR(); 
     int i;
-    int N = (lsmodel->getGeom())->getNtot();
     float k=K;
+
+    int N = (lsmodel->getGeom())->getNtot();
+
     for(i=0; i< N; i++)
     {
         vpls[i] = vp0[i] + x[i]*k;
@@ -64,23 +55,27 @@ void evaluate(rockseis::OptInstancePtr instance)
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
     inv->runAcousticfwigrad2d();
 
+    task = RUN_BS_PROJ;
+    MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    inv->runBsprojection2d();
+
+
     //Read gradient
-    std::shared_ptr<rockseis::ModelAcoustic2D<float>> modelgrad (new rockseis::ModelAcoustic2D<float>(vpgradfile, rhogradfile, 1 ,0));
-    std::shared_ptr<rockseis::Data2D<float>> sourcegrad (new rockseis::Data2D<float>(sourcegradfile));
+    std::shared_ptr<rockseis::ModelAcoustic2D<float>> modelgrad (new rockseis::ModelAcoustic2D<float>(VPGRADFILE, RHOGRADFILE, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<float>> sourcegrad (new rockseis::Data2D<float>(SOURCEGRADFILE));
     modelgrad->readModel();
     vp0 = modelgrad->getVp(); 
     rho0 = modelgrad->getR(); 
     for(i=0; i< N; i++)
     {
         g[i] = vp0[i]*k;
-        //g[N+i] = rho0[i]*k;
-        g[N+i] = 0.0;
+        g[N+i] = rho0[i]*k;
     }
 
     //Read misfit
     instance->f = 0.0;
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
-    Fmisfit->input(misfitfile);
+    Fmisfit->input(MISFITFILE);
     float val;
     for(i=0; i<Fmisfit->getN(1); i++){
         Fmisfit->read(&val, 1); 
@@ -132,6 +127,8 @@ int main(int argc, char** argv) {
     std::string Precordfile;
     std::string Pmodelledfile;
     std::string Presidualfile;
+
+
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
     if(Inpar->parse(argv[1]) == INPARSE_ERR) 
@@ -204,6 +201,12 @@ int main(int argc, char** argv) {
     inv->setRhogradfile(Rhogradfile);
     inv->setWavgradfile(Wavgradfile);
 
+    float dtx = 50.0;
+    float dtz = 50.0;
+
+    inv->setDtx(dtx);
+    inv->setDtz(dtz);
+
     //MASTER
     if(mpi.getRank() == 0){
         // Create a sort class and map over shots
@@ -214,8 +217,8 @@ int main(int argc, char** argv) {
         Sort->writeSortmap();
 
         // Get input model
-        std::shared_ptr<rockseis::ModelAcoustic2D<float>> model0 (new rockseis::ModelAcoustic2D<float>(vp0file, rho0file, 1 ,0));
-        std::shared_ptr<rockseis::Data2D<float>> source0 (new rockseis::Data2D<float>(source0file));
+        std::shared_ptr<rockseis::ModelAcoustic2D<float>> model0 (new rockseis::ModelAcoustic2D<float>(VP0FILE, RHO0FILE, 1 ,0));
+        std::shared_ptr<rockseis::Data2D<float>> source0 (new rockseis::Data2D<float>(SOURCE0FILE));
 
         // L-BFGS parameters
         int N=(model0->getGeom())->getNtot();
@@ -229,13 +232,13 @@ int main(int argc, char** argv) {
         opt->opt_set_initial_guess(x);
         // Copy initial model to linesearch model
         model0->readModel();
-        model0->setVpfile(vplsfile);
-        model0->setRfile(rholsfile);
+        model0->setVpfile(VPLSFILE);
+        model0->setRfile(RHOLSFILE);
         model0->writeModel();
-        source0->setFile(sourcelsfile);
+        source0->setFile(SOURCELSFILE);
         source0->write();
         opt->setGtol(0.9);
-        opt->setMax_linesearch(5);
+        opt->setMax_linesearch(1);
 
         // Start the L-BFGS optimization; this will invoke the callback functions evaluate() and progress() when necessary.
         //
@@ -260,6 +263,9 @@ int main(int argc, char** argv) {
             {
                 case RUN_F_GRAD:
                     inv->runAcousticfwigrad2d();
+                    break;
+                case RUN_BS_PROJ:
+                    inv->runBsprojection2d();
                     break;
                 case BREAK_LOOP:
                     stop = true;

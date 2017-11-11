@@ -6,7 +6,6 @@ Import('envc')
 libdir = '../build/'
 
 #  Library
-bspl_lib = 'bspl.c'
-libmains = Split(bspl_lib)
+bsplc_lib = 'bsplc.c'
 
-envc.Library(libdir + 'bspl', libmains)
+envc.Library(libdir + 'bsplc', 'bsplc.c')

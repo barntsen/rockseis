@@ -11,7 +11,7 @@ srcdir = './src/'
 libdir = './lib/'
 bindir = '../bin/'
 
-libdir = '../lib/'
+libdir = '../../build/'
 
 #  Library
 config4cpp_lib = 'ConfigItem.cpp ConfigLex.cpp ConfigParser.cpp ConfigScope.cpp ConfigScopeEntry.cpp Configuration.cpp ConfigurationException.cpp ConfigurationImpl.cpp DefaultSecurityConfiguration.cpp DefaultSecurity.cpp LexBase.cpp LexToken.cpp MBChar.cpp platform.cpp SchemaLex.cpp SchemaParser.cpp SchemaTypeBoolean.cpp SchemaType.cpp SchemaTypeDurationMicroseconds.cpp SchemaTypeDurationMilliseconds.cpp SchemaTypeDurationSeconds.cpp SchemaTypeEnum.cpp SchemaTypeFloat.cpp SchemaTypeFloatWithUnits.cpp SchemaTypeInt.cpp SchemaTypeIntWithUnits.cpp SchemaTypeList.cpp SchemaTypeMemorySizeBytes.cpp SchemaTypeMemorySizeKB.cpp SchemaTypeMemorySizeMB.cpp SchemaTypeScope.cpp SchemaTypeString.cpp SchemaTypeTable.cpp SchemaTypeTuple.cpp SchemaTypeTypedef.cpp SchemaTypeUnitsWithFloat.cpp SchemaTypeUnitsWithInt.cpp SchemaValidator.cpp StringBuffer.cpp StringVector.cpp UidIdentifierProcessor.cpp util.cpp'
