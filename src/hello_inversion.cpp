@@ -10,9 +10,7 @@ using namespace rockseis;
 /// TO DO: 
 //Add mute 
 //Add functions to save line search files 
-//Add B-spline possibilites 
-//Make parameter loading possible
-//
+
 /* Global variables */
 std::shared_ptr<InversionAcoustic2D<float>> inv;
 
@@ -265,7 +263,9 @@ int main(int argc, char** argv) {
                     inv->runAcousticfwigrad2d();
                     break;
                 case RUN_BS_PROJ:
+                    fprintf(stderr, "Starting B-Spline projection\n");
                     inv->runBsprojection2d();
+                    fprintf(stderr, "Finished projection\n");
                     break;
                 case BREAK_LOOP:
                     stop = true;

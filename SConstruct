@@ -40,7 +40,6 @@ env.Append(CPPPATH=['../include'])
 env.Append(CPPPATH=['../config4cpp/include'])
 env.Append(CPPPATH=['../config4cpp/src'])
 env.Append(CPPPATH=['../madagascar/include'])
-env.Append(CPPPATH=['../bspl'])
 #env.Append(CPPPATH=['../../fftw-3.3.6-pl2/fftw-build/include/'])
 env.Append(LIBPATH=['../build'])
 
@@ -55,7 +54,6 @@ envc = Environment(ENV=os.environ, CC = 'gcc', CXX='g++')
 envc.Append(CPPFLAGS=' -g -Wall' ) # For debugging
 
 # Programs
-SConscript('bspl/SConscript','envc')
 SConscript('lib/SConscript', 'env mpi')
 SConscript('src/SConscript','env mpi')
 SConscript('dev/SConscript','env')

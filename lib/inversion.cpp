@@ -280,11 +280,11 @@ void InversionAcoustic2D<T>::runAcousticfwigrad2d() {
 template<typename T>
 void InversionAcoustic2D<T>::runBsprojection2d() {
     MPImodeling *mpi = this->getMpi();
-	float vpsum = 0.0; // Sum over splines
-	float rhosum = 0.0; // Sum over splines
+	T vpsum = 0.0; // Sum over splines
+	T rhosum = 0.0; // Sum over splines
 	float *global_stack;
-    float *c;
-    float *wrk;
+    T *c;
+    T *wrk;
 
 	// Get gradients
 	std::shared_ptr<rockseis::ModelAcoustic2D<T>> grad (new rockseis::ModelAcoustic2D<T>(Vpgradfile, Rhogradfile, this->getLpml() ,this->getFs()));
@@ -297,7 +297,7 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
 	rhograd = grad->getR();
 
     /* Initializing spline */
-    std::shared_ptr<rockseis::Bspl> spline (new rockseis::Bspl(grad->getNx(), 1, grad->getNz(), grad->getDx(), 1.0, grad->getDz(), this->getDtx(), 1.0, this->getDtz(), 3, 2));
+    std::shared_ptr<rockseis::Bspl2D<T>> spline (new rockseis::Bspl2D<T>(grad->getNx(), grad->getNz(), grad->getDx(), grad->getDz(), this->getDtx(), this->getDtz(), 3, 3));
     int nc = spline->getNc();
 
 	/* Allocating projection arrays */
