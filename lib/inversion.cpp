@@ -338,8 +338,9 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
         std::shared_ptr<File> Fout (new File());
         Fout->output(VPPROJGRADFILE);
         Fout->setN(1,nc);
+        Fout->setD(1,1.0);
         Fout->setData_format(sizeof(float));
-        Fout->write(global_stack, nc);
+        Fout->write(global_stack, nc, 0);
         Fout->close();
 
 		for(long int i=0; i< nc; i++){
@@ -351,8 +352,9 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
 		/* Output spline */
         Fout->output(RHOPROJGRADFILE);
         Fout->setN(1,nc);
+        Fout->setD(1,1.0);
         Fout->setData_format(sizeof(float));
-        Fout->write(global_stack, nc);
+        Fout->write(global_stack, nc, 0);
         Fout->close();
 
        }else {
@@ -371,12 +373,12 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
             else {
                 // Do work
                 c = spline->getSpline();
-                wrk = spline->getMod();
 				c[work.id]=1.0; // Projection point
 				spline->bisp(); // Evaluate spline for this coefficient
+                wrk = spline->getMod();
 				vpsum = 0.0;
 				rhosum = 0.0;
-				for(long int i=0; i<nc; i++){
+				for(long int i=0; i<grad->getNx()*grad->getNz(); i++){
 						vpsum += wrk[i]*vpgrad[i];
 						rhosum += wrk[i]*rhograd[i];
 				}
