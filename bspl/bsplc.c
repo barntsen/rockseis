@@ -124,15 +124,9 @@ bspl_2dspline bspl_2dspline_init(int nx,int nz, float dx, float dz, double dtx, 
     for(i=0; i<spline->mx; i++){
         spline->wx[i] = (float *) calloc((spline->kx+1), sizeof(float));
     }
-    for(i=1; i<spline->mx; i++){
-        spline->wx[i] = spline->wx[0] + i*(spline->kx+1);
-    }
 	spline->wz= (float **) calloc(spline->mz,sizeof(float *));
     for(i=0; i<spline->mz; i++){
         spline->wz[i] = (float *) calloc((spline->kz+1), sizeof(float));
-    }
-    for(i=1; i<spline->mz; i++){
-        spline->wz[i] = spline->wz[0] + i*(spline->kz+1);
     }
 	spline->nc = (spline->ntz-spline->kz-1)*(spline->ntx-spline->kx-1);
 	spline->c=  (float *) calloc(spline->nc, sizeof(float));
@@ -273,22 +267,13 @@ bspl_3dspline bspl_3dspline_init(int nx, int ny, int nz, float dx, float dy, flo
     for(i=0; i<spline->mx; i++){
         spline->wx[i] = (float *) calloc((spline->kx+1), sizeof(float));
     }
-    for(i=1; i<spline->mx; i++){
-        spline->wx[i] = spline->wx[0] + i*(spline->kx+1);
-    }
 	spline->wy= (float **) calloc(spline->my,sizeof(float *));
     for(i=0; i<spline->my; i++){
         spline->wy[i] = (float *) calloc((spline->ky+1), sizeof(float));
     }
-    for(i=1; i<spline->my; i++){
-        spline->wy[i] = spline->wy[0] + i*(spline->ky+1);
-    }
 	spline->wz= (float **) calloc(spline->mz,sizeof(float *));
     for(i=0; i<spline->mz; i++){
         spline->wz[i] = (float *) calloc((spline->kz+1), sizeof(float));
-    }
-    for(i=1; i<spline->mz; i++){
-        spline->wz[i] = spline->wz[0] + i*(spline->kz+1);
     }
 	spline->nc = (spline->ntz-spline->kz-1)*(spline->ntx-spline->kx-1)*(spline->nty-spline->ky-1);
 	spline->c=  (float *) calloc(spline->nc, sizeof(float));

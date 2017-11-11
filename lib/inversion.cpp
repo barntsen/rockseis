@@ -301,11 +301,11 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
     int nc = spline->getNc();
 
 	/* Allocating projection arrays */
-	float *vpproj= (float *) calloc(grad->getNx()*grad->getNz(), sizeof(float));
+	float *vpproj= (float *) calloc(nc, sizeof(float));
 	if(vpproj==NULL){
 		rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate projection array (vpproj)");
 	}
-	float *rhoproj= (float *) calloc(grad->getNx()*grad->getNz(), sizeof(float));
+	float *rhoproj= (float *) calloc(nc, sizeof(float));
 	if(rhoproj==NULL){
 		rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate projection array (rhoproj)");
 	}
@@ -326,7 +326,7 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
 		//Clear work vector 
 		mpi->clearWork();
 
-		global_stack= (float *) calloc(grad->getNx()*grad->getNz(), sizeof(float));
+		global_stack= (float *) calloc(nc, sizeof(float));
 		if(global_stack==NULL){
 			rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate global stack array");
 		}
@@ -390,7 +390,7 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
 			mpi->sendResult(work);		
 		}
 
-		global_stack= (float *) calloc(grad->getNx()*grad->getNz(), sizeof(float));
+		global_stack= (float *) calloc(nc, sizeof(float));
 		if(global_stack==NULL){
 			rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate global stack array");
 		}
