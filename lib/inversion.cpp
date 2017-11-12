@@ -611,7 +611,7 @@ void InversionAcoustic2D<T>::readGrad(double *g)
             }
             break;
         case PAR_BSPLINE:
-           std::make_shared<rockseis::Bspl2D<T>>(modelgrad->getNx(), modelgrad->getNz(), modelgrad->getDx(), modelgrad->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+           spline = std::make_shared<rockseis::Bspl2D<T>>(modelgrad->getNx(), modelgrad->getNz(), modelgrad->getDx(), modelgrad->getDz(), this->getDtx(), this->getDtz(), 3, 3);
             N = spline->getNc();
             g_in = (float *) calloc(2*N, sizeof(float));
             Fgrad = std::make_shared<rockseis::File>();
