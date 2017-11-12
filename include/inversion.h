@@ -42,7 +42,12 @@
 
 #define MISFITFILE "misfit.rss"
 
+
+
 namespace rockseis {
+
+// =============== ENUMS =============== //
+typedef enum {PAR_GRID, PAR_BSPLINE, PAR_1D} rs_paramtype; ///< Type of parameterisation
 
 // ##### INVERSION CLASS
 template<typename T>
@@ -69,10 +74,14 @@ public:
     void setMisfit_type(rs_fwimisfit val) { misfit_type = val; }
     rs_snapmethod getSnapmethod() { return snapmethod; } 
     void setSnapmethod(rs_snapmethod val) { snapmethod = val; }
-    double getDtx() { return dtx; }
-    double getDtz() { return dtz; }
-    void setDtx(double val) { dtx = val; }
-    void setDtz(double val) { dtz = val; }
+    rs_paramtype getParamtype() { return paramtype; } 
+    void setParamtype(rs_paramtype val) { paramtype = val; }
+    T getDtx() { return dtx; }
+    T getDty() { return dty; }
+    T getDtz() { return dtz; }
+    void setDtx(T val) { dtx = val; }
+    void setDty(T val) { dty = val; }
+    void setDtz(T val) { dtz = val; }
 
 private:
 	int lpml;
@@ -83,8 +92,9 @@ private:
 	int nsnaps;
     rs_fwimisfit misfit_type;
     rs_snapmethod snapmethod;
+    rs_paramtype paramtype;
     MPImodeling *mpi;
-    double dtx, dty, dtz;
+    T dtx, dty, dtz;
 };
 
 // ##### ACOUSTIC 2D INVERSION CLASS
@@ -137,9 +147,32 @@ public:
     void setApertx(T val) { apertx = val; }
     T getApertx() { return apertx; }
 
+    void setKvp(T val) { kvp = val; }
+    T getKvp() { return kvp; }
+
+    void setKrho(T val) { krho = val; }
+    T getKrho() { return krho; }
+
+    void setKsource(T val) { ksource = val; }
+    T getKsource() { return ksource; }
+
     // Run gradient
-    void runAcousticfwigrad2d();
-    void runBsprojection2d();
+    void runGrad();
+   
+    // Run BSProjection
+    void runBsproj();
+
+    // Set initial
+    int setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile);
+
+    // Save line search models
+    void saveLinesearch(double *x);
+
+    // Read gradient
+    void readGrad(double *g);
+
+    // Read misfit
+    void readMisfit(double *f);
 
 private:
     bool dataweight;
@@ -156,6 +189,7 @@ private:
     std::string Pmodelledfile;
     std::string Presidualfile;
     T apertx;
+    T kvp, krho, ksource;
 };
 
 }

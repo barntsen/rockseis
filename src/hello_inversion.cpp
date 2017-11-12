@@ -20,104 +20,26 @@ void evaluate(rockseis::OptInstancePtr instance)
     fprintf(stderr, "Starting new evaluation\n");
     double *x = instance->x;
     double *g = instance->g;
-    float *g_in;
-    // Models
-    std::shared_ptr<rockseis::ModelAcoustic2D<float>> model0 (new rockseis::ModelAcoustic2D<float>(VP0FILE, RHO0FILE, 1 ,0));
-    std::shared_ptr<rockseis::Data2D<float>> source0 (new rockseis::Data2D<float>(SOURCE0FILE));
-    std::shared_ptr<rockseis::ModelAcoustic2D<float>> lsmodel (new rockseis::ModelAcoustic2D<float>(VPLSFILE, RHOLSFILE, 1 ,0));
-    std::shared_ptr<rockseis::Data2D<float>> lssource (new rockseis::Data2D<float>(SOURCELSFILE));
 
-    // Write linesearch model
-    model0->readModel();
-    lsmodel->readModel();
-    float *vp0, *rho0, *vpls, *rhols;
-    vp0 = model0->getVp(); 
-    rho0 = model0->getR(); 
-    vpls = lsmodel->getVp(); 
-    rhols = lsmodel->getR(); 
-    int i;
-    float k=K;
-
-    float dtx = 50.0;
-    float dtz = 50.0;
-    int Nmod = (lsmodel->getGeom())->getNtot();
-    std::shared_ptr<rockseis::Bspl2D<float>> spline (new rockseis::Bspl2D<float>(model0->getNx(), model0->getNz(), model0->getDx(), model0->getDz(), dtx, dtz, 3, 3));
-    int N = spline->getNc();
-    g_in = (float *) calloc(2*N, sizeof(float));
-    float *c = spline->getSpline();
-
-    for(i=0; i< N; i++)
-    {
-        c[i] = x[i]*k;
-    }
-    spline->bisp();
-    float *mod = spline->getMod();
-
-    for(i=0; i< Nmod; i++)
-    {
-        vpls[i] = vp0[i] + mod[i];
-        //vpls[i] = vp0[i] + x[i]*k;
-        //rhols[i] = rho0[i] + x[N+i]*k;
-    }
-    for(i=0; i< N; i++)
-    {
-        c[i] = x[i+N]*k;
-    }
-    spline->bisp();
-    mod = spline->getMod();
-
-    for(i=0; i< Nmod; i++)
-    {
-        rhols[i] = rho0[i] + mod[i];
-    }
-    lsmodel->writeModel();
-
+    // Save linesearch model
+    inv->saveLinesearch(x);
 
     // Start new gradient evaluation
     int task;
     task = RUN_F_GRAD;
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    inv->runAcousticfwigrad2d();
+    inv->runGrad();
 
     task = RUN_BS_PROJ;
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    inv->runBsprojection2d();
-
+    inv->runBsproj();
 
     //Read gradient
-//    std::shared_ptr<rockseis::ModelAcoustic2D<float>> modelgrad (new rockseis::ModelAcoustic2D<float>(VPGRADFILE, RHOGRADFILE, 1 ,0));
-//    std::shared_ptr<rockseis::Data2D<float>> sourcegrad (new rockseis::Data2D<float>(SOURCEGRADFILE));
-//    modelgrad->readModel();
-    std::shared_ptr<rockseis::File> Fgrad (new rockseis::File());
-    Fgrad->input(VPPROJGRADFILE);
-    Fgrad->read(&g_in[0], N, 0);
-    Fgrad->close();
-    Fgrad->input(RHOPROJGRADFILE);
-    Fgrad->read(&g_in[N], N, 0);
-    Fgrad->close();
-    for(i=0; i< N; i++)
-    {
-        g[i] = g_in[i]*k;
-        g[N+i] = g_in[N+i]*k;
-    }
-
-//    vp0 = modelgrad->getVp(); 
-//    rho0 = modelgrad->getR(); 
-//    for(i=0; i< N; i++)
-//    {
-//        g[i] = vp0[i]*k;
-//        g[N+i] = rho0[i]*k;
-//    }
+    inv->readGrad(g);
 
     //Read misfit
-    instance->f = 0.0;
-    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
-    Fmisfit->input(MISFITFILE);
-    float val;
-    for(i=0; i<Fmisfit->getN(1); i++){
-        Fmisfit->read(&val, 1); 
-        instance->f += val;
-    }
+    inv->readMisfit(&instance->f);
+
 }
 
 void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
@@ -220,10 +142,10 @@ int main(int argc, char** argv) {
 
     inv->setDataweight(dataweight);
     inv->setDataweightfile(Dataweightfile);
-    inv->setVpfile(Vpfile);
-    inv->setRhofile(Rhofile);
-    inv->setWaveletfile(Waveletfile);
-    inv->setMisfitfile(Misfitfile);
+    inv->setVpfile(VPLSFILE);
+    inv->setRhofile(RHOLSFILE);
+    inv->setWaveletfile(SOURCELSFILE);
+    inv->setMisfitfile(MISFITFILE);
     inv->setPsnapfile(Psnapfile);
     inv->setPrecordfile(Precordfile);
     inv->setPmodelledfile(Pmodelledfile);
@@ -234,9 +156,9 @@ int main(int argc, char** argv) {
     inv->setIncore(incore);
     inv->setMisfit_type(fwimisfit);
 
-    inv->setVpgradfile(Vpgradfile);
-    inv->setRhogradfile(Rhogradfile);
-    inv->setWavgradfile(Wavgradfile);
+    inv->setVpgradfile(VPGRADFILE);
+    inv->setRhogradfile(RHOGRADFILE);
+    inv->setWavgradfile(SOURCEGRADFILE);
 
     float dtx = 50.0;
     float dtz = 50.0;
@@ -253,30 +175,16 @@ int main(int argc, char** argv) {
         Sort->writeKeymap();
         Sort->writeSortmap();
 
-        // Get input model
-        std::shared_ptr<rockseis::ModelAcoustic2D<float>> model0 (new rockseis::ModelAcoustic2D<float>(VP0FILE, RHO0FILE, 1 ,0));
-        std::shared_ptr<rockseis::Data2D<float>> source0 (new rockseis::Data2D<float>(SOURCE0FILE));
-
-        // L-BFGS parameters
-        std::shared_ptr<rockseis::Bspl2D<float>> spline (new rockseis::Bspl2D<float>(model0->getNx(), model0->getNz(), model0->getDx(), model0->getDz(), dtx, dtz, 3, 3));
-        //int N=(model0->getGeom())->getNtot();
-        int N=spline->getNc();
-        spline->bisp();
-        std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(2*N));
-
+        // L-BFGS configuration
         /* Initialize the parameters for the L-BFGS optimization. */
-        /* Initialize x */
-        double *x = (double *) calloc(2*N, sizeof(double));
-        //float *vp, *rho;
+        double *x = nullptr; 
+        int N;
+        N = inv->setInitial(x, Vpfile, Rhofile, Waveletfile);
+        fprintf(stderr, "N: %d\n", N);
+        fflush(stderr);
+        std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(N));
         opt->opt_set_initial_guess(x);
-        // Copy initial model to linesearch model
-        model0->readModel();
         
-        model0->setVpfile(VPLSFILE);
-        model0->setRfile(RHOLSFILE);
-        model0->writeModel();
-        source0->setFile(SOURCELSFILE);
-        source0->write();
         opt->setGtol(0.9);
         opt->setMax_linesearch(5);
 
@@ -293,6 +201,9 @@ int main(int argc, char** argv) {
         snprintf(buffer,512,"L-BFGS algorithm finished with return status:\n%s\n",opt->getMsg());
         fprintf(stderr, "%s", buffer);
 
+        // Free initial model
+        free(x);
+
     //SLAVE
     }else{
         bool stop = false;
@@ -302,10 +213,10 @@ int main(int argc, char** argv) {
             switch(task)
             {
                 case RUN_F_GRAD:
-                    inv->runAcousticfwigrad2d();
+                    inv->runGrad();
                     break;
                 case RUN_BS_PROJ:
-                    inv->runBsprojection2d();
+                    inv->runBsproj();
                     break;
                 case BREAK_LOOP:
                     stop = true;

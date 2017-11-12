@@ -13,8 +13,8 @@ sfspike <Rho2d.rsf k3=25 l3=26 k1=30 l1=35 mag=0. | sfsmooth rect1=5 rect3=5 out
 sfmath <Rho2d.rsf x=pert.rsf output="in+x" out=stdout > Rho2d_pert.rsf 
 rsrsf2rss <Rho2d_pert.rsf > Rho2d_pert.rss
 
-mpirun -np 4 rsmpiAcousticmod2d mod.cfg 
+cp ../../Models/Vp2d.rss .
+cp ../../Models/Rho2d.rss .
+cp ../../Models/Wav2d.rss .
 
-cp ../../Models/Vp2d.rss vp_0.rss
-cp ../../Models/Rho2d.rss rho_0.rss
-cp ../../Models/Wav2d.rss source_0.rss
+mpirun -np 4 rsmpiAcousticmod2d mod.cfg 

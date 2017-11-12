@@ -6,12 +6,38 @@ namespace rockseis {
 // =============== ABSTRACT INVERSION CLASS =============== //
 template<typename T>
 Inversion<T>::Inversion() {
-    //Do nothing
+    //Set default parameters
+    fs = false;
+    lpml = 10;
+    incore = true;
+    order = 4;
+    snapinc=4;
+    nsnaps=0;
+    snapmethod = OPTIMAL; 
+    misfit_type = DIFFERENCE;
+    paramtype = PAR_GRID;
+    dtx = -1;
+    dty = -1;
+    dtz = -1;
 }
 
 template<typename T>
 Inversion<T>::Inversion(MPImodeling *_mpi) {
     mpi = _mpi;
+
+    //Set default parameters
+    fs = false;
+    lpml = 10;
+    incore = true;
+    order = 4;
+    snapinc=4;
+    nsnaps=0;
+    snapmethod = OPTIMAL; 
+    misfit_type = DIFFERENCE;
+    paramtype = PAR_GRID;
+    dtx = -1;
+    dty = -1;
+    dtz = -1;
 }
 
 template<typename T>
@@ -23,12 +49,22 @@ Inversion<T>::~Inversion() {
 //
 template<typename T>
 InversionAcoustic2D<T>::InversionAcoustic2D() {
-    // Do nothing
+    // Set default parameters
+    apertx = -1;
+
+    kvp = 1.0;
+    krho = 1.0;
+    ksource = 1.0;
 }
 
 template<typename T>
 InversionAcoustic2D<T>::InversionAcoustic2D(MPImodeling *mpi): Inversion<T>(mpi) {
-    // Do nothing
+    // Set default parameters
+    apertx = -1;
+
+    kvp = 1.0;
+    krho = 1.0;
+    ksource = 1.0;
 }
 
 template<typename T>
@@ -37,7 +73,7 @@ InversionAcoustic2D<T>::~InversionAcoustic2D() {
 }
 
 template<typename T>
-void InversionAcoustic2D<T>::runAcousticfwigrad2d() {
+void InversionAcoustic2D<T>::runGrad() {
     MPImodeling *mpi = this->getMpi();
     std::shared_ptr<rockseis::Data2D<T>> shot2D;
     std::shared_ptr<rockseis::Data2D<T>> shot2Di;
@@ -278,7 +314,7 @@ void InversionAcoustic2D<T>::runAcousticfwigrad2d() {
 }
 
 template<typename T>
-void InversionAcoustic2D<T>::runBsprojection2d() {
+void InversionAcoustic2D<T>::runBsproj() {
     MPImodeling *mpi = this->getMpi();
 	T vpsum = 0.0; // Sum over splines
 	T rhosum = 0.0; // Sum over splines
@@ -303,11 +339,11 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
 	/* Allocating projection arrays */
 	float *vpproj= (float *) calloc(nc, sizeof(float));
 	if(vpproj==NULL){
-		rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate projection array (vpproj)");
+		rs_error("InversionAcoustic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
 	}
 	float *rhoproj= (float *) calloc(nc, sizeof(float));
 	if(rhoproj==NULL){
-		rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate projection array (rhoproj)");
+		rs_error("InversionAcoustic2D<T>::runBsproj(): Not enough memory to allocate projection array (rhoproj)");
 	}
 
     if(mpi->getRank() == 0) {
@@ -328,7 +364,7 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
 
 		global_stack= (float *) calloc(nc, sizeof(float));
 		if(global_stack==NULL){
-			rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate global stack array");
+			rs_error("InversionAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
 		}
 
 		/* Starting reduce operation */
@@ -394,13 +430,219 @@ void InversionAcoustic2D<T>::runBsprojection2d() {
 
 		global_stack= (float *) calloc(nc, sizeof(float));
 		if(global_stack==NULL){
-			rs_error("InversionAcoustic2D<T>::runBsprojection2d(): Not enough memory to allocate global stack array");
+			rs_error("InversionAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
 		}
 
 		/* Starting reduce operation */
 		MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
 		MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
 	   }
+}
+
+template<typename T>
+int InversionAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile)
+{
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> model_in (new rockseis::ModelAcoustic2D<T>(vpfile, rhofile, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<T>> source_in (new rockseis::Data2D<T>(sourcefile));
+    std::shared_ptr<rockseis::Bspl2D<T>> spline;
+    model_in->readModel();  
+    // Write initial model files
+    model_in->setVpfile(VP0FILE);
+    model_in->setRfile(RHO0FILE);
+    model_in->writeModel();
+    // Write linesearch model files
+    model_in->setVpfile(VPLSFILE);
+    model_in->setRfile(RHOLSFILE);
+    model_in->writeModel();
+    source_in->read();
+    // Write source initial model
+    source_in->setFile(SOURCE0FILE);
+    source_in->write();
+    // Write source linesearch file
+    source_in->setFile(SOURCELSFILE);
+    source_in->write();
+    int N, Ns;
+    int Npar = 0;
+    switch(this->getParamtype()){
+        case PAR_GRID:
+            N = (model_in->getGeom())->getNtot();
+            Ns = source_in->getNt();
+            Npar = 2*N + Ns;
+            x = (double *) calloc(Npar, sizeof(double));
+            break;
+        case PAR_BSPLINE:
+             spline = std::make_shared<rockseis::Bspl2D<T>>(model_in->getNx(), model_in->getNz(), model_in->getDx(), model_in->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+            N=spline->getNc();
+            Ns = source_in->getNt();
+            Npar = 2*N + Ns;
+            x = (double *) calloc(Npar, sizeof(double));
+            break;
+        default:
+            rs_error("InversionAcoustic2D<T>::setInitial(): Unknown parameterisation."); 
+            break;
+    }
+    return Npar;
+}
+
+template<typename T>
+void InversionAcoustic2D<T>::saveLinesearch(double *x)
+{
+    // Models
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> model0 (new rockseis::ModelAcoustic2D<T>(VP0FILE, RHO0FILE, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<T>> source0 (new rockseis::Data2D<T>(SOURCE0FILE));
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lsmodel (new rockseis::ModelAcoustic2D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<T>> lssource (new rockseis::Data2D<T>(SOURCELSFILE));
+    std::shared_ptr<rockseis::Bspl2D<T>> spline;
+
+    // Write linesearch model
+    model0->readModel();
+    lsmodel->readModel();
+    source0->read();
+    lssource->read();
+    T *vp0, *rho0, *vpls, *rhols, *wav0, *wavls;
+    T *c, *mod;
+    vp0 = model0->getVp(); 
+    rho0 = model0->getR(); 
+    wav0 = source0->getData();
+    vpls = lsmodel->getVp(); 
+    rhols = lsmodel->getR(); 
+    wavls = lssource->getData();
+    int i;
+    int N, Ns, Nmod;
+
+    switch (this->getParamtype()){
+        case PAR_GRID:
+            N = (lsmodel->getGeom())->getNtot();
+            for(i=0; i< N; i++)
+            {
+                vpls[i] = vp0[i] + x[i]*kvp;
+                rhols[i] = rho0[i] + x[N+i]*krho;
+            }
+            lsmodel->writeModel();
+            Ns = lssource->getNt();
+            for(i=0; i< Ns; i++)
+            {
+                wavls[i] = wav0[i] + x[2*N+i]*ksource;
+            }
+            lssource->write();
+            break;
+        case PAR_BSPLINE:
+            Nmod = (lsmodel->getGeom())->getNtot();
+            spline = std::make_shared<rockseis::Bspl2D<T>>(model0->getNx(), model0->getNz(), model0->getDx(), model0->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+            N = spline->getNc();
+            c = spline->getSpline();
+
+            for(i=0; i< N; i++)
+            {
+                c[i] = x[i]*kvp;
+            }
+            spline->bisp();
+            mod = spline->getMod();
+
+            for(i=0; i< Nmod; i++)
+            {
+                vpls[i] = vp0[i] + mod[i];
+            }
+            for(i=0; i< N; i++)
+            {
+                c[i] = x[i+N]*krho;
+            }
+            spline->bisp();
+            mod = spline->getMod();
+
+            for(i=0; i< Nmod; i++)
+            {
+                rhols[i] = rho0[i] + mod[i];
+            }
+            lsmodel->writeModel();
+            Ns = lssource->getNt();
+            for(i=0; i< Ns; i++)
+            {
+                wavls[i] = wav0[i] + x[2*N+i]*ksource;
+            }
+            lssource->write();
+            break;
+        default:
+            rs_error("InversionAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
+            break;
+    }
+}
+
+template<typename T>
+void InversionAcoustic2D<T>::readMisfit(double *f)
+{
+    *f = 0.0;
+    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
+    Fmisfit->input(MISFITFILE);
+    T val;
+    for(int i=0; i<Fmisfit->getN(1); i++){
+        Fmisfit->read(&val, 1); 
+        *f += val;
+    }
+}
+
+template<typename T>
+void InversionAcoustic2D<T>::readGrad(double *g)
+{
+    int i;
+    int N,Ns;
+    float *g_in;
+    T *gvp, *grho, *gwav;
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> modelgrad (new rockseis::ModelAcoustic2D<T>(VPGRADFILE, RHOGRADFILE, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<T>> sourcegrad (new rockseis::Data2D<T>(SOURCEGRADFILE));
+    std::shared_ptr<rockseis::Bspl2D<T>> spline;
+    std::shared_ptr<rockseis::File> Fgrad;
+    switch (this->getParamtype()){
+        case PAR_GRID:
+            modelgrad->readModel();
+            N = (modelgrad->getGeom())->getNtot();
+            gvp = modelgrad->getVp(); 
+            grho = modelgrad->getR(); 
+            for(i=0; i< N; i++)
+            {
+                g[i] = gvp[i]*kvp;
+                g[N+i] = grho[i]*krho;
+            }
+            Ns = sourcegrad->getNt();
+            sourcegrad->read();
+            gwav = sourcegrad->getData();
+            for(i=0; i< Ns; i++)
+            {
+                g[2*N+i] = gwav[i]*krho;
+
+            }
+            break;
+        case PAR_BSPLINE:
+           std::make_shared<rockseis::Bspl2D<T>>(modelgrad->getNx(), modelgrad->getNz(), modelgrad->getDx(), modelgrad->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+            N = spline->getNc();
+            g_in = (float *) calloc(2*N, sizeof(float));
+            Fgrad = std::make_shared<rockseis::File>();
+            Fgrad->input(VPPROJGRADFILE);
+            Fgrad->read(&g_in[0], N, 0);
+            Fgrad->close();
+            Fgrad->input(RHOPROJGRADFILE);
+            Fgrad->read(&g_in[N], N, 0);
+            Fgrad->close();
+            for(i=0; i< N; i++)
+            {
+                g[i] = g_in[i]*kvp;
+                g[N+i] = g_in[N+i]*krho;
+            }
+            Ns = sourcegrad->getNt();
+            sourcegrad->read();
+            gwav = sourcegrad->getData();
+            for(i=0; i< Ns; i++)
+            {
+                g[2*N+i] = gwav[i]*ksource;
+
+            }
+            // Free temporary array
+            free(g_in);
+            break;
+        default:
+            rs_error("InversionAcoustic2D<T>::readGrad(): Unknown parameterisation."); 
+            break;
+    }
 }
 
 
