@@ -159,6 +159,10 @@ int main(int argc, char** argv) {
     inv->setVpgradfile(VPGRADFILE);
     inv->setRhogradfile(RHOGRADFILE);
     inv->setWavgradfile(SOURCEGRADFILE);
+    inv->setKvp(K);
+    inv->setKrho(K);
+    inv->setKsource(0.0);
+    inv->setParamtype(PAR_BSPLINE);
 
     float dtx = 50.0;
     float dtz = 50.0;
@@ -180,8 +184,7 @@ int main(int argc, char** argv) {
         double *x = nullptr; 
         int N;
         N = inv->setInitial(x, Vpfile, Rhofile, Waveletfile);
-        fprintf(stderr, "N: %d\n", N);
-        fflush(stderr);
+        x = (double *) calloc(N, sizeof(double));
         std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(N));
         opt->opt_set_initial_guess(x);
         

@@ -468,19 +468,18 @@ int InversionAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::strin
             N = (model_in->getGeom())->getNtot();
             Ns = source_in->getNt();
             Npar = 2*N + Ns;
-            x = (double *) calloc(Npar, sizeof(double));
             break;
         case PAR_BSPLINE:
              spline = std::make_shared<rockseis::Bspl2D<T>>(model_in->getNx(), model_in->getNz(), model_in->getDx(), model_in->getDz(), this->getDtx(), this->getDtz(), 3, 3);
             N=spline->getNc();
             Ns = source_in->getNt();
             Npar = 2*N + Ns;
-            x = (double *) calloc(Npar, sizeof(double));
             break;
         default:
             rs_error("InversionAcoustic2D<T>::setInitial(): Unknown parameterisation."); 
             break;
     }
+
     return Npar;
 }
 
@@ -499,7 +498,7 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
     lsmodel->readModel();
     source0->read();
     lssource->read();
-    T *vp0, *rho0, *vpls, *rhols, *wav0, *wavls;
+    T *vp0, *rho0, *wav0, *vpls, *rhols, *wavls;
     T *c, *mod;
     vp0 = model0->getVp(); 
     rho0 = model0->getR(); 
@@ -531,7 +530,6 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
             spline = std::make_shared<rockseis::Bspl2D<T>>(model0->getNx(), model0->getNz(), model0->getDx(), model0->getDz(), this->getDtx(), this->getDtz(), 3, 3);
             N = spline->getNc();
             c = spline->getSpline();
-
             for(i=0; i< N; i++)
             {
                 c[i] = x[i]*kvp;
