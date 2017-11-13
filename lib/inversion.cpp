@@ -515,10 +515,14 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
 
     // If mute
     if(!Mutefile.empty()){
-         mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Mutefile, Mutefile, 1 ,0);
+        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Mutefile, Mutefile, 1 ,0);
+        int Nmute = (mute->getGeom())->getNtot();
+        N = (lsmodel->getGeom())->getNtot();
+        if(N != Nmute) rs_error("InversionAcoustic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         rhomutedata = mute->getR();
+        N = (lsmodel->getGeom())->getNtot();
     }else{
         N = (lsmodel->getGeom())->getNtot();
         vpmutedata = (T *) calloc(N, sizeof(T)); 
