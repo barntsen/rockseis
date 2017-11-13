@@ -3,13 +3,10 @@
 #include "opt.h"
 #include "inversion.h"
 #include "inparse.h"
-#define K 400
 
+// TODO Add regularization
+//
 using namespace rockseis;
-
-/// TO DO: 
-//Add mute 
-//Add functions to save line search files 
 
 /* Global variables */
 std::shared_ptr<InversionAcoustic2D<float>> inv;
@@ -30,16 +27,21 @@ void evaluate(rockseis::OptInstancePtr instance)
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
     inv->runGrad();
 
-    task = RUN_BS_PROJ;
-    MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    inv->runBsproj();
+    // Apply mute to gradient
+    inv->applyMute();
+
+    if(inv->getParamtype() == PAR_BSPLINE)
+    {
+        task = RUN_BS_PROJ;
+        MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        inv->runBsproj();
+    }
 
     //Read gradient
     inv->readGrad(g);
 
     //Read misfit
     inv->readMisfit(&instance->f);
-
 }
 
 void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
@@ -68,12 +70,17 @@ int main(int argc, char** argv) {
 	bool fs;
     bool incore = false;
     bool dataweight;
+    bool mute;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
-	int snapmethod;
+	int _snapmethod;
+    int _paramtype;
 	int misfit_type;
     float apertx;
+    float dtx=-1;
+    float dtz=-1;
+    float kvp, krho, ksource;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Rhofile;
@@ -86,6 +93,7 @@ int main(int argc, char** argv) {
     std::string Precordfile;
     std::string Pmodelledfile;
     std::string Presidualfile;
+    std::string Mutefile;
 
 
     /* Get parameters from configuration file */
@@ -103,17 +111,19 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vpgradfile", &Vpgradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Rhogradfile", &Rhogradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Wavgradfile", &Wavgradfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Misfitfile", &Misfitfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("kvp", &kvp) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("krho", &krho) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("ksource", &ksource) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("paramtype", &_paramtype) == INPARSE_ERR) status = true;
+    rockseis::rs_paramtype paramtype = static_cast<rockseis::rs_paramtype>(_paramtype);
+    if(paramtype == PAR_BSPLINE){
+        if(Inpar->getPar("dtx", &dtx) == INPARSE_ERR) status = true;
+        if(Inpar->getPar("dtz", &dtz) == INPARSE_ERR) status = true;
+    }
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Presidualfile", &Presidualfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Pmodelledfile", &Pmodelledfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("snapmethod", &snapmethod) == INPARSE_ERR) status = true;
-    rockseis::rs_snapmethod checkpoint = static_cast<rockseis::rs_snapmethod>(snapmethod);
-    switch(checkpoint){
+    if(Inpar->getPar("snapmethod", &_snapmethod) == INPARSE_ERR) status = true;
+    rockseis::rs_snapmethod snapmethod = static_cast<rockseis::rs_snapmethod>(_snapmethod);
+    switch(snapmethod){
         case rockseis::FULL:
             break;
         case rockseis::OPTIMAL:
@@ -131,6 +141,11 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("Dataweightfile", &Dataweightfile) == INPARSE_ERR) status = true;
     }
 
+    if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
+    if(mute){
+        if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
+    }
+
 	if(status == true){
 		rs_error("Program terminated due to input errors.");
 	}
@@ -140,18 +155,22 @@ int main(int argc, char** argv) {
     inv->setFs(fs);
     inv->setSnapinc(snapinc);
 
+    inv->setPrecordfile(Precordfile);
     inv->setDataweight(dataweight);
     inv->setDataweightfile(Dataweightfile);
+    if(mute){
+        inv->setMutefile(Mutefile);
+    }
+
     inv->setVpfile(VPLSFILE);
     inv->setRhofile(RHOLSFILE);
     inv->setWaveletfile(SOURCELSFILE);
     inv->setMisfitfile(MISFITFILE);
-    inv->setPsnapfile(Psnapfile);
-    inv->setPrecordfile(Precordfile);
-    inv->setPmodelledfile(Pmodelledfile);
-    inv->setPresidualfile(Presidualfile);
+    inv->setPmodelledfile(PMODFILE);
+    inv->setPresidualfile(PRESFILE);
+    inv->setPsnapfile(PSNAPFILE);
     inv->setApertx(apertx);
-    inv->setSnapmethod(checkpoint);
+    inv->setSnapmethod(snapmethod);
     inv->setNsnaps(nsnaps);
     inv->setIncore(incore);
     inv->setMisfit_type(fwimisfit);
@@ -159,14 +178,10 @@ int main(int argc, char** argv) {
     inv->setVpgradfile(VPGRADFILE);
     inv->setRhogradfile(RHOGRADFILE);
     inv->setWavgradfile(SOURCEGRADFILE);
-    inv->setKvp(K);
-    inv->setKrho(K);
-    inv->setKsource(0.0);
-    inv->setParamtype(PAR_BSPLINE);
-
-    float dtx = 50.0;
-    float dtz = 50.0;
-
+    inv->setKvp(kvp);
+    inv->setKrho(krho);
+    inv->setKsource(ksource);
+    inv->setParamtype(paramtype);
     inv->setDtx(dtx);
     inv->setDtz(dtz);
 

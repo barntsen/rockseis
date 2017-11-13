@@ -42,6 +42,9 @@
 
 #define MISFITFILE "misfit.rss"
 
+#define PMODFILE "pmod.rss"
+#define PRESFILE "pres.rss"
+#define PSNAPFILE "Pcheckpoints.rss"
 
 
 namespace rockseis {
@@ -140,6 +143,8 @@ public:
 
     void setPmodelledfile(std::string file) { Pmodelledfile = file; }
     std::string getPmodelledfile() { return Pmodelledfile; }
+    void setMutefile(std::string file) { Mutefile = file; }
+    std::string getMutefile() { return Mutefile; }
 
     void setPresidualfile(std::string file) { Presidualfile = file; }
     std::string getPresidualfile() { return Presidualfile; }
@@ -161,6 +166,9 @@ public:
    
     // Run BSProjection
     void runBsproj();
+
+    //Mute gradient
+    void applyMute();
 
     // Set initial
     int setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile);
@@ -188,6 +196,7 @@ private:
     std::string Precordfile;
     std::string Pmodelledfile;
     std::string Presidualfile;
+    std::string Mutefile;
     T apertx;
     T kvp, krho, ksource;
 };

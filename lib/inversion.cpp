@@ -492,6 +492,8 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> lsmodel (new rockseis::ModelAcoustic2D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
     std::shared_ptr<rockseis::Data2D<T>> lssource (new rockseis::Data2D<T>(SOURCELSFILE));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute;
+
 
     // Write linesearch model
     model0->readModel();
@@ -500,6 +502,8 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
     lssource->read();
     T *vp0, *rho0, *wav0, *vpls, *rhols, *wavls;
     T *c, *mod;
+    T *vpmutedata;
+    T *rhomutedata;
     vp0 = model0->getVp(); 
     rho0 = model0->getR(); 
     wav0 = source0->getData();
@@ -509,13 +513,29 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
     int i;
     int N, Ns, Nmod;
 
+    // If mute
+    if(!Mutefile.empty()){
+         mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Mutefile, Mutefile, 1 ,0);
+        mute->readModel();
+        vpmutedata = mute->getVp();
+        rhomutedata = mute->getR();
+    }else{
+        N = (lsmodel->getGeom())->getNtot();
+        vpmutedata = (T *) calloc(N, sizeof(T)); 
+        rhomutedata = (T *) calloc(N, sizeof(T)); 
+        for(i=0; i < N; i++){
+            vpmutedata[i] = 1.0;
+            rhomutedata[i] = 1.0;
+        }
+    }
+
     switch (this->getParamtype()){
         case PAR_GRID:
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
             {
-                vpls[i] = vp0[i] + x[i]*kvp;
-                rhols[i] = rho0[i] + x[N+i]*krho;
+                vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
+                rhols[i] = rho0[i] + x[N+i]*rhomutedata[i]*krho;
             }
             lsmodel->writeModel();
             Ns = lssource->getNt();
@@ -532,25 +552,25 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
             c = spline->getSpline();
             for(i=0; i< N; i++)
             {
-                c[i] = x[i]*kvp;
+                c[i] = x[i];
             }
             spline->bisp();
             mod = spline->getMod();
 
             for(i=0; i< Nmod; i++)
             {
-                vpls[i] = vp0[i] + mod[i];
+                vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
             }
             for(i=0; i< N; i++)
             {
-                c[i] = x[i+N]*krho;
+                c[i] = x[i+N];
             }
             spline->bisp();
             mod = spline->getMod();
 
             for(i=0; i< Nmod; i++)
             {
-                rhols[i] = rho0[i] + mod[i];
+                rhols[i] = rho0[i] + mod[i]*rhomutedata[i]*krho;
             }
             lsmodel->writeModel();
             Ns = lssource->getNt();
@@ -563,6 +583,10 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
         default:
             rs_error("InversionAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
             break;
+    }
+    if(Mutefile.empty()){
+        free(vpmutedata);
+        free(rhomutedata);
     }
 }
 
@@ -640,6 +664,38 @@ void InversionAcoustic2D<T>::readGrad(double *g)
         default:
             rs_error("InversionAcoustic2D<T>::readGrad(): Unknown parameterisation."); 
             break;
+    }
+}
+
+
+template<typename T>
+void InversionAcoustic2D<T>::applyMute()
+{
+    if(!Mutefile.empty()){
+        // Models
+        std::shared_ptr<rockseis::ModelAcoustic2D<T>> model;
+        model = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADFILE, RHOGRADFILE, 1 ,0);
+        // Mute
+        std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute (new rockseis::ModelAcoustic2D<T>(Mutefile, Mutefile, 1 ,0));
+
+        // Mute model and write
+        model->readModel();
+        mute->readModel();
+        T *vp, *rho, *vpmute, *rhomute;
+        vp = model->getVp(); 
+        rho = model->getR(); 
+        vpmute = mute->getVp(); 
+        rhomute = mute->getR(); 
+        int i;
+        int N;
+
+        N = (model->getGeom())->getNtot();
+        for(i=0; i< N; i++)
+        {
+            vp[i] = vp[i]*vpmute[i];
+            rho[i] = rho[i]*rhomute[i];
+        }
+        model->writeModel();
     }
 }
 
