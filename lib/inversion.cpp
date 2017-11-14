@@ -55,6 +55,11 @@ InversionAcoustic2D<T>::InversionAcoustic2D() {
     kvp = 1.0;
     krho = 1.0;
     ksource = 1.0;
+
+    reg_alpha[0]=0.0;
+    reg_alpha[1]=0.0;
+    reg_eps[0]=1e-3;
+    reg_eps[1]=1e-3;
 }
 
 template<typename T>
@@ -65,6 +70,11 @@ InversionAcoustic2D<T>::InversionAcoustic2D(MPImodeling *mpi): Inversion<T>(mpi)
     kvp = 1.0;
     krho = 1.0;
     ksource = 1.0;
+    reg_alpha[0]=0.0;
+    reg_alpha[1]=0.0;
+
+    reg_eps[0]=1e-3;
+    reg_eps[1]=1e-3;
 }
 
 template<typename T>
@@ -322,8 +332,19 @@ void InversionAcoustic2D<T>::runBsproj() {
     T *c;
     T *wrk;
 
+    std::string vpgradfile;
+    std::string rhogradfile;
+
+    if(Mutefile.empty()){
+        vpgradfile = VPGRADFILE;
+        rhogradfile = RHOGRADFILE;
+    }else{
+        vpgradfile = VPGRADMUTEFILE;
+        rhogradfile = RHOGRADMUTEFILE;
+    }
+
 	// Get gradients
-	std::shared_ptr<rockseis::ModelAcoustic2D<T>> grad (new rockseis::ModelAcoustic2D<T>(Vpgradfile, Rhogradfile, this->getLpml() ,this->getFs()));
+	std::shared_ptr<rockseis::ModelAcoustic2D<T>> grad (new rockseis::ModelAcoustic2D<T>(vpgradfile, rhogradfile, this->getLpml() ,this->getFs()));
 
 	// Read model
 	grad->readModel();
@@ -494,7 +515,6 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute;
 
-
     // Write linesearch model
     model0->readModel();
     lsmodel->readModel();
@@ -597,6 +617,7 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
 template<typename T>
 void InversionAcoustic2D<T>::readMisfit(double *f)
 {
+    // Data misfit
     *f = 0.0;
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
     Fmisfit->input(MISFITFILE);
@@ -605,6 +626,18 @@ void InversionAcoustic2D<T>::readMisfit(double *f)
         Fmisfit->read(&val, 1); 
         *f += val;
     }
+    Fmisfit->close();
+
+    // Regularisation misfit
+    Fmisfit->input(VPREGMISFITFILE);
+    Fmisfit->read(&val, 1, 0); 
+    *f += reg_alpha[0]*val;
+    Fmisfit->close();
+
+    Fmisfit->input(RHOREGMISFITFILE);
+    Fmisfit->read(&val, 1, 0); 
+    *f += reg_alpha[1]*val;
+    Fmisfit->close();
 }
 
 template<typename T>
@@ -614,7 +647,17 @@ void InversionAcoustic2D<T>::readGrad(double *g)
     int N,Ns;
     float *g_in;
     T *gvp, *grho, *gwav;
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> modelgrad (new rockseis::ModelAcoustic2D<T>(VPGRADFILE, RHOGRADFILE, 1 ,0));
+    std::string vpgradfile;
+    std::string rhogradfile;
+    if(Mutefile.empty()){
+        vpgradfile = VPGRADFILE;
+        rhogradfile = RHOGRADFILE;
+    }else{
+        vpgradfile = VPGRADMUTEFILE;
+        rhogradfile = RHOGRADMUTEFILE;
+    }
+
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> modelgrad (new rockseis::ModelAcoustic2D<T>(vpgradfile, rhogradfile, 1 ,0));
     std::shared_ptr<rockseis::Data2D<T>> sourcegrad (new rockseis::Data2D<T>(SOURCEGRADFILE));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
     std::shared_ptr<rockseis::File> Fgrad;
@@ -671,6 +714,38 @@ void InversionAcoustic2D<T>::readGrad(double *g)
     }
 }
 
+template<typename T>
+void InversionAcoustic2D<T>::combineGradients()
+{
+    // Gradients
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> grad;
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> reggrad;
+    grad = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADFILE, RHOGRADFILE, 1 ,0);
+    reggrad = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPREGGRADFILE, RHOREGGRADFILE, 1 ,0);
+
+    // Read gradients
+    grad->readModel();
+    reggrad->readModel();
+    T *vp, *rho, *regvp, *regrho;
+    vp = grad->getVp(); 
+    rho = grad->getR(); 
+    regvp = reggrad->getVp(); 
+    regrho = reggrad->getR(); 
+    int i;
+    int N;
+
+    N = (grad->getGeom())->getNtot();
+    // Compute 
+    for(i=0; i< N; i++)
+    {
+        vp[i] = vp[i] + reg_alpha[0]*regvp[i];
+        rho[i] = rho[i] + reg_alpha[1]*regrho[i];
+    }
+    grad->setVpfile(VPGRADCOMBFILE);
+    grad->setRfile(RHOGRADCOMBFILE);
+    grad->writeModel();
+}
+
 
 template<typename T>
 void InversionAcoustic2D<T>::applyMute()
@@ -678,7 +753,7 @@ void InversionAcoustic2D<T>::applyMute()
     if(!Mutefile.empty()){
         // Models
         std::shared_ptr<rockseis::ModelAcoustic2D<T>> model;
-        model = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADFILE, RHOGRADFILE, 1 ,0);
+        model = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADCOMBFILE, RHOGRADCOMBFILE, 1 ,0);
         // Mute
         std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute (new rockseis::ModelAcoustic2D<T>(Mutefile, Mutefile, 1 ,0));
 
@@ -699,9 +774,206 @@ void InversionAcoustic2D<T>::applyMute()
             vp[i] = vp[i]*vpmute[i];
             rho[i] = rho[i]*rhomute[i];
         }
+        model->setVpfile(VPGRADMUTEFILE);
+        model->setRfile(RHOGRADMUTEFILE);
         model->writeModel();
     }
 }
+
+template<typename T>
+void InversionAcoustic2D<T>::computeRegularisation(double *x)
+{
+    // Models
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> model (new rockseis::ModelAcoustic2D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
+    std::shared_ptr<rockseis::Bspl2D<double>> spline;
+
+    // Write linesearch model
+    model->readModel();
+    double *dvpdx, *dvpdz;
+    double *drhodx, *drhodz;
+    T *vpgrad, *rhograd;
+    double *gwrk;
+    double *c, *mod;
+    double *df = der->getDf();
+    int i;
+    int N, Nmod;
+
+    Nmod = (model->getGeom())->getNtot();
+    dvpdx = (double *) calloc(Nmod, sizeof(double));
+    dvpdz = (double *) calloc(Nmod, sizeof(double));
+    drhodx = (double *) calloc(Nmod, sizeof(double));
+    drhodz = (double *) calloc(Nmod, sizeof(double));
+    gwrk = (double *) calloc(Nmod, sizeof(double));
+    model->readModel();
+    model->setVpfile(VPREGGRADFILE);
+    model->setRfile(RHOREGGRADFILE);
+    vpgrad = model->getVp();
+    rhograd = model->getR();
+    switch (this->getParamtype()){
+        case PAR_GRID:
+            N = (model->getGeom())->getNtot();
+            der->ddx_fw(x);
+            for(i=0; i< N; i++)
+            {
+                dvpdx[i] = df[i]*kvp;
+            }
+            der->ddz_fw(x);
+            for(i=0; i< N; i++)
+            {
+                dvpdz[i] = df[i]*kvp;
+            }
+            der->ddx_fw(&x[N]);
+            for(i=0; i< N; i++)
+            {
+                drhodx[i] = df[i]*krho;
+            }
+            der->ddz_fw(&x[N]);
+            for(i=0; i< N; i++)
+            {
+                drhodz[i] = df[i]*krho;
+            }
+            break;
+        case PAR_BSPLINE:
+            Nmod = (model->getGeom())->getNtot();
+            spline = std::make_shared<rockseis::Bspl2D<double>>(model->getNx(), model->getNz(), model->getDx(), model->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+            N = spline->getNc();
+            c = spline->getSpline();
+            for(i=0; i< N; i++)
+            {
+                c[i] = x[i];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+            der->ddx_fw(mod);
+            for(i=0; i< Nmod; i++)
+            {
+                dvpdx[i] = df[i]*kvp;
+            }
+            der->ddz_fw(mod);
+            for(i=0; i< Nmod; i++)
+            {
+                dvpdz[i] = df[i]*kvp;
+            }
+            for(i=0; i< N; i++)
+            {
+                c[i] = x[i+N];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+            der->ddx_fw(mod);
+            for(i=0; i< Nmod; i++)
+            {
+                drhodx[i] = df[i]*krho;
+            }
+            der->ddz_fw(mod);
+            for(i=0; i< Nmod; i++)
+            {
+                drhodz[i] = df[i]*krho;
+            }
+
+            break;
+        default:
+            rs_error("InversionAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
+            break;
+    }
+    // Computing misfit
+    double M; 
+    T fvp = 0.0;
+    for(i=0; i< Nmod; i++)
+    {
+        M = dvpdx[i]*dvpdx[i] + dvpdz[i]*dvpdz[i];
+        M = sqrt(M);
+        fvp += M;
+    }
+
+    for(i=0; i< Nmod; i++)
+    {
+        M = dvpdx[i]*dvpdx[i] + dvpdz[i]*dvpdz[i] + reg_eps[0]*reg_eps[0];
+        M = sqrt(M);
+        gwrk[i] = dvpdx[i]/M;
+    }
+    der->ddx_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        vpgrad[i] = -1.0*df[i];
+    }
+
+    for(i=0; i< Nmod; i++)
+    {
+        M = dvpdx[i]*dvpdx[i] + dvpdz[i]*dvpdz[i] + reg_eps[0]*reg_eps[0];
+        M = sqrt(M);
+        gwrk[i] = dvpdz[i]/M;
+    }
+    der->ddz_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        vpgrad[i] -= df[i];
+    }
+
+    T frho = 0.0;
+    for(i=0; i< Nmod; i++)
+    {
+        M = drhodx[i]*drhodx[i] + drhodz[i]*drhodz[i];
+        M = sqrt(M);
+        frho += M;
+    }
+
+    for(i=0; i< Nmod; i++)
+    {
+        M = drhodx[i]*drhodx[i] + drhodz[i]*drhodz[i] + reg_eps[1]*reg_eps[1];
+        M = sqrt(M);
+        gwrk[i] = drhodx[i]/M;
+    }
+    der->ddx_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        rhograd[i] = -1.0*df[i];
+    }
+
+    for(i=0; i< Nmod; i++)
+    {
+        M = drhodx[i]*drhodx[i] + drhodz[i]*drhodz[i] + reg_eps[1]*reg_eps[1];
+        M = sqrt(M);
+        gwrk[i] = drhodz[i]/M;
+    }
+    der->ddz_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        rhograd[i] -= df[i];
+    }
+
+    /* Write out misfit */
+    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
+    Fmisfit->output(VPREGMISFITFILE);
+    Fmisfit->setN(1,1);
+    Fmisfit->setD(1,1.0);
+    Fmisfit->setData_format(sizeof(T));
+    Fmisfit->write(&fvp,1,0);
+    Fmisfit->close();
+
+    Fmisfit->output(RHOREGMISFITFILE);
+    Fmisfit->setN(1,1);
+    Fmisfit->setD(1,1.0);
+    Fmisfit->setData_format(sizeof(T));
+    Fmisfit->write(&frho,1,0);
+    Fmisfit->close();
+
+    /* Write out gradient */
+    model->writeModel();
+
+    // Free variables
+    free(dvpdx);
+    free(dvpdz);
+    free(drhodx);
+    free(drhodz);
+    free(gwrk);
+}
+		
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //

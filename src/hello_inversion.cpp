@@ -4,8 +4,6 @@
 #include "inversion.h"
 #include "inparse.h"
 
-// TODO Add regularization
-//
 using namespace rockseis;
 
 /* Global variables */
@@ -27,9 +25,16 @@ void evaluate(rockseis::OptInstancePtr instance)
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
     inv->runGrad();
 
+    // Compute regularization
+    inv->computeRegularisation(x);
+
+    // Combine data and model misfit gradients
+    inv->combineGradients();
+
     // Apply mute to gradient
     inv->applyMute();
 
+    // Project gradient to B-spline 
     if(inv->getParamtype() == PAR_BSPLINE)
     {
         task = RUN_BS_PROJ;
@@ -37,7 +42,7 @@ void evaluate(rockseis::OptInstancePtr instance)
         inv->runBsproj();
     }
 
-    //Read gradient
+    //Read final gradient 
     inv->readGrad(g);
 
     //Read misfit
@@ -81,6 +86,8 @@ int main(int argc, char** argv) {
     float dtx=-1;
     float dtz=-1;
     float kvp, krho, ksource;
+    float vpregalpha, rhoregalpha;
+    int max_linesearch, max_iterations;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Rhofile;
@@ -146,6 +153,11 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
     }
 
+    if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("rhoregalpha", &rhoregalpha) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("max_linesearch", &max_linesearch) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("max_iterations", &max_iterations) == INPARSE_ERR) status = true;
+
 	if(status == true){
 		rs_error("Program terminated due to input errors.");
 	}
@@ -185,6 +197,9 @@ int main(int argc, char** argv) {
     inv->setDtx(dtx);
     inv->setDtz(dtz);
 
+    inv->setVpregalpha(vpregalpha);
+    inv->setRhoregalpha(rhoregalpha);
+
     //MASTER
     if(mpi.getRank() == 0){
         // Create a sort class and map over shots
@@ -204,10 +219,10 @@ int main(int argc, char** argv) {
         opt->opt_set_initial_guess(x);
         
         opt->setGtol(0.9);
-        opt->setMax_linesearch(5);
+        opt->setMax_linesearch(max_linesearch);
+        opt->setMax_iterations(max_iterations);
 
         // Start the L-BFGS optimization; this will invoke the callback functions evaluate() and progress() when necessary.
-        //
         opt->opt_lbfgs(evaluate, progress);
 
         // Send message for slaves to quit

@@ -37,10 +37,21 @@
 #define RHOGRADFILE "rho_grad.rss"
 #define SOURCEGRADFILE "source_grad.rss"
 
+#define VPREGGRADFILE "vp_reg_grad.rss"
+#define RHOREGGRADFILE "rho_reg_grad.rss"
+
+#define VPGRADCOMBFILE "vp_grad_comb.rss"
+#define RHOGRADCOMBFILE "rho_grad_comb.rss"
+
+#define VPGRADMUTEFILE "vp_grad_muted.rss"
+#define RHOGRADMUTEFILE "rho_grad_muted.rss"
+
 #define VPPROJGRADFILE "vp_proj_grad.rss"
 #define RHOPROJGRADFILE "rho_proj_grad.rss"
 
 #define MISFITFILE "misfit.rss"
+#define VPREGMISFITFILE "vpreg_misfit.rss"
+#define RHOREGMISFITFILE "rhoreg_misfit.rss"
 
 #define PMODFILE "pmod.rss"
 #define PRESFILE "pres.rss"
@@ -161,14 +172,32 @@ public:
     void setKsource(T val) { ksource = val; }
     T getKsource() { return ksource; }
 
+    void setVpregalpha(T val) { reg_alpha[0] = val; }
+    T getVpregalpha() { return reg_alpha[0]; }
+
+    void setRhoregalpha(T val) { reg_alpha[1] = val; }
+    T getRhoregalpha() { return reg_alpha[1]; }
+
+    void setVpregeps(T val) { reg_eps[0] = val; }
+    T getVpregeps() { return reg_eps[0]; }
+
+    void setRhoregeps(T val) { reg_eps[1] = val; }
+    T getRhoregeps() { return reg_eps[1]; }
+
     // Run gradient
     void runGrad();
    
     // Run BSProjection
     void runBsproj();
 
-    //Mute gradient
+    // Mute gradient
     void applyMute();
+
+    // Regularisation computation
+    void computeRegularisation(double *x);
+
+    // Combine gradients
+    void combineGradients();
 
     // Set initial
     int setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile);
@@ -199,6 +228,8 @@ private:
     std::string Mutefile;
     T apertx;
     T kvp, krho, ksource;
+    T reg_eps[2];
+    T reg_alpha[2];
 };
 
 }
