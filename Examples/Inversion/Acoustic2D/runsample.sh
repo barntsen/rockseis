@@ -1,7 +1,4 @@
 sh makesurvey.sh 
-if [ ! -d "Results" ]; then
-    mkdir Results
-fi
 # Make perturbed model 
 rsrss2rsf <../../Models/Vp2d.rss out=stdout > Vp2d.rsf
 sfspike <Vp2d.rsf k3=25 l3=26 k1=30 l1=35 mag=200. | sfsmooth rect1=5 rect3=5 out=stdout > pert.rsf

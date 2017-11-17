@@ -62,6 +62,8 @@ void evaluate(rockseis::OptInstancePtr instance)
 
 void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
 {
+    // Copy new iteration files to results folder
+    inv->saveResults(opt->getIter());
 
     double xnorm, gnorm, step;
     gnorm = opt->opt_vector_norm(instance->g, 2, instance->n);
@@ -156,6 +158,7 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("dtz", &dtz) == INPARSE_ERR) status = true;
     }
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapmethod", &_snapmethod) == INPARSE_ERR) status = true;
     rockseis::rs_snapmethod snapmethod = static_cast<rockseis::rs_snapmethod>(_snapmethod);
     switch(snapmethod){
@@ -208,7 +211,7 @@ int main(int argc, char** argv) {
     inv->setMisfitfile(MISFITFILE);
     inv->setPmodelledfile(PMODFILE);
     inv->setPresidualfile(PRESFILE);
-    inv->setPsnapfile(PSNAPFILE);
+    inv->setPsnapfile(Psnapfile);
     inv->setApertx(apertx);
     inv->setSnapmethod(snapmethod);
     inv->setNsnaps(nsnaps);
@@ -238,17 +241,18 @@ int main(int argc, char** argv) {
         Sort->writeSortmap();
 
         // L-BFGS configuration
-        /* Initialize the parameters for the L-BFGS optimization. */
         double *x = nullptr; 
         int N;
         N = inv->setInitial(x, Vpfile, Rhofile, Waveletfile);
         x = (double *) calloc(N, sizeof(double));
         std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(N));
         opt->opt_set_initial_guess(x);
-        
         opt->setGtol(0.9);
         opt->setMax_linesearch(max_linesearch);
         opt->setMax_iterations(max_iterations);
+
+        // Create results folder
+        inv->createResult();
 
         // Start the L-BFGS optimization; this will invoke the callback functions evaluate() and progress() when necessary.
         inv->writeLog("Starting optimisation algorithm");

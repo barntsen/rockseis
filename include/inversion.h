@@ -7,6 +7,8 @@
 #include <string>
 #include <memory>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "geometry.h"
 #include "utils.h"
 #include "file.h"
@@ -62,7 +64,12 @@
 
 #define PMODFILE "pmod.rss"
 #define PRESFILE "pres.rss"
-#define PSNAPFILE "Pcheckpoints.rss"
+
+#define VP_UP "vp_up.rss"
+#define RHO_UP "rho_up.rss"
+#define SOURCE_UP "source_up.rss"
+
+#define RESULTDIR "Results"
 
 
 namespace rockseis {
@@ -77,6 +84,7 @@ public:
     Inversion(); ///<Constructor
     Inversion(MPImodeling *_mpi); ///<Constructor
     ~Inversion(); ///<Destructor
+    void createResult();
     void setMpi(MPImodeling *_mpi) { mpi = _mpi; }
     void writeLog(std::string msg);
     void writeProgress(std::string msg);
@@ -219,6 +227,9 @@ public:
 
     // Save line search models
     void saveLinesearch(double *x);
+
+    // Save Results
+    void saveResults(int i);
 
     // Read gradient
     void readGrad(double *g);

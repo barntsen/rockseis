@@ -109,6 +109,19 @@ void Inversion<T>::writeProgress(std::string text){
 }
 
 template<typename T>
+void Inversion<T>::createResult(){
+    struct stat s;
+    // Checking if result folder is present, and creates it if not
+    if(stat(RESULTDIR,&s) != 0) {
+        int mkdir_return = mkdir(RESULTDIR,0777);
+        if(mkdir_return != 0) rs_error("Not able to create result directory: ", RESULTDIR);
+    }
+}
+
+
+
+
+template<typename T>
 Inversion<T>::~Inversion() {
     //Do nothing
 }
@@ -570,6 +583,27 @@ int InversionAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::strin
     }
 
     return Npar;
+}
+
+template<typename T>
+void InversionAcoustic2D<T>::saveResults(int iter)
+{
+    std::string name;
+    std::string dir;
+    dir = RESULTDIR;
+    // Write out new models
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lsmodel (new rockseis::ModelAcoustic2D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<T>> sourcels (new rockseis::Data2D<T>(SOURCELSFILE));
+    lsmodel->readModel();
+    sourcels->read();
+    name = dir + "/" + VP_UP + "-" + std::to_string(iter);
+    lsmodel->setVpfile(name);
+    name = dir + "/" + RHO_UP + "-" + std::to_string(iter);
+    lsmodel->setRfile(name);
+    lsmodel->writeModel();
+    name = dir + "/" + SOURCE_UP + "-" + std::to_string(iter);
+    sourcels->setFile(name);
+    sourcels->write();
 }
 
 template<typename T>
