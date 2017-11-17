@@ -183,6 +183,9 @@ class Opt{
         void setMax_iterations(int max) {param->max_iterations = max;}
         void setMax_linesearch(int max) {param->max_linesearch = max;}
 
+        int getMax_iterations() { return param->max_iterations; }
+        int getMax_linesearch() { return param->max_linesearch; }
+
     private:
         OptParamPtr param;
         OptResultPtr result;

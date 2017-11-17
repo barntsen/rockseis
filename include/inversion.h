@@ -25,6 +25,13 @@
 #define RUN_BS_PROJ 1
 #define BREAK_LOOP 2
 
+#define INV_ERR 0
+#define INV_OK 1
+
+#define LOGFILE "inversion.log"
+
+#define PROGLOGFILE "progress.log"
+
 #define VPLSFILE "vp_ls.rss"
 #define RHOLSFILE "rho_ls.rss"
 #define SOURCELSFILE "source_ls.rss"
@@ -71,6 +78,8 @@ public:
     Inversion(MPImodeling *_mpi); ///<Constructor
     ~Inversion(); ///<Destructor
     void setMpi(MPImodeling *_mpi) { mpi = _mpi; }
+    void writeLog(std::string msg);
+    void writeProgress(std::string msg);
     MPImodeling * getMpi() { return mpi; }
     void setLpml(int val) { lpml = val; }
     int getLpml() { return lpml; }
@@ -104,6 +113,12 @@ private:
 	int order;
 	int snapinc;
 	int nsnaps;
+    std::string logfile; ///< Log file
+    std::string progressfile; ///< Log file
+    std::string progresslogfile; ///< Log file
+    std::ofstream Flog; ///< Log stream
+    bool createLog(); ///< Set name of logfile and open for writing
+    bool createProglog(); ///< Set name of progress logfile and open for writing
     rs_fwimisfit misfit_type;
     rs_snapmethod snapmethod;
     rs_paramtype paramtype;

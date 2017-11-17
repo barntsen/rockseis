@@ -670,7 +670,7 @@ void Opt::opt_set_status_msg()
 {
 	switch(this->status) {
 		case OPT_STATUS_MAXLINESEARCH:
-			snprintf(this->msg,128,"Maximum number of linesearchs is performed.");
+			snprintf(this->msg,128,"Maximum number of linesearches is performed.");
 			break;
 		case OPT_STATUS_MAXITERATIONS:
 			snprintf(this->msg,128,"Maximum number of iterations is performed.");

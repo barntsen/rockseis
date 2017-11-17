@@ -468,6 +468,7 @@ int FwiAcoustic2D<T>::run(){
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }
+     this->writeLog("\nGradient computation completed.");
     
 	//Remove snapshot file
 	Psnap->removeSnap();
@@ -625,6 +626,7 @@ int FwiAcoustic2D<T>::run_optimal(){
         }
 
     } while((whatodo != terminate) && (whatodo != error));
+     this->writeLog("\nGradient computation completed.");
 
 
 	//Remove snapshot file
@@ -897,6 +899,7 @@ int FwiAcoustic3D<T>::run(){
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }
+     this->writeLog("\nGradient computation completed.");
     
 
 	//Remove snapshot file
@@ -1055,7 +1058,7 @@ int FwiAcoustic3D<T>::run_optimal(){
         }
 
     } while((whatodo != terminate) && (whatodo != error));
-
+     this->writeLog("\nGradient computation completed.");
 
 
 	//Remove snapshot file
@@ -1477,6 +1480,8 @@ int FwiElastic2D<T>::run(){
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }
+     this->writeLog("\nGradient computation completed.");
+
     
 	//Remove snapshot file
 	Vxsnap->removeSnap();
@@ -1631,6 +1636,7 @@ int FwiElastic2D<T>::run_optimal(){
         }
 
     } while((whatodo != terminate) && (whatodo != error));
+     this->writeLog("\nGradient computation completed.");
 
 	//Remove snapshot file
 	optimal->removeCheck();
@@ -2171,6 +2177,7 @@ int FwiElastic3D<T>::run(){
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }
+     this->writeLog("\nGradient computation completed.");
     
 	//Remove snapshot file
 	Vxsnap->removeSnap();
@@ -2341,6 +2348,7 @@ int FwiElastic3D<T>::run_optimal(){
         }
 
     } while((whatodo != terminate) && (whatodo != error));
+     this->writeLog("\nGradient computation completed.");
 
 	//Remove snapshot file
 	optimal->removeCheck();

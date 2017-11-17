@@ -19,6 +19,14 @@ Inversion<T>::Inversion() {
     dtx = -1;
     dty = -1;
     dtz = -1;
+    if(createLog() == INV_ERR)
+    {
+        rs_error("Inversion<T>::Inversion(): Error creating logfile for writting.");
+    }
+    if(createProglog() == INV_ERR)
+    {
+        rs_error("Inversion<T>::Inversion(): Error creating progress logfile for writting.");
+    }
 }
 
 template<typename T>
@@ -38,6 +46,66 @@ Inversion<T>::Inversion(MPImodeling *_mpi) {
     dtx = -1;
     dty = -1;
     dtz = -1;
+    if(createLog() == INV_ERR)
+    {
+        rs_error("Inversion<T>::Inversion(): Error creating logfile for writting.");
+    }
+    if(createProglog() == INV_ERR)
+    {
+        rs_error("Inversion<T>::Inversion(): Error creating progress logfile for writting.");
+    }
+
+}
+
+template<typename T>
+bool Inversion<T>::createLog(){
+	logfile = LOGFILE;
+	Flog.open(logfile.c_str());
+	if(Flog.fail()){
+		Flog.close();
+		return INV_ERR;
+	}else{
+		Flog.close();
+		return INV_OK;
+	}
+}
+
+template<typename T>
+bool Inversion<T>::createProglog(){
+	progresslogfile = PROGLOGFILE;
+	Flog.open(progresslogfile.c_str());
+	if(Flog.fail()){
+		Flog.close();
+		return INV_ERR;
+	}else{
+		Flog.close();
+		return INV_OK;
+	}
+}
+
+template<typename T>
+void Inversion<T>::writeLog(std::string text){
+    char tempo[256];
+	time_t now;
+    now = time(NULL);
+    strcpy(tempo, ctime(&now));
+    tempo[strlen(tempo)-1] = '\0';
+    if(!logfile.empty()){
+        Flog.open(logfile.c_str(), std::ios::app);
+        if(!Flog.fail())
+            Flog << tempo <<": " << text << std::endl;
+        Flog.close();
+    }
+}
+
+template<typename T>
+void Inversion<T>::writeProgress(std::string text){
+    if(!progresslogfile.empty()){
+        Flog.open(progresslogfile.c_str(), std::ios::app);
+        if(!Flog.fail())
+            Flog << text << std::endl;
+        Flog.close();
+    }
 }
 
 template<typename T>

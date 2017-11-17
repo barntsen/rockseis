@@ -12,41 +12,52 @@ std::shared_ptr<InversionAcoustic2D<float>> inv;
 /* Global functions */
 void evaluate(rockseis::OptInstancePtr instance)
 {
-    fprintf(stderr, "Starting new evaluation\n");
+    inv->writeLog("##### Starting new evaluation #####");
     double *x = instance->x;
     double *g = instance->g;
 
+    inv->writeLog("Saving linesearch models");
     // Save linesearch model
     inv->saveLinesearch(x);
+    inv->writeLog("Linesearch models saved");
 
     // Start new gradient evaluation
+    inv->writeLog("Starting gradient computation");
     int task;
     task = RUN_F_GRAD;
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
     inv->runGrad();
+    inv->writeLog("Gradient computation finished");
 
     // Compute regularization
+    inv->writeLog("Computing regularisation");
     inv->computeRegularisation(x);
 
     // Combine data and model misfit gradients
+    inv->writeLog("Combining gradients");
     inv->combineGradients();
 
     // Apply mute to gradient
+    inv->writeLog("Muting gradients");
     inv->applyMute();
 
     // Project gradient to B-spline 
     if(inv->getParamtype() == PAR_BSPLINE)
     {
+        inv->writeLog("Projecting gradient in B-spline grid");
         task = RUN_BS_PROJ;
         MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
         inv->runBsproj();
     }
 
     //Read final gradient 
+    inv->writeLog("Reading gradient into vector");
     inv->readGrad(g);
 
     //Read misfit
+    inv->writeLog("Reading misfits");
     inv->readMisfit(&instance->f);
+    inv->writeLog("##### Evaluation finished #####");
 }
 
 void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
@@ -56,9 +67,26 @@ void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
     gnorm = opt->opt_vector_norm(instance->g, 2, instance->n);
     xnorm = opt->opt_vector_norm(instance->x, 2, instance->n);
     step = instance->steplength;
-    fprintf(stderr, "Iteration %d:\n", opt->getIter());
-    fprintf(stderr, "  fx = %f \n", instance->f);
-    fprintf(stderr, "  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
+    inv->writeLog("---------- > New iteration found: " + std::to_string(opt->getIter()));
+
+    // Writing progress information to log file
+    char buffer[512],c_iter[32],c_step[32],c_misfit[32],c_gnorm[32],c_mnorm[32];
+    snprintf(c_iter,32,"Iteration %d\t",opt->getIter());
+	snprintf(c_step,32,"%15.10e     ",step);
+	snprintf(c_misfit,32,"%15.10e     ",instance->f);
+	snprintf(c_gnorm,32,"%15.10e     ",gnorm);
+	snprintf(c_mnorm,32,"%15.10e     ",xnorm);
+    time_t tempo = time(NULL);
+
+	// Creating string for file print
+	strcpy(buffer,c_iter);
+	strcat(buffer,c_step);
+	strcat(buffer,c_misfit);
+	strcat(buffer,c_gnorm);
+	strcat(buffer,c_mnorm);
+	strcat(buffer,ctime(&tempo));
+    buffer[strlen(buffer)-1] ='\0';
+	inv->writeProgress(buffer);
 }
 
 int main(int argc, char** argv) {
@@ -223,16 +251,21 @@ int main(int argc, char** argv) {
         opt->setMax_iterations(max_iterations);
 
         // Start the L-BFGS optimization; this will invoke the callback functions evaluate() and progress() when necessary.
+        inv->writeLog("Starting optimisation algorithm");
+        inv->writeProgress("Maximum number of iterations: " + std::to_string(opt->getMax_iterations()));
+        inv->writeProgress("Maximum number of linesearches: " + std::to_string(opt->getMax_linesearch()));
+        inv->writeProgress("ITERATION\t   STEP LENGTH            MISFIT               GNORM             MNORM                TIME");
         opt->opt_lbfgs(evaluate, progress);
 
         // Send message for slaves to quit
+        inv->writeLog("Optimisation algorithm finished");
         task = BREAK_LOOP;
         MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
         /* Report the result. */
         char buffer[512];
         snprintf(buffer,512,"L-BFGS algorithm finished with return status:\n%s\n",opt->getMsg());
-        fprintf(stderr, "%s", buffer);
+        inv->writeProgress(buffer);
 
         // Free initial model
         free(x);
