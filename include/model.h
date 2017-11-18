@@ -169,7 +169,9 @@ public:
     
     // I/O functions
     void readModel();	 ///< Read a model from file
-    void writeModel(); ///< Write a model to file
+    void writeVp(); ///< Write only the Vp model to file
+    void writeR(); ///< Write only the Density model to file
+    void writeModel() { writeVp(); writeR(); } ///< Write a model to file
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp
     T *getR() { return R; }		///< Get R
@@ -221,7 +223,9 @@ public:
     
     // I/O functions
     void readModel();	///< Read a model from file
-    void writeModel();	///< NOT IMPLEMENTED
+    void writeVp(); ///< Write only the Vp model to file
+    void writeR(); ///< Write only the Density model to file
+    void writeModel() { writeVp(); writeR(); } ///< Write a model to file
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp
     T *getR() { return R; }		///< Get R
@@ -276,7 +280,11 @@ public:
     
     // I/O functions
     void readModel();	///< Read a model from file
-    void writeModel();	///< NOT IMPLEMENTED
+
+    void writeVp(); ///< Write only the Vp model to file
+    void writeVs(); ///< Write only the Vs model to file
+    void writeR(); ///< Write only the Density model to file
+    void writeModel() { writeVp(); writeVs(); writeR(); } ///< Write a model to file
 
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp
@@ -338,7 +346,10 @@ public:
     
     // I/O functions
     void readModel();	///< Read a model from files
-    void writeModel();	///< Write a to files
+    void writeVp(); ///< Write only the Vp model to file
+    void writeVs(); ///< Write only the Vs model to file
+    void writeR(); ///< Write only the Density model to file
+    void writeModel() { writeVp(); writeVs(); writeR(); } ///< Write a model to file
 
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp

@@ -118,6 +118,7 @@ int main(int argc, char** argv) {
     float kvp, krho, ksource;
     float vpregalpha, rhoregalpha;
     int max_linesearch, max_iterations;
+    bool update_vp, update_rho, update_source;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Rhofile;
@@ -189,6 +190,15 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("max_linesearch", &max_linesearch) == INPARSE_ERR) status = true;
     if(Inpar->getPar("max_iterations", &max_iterations) == INPARSE_ERR) status = true;
 
+    if(Inpar->getPar("update_vp", &update_vp) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("update_rho", &update_rho) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("update_source", &update_source) == INPARSE_ERR) status = true;
+
+    // Set scaling according to updates
+    if(!update_vp) kvp = 0.0;
+    if(!update_rho) krho = 0.0;
+    if(!update_source) ksource = 0.0;
+
 	if(status == true){
 		rs_error("Program terminated due to input errors.");
 	}
@@ -204,7 +214,6 @@ int main(int argc, char** argv) {
     if(mute){
         inv->setMutefile(Mutefile);
     }
-
     inv->setVpfile(VPLSFILE);
     inv->setRhofile(RHOLSFILE);
     inv->setWaveletfile(SOURCELSFILE);
@@ -230,6 +239,8 @@ int main(int argc, char** argv) {
 
     inv->setVpregalpha(vpregalpha);
     inv->setRhoregalpha(rhoregalpha);
+
+    inv->setUpdates(update_vp, update_rho, update_source);
 
     //MASTER
     if(mpi.getRank() == 0){

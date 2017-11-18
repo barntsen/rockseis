@@ -237,7 +237,15 @@ public:
     // Read misfit
     void readMisfit(double *f);
 
+    void setUpdates(bool vp, bool rho, bool source) { update_vp = vp; update_rho = rho; update_source = source; }
+    void setUpdate_vp(bool vp) { update_vp = vp;}
+    void setUpdate_rho(bool rho) { update_rho = rho;}
+    void setUpdate_source(bool source) { update_source = source;}
+
 private:
+    bool update_vp;
+    bool update_rho;
+    bool update_source;
     bool dataweight;
     std::string Waveletfile;
     std::string Vpfile;

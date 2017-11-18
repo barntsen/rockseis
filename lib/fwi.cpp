@@ -1123,25 +1123,18 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
     T* rszz = waves_bw->getSzz();
     T* rsxz = waves_bw->getSxz();
 
-    T* Vp = model->getVp();
-    T* Vs = model->getVs();
-    T* Rho = model->getR();
-    T* Rx = model->getRx();
-    T* Rz = model->getRz();
-
 	T *vpgraddata = NULL; 
 	T *vsgraddata = NULL;
 	T *wavgraddata = NULL;
 	T *rhograddata = NULL;
 	T msxx=0, mszz=0, msxz=0, mrxx=0, mrzz=0, mrxz=0, uderx=0, uderz=0;
-	T vpscale;
-	T vsscale;
-    T rhoscale1;
-    T rhoscale2;
 	int nx;
 	int nz;
 	T dx;
 	T dz;
+
+    T* Rx = model->getRx();
+    T* Rz = model->getRz();
 
 	if(vpgradset){
 		if(!vpgrad->getAllocated()){
@@ -1183,20 +1176,15 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
 	int nxs = nx+2*pads;
 	int nxr = nx+2*padr;
 
-
     for (ix=1; ix<nx-1; ix++){
         for (iz=1; iz<nz-1; iz++){
-            vpscale = 2.0*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)];
-            vsscale = 2.0*Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)];
-            rhoscale1 = Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
-            rhoscale2 = Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)];
             msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
             mszz = (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads, iz+pads-1)])/dz;
             mrxx = (wrx[kr2D(ix+padr, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr)])/dx;
             mrzz = (wrz[kr2D(ix+padr, iz+padr)] - wrz[kr2D(ix+padr, iz+padr-1)])/dz;
 
-            if(vpgradset){
-                vpgraddata[ki2D(ix,iz)] += vpscale*(msxx + mszz) * (mrxx + mrzz);
+            if(vpgradset || rhogradset){
+                vpgraddata[ki2D(ix,iz)] += (msxx + mszz) * (mrxx + mrzz);
             }
 
             if(vsgradset || rhogradset){
@@ -1209,10 +1197,8 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
                 mrxz += 0.5*(wrx[kr2D(ix+padr-1, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr-1)])/dz;
                 mrxz += 0.5*(wrz[kr2D(ix+padr+1, iz+padr)] - wrz[kr2D(ix+padr, iz+padr)])/dx;
                 mrxz += 0.5*(wrz[kr2D(ix+padr, iz+padr-1)] - wrz[kr2D(ix+padr-1, iz+padr-1)])/dx;
-            }
 
-            if(vsgradset){
-                vsgraddata[ki2D(ix,iz)] += vsscale*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
+                vsgraddata[ki2D(ix,iz)] += (2.0*msxx*mrxx + 2.0*mszz*mrzz + msxz*mrxz);
             }
             if(wavgradset){
                 switch(wavgrad->getField()){
@@ -1259,9 +1245,81 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
                 uderz += 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rszz[kr2D(ix+padr, iz+padr+1)] - rszz[kr2D(ix+padr, iz+padr)])/dz;
                 uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rszz[kr2D(ix+padr, iz+padr)] - rszz[kr2D(ix+padr, iz+padr-1)])/dz;
                 rhograddata[ki2D(ix,iz)] -= uderx + uderz;
-                rhograddata[ki2D(ix,iz)] += rhoscale1*(msxx + mszz) * (mrxx + mrzz);
-                rhograddata[ki2D(ix,iz)] += rhoscale2*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
             }
+        }
+    }	
+}
+
+template<typename T>
+void FwiElastic2D<T>::scaleGrad(std::shared_ptr<ModelElastic2D<T>> model)
+{
+	int ix, iz;
+    T* Vp = model->getVp();
+    T* Vs = model->getVs();
+    T* Rho = model->getR();
+
+	T *vpgraddata = NULL; 
+	T *vsgraddata = NULL;
+	T *rhograddata = NULL;
+	T vpscale;
+	T vsscale;
+    T rhoscale1;
+    T rhoscale2;
+	int nx;
+	int nz;
+
+	if(vpgradset){
+		if(!vpgrad->getAllocated()){
+			vpgrad->allocateImage();
+		}
+		vpgraddata = vpgrad->getImagedata();
+	}
+	if(vsgradset){
+		if(!vsgrad->getAllocated()){
+			vsgrad->allocateImage();
+		}
+		vsgraddata = vsgrad->getImagedata();
+	}
+	if(rhogradset){
+		if(!rhograd->getAllocated()){
+			rhograd->allocateImage();
+		}
+		rhograddata = rhograd->getImagedata();
+	}
+
+        
+    // Getting sizes
+    nx = model->getNx();
+    nz = model->getNz();
+
+    T lambda = 0.0;
+    T mu = 0.0;
+    T rho = 0.0;
+
+    for (ix=0; ix<nx; ix++){
+        for (iz=0; iz<nz; iz++){
+            vpscale = 2.0*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+            vsscale = 2.0*Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)];
+            rhoscale1 = Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)] -2.0*Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)];
+            rhoscale2 = Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)];
+            lambda = vpgraddata[ki2D(ix,iz)];
+            if(vsgradset || rhogradset){
+                mu = vsgraddata[ki2D(ix,iz)];
+            }
+
+            if(vpgradset){
+                vpgraddata[ki2D(ix,iz)] = vpscale*lambda;
+            }
+
+            if(vsgradset){
+                vsgraddata[ki2D(ix,iz)] = vsscale*mu -2.0*vsscale*lambda; 
+            }
+
+            if(rhogradset){
+                rho = rhograddata[ki2D(ix,iz)];
+                rhograddata[ki2D(ix,iz)] = rho + rhoscale1*lambda + rhoscale2*mu;
+            }
+
         }
     }	
 }
@@ -1482,6 +1540,8 @@ int FwiElastic2D<T>::run(){
     }
      this->writeLog("\nGradient computation completed.");
 
+    // Scale gradients
+    this->scaleGrad(model);
     
 	//Remove snapshot file
 	Vxsnap->removeSnap();
@@ -1637,6 +1697,9 @@ int FwiElastic2D<T>::run_optimal(){
 
     } while((whatodo != terminate) && (whatodo != error));
      this->writeLog("\nGradient computation completed.");
+    
+    // Scale gradients
+    this->scaleGrad(model);
 
 	//Remove snapshot file
 	optimal->removeCheck();

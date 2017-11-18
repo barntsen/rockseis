@@ -609,9 +609,9 @@ void ModelAcoustic2D<T>::readModel() {
 }
 
 template<typename T>
-void ModelAcoustic2D<T>::writeModel() {
+void ModelAcoustic2D<T>::writeVp() {
     if(!this->getRealized()) {
-        rs_error("ModelAcoustic2D::writeModel: Model is not allocated.");
+        rs_error("ModelAcoustic2D::writeVp: Model is not allocated.");
     }
     // Get file names
     std::string Vpfile = this->getVpfile();
@@ -619,9 +619,6 @@ void ModelAcoustic2D<T>::writeModel() {
     // Open files for writting
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     Fvp->output(Vpfile);
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
-    Frho->output(Rfile);
-
     // Write models
     int nx = this->getNx();
     T dx = this->getDx();
@@ -642,6 +639,26 @@ void ModelAcoustic2D<T>::writeModel() {
     Vp = this->getVp();
     Fvp->write(Vp, nx*nz, 0);
     Fvp->close();
+}
+
+template<typename T>
+void ModelAcoustic2D<T>::writeR() {
+    if(!this->getRealized()) {
+        rs_error("ModelAcoustic2D::writeR: Model is not allocated.");
+    }
+    // Get file names
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    Frho->output(Rfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
 
     Frho->setN(1,nx);
     Frho->setN(3,nz);
@@ -944,18 +961,15 @@ void ModelAcoustic3D<T>::readModel() {
 }
 
 template<typename T>
-void ModelAcoustic3D<T>::writeModel() {
+void ModelAcoustic3D<T>::writeVp() {
     if(!this->getRealized()) {
-        rs_error("ModelAcoustic3D::writeModel: Model is not allocated.");
+        rs_error("ModelAcoustic3D::writeVp: Model is not allocated.");
     }
     // Get file names
     std::string Vpfile = this->getVpfile();
-    std::string Rfile = this->getRfile();
     // Open files for writting
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     Fvp->output(Vpfile.c_str());
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
-    Frho->output(Rfile.c_str());
 
     // Write models
     int nx = this->getNx();
@@ -983,6 +997,29 @@ void ModelAcoustic3D<T>::writeModel() {
     Vp = this->getVp();
     Fvp->write(Vp, nx*ny*nz, 0);
     Fvp->close();
+}
+
+template<typename T>
+void ModelAcoustic3D<T>::writeR() {
+    if(!this->getRealized()) {
+        rs_error("ModelAcoustic3D::writeR: Model is not allocated.");
+    }
+    // Get file names
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    Frho->output(Rfile.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
 
     Frho->setN(1,nx);
     Frho->setN(2,ny);
@@ -1015,7 +1052,7 @@ ModelAcoustic3D<T>::~ModelAcoustic3D() {
 template<typename T>
 void ModelAcoustic3D<T>::staggerModels(){
     if(!this->getRealized()) {
-        rs_error("ModelAcoustic2D::staggerModels: Model is not allocated.");
+        rs_error("ModelAcoustic3D::staggerModels: Model is not allocated.");
     }
     int ix,iy,iz;
     int nx, ny, nz, lpml, nx_pml, ny_pml, nz_pml;
@@ -1376,21 +1413,49 @@ void ModelElastic2D<T>::readModel() {
 }
 
 template<typename T>
-void ModelElastic2D<T>::writeModel() {
+void ModelElastic2D<T>::writeR() {
     if(!this->getRealized()) {
-        rs_error("ModelElastic2D::writeModel: Model is not allocated.");
+        rs_error("ModelElastic2D::writeR: Model is not allocated.");
+    }
+    // Get file names
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    Frho->output(Rfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Frho->setN(1,nx);
+    Frho->setN(3,nz);
+    Frho->setD(1,dx);
+    Frho->setD(3,dz);
+    Frho->setO(1,ox);
+    Frho->setO(3,oz);
+    Frho->setType(REGULAR);
+    Frho->setData_format(sizeof(T));
+    Frho->writeHeader();
+    R = this->getR();
+    Frho->write(R, nx*nz, 0);
+    Frho->close();
+}
+
+
+template<typename T>
+void ModelElastic2D<T>::writeVp() {
+    if(!this->getRealized()) {
+        rs_error("ModelElastic2D::writeVp: Model is not allocated.");
     }
     // Get file names
     std::string Vpfile = this->getVpfile();
-    std::string Vsfile = this->getVsfile();
-    std::string Rfile = this->getRfile();
     // Open files for writting
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     Fvp->output(Vpfile);
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
-    Fvs->output(Vsfile);
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
-    Frho->output(Rfile);
 
     // Write models
     int nx = this->getNx();
@@ -1412,6 +1477,29 @@ void ModelElastic2D<T>::writeModel() {
     Vp = this->getVp();
     Fvp->write(Vp, nx*nz, 0);
     Fvp->close();
+}
+
+
+template<typename T>
+void ModelElastic2D<T>::writeVs() {
+    if(!this->getRealized()) {
+        rs_error("ModelElastic2D::writeVs: Model is not allocated.");
+    }
+    // Get file names
+    std::string Vpfile = this->getVpfile();
+    std::string Vsfile = this->getVsfile();
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    Fvs->output(Vsfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
 
     Fvs->setN(1,nx);
     Fvs->setN(3,nz);
@@ -1425,20 +1513,6 @@ void ModelElastic2D<T>::writeModel() {
     Vs = this->getVs();
     Fvs->write(Vs, nx*nz, 0);
     Fvs->close();
-
-    Frho->setN(1,nx);
-    Frho->setN(3,nz);
-    Frho->setD(1,dx);
-    Frho->setD(3,dz);
-    Frho->setO(1,ox);
-    Frho->setO(3,oz);
-    Frho->setType(REGULAR);
-    Frho->setData_format(sizeof(T));
-    Frho->writeHeader();
-    R = this->getR();
-    Frho->write(R, nx*nz, 0);
-    Frho->close();
-
 }
 
 template<typename T>
@@ -1811,20 +1885,15 @@ void ModelElastic3D<T>::readModel() {
 }
 
 template<typename T>
-void ModelElastic3D<T>::writeModel() {
+void ModelElastic3D<T>::writeVp() {
     if(!this->getRealized()) {
-        rs_error("ModelElastic3D::writeModel: Model is not allocated.");
+        rs_error("ModelElastic3D::writeVp: Model is not allocated.");
     }
     // Get file names
     std::string Vpfile = this->getVpfile();
-    std::string Rfile = this->getRfile();
     // Open files for writting
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     Fvp->output(Vpfile.c_str());
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
-    Fvs->output(Vsfile.c_str());
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
-    Frho->output(Rfile.c_str());
 
     // Write models
     int nx = this->getNx();
@@ -1852,6 +1921,29 @@ void ModelElastic3D<T>::writeModel() {
     Vp = this->getVp();
     Fvp->write(Vp, nx*ny*nz, 0);
     Fvp->close();
+}
+
+template<typename T>
+void ModelElastic3D<T>::writeVs() {
+    if(!this->getRealized()) {
+        rs_error("ModelElastic3D::writeVs: Model is not allocated.");
+    }
+    // Get file names
+    std::string Vsfile = this->getVsfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    Fvs->output(Vsfile.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
 
     Fvs->setN(1,nx);
     Fvs->setN(2,ny);
@@ -1868,6 +1960,29 @@ void ModelElastic3D<T>::writeModel() {
     Vs = this->getVs();
     Fvs->write(Vs, nx*ny*nz, 0);
     Fvs->close();
+}
+
+template<typename T>
+void ModelElastic3D<T>::writeR() {
+    if(!this->getRealized()) {
+        rs_error("ModelElastic3D::writeR: Model is not allocated.");
+    }
+    // Get file names
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    Frho->output(Rfile.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
 
     Frho->setN(1,nx);
     Frho->setN(2,ny);

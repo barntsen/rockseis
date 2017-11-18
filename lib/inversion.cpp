@@ -27,6 +27,7 @@ Inversion<T>::Inversion() {
     {
         rs_error("Inversion<T>::Inversion(): Error creating progress logfile for writting.");
     }
+
 }
 
 template<typename T>
@@ -141,6 +142,10 @@ InversionAcoustic2D<T>::InversionAcoustic2D() {
     reg_alpha[1]=0.0;
     reg_eps[0]=1e-3;
     reg_eps[1]=1e-3;
+
+    update_vp = true;
+    update_rho = false;
+    update_source = false;
 }
 
 template<typename T>
@@ -153,9 +158,12 @@ InversionAcoustic2D<T>::InversionAcoustic2D(MPImodeling *mpi): Inversion<T>(mpi)
     ksource = 1.0;
     reg_alpha[0]=0.0;
     reg_alpha[1]=0.0;
-
     reg_eps[0]=1e-3;
     reg_eps[1]=1e-3;
+
+    update_vp = true;
+    update_rho = false;
+    update_source = false;
 }
 
 template<typename T>
@@ -596,14 +604,22 @@ void InversionAcoustic2D<T>::saveResults(int iter)
     std::shared_ptr<rockseis::Data2D<T>> sourcels (new rockseis::Data2D<T>(SOURCELSFILE));
     lsmodel->readModel();
     sourcels->read();
-    name = dir + "/" + VP_UP + "-" + std::to_string(iter);
-    lsmodel->setVpfile(name);
-    name = dir + "/" + RHO_UP + "-" + std::to_string(iter);
-    lsmodel->setRfile(name);
-    lsmodel->writeModel();
-    name = dir + "/" + SOURCE_UP + "-" + std::to_string(iter);
-    sourcels->setFile(name);
-    sourcels->write();
+    if(update_vp){
+        name = dir + "/" + VP_UP + "-" + std::to_string(iter);
+        lsmodel->setVpfile(name);
+        lsmodel->writeVp();
+    }
+    if(update_rho){
+        name = dir + "/" + RHO_UP + "-" + std::to_string(iter);
+        lsmodel->setRfile(name);
+        lsmodel->writeR();
+    }
+    if(update_source){
+        name = dir + "/" + RHO_UP + "-" + std::to_string(iter);
+        name = dir + "/" + SOURCE_UP + "-" + std::to_string(iter);
+        sourcels->setFile(name);
+        sourcels->write();
+    }
 }
 
 template<typename T>

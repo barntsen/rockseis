@@ -231,8 +231,8 @@ public:
     void setVsgrad(std::shared_ptr<Image2D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
+    void scaleGrad(std::shared_ptr<ModelElastic2D<T>> model);
     void computeResiduals();
-
 
     ~FwiElastic2D();	///< Destructor
 
