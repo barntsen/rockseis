@@ -266,5 +266,172 @@ private:
     T reg_alpha[2];
 };
 
+// ##### ELASTIC 2D INVERSION CLASS
+template<typename T>
+class InversionElastic2D: public Inversion<T> {
+public:
+    InversionElastic2D(); ///<Constructor
+    InversionElastic2D(MPImodeling *_mpi); ///<Constructor
+    ~InversionElastic2D(); ///<Destructor
+
+    void setDataweight(bool val) { dataweight = val; }
+    bool getDataweight() { return dataweight; }
+
+    void setDataweightfile(std::string file) { Dataweightfile = file; }
+    std::string getDataweightfile() { return Dataweightfile; }
+
+    void setWaveletfile(std::string file) { Waveletfile = file; }
+    std::string getWaveletfile() { return Waveletfile; }
+
+    void setVpfile(std::string file) { Vpfile = file; }
+    std::string getVpfile() { return Vpfile; }
+
+    void setVsfile(std::string file) { Vsfile = file; }
+    std::string getVsfile() { return Vsfile; }
+
+    void setRhofile(std::string file) { Rhofile = file; }
+    std::string getRhofile() { return Rhofile; }
+
+    void setVpgradfile(std::string file) { Vpgradfile = file; }
+    std::string getVpgradfile() { return Vpgradfile; }
+
+    void setVsgradfile(std::string file) { Vsgradfile = file; }
+    std::string getVsgradfile() { return Vsgradfile; }
+
+    void setRhogradfile(std::string file) { Rhogradfile = file; }
+    std::string getRhogradfile() { return Rhogradfile; }
+
+    void setWavgradfile(std::string file) { Wavgradfile = file; }
+    std::string getWavgradfile() { return Wavgradfile; }
+
+    void setMisfitfile(std::string file) { Misfitfile = file; }
+    std::string getMisfitfile() { return Misfitfile; }
+
+    void setVxsnapfile(std::string file) { Vxsnapfile = file; }
+    std::string getVxsnapfile() { return Vxsnapfile; }
+
+    void setVxrecordfile(std::string file) { Vxrecordfile = file; }
+    std::string getVxrecordfile() { return Vxrecordfile; }
+
+    void setVxmodelledfile(std::string file) { Vxmodelledfile = file; }
+    std::string getVxmodelledfile() { return Vxmodelledfile; }
+
+    void setVxresidualfile(std::string file) { Vxresidualfile = file; }
+    std::string getVxresidualfile() { return Vxresidualfile; }
+
+    void setVzsnapfile(std::string file) { Vzsnapfile = file; }
+    std::string getVzsnapfile() { return Vzsnapfile; }
+
+    void setVzrecordfile(std::string file) { Vzrecordfile = file; }
+    std::string getVzrecordfile() { return Vzrecordfile; }
+
+    void setVzmodelledfile(std::string file) { Vzmodelledfile = file; }
+    std::string getVzmodelledfile() { return Vzmodelledfile; }
+
+    void setVzresidualfile(std::string file) { Vzresidualfile = file; }
+    std::string getVzresidualfile() { return Vzresidualfile; }
+
+    void setMutefile(std::string file) { Mutefile = file; }
+    std::string getMutefile() { return Mutefile; }
+
+    void setApertx(T val) { apertx = val; }
+    T getApertx() { return apertx; }
+
+    void setKvp(T val) { kvp = val; }
+    T getKvp() { return kvp; }
+
+    void setKvs(T val) { kvs = val; }
+    T getKvs() { return kvs; }
+
+    void setKrho(T val) { krho = val; }
+    T getKrho() { return krho; }
+
+    void setKsource(T val) { ksource = val; }
+    T getKsource() { return ksource; }
+
+    void setVpregalpha(T val) { reg_alpha[0] = val; }
+    T getVpregalpha() { return reg_alpha[0]; }
+
+    void setVsregalpha(T val) { reg_alpha[1] = val; }
+    T getVsregalpha() { return reg_alpha[1]; }
+
+    void setRhoregalpha(T val) { reg_alpha[2] = val; }
+    T getRhoregalpha() { return reg_alpha[2]; }
+
+    void setVpregeps(T val) { reg_eps[0] = val; }
+    T getVpregeps() { return reg_eps[0]; }
+
+    void setVsregeps(T val) { reg_eps[1] = val; }
+    T getVsregeps() { return reg_eps[1]; }
+
+    void setRhoregeps(T val) { reg_eps[2] = val; }
+    T getRhoregeps() { return reg_eps[2]; }
+
+    // Run gradient
+    void runGrad();
+   
+    // Run BSProjection
+    void runBsproj();
+
+    // Mute gradient
+    void applyMute();
+
+    // Regularisation computation
+    void computeRegularisation(double *x);
+
+    // Combine gradients
+    void combineGradients();
+
+    // Set initial
+    int setInitial(double *x, std::string vpfile, std::string vsfile, std::string rhofile, std::string sourcefile);
+
+    // Save line search models
+    void saveLinesearch(double *x);
+
+    // Save Results
+    void saveResults(int i);
+
+    // Read gradient
+    void readGrad(double *g);
+
+    // Read misfit
+    void readMisfit(double *f);
+
+    void setUpdates(bool vp, bool rho, bool source) { update_vp = vp; update_rho = rho; update_source = source; }
+    void setUpdate_vp(bool vp) { update_vp = vp;}
+    void setUpdate_rho(bool rho) { update_rho = rho;}
+    void setUpdate_source(bool source) { update_source = source;}
+
+private:
+    bool update_vp;
+    bool update_vs;
+    bool update_rho;
+    bool update_source;
+    bool dataweight;
+    std::string Waveletfile;
+    std::string Vpfile;
+    std::string Vsfile;
+    std::string Rhofile;
+    std::string Vpgradfile;
+    std::string Vsgradfile;
+    std::string Rhogradfile;
+    std::string Wavgradfile;
+    std::string Dataweightfile;
+    std::string Misfitfile;
+    std::string Vxsnapfile;
+    std::string Vxrecordfile;
+    std::string Vxmodelledfile;
+    std::string Vxresidualfile;
+    std::string Vzsnapfile;
+    std::string Vzrecordfile;
+    std::string Vzmodelledfile;
+    std::string Vzresidualfile;
+    std::string Mutefile;
+    T apertx;
+    T kvp, kvs, krho, ksource;
+    T reg_eps[3];
+    T reg_alpha[3];
+};
+
 }
 #endif //INVERSION_H

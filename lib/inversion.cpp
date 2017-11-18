@@ -1091,6 +1091,51 @@ void InversionAcoustic2D<T>::computeRegularisation(double *x)
     free(drhodz);
     free(gwrk);
 }
+
+// =============== 2D ELASTIC INVERSION CLASS =============== //
+//
+template<typename T>
+InversionElastic2D<T>::InversionElastic2D() {
+    // Set default parameters
+    apertx = -1;
+
+    kvp = 1.0;
+    krho = 1.0;
+    ksource = 1.0;
+
+    reg_alpha[0]=0.0;
+    reg_alpha[1]=0.0;
+    reg_eps[0]=1e-3;
+    reg_eps[1]=1e-3;
+
+    update_vp = true;
+    update_rho = false;
+    update_source = false;
+}
+
+template<typename T>
+InversionElastic2D<T>::InversionElastic2D(MPImodeling *mpi): Inversion<T>(mpi) {
+    // Set default parameters
+    apertx = -1;
+
+    kvp = 1.0;
+    krho = 1.0;
+    ksource = 1.0;
+    reg_alpha[0]=0.0;
+    reg_alpha[1]=0.0;
+    reg_eps[0]=1e-3;
+    reg_eps[1]=1e-3;
+
+    update_vp = true;
+    update_rho = false;
+    update_source = false;
+}
+
+template<typename T>
+InversionElastic2D<T>::~InversionElastic2D() {
+    //Do nothing
+}
+
 		
 
 
