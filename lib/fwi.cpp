@@ -1340,32 +1340,31 @@ void FwiElastic2D<T>::computeMisfit(){
 
     T* modx = datamodVx->getData();
     T* recx = dataVx->getData();
-    T* resx = dataresVx->getData();
 
     T* modz = datamodVz->getData();
     T* recz = dataVz->getData();
-    T* resz = dataresVz->getData();
+    T resx = 0.0;
+    T resz = 0.0;
     T *wei = NULL;
     if(dataweightset)
     {
         wei = dataweight->getData();
     }
-    T dt = dataVx->getDt();
     size_t itr, it;
     T misfit = 0.0;
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
         case DIFFERENCE:
             for(itr=0; itr<ntr; itr++){
-                for(it=1; it<nt; it++){
-                   resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
-                   resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                for(it=0; it<nt; it++){
+                   resx = modx[I(it, itr)] - recx[I(it, itr)];
+                   resz = modz[I(it, itr)] - recz[I(it, itr)];
                    if(dataweightset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)];
+                       resx *= wei[I(it, itr)];
+                       resz *= wei[I(it, itr)];
                    }
-                   misfit += 0.5*(resx[I(it, itr)]*resx[I(it, itr)] + resz[I(it, itr)]*resz[I(it, itr)]);
+                   misfit += 0.5*(resx*resx + resz*resz);
                 }
             }
             break;
@@ -1396,32 +1395,37 @@ void FwiElastic2D<T>::computeMisfit(){
                 if(znorm1 ==0 ) znorm1= 1.0;
                 if(znorm2 ==0 ) znorm2= 1.0;
 
-                for(it=1; it<nt; it++){
-                    resx[I(it, itr)]=dt*((-1.0)*(modx[I(it, itr)]*recx[I(it, itr)]/(xnorm1*xnorm2))) + resx[I(it-1, itr)];
-                    resz[I(it, itr)]=dt*((-1.0)*(modz[I(it, itr)]*recz[I(it, itr)]/(znorm1*znorm2))) + resz[I(it-1, itr)];
+                for(it=0; it<nt; it++){
+                    resx=(-1.0)*(modx[I(it, itr)]*recx[I(it, itr)]/(xnorm1*xnorm2));
+                    resz=((-1.0)*(modz[I(it, itr)]*recz[I(it, itr)]/(znorm1*znorm2)));
                    if(dataweightset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)];
+                       resx *= wei[I(it, itr)];
+                       resz *= wei[I(it, itr)];
                    }
+
+                   misfit += (resx + resz);
                 }
             }
             break;
         default:
             for(itr=0; itr<ntr; itr++){
-                for(it=1; it<nt; it++){
-                   resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
-                   resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                for(it=0; it<nt; it++){
+                   resx = modx[I(it, itr)] - recx[I(it, itr)];
+                   resz = modz[I(it, itr)] - recz[I(it, itr)];
                    if(dataweightset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)];
+                       resx *= wei[I(it, itr)];
+                       resz *= wei[I(it, itr)];
                    }
-                   misfit += 0.5*(resx[I(it, itr)]*resx[I(it, itr)] + resz[I(it, itr)]*resz[I(it, itr)]);
+                   misfit += 0.5*(resx*resx + resz*resz);
                 }
             }
             break;
     }
+
+    // Set the final misfit value
+    this->setMisfit(misfit);
 }
 
 template<typename T>
@@ -1502,7 +1506,7 @@ void FwiElastic2D<T>::computeResiduals(){
 
                 for(it=1; it<nt; it++){
                     resx[I(it, itr)]=dt*((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3)) + resx[I(it-1, itr)];
-                    resz[I(it, itr)]=dt*((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3)) +resz[I(it-1, itr)];
+                    resz[I(it, itr)]=dt*((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3)) + resz[I(it-1, itr)];
                    if(dataweightset)
                    {
                        resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];

@@ -58,6 +58,30 @@ void evaluate(rockseis::OptInstancePtr instance)
     inv->writeLog("Reading misfits");
     inv->readMisfit(&instance->f);
     inv->writeLog("##### Evaluation finished #####");
+
+    // Writing progress information to log file
+    double xnorm, gnorm, step;
+    gnorm = inv->vector_norm(instance->g, 2, instance->n);
+    xnorm = inv->vector_norm(instance->x, 2, instance->n);
+    step = instance->steplength;
+    char buffer[512],c_iter[32],c_step[32],c_misfit[32],c_gnorm[32],c_mnorm[32];
+    snprintf(c_iter,32,"Linesearch\t");
+	snprintf(c_step,32,"%15.10e     ",step);
+	snprintf(c_misfit,32,"%15.10e     ",instance->f);
+	snprintf(c_gnorm,32,"%15.10e     ",gnorm);
+	snprintf(c_mnorm,32,"%15.10e     ",xnorm);
+    time_t tempo = time(NULL);
+
+	// Creating string for file print
+	strcpy(buffer,c_iter);
+	strcat(buffer,c_step);
+	strcat(buffer,c_misfit);
+	strcat(buffer,c_gnorm);
+	strcat(buffer,c_mnorm);
+	strcat(buffer,ctime(&tempo));
+    buffer[strlen(buffer)-1] ='\0';
+	inv->writeProgress(buffer);
+
 }
 
 void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
@@ -66,8 +90,8 @@ void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
     inv->saveResults(opt->getIter());
 
     double xnorm, gnorm, step;
-    gnorm = opt->opt_vector_norm(instance->g, 2, instance->n);
-    xnorm = opt->opt_vector_norm(instance->x, 2, instance->n);
+    gnorm = inv->vector_norm(instance->g, 2, instance->n);
+    xnorm = inv->vector_norm(instance->x, 2, instance->n);
     step = instance->steplength;
     inv->writeLog("---------- > New iteration found: " + std::to_string(opt->getIter()));
 

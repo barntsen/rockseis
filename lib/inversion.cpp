@@ -59,6 +59,30 @@ Inversion<T>::Inversion(MPImodeling *_mpi) {
 }
 
 template<typename T>
+double Inversion<T>::vector_norm(double *v, const int type, const int n){
+	// Variables
+	int i;
+	double norm;
+
+	norm = 0.0;
+	if(type == 2) {
+		for(i=0; i<n; i++) {
+			norm += v[i]*v[i];
+		}
+		norm = sqrtf(norm);
+	}
+	else if(type == 99999) {
+		for(i=0; i<n; i++) {
+			if(fabs(v[i]) >= norm) {
+				norm = fabs(v[i]);
+			}
+		}
+	}
+
+	return norm;
+}
+
+template<typename T>
 bool Inversion<T>::createLog(){
 	logfile = LOGFILE;
 	Flog.open(logfile.c_str());
@@ -1539,23 +1563,17 @@ void InversionElastic2D<T>::runBsproj() {
 
     float *vpproj, *vsproj, *rhoproj;
     /* Allocating projection arrays */
-    if(update_vp){
-        vpproj= (float *) calloc(nc, sizeof(float));
-        if(vpproj==NULL){
-            rs_error("InversionElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
-        }
+    vpproj= (float *) calloc(nc, sizeof(float));
+    if(vpproj==NULL){
+        rs_error("InversionElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
     }
-    if(update_vs){
-        vsproj= (float *) calloc(nc, sizeof(float));
-        if(vsproj==NULL){
-            rs_error("InversionElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (vsproj)");
-        }
+    vsproj= (float *) calloc(nc, sizeof(float));
+    if(vsproj==NULL){
+        rs_error("InversionElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (vsproj)");
     }
-    if(update_rho){
-        rhoproj= (float *) calloc(nc, sizeof(float));
-        if(rhoproj==NULL){
-            rs_error("InversionElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (rhoproj)");
-        }
+    rhoproj= (float *) calloc(nc, sizeof(float));
+    if(rhoproj==NULL){
+        rs_error("InversionElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (rhoproj)");
     }
 
     if(mpi->getRank() == 0) {
@@ -1598,7 +1616,6 @@ void InversionElastic2D<T>::runBsproj() {
 
         if(update_vs){
             /* Starting reduce operation */
-            std::cerr << "Running reduce in vsproj" << std::endl;
             MPI_Reduce(vsproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
             /* Output spline */
             Fout->output(VSPROJGRADFILE);
@@ -1678,7 +1695,6 @@ void InversionElastic2D<T>::runBsproj() {
             MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
         }
         if(update_vs){
-            std::cerr << "Running reduce in vsproj" << std::endl;
             MPI_Reduce(vsproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
         }
         if(update_rho){
@@ -1686,9 +1702,9 @@ void InversionElastic2D<T>::runBsproj() {
         }
        }
     // Free allocated variables
-    if(update_vp) free(vpproj);
-    if(update_vs) free(vsproj);
-    if(update_rho) free(rhoproj);
+    free(vpproj);
+    free(vsproj);
+    free(rhoproj);
     free(global_stack);
 }
 		

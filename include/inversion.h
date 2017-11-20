@@ -103,6 +103,7 @@ public:
     Inversion(MPImodeling *_mpi); ///<Constructor
     ~Inversion(); ///<Destructor
     void createResult();
+    double vector_norm(double *v, const int type, const int n);
     void setMpi(MPImodeling *_mpi) { mpi = _mpi; }
     void writeLog(std::string msg);
     void writeProgress(std::string msg);
