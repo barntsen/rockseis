@@ -146,9 +146,9 @@ int main(int argc, char** argv) {
     Sort->setDatafile(Surveyfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelElastic2D<float>> gmodel (new rockseis::ModelElastic2D<float>(Vpfile, Vsfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelElastic2D<float>> gmodel (new rockseis::ModelElastic2D<float>(Vpfile, Vsfile, Rhofile, lpml, fs));
     // Create a local model class
-	std::shared_ptr<rockseis::ModelElastic2D<float>> lmodel (new rockseis::ModelElastic2D<float>(Vpfile, Vsfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelElastic2D<float>> lmodel (new rockseis::ModelElastic2D<float>(Vpfile, Vsfile, Rhofile, lpml, fs));
 
     // Create a data class for the source wavelet
 	std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Waveletfile));

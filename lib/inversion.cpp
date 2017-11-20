@@ -425,8 +425,8 @@ void InversionAcoustic2D<T>::runBsproj() {
     std::string rhogradfile;
 
     if(Mutefile.empty()){
-        vpgradfile = VPGRADFILE;
-        rhogradfile = RHOGRADFILE;
+        vpgradfile = VPGRADCOMBFILE;
+        rhogradfile = RHOGRADCOMBFILE;
     }else{
         vpgradfile = VPGRADMUTEFILE;
         rhogradfile = RHOGRADMUTEFILE;
@@ -543,8 +543,11 @@ void InversionAcoustic2D<T>::runBsproj() {
 		}
 
 		/* Starting reduce operation */
-		MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
-		MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
+        MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
+        for(long int i=0; i< nc; i++){
+            global_stack[i] = 0.0;
+        }
+        MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
 	   }
 }
 
@@ -794,7 +797,7 @@ void InversionAcoustic2D<T>::readGrad(double *g)
             gwav = sourcegrad->getData();
             for(i=0; i< Ns; i++)
             {
-                g[2*N+i] = gwav[i]*krho;
+                g[2*N+i] = gwav[i]*ksource;
 
             }
             break;
@@ -1332,7 +1335,6 @@ void InversionElastic2D<T>::runGrad() {
                 // Create fwi object
                 fwi = std::make_shared<rockseis::FwiElastic2D<T>>(lmodel, source, Vxdata2Di, Vzdata2Di, this->getOrder(), this->getSnapinc());
 
-
                 // Create modelled and residual data objects 
                 Vxdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Vxdatamod2D->copyCoords(Vxdata2D);
@@ -1381,7 +1383,6 @@ void InversionElastic2D<T>::runGrad() {
 
                 if(update_source){
                     wavgrad = std::make_shared<rockseis::Data2D<T>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
-                    wavgrad->setField(rockseis::PRESSURE);
                     // Copy geometry
                     wavgrad->copyCoords(source);
                     wavgrad->makeMap(lmodel->getGeom(), SMAP);
@@ -1512,9 +1513,9 @@ void InversionElastic2D<T>::runBsproj() {
     std::string rhogradfile;
 
     if(Mutefile.empty()){
-        vpgradfile = VPGRADFILE;
-        vsgradfile = VSGRADFILE;
-        rhogradfile = RHOGRADFILE;
+        vpgradfile = VPGRADCOMBFILE;
+        vsgradfile = VSGRADCOMBFILE;
+        rhogradfile = RHOGRADCOMBFILE;
     }else{
         vpgradfile = VPGRADMUTEFILE;
         vsgradfile = VSGRADMUTEFILE;
@@ -1597,6 +1598,7 @@ void InversionElastic2D<T>::runBsproj() {
 
         if(update_vs){
             /* Starting reduce operation */
+            std::cerr << "Running reduce in vsproj" << std::endl;
             MPI_Reduce(vsproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
             /* Output spline */
             Fout->output(VSPROJGRADFILE);
@@ -1676,12 +1678,18 @@ void InversionElastic2D<T>::runBsproj() {
             MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
         }
         if(update_vs){
+            std::cerr << "Running reduce in vsproj" << std::endl;
             MPI_Reduce(vsproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
         }
         if(update_rho){
             MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
         }
        }
+    // Free allocated variables
+    if(update_vp) free(vpproj);
+    if(update_vs) free(vsproj);
+    if(update_rho) free(rhoproj);
+    free(global_stack);
 }
 		
 template<typename T>
@@ -1838,8 +1846,8 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
                 }else{
                     vpls[i] = vp0[i];
                 }
-                Npar += N;
             }
+            Npar += N;
             for(i=0; i< N; i++)
             {
                 if(update_vs){
@@ -1847,8 +1855,8 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
                 }else{
                     vsls[i] = vs0[i];
                 }
-                Npar += N;
             }
+            Npar += N;
             for(i=0; i< N; i++)
             {
                 if(update_rho){
