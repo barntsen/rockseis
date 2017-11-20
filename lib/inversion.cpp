@@ -1184,39 +1184,42 @@ void InversionElastic2D<T>::runGrad() {
 	if(mpi->getRank() == 0) {
 		// Master
 
-        // Get shot map
-        Sort->readKeymap();
-        Sort->readSortmap();
-        size_t ngathers =  Sort->getNensemb();
+		// Get shot map
+		Sort->readKeymap();
+		Sort->readSortmap();
+		size_t ngathers =  Sort->getNensemb();
 
-        // Wavelet gradient
-        wavgrad = std::make_shared<rockseis::Data2D<T>>(1, source->getNt(), source->getDt(), 0.0);
-        wavgrad->setFile(Wavgradfile);
-        wavgrad->createEmpty(ngathers);
+		// Wavelet gradient
+		wavgrad = std::make_shared<rockseis::Data2D<T>>(1, source->getNt(), source->getDt(), 0.0);
+		wavgrad->setFile(Wavgradfile);
+		wavgrad->createEmpty(ngathers);
 
-        // Misfit file creation
-        Fmisfit->output(Misfitfile);
-        Fmisfit->setN(1,ngathers);
-        Fmisfit->setD(1,1.0);
-        Fmisfit->setData_format(sizeof(T));
-        Fmisfit->createEmpty();
-        Fmisfit->close();
+		// Misfit file creation
+		Fmisfit->output(Misfitfile);
+		Fmisfit->setN(1,ngathers);
+		Fmisfit->setD(1,1.0);
+		Fmisfit->setData_format(sizeof(T));
+		Fmisfit->createEmpty();
+		Fmisfit->close();
 
-        // Create a data class for the recorded data
-        Vxdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-        Vxdatamod2D->setFile(Vxmodelledfile);
-        Vxdatamod2D->createEmpty(Vxdata2D->getNtrace());
-        Vxdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-        Vxdatares2D->setFile(Vxresidualfile);
-        Vxdatares2D->createEmpty(Vxdata2D->getNtrace());
+		// Create a data class for the recorded data in order to get parameters from file
+		std::shared_ptr<rockseis::Data2D<T>> Vxdata2D (new rockseis::Data2D<T>(Vxrecordfile));
 
-        Vzdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-        Vzdatamod2D->setFile(Vzmodelledfile);
-        Vzdatamod2D->createEmpty(Vxdata2D->getNtrace());
-        Vzdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-        Vzdatares2D->setFile(Vzresidualfile);
-        Vzdatares2D->createEmpty(Vxdata2D->getNtrace());
-        
+		// Create a data class for the recorded data
+		Vxdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+		Vxdatamod2D->setFile(Vxmodelledfile);
+		Vxdatamod2D->createEmpty(Vxdata2D->getNtrace());
+		Vxdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+		Vxdatares2D->setFile(Vxresidualfile);
+		Vxdatares2D->createEmpty(Vxdata2D->getNtrace());
+
+		Vzdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+		Vzdatamod2D->setFile(Vzmodelledfile);
+		Vzdatamod2D->createEmpty(Vxdata2D->getNtrace());
+		Vzdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
+		Vzdatares2D->setFile(Vzresidualfile);
+		Vzdatares2D->createEmpty(Vxdata2D->getNtrace());
+
 		// Create work queue
 		for(long int i=0; i<ngathers; i++) {
 			// Work struct

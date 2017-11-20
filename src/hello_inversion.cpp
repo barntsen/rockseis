@@ -235,8 +235,8 @@ int main(int argc, char** argv) {
     inv->setMisfitfile(MISFITFILE);
     inv->setVxmodelledfile(VXMODFILE);
     inv->setVxresidualfile(VXRESFILE);
-    inv->setVxmodelledfile(VZMODFILE);
-    inv->setVxresidualfile(VZRESFILE);
+    inv->setVzmodelledfile(VZMODFILE);
+    inv->setVzresidualfile(VZRESFILE);
     inv->setSnapfile(Snapfile);
     inv->setApertx(apertx);
     inv->setSnapmethod(snapmethod);
