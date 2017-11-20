@@ -132,6 +132,8 @@ public:
     void setDtx(T val) { dtx = val; }
     void setDty(T val) { dty = val; }
     void setDtz(T val) { dtz = val; }
+    void setFnorm(double norm) { fnorm = norm; }
+    double getFnorm() { return fnorm; }
 
 private:
 	int lpml;
@@ -140,6 +142,7 @@ private:
 	int order;
 	int snapinc;
 	int nsnaps;
+    double fnorm;
     std::string logfile; ///< Log file
     std::string progressfile; ///< Log file
     std::string progresslogfile; ///< Log file

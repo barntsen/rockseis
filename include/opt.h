@@ -61,7 +61,7 @@ namespace rockseis {
 /* Defining structures */
 typedef struct {
 	int max_iterations;		// Maximum number of iterations
-	int n;				// Length og vector
+	int n;				// Length of vector
 	int max_linesearch;		// Maximum number of linesearch trials accepted
 	double xeps;			// Minimum decrease in model norm in linesearch update
 	double geps;			// Minimum decrease in gradient norm

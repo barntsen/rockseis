@@ -19,6 +19,7 @@ Inversion<T>::Inversion() {
     dtx = -1;
     dty = -1;
     dtz = -1;
+    fnorm = 0.0;
     if(createLog() == INV_ERR)
     {
         rs_error("Inversion<T>::Inversion(): Error creating logfile for writting.");
@@ -47,6 +48,7 @@ Inversion<T>::Inversion(MPImodeling *_mpi) {
     dtx = -1;
     dty = -1;
     dtz = -1;
+    fnorm = 0.0;
     if(createLog() == INV_ERR)
     {
         rs_error("Inversion<T>::Inversion(): Error creating logfile for writting.");
@@ -572,7 +574,12 @@ void InversionAcoustic2D<T>::runBsproj() {
             global_stack[i] = 0.0;
         }
         MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
+
 	   }
+    // Free variables
+    free(global_stack);
+    free(vpproj);
+    free(rhoproj);
 }
 
 template<typename T>
