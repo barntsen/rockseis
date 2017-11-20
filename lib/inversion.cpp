@@ -1106,8 +1106,10 @@ InversionElastic2D<T>::InversionElastic2D() {
 
     reg_alpha[0]=0.0;
     reg_alpha[1]=0.0;
+    reg_alpha[2]=0.0;
     reg_eps[0]=1e-3;
     reg_eps[1]=1e-3;
+    reg_eps[2]=1e-3;
 
     update_vp = true;
     update_vs = true;
@@ -1127,8 +1129,10 @@ InversionElastic2D<T>::InversionElastic2D(MPImodeling *mpi): Inversion<T>(mpi) {
     ksource = 1.0;
     reg_alpha[0]=0.0;
     reg_alpha[1]=0.0;
+    reg_alpha[2]=0.0;
     reg_eps[0]=1e-3;
     reg_eps[1]=1e-3;
+    reg_eps[2]=1e-3;
 
     update_vp = true;
     update_vs = true;
@@ -1513,7 +1517,7 @@ void InversionElastic2D<T>::runBsproj() {
         rhogradfile = RHOGRADFILE;
     }else{
         vpgradfile = VPGRADMUTEFILE;
-        vpgradfile = VSGRADMUTEFILE;
+        vsgradfile = VSGRADMUTEFILE;
         rhogradfile = RHOGRADMUTEFILE;
     }
 
@@ -1697,8 +1701,8 @@ int InversionElastic2D<T>::setInitial(double *x, std::string vpfile, std::string
     model_in->setVsfile(VSLSFILE);
     model_in->setRfile(RHOLSFILE);
     model_in->writeModel();
-    source_in->read();
     // Write source initial model
+    source_in->read();
     source_in->setFile(SOURCE0FILE);
     source_in->write();
     // Write source linesearch file
@@ -1831,25 +1835,31 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
             {
                 if(update_vp){
                     vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
-                    Npar += N;
                 }else{
                     vpls[i] = vp0[i];
                 }
+                Npar += N;
+            }
+            for(i=0; i< N; i++)
+            {
                 if(update_vs){
                     vsls[i] = vs0[i] + x[Npar+i]*vsmutedata[i]*kvs;
-                    Npar += N;
                 }else{
                     vsls[i] = vs0[i];
                 }
+                Npar += N;
+            }
+            for(i=0; i< N; i++)
+            {
                 if(update_rho){
                     rhols[i] = rho0[i] + x[Npar+i]*rhomutedata[i]*krho;
                 }else{
                     rhols[i] = rho0[i];
-                    Npar += N;
                 }
             }
+            Npar += N;
             lsmodel->writeModel();
-                        break;
+            break;
         case PAR_BSPLINE:
             Nmod = (lsmodel->getGeom())->getNtot();
             Npar = 0;
@@ -2192,6 +2202,7 @@ void InversionElastic2D<T>::computeRegularisation(double *x)
     gwrk = (double *) calloc(Nmod, sizeof(double));
     model->readModel();
     model->setVpfile(VPREGGRADFILE);
+    model->setVsfile(VSREGGRADFILE);
     model->setRfile(RHOREGGRADFILE);
     vpgrad = model->getVp();
     vsgrad = model->getVs();

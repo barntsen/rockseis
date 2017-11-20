@@ -258,6 +258,7 @@ int main(int argc, char** argv) {
     inv->setDtz(dtz);
 
     inv->setVpregalpha(vpregalpha);
+    inv->setVsregalpha(vsregalpha);
     inv->setRhoregalpha(rhoregalpha);
 
     inv->setUpdates(update_vp, update_vs, update_rho, update_source);
