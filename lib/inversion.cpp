@@ -1097,7 +1097,7 @@ template<typename T>
 InversionElastic2D<T>::InversionElastic2D() {
     // Set default parameters
     apertx = -1;
-    stype = 0;
+    sourcetype = 0;
 
     kvp = 1.0;
     kvs = 1.0;
@@ -1119,7 +1119,7 @@ template<typename T>
 InversionElastic2D<T>::InversionElastic2D(MPImodeling *mpi): Inversion<T>(mpi) {
     // Set default parameters
     apertx = -1;
-    stype = 0;
+    sourcetype = 0;
 
     kvp = 1.0;
     kvs = 1.0;
@@ -1296,7 +1296,7 @@ void InversionElastic2D<T>::runGrad() {
                 source->makeMap(lmodel->getGeom(), SMAP);
 
                 //Setting sourcetype 
-                switch(this->getStype()){
+                switch(this->getSourcetype()){
                     case 0:
                         source->setField(PRESSURE);
                         break;
@@ -1307,7 +1307,7 @@ void InversionElastic2D<T>::runGrad() {
                         source->setField(VZ);
                         break;
                     default:
-                        rs_error("Unknown source type: ", std::to_string(this->getStype()));
+                        rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
                         break;
                 }
 
@@ -1378,7 +1378,7 @@ void InversionElastic2D<T>::runGrad() {
                     // Copy geometry
                     wavgrad->copyCoords(source);
                     wavgrad->makeMap(lmodel->getGeom(), SMAP);
-                    switch(this->getStype()){
+                    switch(this->getSourcetype()){
                         case 0:
                             wavgrad->setField(PRESSURE);
                             break;
@@ -1389,7 +1389,7 @@ void InversionElastic2D<T>::runGrad() {
                             wavgrad->setField(VZ);
                             break;
                         default:
-                            rs_error("Unknown wavgrad type: ", std::to_string(this->getStype()));
+                            rs_error("Unknown wavgrad type: ", std::to_string(this->getSourcetype()));
                             break;
                     }
 

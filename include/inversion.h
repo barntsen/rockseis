@@ -382,8 +382,8 @@ public:
     void setRhoregeps(T val) { reg_eps[2] = val; }
     T getRhoregeps() { return reg_eps[2]; }
 
-    void setStype(int type) { stype = type; }
-    int getStype() { return stype; }
+    void setSourcetype(int type) { sourcetype = type; }
+    int getSourcetype() { return sourcetype; }
 
     // Run gradient
     void runGrad();
@@ -415,8 +415,9 @@ public:
     // Read misfit
     void readMisfit(double *f);
 
-    void setUpdates(bool vp, bool rho, bool source) { update_vp = vp; update_rho = rho; update_source = source; }
+    void setUpdates(bool vp, bool vs, bool rho, bool source) { update_vp = vp; update_vs= vs; update_rho = rho; update_source = source; }
     void setUpdate_vp(bool vp) { update_vp = vp;}
+    void setUpdate_vs(bool vs) { update_vs = vs;}
     void setUpdate_rho(bool rho) { update_rho = rho;}
     void setUpdate_source(bool source) { update_source = source;}
 
@@ -448,7 +449,7 @@ private:
     T kvp, kvs, krho, ksource;
     T reg_eps[3];
     T reg_alpha[3];
-    int stype;
+    int sourcetype;
 };
 
 }
