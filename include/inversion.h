@@ -35,37 +35,55 @@
 #define PROGLOGFILE "progress.log"
 
 #define VPLSFILE "vp_ls.rss"
+#define VSLSFILE "vs_ls.rss"
 #define RHOLSFILE "rho_ls.rss"
 #define SOURCELSFILE "source_ls.rss"
 
 #define VP0FILE "vp_0.rss"
+#define VS0FILE "vs_0.rss"
 #define RHO0FILE "rho_0.rss"
 #define SOURCE0FILE "source_0.rss"
 
 #define VPGRADFILE "vp_grad.rss"
+#define VSGRADFILE "vs_grad.rss"
 #define RHOGRADFILE "rho_grad.rss"
 #define SOURCEGRADFILE "source_grad.rss"
 
 #define VPREGGRADFILE "vp_reg_grad.rss"
+#define VSREGGRADFILE "vs_reg_grad.rss"
 #define RHOREGGRADFILE "rho_reg_grad.rss"
 
 #define VPGRADCOMBFILE "vp_grad_comb.rss"
+#define VSGRADCOMBFILE "vs_grad_comb.rss"
 #define RHOGRADCOMBFILE "rho_grad_comb.rss"
 
 #define VPGRADMUTEFILE "vp_grad_muted.rss"
+#define VSGRADMUTEFILE "vs_grad_muted.rss"
 #define RHOGRADMUTEFILE "rho_grad_muted.rss"
 
 #define VPPROJGRADFILE "vp_proj_grad.rss"
+#define VSPROJGRADFILE "vs_proj_grad.rss"
 #define RHOPROJGRADFILE "rho_proj_grad.rss"
 
 #define MISFITFILE "misfit.rss"
 #define VPREGMISFITFILE "vpreg_misfit.rss"
+#define VSREGMISFITFILE "vsreg_misfit.rss"
 #define RHOREGMISFITFILE "rhoreg_misfit.rss"
 
 #define PMODFILE "pmod.rss"
 #define PRESFILE "pres.rss"
 
+#define VXMODFILE "vxmod.rss"
+#define VXRESFILE "vxres.rss"
+
+#define VYMODFILE "vymod.rss"
+#define VYRESFILE "vyres.rss"
+
+#define VZMODFILE "vzmod.rss"
+#define VZRESFILE "vzres.rss"
+
 #define VP_UP "vp_up.rss"
+#define VS_UP "vs_up.rss"
 #define RHO_UP "rho_up.rss"
 #define SOURCE_UP "source_up.rss"
 
@@ -307,9 +325,6 @@ public:
     void setMisfitfile(std::string file) { Misfitfile = file; }
     std::string getMisfitfile() { return Misfitfile; }
 
-    void setVxsnapfile(std::string file) { Vxsnapfile = file; }
-    std::string getVxsnapfile() { return Vxsnapfile; }
-
     void setVxrecordfile(std::string file) { Vxrecordfile = file; }
     std::string getVxrecordfile() { return Vxrecordfile; }
 
@@ -319,8 +334,8 @@ public:
     void setVxresidualfile(std::string file) { Vxresidualfile = file; }
     std::string getVxresidualfile() { return Vxresidualfile; }
 
-    void setVzsnapfile(std::string file) { Vzsnapfile = file; }
-    std::string getVzsnapfile() { return Vzsnapfile; }
+    void setSnapfile(std::string file) { Snapfile = file; }
+    std::string getSnapfile() { return Snapfile; }
 
     void setVzrecordfile(std::string file) { Vzrecordfile = file; }
     std::string getVzrecordfile() { return Vzrecordfile; }
@@ -366,6 +381,9 @@ public:
 
     void setRhoregeps(T val) { reg_eps[2] = val; }
     T getRhoregeps() { return reg_eps[2]; }
+
+    void setStype(int type) { stype = type; }
+    int getStype() { return stype; }
 
     // Run gradient
     void runGrad();
@@ -418,19 +436,19 @@ private:
     std::string Wavgradfile;
     std::string Dataweightfile;
     std::string Misfitfile;
-    std::string Vxsnapfile;
     std::string Vxrecordfile;
     std::string Vxmodelledfile;
     std::string Vxresidualfile;
-    std::string Vzsnapfile;
     std::string Vzrecordfile;
     std::string Vzmodelledfile;
     std::string Vzresidualfile;
+    std::string Snapfile;
     std::string Mutefile;
     T apertx;
     T kvp, kvs, krho, ksource;
     T reg_eps[3];
     T reg_alpha[3];
+    int stype;
 };
 
 }

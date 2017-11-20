@@ -1325,6 +1325,106 @@ void FwiElastic2D<T>::scaleGrad(std::shared_ptr<ModelElastic2D<T>> model)
 }
 
 template<typename T>
+void FwiElastic2D<T>::computeMisfit(){
+    size_t ntr = datamodVx->getNtrace();
+    if(dataVx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresVx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    size_t nt = datamodVx->getNt();
+    if(dataVx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresVx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+    if(dataVz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresVz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    if(dataVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+    T* modx = datamodVx->getData();
+    T* recx = dataVx->getData();
+    T* resx = dataresVx->getData();
+
+    T* modz = datamodVz->getData();
+    T* recz = dataVz->getData();
+    T* resz = dataresVz->getData();
+    T *wei = NULL;
+    if(dataweightset)
+    {
+        wei = dataweight->getData();
+    }
+    T dt = dataVx->getDt();
+    size_t itr, it;
+    T misfit = 0.0;
+    Index I(nt, ntr);
+    switch(this->getMisfit_type()){
+        case DIFFERENCE:
+            for(itr=0; itr<ntr; itr++){
+                for(it=1; it<nt; it++){
+                   resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
+                   resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                   if(dataweightset)
+                   {
+                       resx[I(it, itr)] *= wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)];
+                   }
+                   misfit += 0.5*(resx[I(it, itr)]*resx[I(it, itr)] + resz[I(it, itr)]*resz[I(it, itr)]);
+                }
+            }
+            break;
+        case CORRELATION:
+            T xnorm1, xnorm2;
+            T znorm1, znorm2;
+            for(itr=0; itr<ntr; itr++){
+                xnorm1 = 0.0;
+                xnorm2 = 0.0;
+                
+                znorm1 = 0.0;
+                znorm2 = 0.0;
+                for(it=0; it<nt; it++){
+                    xnorm1 += modx[I(it, itr)]*modx[I(it, itr)];
+                    xnorm2 += recx[I(it, itr)]*recx[I(it, itr)];
+
+                    znorm1 += modz[I(it, itr)]*modz[I(it, itr)];
+                    znorm2 += recz[I(it, itr)]*recz[I(it, itr)];
+                }
+
+                xnorm1 = sqrt(xnorm1);
+                xnorm2 = sqrt(xnorm2);
+                if(xnorm1 ==0 ) xnorm1= 1.0;
+                if(xnorm2 ==0 ) xnorm2= 1.0;
+
+                znorm1 = sqrt(znorm1);
+                znorm2 = sqrt(znorm2);
+                if(znorm1 ==0 ) znorm1= 1.0;
+                if(znorm2 ==0 ) znorm2= 1.0;
+
+                for(it=1; it<nt; it++){
+                    resx[I(it, itr)]=dt*((-1.0)*(modx[I(it, itr)]*recx[I(it, itr)]/(xnorm1*xnorm2))) + resx[I(it-1, itr)];
+                    resz[I(it, itr)]=dt*((-1.0)*(modz[I(it, itr)]*recz[I(it, itr)]/(znorm1*znorm2))) + resz[I(it-1, itr)];
+                   if(dataweightset)
+                   {
+                       resx[I(it, itr)] *= wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)];
+                   }
+                }
+            }
+            break;
+        default:
+            for(itr=0; itr<ntr; itr++){
+                for(it=1; it<nt; it++){
+                   resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
+                   resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                   if(dataweightset)
+                   {
+                       resx[I(it, itr)] *= wei[I(it, itr)];
+                       resz[I(it, itr)] *= wei[I(it, itr)];
+                   }
+                   misfit += 0.5*(resx[I(it, itr)]*resx[I(it, itr)] + resz[I(it, itr)]*resz[I(it, itr)]);
+                }
+            }
+            break;
+    }
+}
+
+template<typename T>
 void FwiElastic2D<T>::computeResiduals(){
     size_t ntr = datamodVx->getNtrace();
     if(dataVx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
@@ -1356,7 +1456,7 @@ void FwiElastic2D<T>::computeResiduals(){
     switch(this->getMisfit_type()){
         case DIFFERENCE:
             for(itr=0; itr<ntr; itr++){
-                for(it=0; it<nt; it++){
+                for(it=1; it<nt; it++){
                    resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
                    resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
                    if(dataweightset)
@@ -1513,6 +1613,9 @@ int FwiElastic2D<T>::run(){
     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
     Vzsnap->allocSnap(0);
 
+    // Compute msifit
+    computeMisfit();
+
     // Compute Residuals
     computeResiduals();
 
@@ -1640,6 +1743,9 @@ int FwiElastic2D<T>::run_optimal(){
             if(this->datamodVzset){
                 waves_fw->recordData(this->datamodVz, GMAP, capo);
             }
+
+            // Compute msifit
+            computeMisfit();
 
             // Compute Residuals
             computeResiduals();
