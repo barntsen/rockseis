@@ -118,7 +118,7 @@ int main()
 	for(int it=0; it < nt; it ++){
 		// Computing wavelet 
 		t = it * dt - t0;
-		wav[Idata(it,0)] = 1.0*(1.0 + 2.0*s*t*t)*exp(s*t*t); // Ricker function
+		wav[Idata(it,0)] = 1.0e12*(1.0 + 2.0*s*t*t)*exp(s*t*t); // Ricker function
 		//wav[it] = sin(2*3.1415*f0*t);  // Harmonic function 
 	}
 
