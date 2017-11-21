@@ -59,6 +59,12 @@ void evaluate(rockseis::OptInstancePtr instance)
     inv->readMisfit(&instance->f);
     inv->writeLog("##### Evaluation finished #####");
 
+    // Normalize error and gradient
+    if(inv->getFnorm() == 0.0){
+        inv->setFnorm(instance->f);
+    }
+    inv->normalize(g, &instance->f, instance->n);
+
     // Writing progress information to log file
     double xnorm, gnorm, step;
     gnorm = inv->vector_norm(instance->g, 2, instance->n);

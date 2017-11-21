@@ -134,6 +134,7 @@ public:
     void setDtz(T val) { dtz = val; }
     void setFnorm(double norm) { fnorm = norm; }
     double getFnorm() { return fnorm; }
+    void normalize(double *v, double *f, int n);
 
 private:
 	int lpml;
