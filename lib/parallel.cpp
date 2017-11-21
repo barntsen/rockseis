@@ -277,7 +277,7 @@ void MPImodeling::sendWork(std::shared_ptr<workModeling_t> work, const int rank)
 	// Changing status on work and sending to slave
 	work->status = WORK_RUNNING;
 	work->start = time(NULL);
-    work->MPItag = 0;
+    work->MPItag = rank;
 	MPI_Send(work.get(),1,MPIwork,rank,0,MPI_COMM_WORLD);
 }
 
@@ -371,6 +371,7 @@ void MPImodeling::checkResult(workResult_t result) {
 		// Job finished successfully
 		work[result.id]->status = WORK_FINISHED;
 		work[result.id]->end = time(NULL);
+		work[result.id]->MPItag = result.fromRank;
 	}
 }
 
