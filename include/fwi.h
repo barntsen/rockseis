@@ -232,9 +232,11 @@ public:
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
     void setDataweight(std::shared_ptr<Data2D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
+    void crossCorr2(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic2D<T>> model);
     void computeMisfit();
     void computeResiduals();
+    void computeResiduals2();
 
     ~FwiElastic2D();	///< Destructor
 
