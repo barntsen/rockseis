@@ -63,9 +63,9 @@ Inversion<T>::Inversion(MPImodeling *_mpi) {
 template<typename T>
 void Inversion<T>::normalize(double *v, double *f, int n){
 	int i;
-    *f /= abs(fnorm);
+    *f /= fabs(fnorm);
 	for(i=0; i<n; i++) {
-		v[i] /= abs(fnorm);
+		v[i] /= fabs(fnorm);
 	}
 }
 
@@ -84,8 +84,8 @@ double Inversion<T>::vector_norm(double *v, const int type, const int n){
 	}
 	else if(type == 99999) {
 		for(i=0; i<n; i++) {
-			if(abs(v[i]) >= norm) {
-				norm = abs(v[i]);
+			if(fabs(v[i]) >= norm) {
+				norm = fabs(v[i]);
 			}
 		}
 	}
