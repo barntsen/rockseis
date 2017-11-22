@@ -80,12 +80,12 @@ double Inversion<T>::vector_norm(double *v, const int type, const int n){
 		for(i=0; i<n; i++) {
 			norm += v[i]*v[i];
 		}
-		norm = sqrtf(norm);
+		norm = sqrt(norm);
 	}
 	else if(type == 99999) {
 		for(i=0; i<n; i++) {
-			if(fabs(v[i]) >= norm) {
-				norm = fabs(v[i]);
+			if(abs(v[i]) >= norm) {
+				norm = abs(v[i]);
 			}
 		}
 	}
