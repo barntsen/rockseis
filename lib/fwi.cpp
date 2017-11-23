@@ -1577,8 +1577,8 @@ int FwiElastic2D<T>::run(){
         Vzsnap->writeSnap(it);
 
     	// Time stepping
-    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
+    	waves->forwardstepVelocity(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
@@ -1706,8 +1706,8 @@ int FwiElastic2D<T>::run_optimal(){
             for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
-                waves_fw->forwardstepVelocity(model, der);
                 waves_fw->forwardstepStress(model, der);
+                waves_fw->forwardstepVelocity(model, der);
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
@@ -2272,8 +2272,8 @@ int FwiElastic3D<T>::run(){
         Vzsnap->writeSnap(it);
 
     	// Time stepping
-    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
+    	waves->forwardstepVelocity(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
@@ -2410,8 +2410,8 @@ int FwiElastic3D<T>::run_optimal(){
             for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
-                waves_fw->forwardstepVelocity(model, der);
                 waves_fw->forwardstepStress(model, der);
+                waves_fw->forwardstepVelocity(model, der);
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
