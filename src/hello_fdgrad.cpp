@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
         inv->writeProgress("ITERATION\t   MISFIT               TIME");
 
         double f0,f,df;
-        df= 1e10;
+        df= 1e11;
         int Nx=45; 
         int Nz=45;
         double *x = nullptr; 
