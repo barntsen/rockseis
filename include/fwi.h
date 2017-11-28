@@ -86,6 +86,8 @@ public:
     void writeLog(const char * text); ///< Write c_string to log file
     void writeProgressbar(int x, int n, int r, int w);
     void writeProgress(int x, int n, int r, int w);
+    void setNoreverse(bool val) { noreverse = val; }
+    bool getNoreverse() { return noreverse; }
 
     ~Fwi();	///< Destructor
 
@@ -102,6 +104,7 @@ private:
     int ncheck; ///< Number of checkpoints in optimal checkpointing
     std::string snapfile;
     T misfit; ///< Misfit value
+    bool noreverse; ///< Do only forward loop flag
 };
 
 /** The 2D Acoustic Fwi class

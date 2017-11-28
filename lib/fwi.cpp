@@ -15,6 +15,7 @@ Fwi<T>::Fwi() {
     prog.persec = 0;
     misfit_type = DIFFERENCE;
     misfit = 0.0;
+    noreverse = false;
 }
 
 template<typename T>
@@ -34,13 +35,12 @@ Fwi<T>::Fwi(int _order, int _snapinc) {
 
     snapmethod = FULL;
     ncheck = 0;
-
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 1;
-
     misfit_type = DIFFERENCE;
     misfit = 0.0;
+    noreverse = false;
 }
 
 template<typename T>
@@ -432,46 +432,49 @@ int FwiAcoustic2D<T>::run(){
     // Compute msifit
     computeMisfit();
 
-    // Compute residuals
-    computeResiduals();
+    if(!this->getNoreverse()){
+        // Compute residuals
+        computeResiduals();
 
-    Psnap->openSnap(this->getSnapfile(), 'r');
-    Psnap->allocSnap(0);
+        Psnap->openSnap(this->getSnapfile(), 'r');
+        Psnap->allocSnap(0);
 
-     this->writeLog("\nDoing reverse-time Loop.");
-    // Loop over reverse time
-    for(int it=0; it < nt; it++)
-    {
-    	// Time stepping
-    	waves->forwardstepAcceleration(model, der);
-    	waves->forwardstepStress(model, der);
+        this->writeLog("\nDoing reverse-time Loop.");
+        // Loop over reverse time
+        for(int it=0; it < nt; it++)
+        {
+            // Time stepping
+            waves->forwardstepAcceleration(model, der);
+            waves->forwardstepStress(model, der);
 
-    	// Inserting residuals
-    	waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
+            // Inserting residuals
+            waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
 
-        //Read forward snapshot
-        Psnap->readSnap(nt - 1 - it);
+            //Read forward snapshot
+            Psnap->readSnap(nt - 1 - it);
 
-        // Do Crosscorrelation
-        if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-            T *wrp = waves->getP1();
-            T* wrx = waves->getAx(); 
-            T* wrz = waves->getAz(); 
-            crossCorr(Psnap->getData(0), 0, wrp, wrx, wrz, waves->getLpml(), model->getVp(), model->getR());
+            // Do Crosscorrelation
+            if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
+                T *wrp = waves->getP1();
+                T* wrx = waves->getAx(); 
+                T* wrz = waves->getAz(); 
+                crossCorr(Psnap->getData(0), 0, wrp, wrx, wrz, waves->getLpml(), model->getVp(), model->getR());
+            }
+            // Record wavelet gradient
+            waves->recordData(this->wavgrad, SMAP, nt-1-it);
+
+            // Roll the pointers P1 and P2
+            waves->roll();
+
+            // Output progress to logfile
+            this->writeProgress(it, nt-1, 20, 48);
         }
-        // Record wavelet gradient
-        waves->recordData(this->wavgrad, SMAP, nt-1-it);
+        this->writeLog("\nGradient computation completed.");
 
-        // Roll the pointers P1 and P2
-    	waves->roll();
+    } // End of reverse loop
 
-        // Output progress to logfile
-        this->writeProgress(it, nt-1, 20, 48);
-    }
-     this->writeLog("\nGradient computation completed.");
-    
-	//Remove snapshot file
-	Psnap->removeSnap();
+    //Remove snapshot file
+    Psnap->removeSnap();
 
     result=FWI_OK;
     return result;
@@ -858,49 +861,50 @@ int FwiAcoustic3D<T>::run(){
     vpgrad->allocateImage();
     rhograd->allocateImage();
 
-    // Compute residuals
-    computeResiduals();
+    if(!this->getNoreverse()){
+        // Compute residuals
+        computeResiduals();
 
-    Psnap->openSnap(this->getSnapfile(), 'r');
-    Psnap->allocSnap(0);
+        Psnap->openSnap(this->getSnapfile(), 'r');
+        Psnap->allocSnap(0);
 
-     this->writeLog("\nDoing reverse-time Loop.");
-    // Loop over reverse time
-    for(int it=0; it < nt; it++)
-    {
-    	// Time stepping
-    	waves->forwardstepAcceleration(model, der);
-    	waves->forwardstepStress(model, der);
+        this->writeLog("\nDoing reverse-time Loop.");
+        // Loop over reverse time
+        for(int it=0; it < nt; it++)
+        {
+            // Time stepping
+            waves->forwardstepAcceleration(model, der);
+            waves->forwardstepStress(model, der);
 
-    	// Inserting source 
-    	waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
+            // Inserting source 
+            waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
 
-        //Read forward snapshot
-        Psnap->readSnap(nt - 1 - it);
+            //Read forward snapshot
+            Psnap->readSnap(nt - 1 - it);
 
-        // Do Crosscorrelation
-        if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-            T *wrp = waves->getP1();
-            T* wrx = waves->getAx(); 
-            T* wry = waves->getAy(); 
-            T* wrz = waves->getAz(); 
-            crossCorr(Psnap->getData(0), 0, wrp, wrx, wry, wrz, waves->getLpml(), model->getVp(), model->getR());
+            // Do Crosscorrelation
+            if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
+                T *wrp = waves->getP1();
+                T* wrx = waves->getAx(); 
+                T* wry = waves->getAy(); 
+                T* wrz = waves->getAz(); 
+                crossCorr(Psnap->getData(0), 0, wrp, wrx, wry, wrz, waves->getLpml(), model->getVp(), model->getR());
+            }
+
+            // Record wavelet gradient
+            waves->recordData(this->wavgrad, SMAP, nt-1-it);
+
+            // Output progress to logfile
+            this->writeProgress(it, nt-1, 20, 48);
+
+            // Roll the pointers P1 and P2
+            waves->roll();
+
+            // Output progress to logfile
+            this->writeProgress(it, nt-1, 20, 48);
         }
-
-        // Record wavelet gradient
-        waves->recordData(this->wavgrad, SMAP, nt-1-it);
-
-        // Output progress to logfile
-        this->writeProgress(it, nt-1, 20, 48);
-
-        // Roll the pointers P1 and P2
-    	waves->roll();
-
-        // Output progress to logfile
-        this->writeProgress(it, nt-1, 20, 48);
-    }
-     this->writeLog("\nGradient computation completed.");
-    
+        this->writeLog("\nGradient computation completed.");
+    } // End of reverse loop
 
 	//Remove snapshot file
 	Psnap->removeSnap();
@@ -1188,15 +1192,15 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
             }
 
             if(vsgradset || rhogradset){
-                msxz = 0.25*(wsx[ks2D(ix+pads, iz+pads+1)] - wsx[ks2D(ix+pads, iz+pads)])/dz;
-                msxz += 0.25*(wsx[ks2D(ix+pads-1, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads-1)])/dz;
-                msxz += 0.25*(wsz[ks2D(ix+pads+1, iz+pads)] - wsz[ks2D(ix+pads, iz+pads)])/dx;
-                msxz += 0.25*(wsz[ks2D(ix+pads, iz+pads-1)] - wsz[ks2D(ix+pads-1, iz+pads-1)])/dx;
+                msxz = 0.5*(wsx[ks2D(ix+pads, iz+pads+1)] - wsx[ks2D(ix+pads, iz+pads)])/dz;
+                msxz += 0.5*(wsx[ks2D(ix+pads-1, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads-1)])/dz;
+                msxz += 0.5*(wsz[ks2D(ix+pads+1, iz+pads)] - wsz[ks2D(ix+pads, iz+pads)])/dx;
+                msxz += 0.5*(wsz[ks2D(ix+pads, iz+pads-1)] - wsz[ks2D(ix+pads-1, iz+pads-1)])/dx;
 
-                mrxz = 0.25*(wrx[kr2D(ix+padr, iz+padr+1)] - wrx[kr2D(ix+padr, iz+padr)])/dz;
-                mrxz += 0.25*(wrx[kr2D(ix+padr-1, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr-1)])/dz;
-                mrxz += 0.25*(wrz[kr2D(ix+padr+1, iz+padr)] - wrz[kr2D(ix+padr, iz+padr)])/dx;
-                mrxz += 0.25*(wrz[kr2D(ix+padr, iz+padr-1)] - wrz[kr2D(ix+padr-1, iz+padr-1)])/dx;
+                mrxz = 0.5*(wrx[kr2D(ix+padr, iz+padr+1)] - wrx[kr2D(ix+padr, iz+padr)])/dz;
+                mrxz += 0.5*(wrx[kr2D(ix+padr-1, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr-1)])/dz;
+                mrxz += 0.5*(wrz[kr2D(ix+padr+1, iz+padr)] - wrz[kr2D(ix+padr, iz+padr)])/dx;
+                mrxz += 0.5*(wrz[kr2D(ix+padr, iz+padr-1)] - wrz[kr2D(ix+padr-1, iz+padr-1)])/dx;
 
                 vsgraddata[ki2D(ix,iz)] += (2.0*msxx*mrxx + 2.0*mszz*mrzz + msxz*mrxz);
             }
@@ -2321,36 +2325,38 @@ int FwiElastic3D<T>::run(){
     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
     Vzsnap->allocSnap(0);
 
-    // Compute Residuals
-    computeResiduals();
+    if(!this->getNoreverse()){
+        // Compute Residuals
+        computeResiduals();
 
-     this->writeLog("\nDoing reverse-time Loop.");
-    // Loop over reverse time
-    for(int it=0; it < nt; it++)
-    {
-    	// Time stepping 
-    	waves->forwardstepStress(model, der);
-    	waves->forwardstepVelocity(model, der);
+        this->writeLog("\nDoing reverse-time Loop.");
+        // Loop over reverse time
+        for(int it=0; it < nt; it++)
+        {
+            // Time stepping 
+            waves->forwardstepStress(model, der);
+            waves->forwardstepVelocity(model, der);
 
-    	// Inserting residuals
-    	waves->insertSource(model, dataresVx, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataresVy, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataresVz, GMAP, (nt - 1 - it));
+            // Inserting residuals
+            waves->insertSource(model, dataresVx, GMAP, (nt - 1 - it));
+            waves->insertSource(model, dataresVy, GMAP, (nt - 1 - it));
+            waves->insertSource(model, dataresVz, GMAP, (nt - 1 - it));
 
-        //Read forward snapshot
-        Vxsnap->readSnap(nt - 1 - it);
-        Vysnap->readSnap(nt - 1 - it);
-        Vzsnap->readSnap(nt - 1 - it);
+            //Read forward snapshot
+            Vxsnap->readSnap(nt - 1 - it);
+            Vysnap->readSnap(nt - 1 - it);
+            Vzsnap->readSnap(nt - 1 - it);
 
-        // Do Crosscorrelation
-        if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
-            crossCorr(Vxsnap->getData(0), Vysnap->getData(0), Vzsnap->getData(0), 0, waves, model, (nt - 1 - it));
+            // Do Crosscorrelation
+            if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
+                crossCorr(Vxsnap->getData(0), Vysnap->getData(0), Vzsnap->getData(0), 0, waves, model, (nt - 1 - it));
+            }
+
+            // Output progress to logfile
+            this->writeProgress(it, nt-1, 20, 48);
         }
-
-        // Output progress to logfile
-        this->writeProgress(it, nt-1, 20, 48);
-    }
-     this->writeLog("\nGradient computation completed.");
+        this->writeLog("\nGradient computation completed.");
+    } // End of reverse loop
     
 	//Remove snapshot file
 	Vxsnap->removeSnap();

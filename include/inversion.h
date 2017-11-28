@@ -135,6 +135,9 @@ public:
     void setFnorm(double norm) { fnorm = norm; }
     double getFnorm() { return fnorm; }
     void normalize(double *v, double *f, int n);
+    void setNoreverse(bool val) { noreverse = val; }
+    bool getNoreverse() { return noreverse; }
+
 
 private:
 	int lpml;
@@ -155,6 +158,7 @@ private:
     rs_paramtype paramtype;
     MPImodeling *mpi;
     T dtx, dty, dtz;
+    bool noreverse;
 };
 
 // ##### ACOUSTIC 2D INVERSION CLASS

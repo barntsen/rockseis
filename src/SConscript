@@ -88,6 +88,9 @@ if(env['MPI']):
         hello_inversion = mpi.Program(prefix + 'hello_inversion','hello_inversion.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl'],LIBPATH=['../build'])
         mpi.Install('../bin/',hello_inversion)
 
+        hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl'],LIBPATH=['../build'])
+        mpi.Install('../bin/',hello_fdgrad)
+
     mpiAcousticmod2d = mpi.Program(prefix + 'mpiAcousticmod2d','mpiAcousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap'],LIBPATH=['../build', '../config4cpp/lib'])
     mpi.Install('../bin/',mpiAcousticmod2d)
     

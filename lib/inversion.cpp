@@ -28,7 +28,7 @@ Inversion<T>::Inversion() {
     {
         rs_error("Inversion<T>::Inversion(): Error creating progress logfile for writting.");
     }
-
+    noreverse = false;
 }
 
 template<typename T>
@@ -57,7 +57,7 @@ Inversion<T>::Inversion(MPImodeling *_mpi) {
     {
         rs_error("Inversion<T>::Inversion(): Error creating progress logfile for writting.");
     }
-
+    noreverse = false;
 }
 
 template<typename T>
@@ -1457,6 +1457,9 @@ void InversionElastic2D<T>::runGrad() {
                 // Stagger model
                 lmodel->staggerModels();
 
+                // Set reverse flag (For forward modelling only)
+                fwi->setNoreverse(this->getNoreverse());
+
                 // Run simulation
                 switch(this->getSnapmethod()){
                     case rockseis::FULL:
@@ -1871,33 +1874,42 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
         case PAR_GRID:
             N = (lsmodel->getGeom())->getNtot();
             Npar = 0;
-            for(i=0; i< N; i++)
-            {
-                if(update_vp){
+            if(update_vp){
+                for(i=0; i< N; i++)
+                {
                     vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
-                }else{
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< N; i++)
+                {
                     vpls[i] = vp0[i];
                 }
             }
-            Npar += N;
-            for(i=0; i< N; i++)
-            {
-                if(update_vs){
+            if(update_vs){
+                for(i=0; i< N; i++)
+                {
                     vsls[i] = vs0[i] + x[Npar+i]*vsmutedata[i]*kvs;
-                }else{
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< N; i++)
+                {
                     vsls[i] = vs0[i];
                 }
             }
-            Npar += N;
-            for(i=0; i< N; i++)
-            {
-                if(update_rho){
+            if(update_rho){
+                for(i=0; i< N; i++)
+                {
                     rhols[i] = rho0[i] + x[Npar+i]*rhomutedata[i]*krho;
-                }else{
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< N; i++)
+                {
                     rhols[i] = rho0[i];
                 }
             }
-            Npar += N;
             lsmodel->writeModel();
             break;
         case PAR_BSPLINE:
