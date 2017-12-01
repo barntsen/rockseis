@@ -61,14 +61,17 @@ public:
     void openCheck(std::string filename, std::shared_ptr<WavesAcoustic2D<T>> waves, char flag);
     void openCheck(std::string filename, std::shared_ptr<WavesAcoustic3D<T>> waves, char flag);
     void openCheck(std::string filename, std::shared_ptr<WavesElastic2D<T>> waves, char flag);
+    void openCheck(std::string filename, std::shared_ptr<WavesElastic2D_DS<T>> waves, char flag);
     void openCheck(std::string filename, std::shared_ptr<WavesElastic3D<T>> waves, char flag);
     void readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves);
     void readCheck(std::shared_ptr<WavesAcoustic3D<T>> waves);
     void writeCheck(std::shared_ptr<WavesAcoustic2D<T>> waves);
     void writeCheck(std::shared_ptr<WavesAcoustic3D<T>> waves);
     void readCheck(std::shared_ptr<WavesElastic2D<T>> waves);
+    void readCheck(std::shared_ptr<WavesElastic2D_DS<T>> waves);
     void readCheck(std::shared_ptr<WavesElastic3D<T>> waves);
     void writeCheck(std::shared_ptr<WavesElastic2D<T>> waves);
+    void writeCheck(std::shared_ptr<WavesElastic2D_DS<T>> waves);
     void writeCheck(std::shared_ptr<WavesElastic3D<T>> waves);
     void removeCheck();
     void closeCheck();

@@ -73,14 +73,14 @@
 #define PMODFILE "pmod.rss"
 #define PRESFILE "pres.rss"
 
-#define VXMODFILE "vxmod.rss"
-#define VXRESFILE "vxres.rss"
+#define UXMODFILE "uxmod.rss"
+#define UXRESFILE "uxres.rss"
 
-#define VYMODFILE "vymod.rss"
-#define VYRESFILE "vyres.rss"
+#define UYMODFILE "uymod.rss"
+#define UYRESFILE "uyres.rss"
 
-#define VZMODFILE "vzmod.rss"
-#define VZRESFILE "vzres.rss"
+#define UZMODFILE "uzmod.rss"
+#define UZRESFILE "uzres.rss"
 
 #define VP_UP "vp_up.rss"
 #define VS_UP "vs_up.rss"
@@ -334,26 +334,26 @@ public:
     void setMisfitfile(std::string file) { Misfitfile = file; }
     std::string getMisfitfile() { return Misfitfile; }
 
-    void setVxrecordfile(std::string file) { Vxrecordfile = file; }
-    std::string getVxrecordfile() { return Vxrecordfile; }
+    void setUxrecordfile(std::string file) { Uxrecordfile = file; }
+    std::string getUxrecordfile() { return Uxrecordfile; }
 
-    void setVxmodelledfile(std::string file) { Vxmodelledfile = file; }
-    std::string getVxmodelledfile() { return Vxmodelledfile; }
+    void setUxmodelledfile(std::string file) { Uxmodelledfile = file; }
+    std::string getUxmodelledfile() { return Uxmodelledfile; }
 
-    void setVxresidualfile(std::string file) { Vxresidualfile = file; }
-    std::string getVxresidualfile() { return Vxresidualfile; }
+    void setUxresidualfile(std::string file) { Uxresidualfile = file; }
+    std::string getUxresidualfile() { return Uxresidualfile; }
 
     void setSnapfile(std::string file) { Snapfile = file; }
     std::string getSnapfile() { return Snapfile; }
 
-    void setVzrecordfile(std::string file) { Vzrecordfile = file; }
-    std::string getVzrecordfile() { return Vzrecordfile; }
+    void setUzrecordfile(std::string file) { Uzrecordfile = file; }
+    std::string getUzrecordfile() { return Uzrecordfile; }
 
-    void setVzmodelledfile(std::string file) { Vzmodelledfile = file; }
-    std::string getVzmodelledfile() { return Vzmodelledfile; }
+    void setUzmodelledfile(std::string file) { Uzmodelledfile = file; }
+    std::string getUzmodelledfile() { return Uzmodelledfile; }
 
-    void setVzresidualfile(std::string file) { Vzresidualfile = file; }
-    std::string getVzresidualfile() { return Vzresidualfile; }
+    void setUzresidualfile(std::string file) { Uzresidualfile = file; }
+    std::string getUzresidualfile() { return Uzresidualfile; }
 
     void setMutefile(std::string file) { Mutefile = file; }
     std::string getMutefile() { return Mutefile; }
@@ -446,12 +446,12 @@ private:
     std::string Wavgradfile;
     std::string Dataweightfile;
     std::string Misfitfile;
-    std::string Vxrecordfile;
-    std::string Vxmodelledfile;
-    std::string Vxresidualfile;
-    std::string Vzrecordfile;
-    std::string Vzmodelledfile;
-    std::string Vzresidualfile;
+    std::string Uxrecordfile;
+    std::string Uxmodelledfile;
+    std::string Uxresidualfile;
+    std::string Uzrecordfile;
+    std::string Uzmodelledfile;
+    std::string Uzresidualfile;
     std::string Snapfile;
     std::string Mutefile;
     T apertx;

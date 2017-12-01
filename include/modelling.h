@@ -182,6 +182,8 @@ private:
     bool snapPset, snapSxxset, snapSzzset, snapSxzset, snapVxset, snapVzset;
 };
 
+
+
 /** The 3D Elastic Modelling class
  *
  */
@@ -224,6 +226,44 @@ private:
     bool recPset, recVxset, recVyset, recVzset;
     std::string snapP, snapSxx, snapSyy, snapSzz, snapSyz, snapSxz, snapSxy, snapVx, snapVy, snapVz;
     bool snapPset, snapSxxset, snapSyyset, snapSzzset, snapSxzset, snapSyzset, snapSxyset, snapVxset, snapVyset, snapVzset;
+};
+
+/** The 2D Elastic Displancement-Stress Modelling class
+ *
+ */
+template<typename T>
+class ModellingElastic2D_DS: public Modelling<T> {
+public:
+    ModellingElastic2D_DS();					///< Constructor
+    ModellingElastic2D_DS(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs modelling
+    void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
+    void setRecP(std::shared_ptr<Data2D<T>> _recP) { recP = _recP; recPset = true; }
+    void setRecUx(std::shared_ptr<Data2D<T>> _recUx) { recUx = _recUx; recUxset = true; }
+    void setRecUz(std::shared_ptr<Data2D<T>> _recUz) { recUz = _recUz; recUzset = true; }
+
+    void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
+    void setSnapSxx(std::string _snapSxx) { snapSxx = _snapSxx; snapSxxset = true; }
+    void setSnapSzz(std::string _snapSzz) { snapSzz = _snapSzz; snapSzzset = true; }
+    void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
+    void setSnapUx(std::string _snapUx) { snapUx = _snapUx; snapUxset = true; }
+    void setSnapUz(std::string _snapUz) { snapUz = _snapUz; snapUzset = true; }
+    bool checkStability(); ///< Check stability of finite difference modelling
+
+    ~ModellingElastic2D_DS();	///< Destructor
+
+private:
+    std::shared_ptr<ModelElastic2D<T>> model;
+    std::shared_ptr<Data2D<T>> source;
+    std::shared_ptr<Data2D<T>> recP;
+    std::shared_ptr<Data2D<T>> recUx;
+    std::shared_ptr<Data2D<T>> recUz;
+    bool modelset;
+    bool sourceset;
+    bool recPset, recUxset, recUzset;
+    std::string snapP, snapSxx, snapSzz, snapSxz, snapUx, snapUz;
+    bool snapPset, snapSxxset, snapSzzset, snapSxzset, snapUxset, snapUzset;
 };
 
 }

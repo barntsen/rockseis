@@ -84,12 +84,12 @@ int main(int argc, char** argv) {
     std::string Dataweightfile;
     std::string Misfitfile;
     std::string Snapfile;
-    std::string Vxrecordfile;
-    std::string Vxmodelledfile;
-    std::string Vxresidualfile;
-    std::string Vzrecordfile;
-    std::string Vzmodelledfile;
-    std::string Vzresidualfile;
+    std::string Uxrecordfile;
+    std::string Uxmodelledfile;
+    std::string Uxresidualfile;
+    std::string Uzrecordfile;
+    std::string Uzmodelledfile;
+    std::string Uzresidualfile;
     std::string Mutefile;
 
 
@@ -111,8 +111,8 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("source_type", &source_type) == INPARSE_ERR) status = true;
     rockseis::rs_paramtype paramtype = PAR_GRID;
-    if(Inpar->getPar("Vxrecordfile", &Vxrecordfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vzrecordfile", &Vzrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uxrecordfile", &Uxrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uzrecordfile", &Uzrecordfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Snapfile", &Snapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapmethod", &_snapmethod) == INPARSE_ERR) status = true;
     rockseis::rs_snapmethod snapmethod = static_cast<rockseis::rs_snapmethod>(_snapmethod);
@@ -165,8 +165,8 @@ int main(int argc, char** argv) {
     inv->setFs(fs);
     inv->setSnapinc(snapinc);
 
-    inv->setVxrecordfile(Vxrecordfile);
-    inv->setVzrecordfile(Vzrecordfile);
+    inv->setUxrecordfile(Uxrecordfile);
+    inv->setUzrecordfile(Uzrecordfile);
     inv->setDataweight(dataweight);
     inv->setDataweightfile(Dataweightfile);
     if(mute){
@@ -177,10 +177,10 @@ int main(int argc, char** argv) {
     inv->setRhofile(RHOLSFILE);
     inv->setWaveletfile(SOURCELSFILE);
     inv->setMisfitfile(MISFITFILE);
-    inv->setVxmodelledfile(VXMODFILE);
-    inv->setVxresidualfile(VXRESFILE);
-    inv->setVzmodelledfile(VZMODFILE);
-    inv->setVzresidualfile(VZRESFILE);
+    inv->setUxmodelledfile(UXMODFILE);
+    inv->setUxresidualfile(UXRESFILE);
+    inv->setUzmodelledfile(UZMODFILE);
+    inv->setUzresidualfile(UZRESFILE);
     inv->setSnapfile(Snapfile);
     inv->setApertx(apertx);
     inv->setSnapmethod(snapmethod);
@@ -211,8 +211,8 @@ int main(int argc, char** argv) {
     if(mpi.getRank() == 0){
         // Create a sort class and map over shots
         std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
-        Sort->setDatafile(Vxrecordfile);
-        Sort->createShotmap(Vxrecordfile); 
+        Sort->setDatafile(Uxrecordfile);
+        Sort->createShotmap(Uxrecordfile); 
         Sort->writeKeymap();
         Sort->writeSortmap();
 
@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
         inv->writeProgress("ITERATION\t   MISFIT               TIME");
 
         double f0,f,df;
-        df= 1e11;
+        df= 1.0e10;
         int Nx=45; 
         int Nz=45;
         double *x = nullptr; 
@@ -235,11 +235,11 @@ int main(int argc, char** argv) {
         rockseis::Index I(Nx,Nz);
         for(int i=0; i < Ng; i++)
         {
-            //x[Nx*Nz + I(22,i)] = df;
+            //x[I(22,i)] = df;
             x[i*20] = df;
             evaluate(&f, x);
+            //x[I(22,i)]=0.0;
             x[i*20] = 0.0;
-            //x[Nx*Nz + I(22,i)]=0.0;
             grad[i]= (f-f0)/df;
         }
 

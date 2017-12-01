@@ -1191,18 +1191,18 @@ InversionElastic2D<T>::~InversionElastic2D() {
 template<typename T>
 void InversionElastic2D<T>::runGrad() {
     MPImodeling *mpi = this->getMpi();
-    std::shared_ptr<rockseis::Data2D<T>> Vxdata2D;
-    std::shared_ptr<rockseis::Data2D<T>> Vxdata2Di;
-    std::shared_ptr<rockseis::Data2D<T>> Vzdata2D;
-    std::shared_ptr<rockseis::Data2D<T>> Vzdata2Di;
-    std::shared_ptr<rockseis::Data2D<T>> Vxdatamod2D;
-    std::shared_ptr<rockseis::Data2D<T>> Vxdatamod2Di;
-    std::shared_ptr<rockseis::Data2D<T>> Vxdatares2D;
-    std::shared_ptr<rockseis::Data2D<T>> Vxdatares2Di;
-    std::shared_ptr<rockseis::Data2D<T>> Vzdatamod2D;
-    std::shared_ptr<rockseis::Data2D<T>> Vzdatamod2Di;
-    std::shared_ptr<rockseis::Data2D<T>> Vzdatares2D;
-    std::shared_ptr<rockseis::Data2D<T>> Vzdatares2Di;
+    std::shared_ptr<rockseis::Data2D<T>> Uxdata2D;
+    std::shared_ptr<rockseis::Data2D<T>> Uxdata2Di;
+    std::shared_ptr<rockseis::Data2D<T>> Uzdata2D;
+    std::shared_ptr<rockseis::Data2D<T>> Uzdata2Di;
+    std::shared_ptr<rockseis::Data2D<T>> Uxdatamod2D;
+    std::shared_ptr<rockseis::Data2D<T>> Uxdatamod2Di;
+    std::shared_ptr<rockseis::Data2D<T>> Uxdatares2D;
+    std::shared_ptr<rockseis::Data2D<T>> Uxdatares2Di;
+    std::shared_ptr<rockseis::Data2D<T>> Uzdatamod2D;
+    std::shared_ptr<rockseis::Data2D<T>> Uzdatamod2Di;
+    std::shared_ptr<rockseis::Data2D<T>> Uzdatares2D;
+    std::shared_ptr<rockseis::Data2D<T>> Uzdatares2Di;
     std::shared_ptr<rockseis::Data2D<T>> shotweight2D;
     std::shared_ptr<rockseis::Data2D<T>> shotweight2Di;
     std::shared_ptr<rockseis::Image2D<T>> vpgrad;
@@ -1212,7 +1212,7 @@ void InversionElastic2D<T>::runGrad() {
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
-    Sort->setDatafile(Vxrecordfile);
+    Sort->setDatafile(Uxrecordfile);
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelElastic2D<T>> gmodel (new rockseis::ModelElastic2D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
@@ -1250,22 +1250,22 @@ void InversionElastic2D<T>::runGrad() {
 		Fmisfit->close();
 
 		// Create a data class for the recorded data in order to get parameters from file
-		std::shared_ptr<rockseis::Data2D<T>> Vxdata2D (new rockseis::Data2D<T>(Vxrecordfile));
+		std::shared_ptr<rockseis::Data2D<T>> Uxdata2D (new rockseis::Data2D<T>(Uxrecordfile));
 
 		// Create a data class for the recorded data
-		Vxdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-		Vxdatamod2D->setFile(Vxmodelledfile);
-		Vxdatamod2D->createEmpty(Vxdata2D->getNtrace());
-		Vxdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-		Vxdatares2D->setFile(Vxresidualfile);
-		Vxdatares2D->createEmpty(Vxdata2D->getNtrace());
+		Uxdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+		Uxdatamod2D->setFile(Uxmodelledfile);
+		Uxdatamod2D->createEmpty(Uxdata2D->getNtrace());
+		Uxdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+		Uxdatares2D->setFile(Uxresidualfile);
+		Uxdatares2D->createEmpty(Uxdata2D->getNtrace());
 
-		Vzdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-		Vzdatamod2D->setFile(Vzmodelledfile);
-		Vzdatamod2D->createEmpty(Vxdata2D->getNtrace());
-		Vzdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-		Vzdatares2D->setFile(Vzresidualfile);
-		Vzdatares2D->createEmpty(Vxdata2D->getNtrace());
+		Uzdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+		Uzdatamod2D->setFile(Uzmodelledfile);
+		Uzdatamod2D->createEmpty(Uxdata2D->getNtrace());
+		Uzdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+		Uzdatares2D->setFile(Uzresidualfile);
+		Uzdatares2D->createEmpty(Uxdata2D->getNtrace());
 
 		// Create work queue
 		for(long int i=0; i<ngathers; i++) {
@@ -1325,12 +1325,12 @@ void InversionElastic2D<T>::runGrad() {
 
 
                 // Get the shot
-                Sort->setDatafile(Vxrecordfile);
-                Vxdata2D = Sort->get2DGather(work.id);
-                size_t ntr = Vxdata2D->getNtrace();
+                Sort->setDatafile(Uxrecordfile);
+                Uxdata2D = Sort->get2DGather(work.id);
+                size_t ntr = Uxdata2D->getNtrace();
 
-                Sort->setDatafile(Vzrecordfile);
-                Vzdata2D = Sort->get2DGather(work.id);
+                Sort->setDatafile(Uzrecordfile);
+                Uzdata2D = Sort->get2DGather(work.id);
 
                 // Get the weight
                 if(dataweight){
@@ -1338,11 +1338,11 @@ void InversionElastic2D<T>::runGrad() {
                     shotweight2D = Sort->get2DGather(work.id);
                 }
 
-                lmodel = gmodel->getLocal(Vxdata2D, apertx, SMAP);
+                lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
 
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();
-                source->copyCoords(Vxdata2D);
+                source->copyCoords(Uxdata2D);
                 source->makeMap(lmodel->getGeom(), SMAP);
 
                 //Setting sourcetype 
@@ -1362,41 +1362,41 @@ void InversionElastic2D<T>::runGrad() {
                 }
 
                 // Interpolate shot
-                Vxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Vxdata2D, Vxdata2Di);
-                Vxdata2Di->makeMap(lmodel->getGeom(), GMAP);
-                Vxdata2Di->setField(rockseis::VX);
+                Uxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(Uxdata2D, Uxdata2Di);
+                Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
+                Uxdata2Di->setField(rockseis::VX);
 
-                Vzdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Vzdata2D, Vzdata2Di);
-                Vzdata2Di->makeMap(lmodel->getGeom(), GMAP);
-                Vzdata2Di->setField(rockseis::VZ);
+                Uzdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(Uzdata2D, Uzdata2Di);
+                Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
+                Uzdata2Di->setField(rockseis::VZ);
 
                 // Create fwi object
-                fwi = std::make_shared<rockseis::FwiElastic2D<T>>(lmodel, source, Vxdata2Di, Vzdata2Di, this->getOrder(), this->getSnapinc());
+                fwi = std::make_shared<rockseis::FwiElastic2D<T>>(lmodel, source, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
 
                 // Create modelled and residual data objects 
-                Vxdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vxdatamod2D->copyCoords(Vxdata2D);
-                Vxdatamod2D->makeMap(lmodel->getGeom(), GMAP);
-                Vxdatamod2D->setField(rockseis::VX);
-                fwi->setDatamodVx(Vxdatamod2D);
-                Vxdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vxdatares2D->copyCoords(Vxdata2D);
-                Vxdatares2D->makeMap(lmodel->getGeom(), GMAP);
-                Vxdatares2D->setField(rockseis::VX);
-                fwi->setDataresVx(Vxdatares2D);
+                Uxdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uxdatamod2D->copyCoords(Uxdata2D);
+                Uxdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+                Uxdatamod2D->setField(rockseis::VX);
+                fwi->setDatamodUx(Uxdatamod2D);
+                Uxdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uxdatares2D->copyCoords(Uxdata2D);
+                Uxdatares2D->makeMap(lmodel->getGeom(), GMAP);
+                Uxdatares2D->setField(rockseis::VX);
+                fwi->setDataresUx(Uxdatares2D);
 
-                Vzdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vzdatamod2D->copyCoords(Vzdata2D);
-                Vzdatamod2D->makeMap(lmodel->getGeom(), GMAP);
-                Vzdatamod2D->setField(rockseis::VZ);
-                fwi->setDatamodVz(Vzdatamod2D);
-                Vzdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vzdatares2D->copyCoords(Vzdata2D);
-                Vzdatares2D->makeMap(lmodel->getGeom(), GMAP);
-                Vzdatares2D->setField(rockseis::VZ);
-                fwi->setDataresVz(Vzdatares2D);
+                Uzdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uzdatamod2D->copyCoords(Uzdata2D);
+                Uzdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+                Uzdatamod2D->setField(rockseis::VZ);
+                fwi->setDatamodUz(Uzdatamod2D);
+                Uzdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uzdatares2D->copyCoords(Uzdata2D);
+                Uzdatares2D->makeMap(lmodel->getGeom(), GMAP);
+                Uzdatares2D->setField(rockseis::VZ);
+                fwi->setDataresUz(Uzdatares2D);
 
                 // Interpolate weight
                 if(dataweight){
@@ -1493,39 +1493,39 @@ void InversionElastic2D<T>::runGrad() {
                 Fmisfit->close();
 
                 // Output modelled and residual data
-                Vxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-                Vxdatamod2Di->setFile(Vxmodelledfile);
-                interp->interp(Vxdatamod2D, Vxdatamod2Di);
-                Sort->put2DGather(Vxdatamod2Di, work.id);
+                Uxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                Uxdatamod2Di->setFile(Uxmodelledfile);
+                interp->interp(Uxdatamod2D, Uxdatamod2Di);
+                Sort->put2DGather(Uxdatamod2Di, work.id);
 
-                Vxdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-                Vxdatares2Di->setFile(Vxresidualfile);
-                interp->interp(Vxdatares2D, Vxdatares2Di);
-                Sort->put2DGather(Vxdatares2Di, work.id);
+                Uxdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                Uxdatares2Di->setFile(Uxresidualfile);
+                interp->interp(Uxdatares2D, Uxdatares2Di);
+                Sort->put2DGather(Uxdatares2Di, work.id);
 
-                Vzdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-                Vzdatamod2Di->setFile(Vzmodelledfile);
-                interp->interp(Vzdatamod2D, Vzdatamod2Di);
-                Sort->put2DGather(Vzdatamod2Di, work.id);
+                Uzdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                Uzdatamod2Di->setFile(Uzmodelledfile);
+                interp->interp(Uzdatamod2D, Uzdatamod2Di);
+                Sort->put2DGather(Uzdatamod2Di, work.id);
 
-                Vzdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Vxdata2D->getNt(), Vxdata2D->getDt(), Vxdata2D->getOt());
-                Vzdatares2Di->setFile(Vzresidualfile);
-                interp->interp(Vzdatares2D, Vzdatares2Di);
-                Sort->put2DGather(Vzdatares2Di, work.id);
+                Uzdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                Uzdatares2Di->setFile(Uzresidualfile);
+                interp->interp(Uzdatares2D, Uzdatares2Di);
+                Sort->put2DGather(Uzdatares2Di, work.id);
 
                 // Reset all classes
-                Vxdata2D.reset();
-                Vxdata2Di.reset();
-                Vxdatamod2D.reset();
-                Vxdatamod2Di.reset();
-                Vxdatares2D.reset();
-                Vxdatares2Di.reset();
-                Vzdata2D.reset();
-                Vzdata2Di.reset();
-                Vzdatamod2D.reset();
-                Vzdatamod2Di.reset();
-                Vzdatares2D.reset();
-                Vzdatares2Di.reset();
+                Uxdata2D.reset();
+                Uxdata2Di.reset();
+                Uxdatamod2D.reset();
+                Uxdatamod2Di.reset();
+                Uxdatares2D.reset();
+                Uxdatares2Di.reset();
+                Uzdata2D.reset();
+                Uzdata2Di.reset();
+                Uzdatamod2D.reset();
+                Uzdatamod2Di.reset();
+                Uzdatares2D.reset();
+                Uzdatares2Di.reset();
                 lmodel.reset();
                 vpgrad.reset();
                 vsgrad.reset();

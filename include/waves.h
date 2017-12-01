@@ -233,6 +233,48 @@ private:
 
 };
 
+template<typename T>
+class WavesElastic2D_DS: public Waves<T> {
+public:
+    WavesElastic2D_DS();	///< Constructor
+    ~WavesElastic2D_DS();	///< Destructor
+    WavesElastic2D_DS(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
+    WavesElastic2D_DS(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+
+    // Get functions
+    std::shared_ptr<PmlElastic2D<T>> getPml() { return Pml; } ///< Get Pml 
+    T * getSxx() { return Sxx; }  ///< Get Stress component at time t+1
+    T * getSzz() { return Szz; }  ///< Get Stress component at time t+1
+    T * getSxz() { return Sxz; }  ///< Get Stress component at time t+1
+
+    T * getUx1() { return Ux1; }  ///< Get Displacement component at time t
+    T * getUz1() { return Uz1; }  ///< Get Displacement component at time t
+
+    T * getUx2() { return Ux2; }  ///< Get Displacement component at time t+1
+    T * getUz2() { return Uz2; }  ///< Get Displacement component at time t+1
+
+    // Time stepping functions
+    void forwardstepDisplacement(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with particle velocity 
+    void forwardstepStress(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with Stress
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+
+    // Record data at receivers functions
+    void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Displacement type or Pressure )
+
+    void roll();  // Roll the displacement pointers
+private:
+    T *Sxx;  // Stress component at time t
+    T *Szz; // Stress component at time t
+    T *Sxz; // Stress component at time t
+    T *Ux1; // Displacement component at time t
+    T *Ux2; // Displacement component at time t+1
+    T *Uz1; // Displacement component at time t
+    T *Uz2; // Displacement component at time t+1
+    std::shared_ptr<PmlElastic2D<T>> Pml; // Associated Pml class
+};
+
 /** The 3D Elastic WAVES class
  *
  */

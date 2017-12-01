@@ -108,6 +108,7 @@ class Snapshot2D: public Snapshot<T> {
 public:
     Snapshot2D(std::shared_ptr<WavesAcoustic2D<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesElastic2D<T>> waves, int snapinc); 	///< Constructor
+    Snapshot2D(std::shared_ptr<WavesElastic2D_DS<T>> waves, int snapinc); 	///< Constructor
     ~Snapshot2D();       	///< Destructor
 
     void writeSnap(const int it); ///< Write snapshot

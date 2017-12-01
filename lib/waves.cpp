@@ -1096,7 +1096,7 @@ void WavesAcoustic3D<T>::roll()
     P1 = tmp;
 }
 
-// =============== 2D ELASTIC WAVES CLASS =============== //
+// =============== 2D ELASTIC VELOCITY-STRESS WAVES CLASS =============== //
 /** The 2D Elastic WAVES model class
  *
  */
@@ -1535,6 +1535,471 @@ WavesElastic2D<T>::~WavesElastic2D() {
     free(Vx);
     free(Vz);
 }
+
+// =============== 2D ELASTIC DISPLACEMENT-STRESS WAVES CLASS =============== //
+/** The 2D Elastic WAVES model class
+ *
+ */
+
+template<typename T>
+WavesElastic2D_DS<T>::WavesElastic2D_DS()	///< Constructor
+{
+    // Do nothing
+}
+
+template<typename T>
+WavesElastic2D_DS<T>::WavesElastic2D_DS(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot) {
+    
+    /* Create associated PML class */
+    Pml = std::make_shared<PmlElastic2D<T>>(_nx, _nz, _lpml, _dt);
+    
+    /* Allocate memory variables */
+    int nx_pml, nz_pml;
+    this->setDim(2);
+    nx_pml = _nx + 2*_lpml;
+    nz_pml = _nz + 2*_lpml;
+    Sxx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Szz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Ux1 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Ux2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Uz1 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Uz2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+}
+
+template<typename T>
+WavesElastic2D_DS<T>::WavesElastic2D_DS(std::shared_ptr<rockseis::ModelElastic2D<T>> model, int _nt, T _dt, T _ot): Waves<T>() {
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _dim, _lpml;
+
+    /* Get necessary parameters from model class */
+    _nx=model->getNx();
+    _ny=model->getNy();
+    _nz=model->getNz();
+    _dx=model->getDx();
+    _dy=model->getDy();
+    _dz=model->getDz();
+    _ox=model->getOx();
+    _oy=model->getOy();
+    _oz=model->getOz();
+    _dim = model->getDim();
+    _lpml = model->getLpml();
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setNt(_nt);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setDt(_dt);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setOt(_ot);
+    this->setLpml(_lpml);
+    this->setDim(_dim);
+   
+    /* Create associated PML class */
+    Pml = std::make_shared<PmlElastic2D<T>>(_nx, _nz, _lpml, _dt);
+    
+    /* Allocate memory variables */
+    int nx_pml, nz_pml;
+    this->setDim(2);
+    nx_pml = _nx + 2*_lpml;
+    nz_pml = _nz + 2*_lpml;
+    Sxx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Szz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Ux1 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Ux2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Uz1 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Uz2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+}
+
+
+template<typename T>
+void WavesElastic2D_DS<T>::forwardstepDisplacement(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+    int i, ix, iz, nx, nz, lpml;
+    T dt;
+    lpml = model->getLpml();
+    nx = model->getNx() + 2*lpml;
+    nz = model->getNz() + 2*lpml;
+    dt = this->getDt();
+    T *Rx, *Rz, *df;
+    Rx = model->getRx();
+    Rz = model->getRz();
+    df = der->getDf();
+    
+    // Derivate Sxx forward with respect to x
+    der->ddx_fw(Sxx);
+    // Compute Ux
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < nx; ix++){
+            Ux2[I2D(ix,iz)] = 2.0*Ux1[I2D(ix,iz)] - Ux2[I2D(ix,iz)] + dt*dt*Rx[I2D(ix,iz)]*df[I2D(ix,iz)];
+        }
+    }
+    
+    // Attenuate left and right using staggered variables
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < lpml; ix++){
+            // Left
+            Pml->Sxx_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix,iz)];
+            Ux2[I2D(ix,iz)] -= dt*dt*Rx[I2D(ix,iz)]*(Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix,iz)]);
+            // Right
+            i = ix + nx - lpml;
+            Pml->Sxx_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i,iz)];
+            Ux2[I2D(i,iz)] -= dt*dt*Rx[I2D(i,iz)]*(Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i,iz)]);
+        }
+    }
+    
+    
+    // Derivate Sxz backward with respect to z
+    der->ddz_bw(Sxz);
+    // Compute Ux
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < nx; ix++){
+            Ux2[I2D(ix,iz)] += dt*dt*Rx[I2D(ix,iz)]*df[I2D(ix,iz)];
+        }
+    }
+    
+    // Attenuate bottom and top using non-staggered variables
+    for(iz=0; iz < lpml; iz++){
+        for(ix=0; ix < nx; ix++){
+            // Top
+            Pml->Sxzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz)];
+            
+            Ux2[I2D(ix,iz)] -= dt*dt*Rx[I2D(ix,iz)]*(Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz)]);
+            i = iz + nz - lpml;
+            //Bottom
+            Pml->Sxzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i)];
+            Ux2[I2D(ix,i)] -= dt*dt*Rx[I2D(ix,i)]*(Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i)]);
+        }
+    }
+    
+    
+    // Derivate Sxz backward with respect to x
+    der->ddx_bw(Sxz);
+    // Compute Uz
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < nx; ix++){
+            Uz2[I2D(ix,iz)] = 2.0*Uz1[I2D(ix,iz)] - Uz2[I2D(ix,iz)] +dt*dt*Rz[I2D(ix,iz)]*df[I2D(ix,iz)];
+        }
+    }
+    
+    // Attenuate left and right using non-staggered variables
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < lpml; ix++){
+            // Left
+            Pml->Sxzx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix,iz)];
+            Uz2[I2D(ix,iz)] -= dt*dt*Rz[I2D(ix,iz)]*(Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix,iz)]);
+            // Right
+            i = ix + nx - lpml;
+            Pml->Sxzx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i,iz)];
+            Uz2[I2D(i,iz)] -= dt*dt*Rz[I2D(i,iz)]*(Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i,iz)]);
+        }
+    }
+    
+    // Derivate Szz forward with respect to z
+    der->ddz_fw(Szz);
+    // Compute Uz
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < nx; ix++){
+            Uz2[I2D(ix,iz)] += dt*dt*Rz[I2D(ix,iz)]*df[I2D(ix,iz)];
+        }
+    }
+    
+    // Attenuate bottom and top using staggered variables
+    for(iz=0; iz < lpml; iz++){
+        for(ix=0; ix < nx; ix++){
+            // Top
+            Pml->Szz_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->Szz_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz)];
+            
+            Uz2[I2D(ix,iz)] -= dt*dt*Rz[I2D(ix,iz)]*(Pml->Szz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz)]);
+            i = iz + nz - lpml;
+            //Bottom
+            Pml->Szz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i)];
+            Uz2[I2D(ix,i)] -= dt*dt*Rz[I2D(ix,i)]*(Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i)]);
+        }
+    }
+    
+} // End of forwardstepDisplacement
+
+
+template<typename T>
+void WavesElastic2D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+    int i, ix, iz, nx, nz, lpml;
+    lpml = model->getLpml();
+    nx = model->getNx() + 2*lpml;
+    nz = model->getNz() + 2*lpml;
+    T *L, *L2M, *M, *df;
+    L = model->getL();
+    L2M = model->getL2M();
+    M = model->getM();
+    df = der->getDf();
+    
+    // Derivate Ux backward with respect to x
+    der->ddx_bw(Ux1);
+    // Compute Sxx and Szz
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < nx; ix++){
+            Sxx[I2D(ix,iz)] = L2M[I2D(ix,iz)]*df[I2D(ix,iz)];
+            Szz[I2D(ix,iz)] = L[I2D(ix,iz)]*df[I2D(ix,iz)];
+        }
+    }
+    
+    // Attenuate left and right using non-staggered variables
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < lpml; ix++){
+            // Left
+            Pml->Vxx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix,iz)];
+            
+            Sxx[I2D(ix,iz)] -= L2M[I2D(ix,iz)]*(Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix,iz)]);
+            Szz[I2D(ix,iz)] -= L[I2D(ix,iz)]*(Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix,iz)]);
+            // Right
+            i = ix + nx - lpml;
+            Pml->Vxx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i,iz)];
+            Sxx[I2D(i,iz)] -= L2M[I2D(i,iz)]*(Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i,iz)]);
+            Szz[I2D(i,iz)] -= L[I2D(i,iz)]*(Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i,iz)]);
+        }
+    }
+    
+    // Derivate Uz backward with respect to z
+    der->ddz_bw(Uz1);
+    // Compute Sxx and Szz
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < nx; ix++){
+            Sxx[I2D(ix,iz)] += L[I2D(ix,iz)]*df[I2D(ix,iz)];
+            Szz[I2D(ix,iz)] += L2M[I2D(ix,iz)]*df[I2D(ix,iz)];
+        }
+    }
+    
+    // Attenuate top and bottom using non-staggered variables
+    for(iz=0; iz < lpml; iz++){
+        for(ix=0; ix < nx; ix++){
+            // Top
+            Pml->Vzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz)];
+            
+            Sxx[I2D(ix,iz)] -= L[I2D(ix,iz)]*(Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz)]);
+            Szz[I2D(ix,iz)] -= L2M[I2D(ix,iz)]*(Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz)]);
+            i = iz + nz - lpml;
+            //Bottom
+            Pml->Vzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i)];
+            Sxx[I2D(ix,i)] -= L[I2D(ix,i)]*(Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i)]);
+            Szz[I2D(ix,i)] -= L2M[I2D(ix,i)]*(Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i)]);
+        }
+    }
+    
+    
+    // Derivate Uz forward with respect to x
+    der->ddx_fw(Uz1);
+    // Compute Sxz
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < nx; ix++){
+            Sxz[I2D(ix,iz)] = M[I2D(ix,iz)]*df[I2D(ix,iz)];
+        }
+    }
+    
+    // Attenuate left and right using staggered variables
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < lpml; ix++){
+            // Left
+            Pml->Vzx_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->Vzx_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix,iz)];
+            Sxz[I2D(ix,iz)] -= M[I2D(ix,iz)]*(Pml->Vzx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix,iz)]);
+            // Right
+            i = ix + nx - lpml;
+            Pml->Vzx_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->Vzx_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i,iz)];
+            Sxz[I2D(i,iz)] -= M[I2D(i,iz)]*(Pml->Vzx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i,iz)]);
+        }
+    }
+    
+    // Derivate Ux forward with respect to z
+    der->ddz_fw(Ux1);
+    // Compute Sxz
+    for(iz=0; iz < nz; iz++){
+        for(ix=0; ix < nx; ix++){
+            Sxz[I2D(ix,iz)] += M[I2D(ix,iz)]*df[I2D(ix,iz)];
+        }
+    }
+    
+    // Attenuate top and bottom using staggered variables
+    for(iz=0; iz < lpml; iz++){
+        for(ix=0; ix < nx; ix++){
+            // Top
+            Pml->Vxz_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->Vxz_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz)];
+            Sxz[I2D(ix,iz)] -= M[I2D(ix,iz)]*(Pml->Vxz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz)]);
+            //Bottom
+            i = iz + nz - lpml;
+            Pml->Vxz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->Vxz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i)];
+            Sxz[I2D(ix,i)] -= M[I2D(ix,i)]*(Pml->Vxz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i)]);
+        }
+    }
+}
+
+template<typename T>
+void WavesElastic2D_DS<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
+    Point2D<int> *map;
+    T *wav; 
+    int ntrace = source->getNtrace();
+    int nx, nz, lpml;
+    lpml = this->getLpml();
+    nx = this->getNx() + 2*lpml;
+    nz = this->getNz() + 2*lpml;
+    T *Mod;
+    T *Modx;
+    T *Modz;
+    int nt = this->getNt();
+    T dt = this->getDt();
+    T dx = this->getDx();
+    T dz = this->getDz();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+    }else{
+        map = (source->getGeom())->getGmap();
+    }
+
+    rs_field sourcetype = source->getField();
+    wav = source->getData();
+    int i;
+    Index I(nx, nz); //Model and Field indexes
+    Index Idat(nt, ntrace); // Data indexes
+    switch(sourcetype)
+    {
+        case PRESSURE:
+            Modx = model->getRx();
+            Modz = model->getRz();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >=0){
+                    Ux2[I(lpml + map[i].x-1, lpml + map[i].y)] += dt*dt*Modx[I(lpml + map[i].x-1, lpml + map[i].y)]*wav[Idat(it,i)]/dx; 
+                    Ux2[I(lpml + map[i].x, lpml + map[i].y)] -= dt*dt*Modx[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]/dx; 
+                    Uz2[I(lpml + map[i].x, lpml + map[i].y-1)] += dt*dt*Modz[I(lpml + map[i].x, lpml + map[i].y-1)]*wav[Idat(it,i)]/dz; 
+                    Uz2[I(lpml + map[i].x, lpml + map[i].y)] -= dt*dt*Modz[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]/dz; 
+                }
+            }
+            break;
+        case VX:
+            Mod = model->getRx();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >=0){
+                    Ux2[I(lpml + map[i].x, lpml + map[i].y)] += 0.5*dt*dt*Mod[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
+                    Ux2[I(lpml + map[i].x - 1, lpml + map[i].y)] += 0.5*dt*dt*Mod[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
+                }
+            }
+            break;
+        case VZ:
+            Mod = model->getRz();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >=0){
+                    Uz2[I(lpml + map[i].x, lpml + map[i].y)] += 0.5*dt*dt*Mod[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
+                    Uz2[I(lpml + map[i].x, lpml + map[i].y - 1)] += 0.5*dt*dt*Mod[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+template<typename T>
+void WavesElastic2D_DS<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
+    Point2D<int> *map;
+    T *dataarray; 
+    T *Fielddata1 = NULL;
+    T *Fielddata2 = NULL;
+    int ntrace = data->getNtrace();
+    int nt = data->getNt();
+    int nx, nz, lpml;
+    lpml = this->getLpml();
+    nx = this->getNx() + 2*lpml;
+    nz = this->getNz() + 2*lpml;
+    rs_field field = data->getField();
+
+    // Get correct map (data or receiver mapping)
+    if(maptype == SMAP) {
+        map = (data->getGeom())->getSmap();
+    }else{
+        map = (data->getGeom())->getGmap();
+    }
+
+    dataarray = data->getData();
+    int i;
+    Index I(nx, nz);
+    Index Idat(nt, ntrace);
+    switch(field)
+    {
+        case PRESSURE:
+            Fielddata1 = this->getSxx();
+            Fielddata2 = this->getSzz();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >= 0)
+                {
+                    dataarray[Idat(it,i)] = Fielddata1[I(lpml + map[i].x, lpml + map[i].y)];
+                    dataarray[Idat(it,i)] += Fielddata2[I(lpml + map[i].x, lpml + map[i].y)];
+                }
+            }
+	    break;
+        case VX:
+            Fielddata1 = this->getUx1();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >= 0)
+                {
+                    dataarray[Idat(it,i)] = 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y)];
+                    dataarray[Idat(it,i)] += 0.5*Fielddata1[I(lpml + map[i].x - 1, lpml + map[i].y)];
+                }
+            }
+            break;
+        case VZ:
+            Fielddata1 = this->getUz1();
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >= 0)
+                {
+                    dataarray[Idat(it,i)] = 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y)];
+                    dataarray[Idat(it,i)] += 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y - 1)];
+                }
+            }
+            break;
+        default:
+            break;
+    }
+
+}
+
+// Roll the displacement pointers
+template<typename T>
+void WavesElastic2D_DS<T>::roll()
+{
+    T *tmp;
+    tmp = Ux2;
+    Ux2 = Ux1;
+    Ux1 = tmp;
+
+    tmp = Uz2;
+    Uz2 = Uz1;
+    Uz1 = tmp;
+}
+
+
+template<typename T>
+WavesElastic2D_DS<T>::~WavesElastic2D_DS() {
+    /* Free allocated variables */
+    free(Sxx);
+    free(Szz);
+    free(Sxz);
+    free(Ux1);
+    free(Ux2);
+    free(Uz1);
+    free(Uz2);
+}
+
 
 // =============== 3D ELASTIC WAVES CLASS =============== //
 /** The 3D Elastic WAVES model class
@@ -2363,6 +2828,8 @@ template class WavesAcoustic3D<float>;
 template class WavesAcoustic3D<double>;
 template class WavesElastic2D<float>;
 template class WavesElastic2D<double>;
+template class WavesElastic2D_DS<float>;
+template class WavesElastic2D_DS<double>;
 template class WavesElastic3D<float>;
 template class WavesElastic3D<double>;
 

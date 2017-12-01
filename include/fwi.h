@@ -218,23 +218,23 @@ template<typename T>
 class FwiElastic2D: public Fwi<T> {
 public:
     FwiElastic2D();					///< Constructor
-    FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataVx, std::shared_ptr<Data2D<T>> dataVz, int order, int snapinc);					///< Constructor 
+    FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataUx, std::shared_ptr<Data2D<T>> dataUz, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs fwi with full snapshoting
     int run_optimal(); ///< Runs fwi with optimal checkpointing
     void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
-    void setDataVx(std::shared_ptr<Data2D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
-    void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
-    void setDatamodVx(std::shared_ptr<Data2D<T>> _datamodVx) { datamodVx = _datamodVx; datamodVxset = true; }
-    void setDatamodVz(std::shared_ptr<Data2D<T>> _datamodVz) { datamodVz = _datamodVz; datamodVzset = true; }
-    void setDataresVx(std::shared_ptr<Data2D<T>> _dataresVx) { dataresVx = _dataresVx; dataresVxset = true; }
-    void setDataresVz(std::shared_ptr<Data2D<T>> _dataresVz) { dataresVz = _dataresVz; dataresVzset = true; }
+    void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
+    void setDataUz(std::shared_ptr<Data2D<T>> _dataUz) { dataUz = _dataUz; dataUzset = true; }
+    void setDatamodUx(std::shared_ptr<Data2D<T>> _datamodUx) { datamodUx = _datamodUx; datamodUxset = true; }
+    void setDatamodUz(std::shared_ptr<Data2D<T>> _datamodUz) { datamodUz = _datamodUz; datamodUzset = true; }
+    void setDataresUx(std::shared_ptr<Data2D<T>> _dataresUx) { dataresUx = _dataresUx; dataresUxset = true; }
+    void setDataresUz(std::shared_ptr<Data2D<T>> _dataresUz) { dataresUz = _dataresUz; dataresUzset = true; }
     void setWavgrad(std::shared_ptr<Data2D<T>> _wavgrad) { wavgrad = _wavgrad; wavgradset = true; }
     void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setVsgrad(std::shared_ptr<Image2D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
     void setDataweight(std::shared_ptr<Data2D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
-    void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
+    void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void crossCorr2(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic2D<T>> model);
     void computeMisfit();
@@ -250,12 +250,12 @@ private:
     std::shared_ptr<Image2D<T>> rhograd;
     std::shared_ptr<Data2D<T>> wavgrad;
     std::shared_ptr<Data2D<T>> source;
-    std::shared_ptr<Data2D<T>> dataVx;
-    std::shared_ptr<Data2D<T>> dataVz;
-    std::shared_ptr<Data2D<T>> datamodVx;
-    std::shared_ptr<Data2D<T>> datamodVz;
-    std::shared_ptr<Data2D<T>> dataresVx;
-    std::shared_ptr<Data2D<T>> dataresVz;
+    std::shared_ptr<Data2D<T>> dataUx;
+    std::shared_ptr<Data2D<T>> dataUz;
+    std::shared_ptr<Data2D<T>> datamodUx;
+    std::shared_ptr<Data2D<T>> datamodUz;
+    std::shared_ptr<Data2D<T>> dataresUx;
+    std::shared_ptr<Data2D<T>> dataresUz;
     std::shared_ptr<Data2D<T>> dataweight;
     bool dataweightset;
     bool modelset;
@@ -264,9 +264,9 @@ private:
     bool rhogradset;
     bool wavgradset;
     bool sourceset;
-    bool dataVxset, dataVzset;
-    bool datamodVxset, datamodVzset;
-    bool dataresVxset, dataresVzset;
+    bool dataUxset, dataUzset;
+    bool datamodUxset, datamodUzset;
+    bool dataresUxset, dataresUzset;
 };
 
 /** The 3D Elastic Fwi class

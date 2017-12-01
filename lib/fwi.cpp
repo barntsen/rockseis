@@ -3,6 +3,7 @@
 
 namespace rockseis {
 
+    // Elastic: Derivate V Source gradients inside scaleGrad
 // =============== ABSTRACT FWI CLASS =============== //
 template<typename T>
 Fwi<T>::Fwi() {
@@ -1082,47 +1083,47 @@ FwiAcoustic3D<T>::~FwiAcoustic3D() {
 template<typename T>
 FwiElastic2D<T>::FwiElastic2D(){
     sourceset = false;
-    dataVxset = false;
-    dataVzset = false;
+    dataUxset = false;
+    dataUzset = false;
     modelset = false;
     vpgradset = false;
     vsgradset = false;
-    datamodVxset = false;
-    datamodVzset = false;
-    dataresVxset = false;
-    dataresVzset = false;
+    datamodUxset = false;
+    datamodUzset = false;
+    dataresUxset = false;
+    dataresUzset = false;
     dataweightset = false;
 }
 
 template<typename T>
-FwiElastic2D<T>::FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataVx, std::shared_ptr<Data2D<T>> _dataVz, int order, int snapinc):Fwi<T>(order, snapinc){
+FwiElastic2D<T>::FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataUx, std::shared_ptr<Data2D<T>> _dataUz, int order, int snapinc):Fwi<T>(order, snapinc){
     source = _source;
-    dataVx = _dataVx;
-    dataVz = _dataVz;
+    dataUx = _dataUx;
+    dataUz = _dataUz;
     model = _model;
     sourceset = true;
     modelset = true;
-    dataVxset = true;
-    dataVzset = true;
+    dataUxset = true;
+    dataUzset = true;
     vpgradset = false;
     vsgradset = false;
     rhogradset = false;
     wavgradset = false;
-    datamodVxset = false;
-    datamodVzset = false;
-    dataresVxset = false;
-    dataresVzset = false;
+    datamodUxset = false;
+    datamodUzset = false;
+    dataresUxset = false;
+    dataresUzset = false;
     dataweightset = false;
 }
 
 template<typename T>
-void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it)
+void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it)
 {
     if(!vpgradset && !vsgradset && !rhogradset && !wavgradset) rs_error("FwiElastic2D<T>::crossCorr: No gradient set for computation.");
 	int ix, iz;
     int padr = waves_bw->getLpml();
-    T* wrx = waves_bw->getVx();
-    T* wrz = waves_bw->getVz();
+    T* wrx = waves_bw->getUx1();
+    T* wrz = waves_bw->getUz1();
     T* rsxx = waves_bw->getSxx();
     T* rszz = waves_bw->getSzz();
     T* rsxz = waves_bw->getSxz();
@@ -1188,7 +1189,7 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
             mrzz = (wrz[kr2D(ix+padr, iz+padr)] - wrz[kr2D(ix+padr, iz+padr-1)])/dz;
 
             if(vpgradset || rhogradset){
-                vpgraddata[ki2D(ix,iz)] += (msxx + mszz) * (mrxx + mrzz);
+                vpgraddata[ki2D(ix,iz)] -= (msxx + mszz) * (mrxx + mrzz);
             }
 
             if(vsgradset || rhogradset){
@@ -1202,7 +1203,7 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
                 mrxz += 0.5*(wrz[kr2D(ix+padr+1, iz+padr)] - wrz[kr2D(ix+padr, iz+padr)])/dx;
                 mrxz += 0.5*(wrz[kr2D(ix+padr, iz+padr-1)] - wrz[kr2D(ix+padr-1, iz+padr-1)])/dx;
 
-                vsgraddata[ki2D(ix,iz)] += (2.0*msxx*mrxx + 2.0*mszz*mrzz + msxz*mrxz);
+                vsgraddata[ki2D(ix,iz)] -= (2.0*msxx*mrxx + 2.0*mszz*mrzz + msxz*mrxz);
             }
             if(wavgradset){
                 switch(wavgrad->getField()){
@@ -1211,7 +1212,7 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
                         {
                             if((map[i].x == ix) && (map[i].y == iz))
                             {
-                                wavgraddata[kwav(it,i)] = (mrxx + mrzz);
+                                wavgraddata[kwav(it,i)] = -1.0*(mrxx + mrzz);
                             }
                         }
                         break;
@@ -1239,15 +1240,15 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
             }
 
             if(rhogradset){
-                uderx = 0.25*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxx[kr2D(ix+padr+1, iz+padr)] - rsxx[kr2D(ix+padr, iz+padr)])/dx;
-                uderx += 0.25*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxx[kr2D(ix+padr, iz+padr)] - rsxx[kr2D(ix+padr-1, iz+padr)])/dx;
-                uderx += 0.25*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr, iz+padr-1)])/dz;
-                uderx += 0.25*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxz[kr2D(ix+padr-1, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dz;
+                uderx = 0.5*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxx[kr2D(ix+padr+1, iz+padr)] - rsxx[kr2D(ix+padr, iz+padr)])/dx;
+                uderx += 0.5*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxx[kr2D(ix+padr, iz+padr)] - rsxx[kr2D(ix+padr-1, iz+padr)])/dx;
+                uderx += 0.5*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr, iz+padr-1)])/dz;
+                uderx += 0.5*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxz[kr2D(ix+padr-1, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dz;
 
-                uderz = 0.25*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr)])/dx;
-                uderz += 0.25*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rsxz[kr2D(ix+padr, iz+padr-1)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dx;
-                uderz += 0.25*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rszz[kr2D(ix+padr, iz+padr+1)] - rszz[kr2D(ix+padr, iz+padr)])/dz;
-                uderz += 0.25*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rszz[kr2D(ix+padr, iz+padr)] - rszz[kr2D(ix+padr, iz+padr-1)])/dz;
+                uderz = 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr)])/dx;
+                uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rsxz[kr2D(ix+padr, iz+padr-1)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dx;
+                uderz += 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rszz[kr2D(ix+padr, iz+padr+1)] - rszz[kr2D(ix+padr, iz+padr)])/dz;
+                uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rszz[kr2D(ix+padr, iz+padr)] - rszz[kr2D(ix+padr, iz+padr-1)])/dz;
                 rhograddata[ki2D(ix,iz)] -= (uderx + uderz);
             }
         }
@@ -1330,23 +1331,23 @@ void FwiElastic2D<T>::scaleGrad(std::shared_ptr<ModelElastic2D<T>> model)
 
 template<typename T>
 void FwiElastic2D<T>::computeMisfit(){
-    size_t ntr = datamodVx->getNtrace();
-    if(dataVx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
-    if(dataresVx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
-    size_t nt = datamodVx->getNt();
-    if(dataVx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
-    if(dataresVx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+    size_t ntr = datamodUx->getNtrace();
+    if(dataUx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresUx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    size_t nt = datamodUx->getNt();
+    if(dataUx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresUx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
-    if(dataVz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
-    if(dataresVz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
-    if(dataVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
-    if(dataresVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+    if(dataUz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresUz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    if(dataUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
-    T* modx = datamodVx->getData();
-    T* recx = dataVx->getData();
+    T* modx = datamodUx->getData();
+    T* recx = dataUx->getData();
 
-    T* modz = datamodVz->getData();
-    T* recz = dataVz->getData();
+    T* modz = datamodUz->getData();
+    T* recz = dataUz->getData();
     T resx = 0.0;
     T resz = 0.0;
     T *wei = NULL;
@@ -1434,39 +1435,38 @@ void FwiElastic2D<T>::computeMisfit(){
 
 template<typename T>
 void FwiElastic2D<T>::computeResiduals(){
-    size_t ntr = datamodVx->getNtrace();
-    if(dataVx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
-    if(dataresVx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
-    size_t nt = datamodVx->getNt();
-    if(dataVx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
-    if(dataresVx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+    size_t ntr = datamodUx->getNtrace();
+    if(dataUx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresUx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    size_t nt = datamodUx->getNt();
+    if(dataUx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresUx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
-    if(dataVz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
-    if(dataresVz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
-    if(dataVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
-    if(dataresVz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+    if(dataUz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    if(dataresUz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+    if(dataUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+    if(dataresUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
-    T* modx = datamodVx->getData();
-    T* recx = dataVx->getData();
-    T* resx = dataresVx->getData();
+    T* modx = datamodUx->getData();
+    T* recx = dataUx->getData();
+    T* resx = dataresUx->getData();
 
-    T* modz = datamodVz->getData();
-    T* recz = dataVz->getData();
-    T* resz = dataresVz->getData();
+    T* modz = datamodUz->getData();
+    T* recz = dataUz->getData();
+    T* resz = dataresUz->getData();
     T *wei = NULL;
     if(dataweightset)
     {
         wei = dataweight->getData();
     }
-    T dt = dataVx->getDt();
     size_t itr, it;
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
         case DIFFERENCE:
             for(itr=0; itr<ntr; itr++){
-                for(it=1; it<nt; it++){
-                   resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
-                   resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                for(it=0; it<nt; it++){
+                   resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
+                   resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
                    if(dataweightset)
                    {
                        resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
@@ -1508,9 +1508,9 @@ void FwiElastic2D<T>::computeResiduals(){
                 if(znorm2 ==0 ) znorm2= 1.0;
                 znorm3 /= (znorm1*znorm2);
 
-                for(it=1; it<nt; it++){
-                    resx[I(it, itr)]=dt*((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3)) + resx[I(it-1, itr)];
-                    resz[I(it, itr)]=dt*((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3)) + resz[I(it-1, itr)];
+                for(it=0; it<nt; it++){
+                    resx[I(it, itr)]=((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3));
+                    resz[I(it, itr)]=((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3));
                    if(dataweightset)
                    {
                        resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
@@ -1521,9 +1521,9 @@ void FwiElastic2D<T>::computeResiduals(){
             break;
         default:
             for(itr=0; itr<ntr; itr++){
-                for(it=1; it<nt; it++){
-                   resx[I(it, itr)] = dt*(modx[I(it, itr)] - recx[I(it, itr)]) + resx[I(it-1, itr)];
-                   resz[I(it, itr)] = dt*(modz[I(it, itr)] - recz[I(it, itr)]) + resz[I(it-1, itr)];
+                for(it=0; it<nt; it++){
+                   resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
+                   resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
                    if(dataweightset)
                    {
                        resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
@@ -1554,19 +1554,19 @@ int FwiElastic2D<T>::run(){
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<WavesElastic2D<T>> waves (new WavesElastic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      // Create snapshots
-     std::shared_ptr<Snapshot2D<T>> Vxsnap;
-     Vxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-     Vxsnap->openSnap(this->getSnapfile() + "-vx", 'w'); // Create a new snapshot file
-     Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
+     std::shared_ptr<Snapshot2D<T>> Uxsnap;
+     Uxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+     Uxsnap->openSnap(this->getSnapfile() + "-ux", 'w'); // Create a new snapshot file
+     Uxsnap->setData(waves->getUx1(), 0); //Set Ux as snap field
 
-     std::shared_ptr<Snapshot2D<T>> Vzsnap;
-     Vzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'w'); // Create a new snapshot file
-     Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
+     std::shared_ptr<Snapshot2D<T>> Uzsnap;
+     Uzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+     Uzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
+     Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
 
      this->writeLog("Running 2D Elastic full-waveform inversion gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
@@ -1574,28 +1574,31 @@ int FwiElastic2D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	//Writting out results to snapshot files
-        Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
-        Vxsnap->writeSnap(it);
+        Uxsnap->setData(waves->getUx1(), 0); //Set Ux as snap field
+        Uxsnap->writeSnap(it);
 
-        Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
-        Vzsnap->writeSnap(it);
+        Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
+        Uzsnap->writeSnap(it);
 
     	// Time stepping
     	waves->forwardstepStress(model, der);
-    	waves->forwardstepVelocity(model, der);
+    	waves->forwardstepDisplacement(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
-        // Recording data (Vx)
-        if(this->datamodVxset){
-            waves->recordData(this->datamodVx, GMAP, it);
+        // Recording data (Ux)
+        if(this->datamodUxset){
+            waves->recordData(this->datamodUx, GMAP, it);
         }
 
-        // Recording data (Vz)
-        if(this->datamodVzset){
-            waves->recordData(this->datamodVz, GMAP, it);
+        // Recording data (Uz)
+        if(this->datamodUzset){
+            waves->recordData(this->datamodUz, GMAP, it);
         }
+
+        // Roll pointers
+        waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -1603,23 +1606,23 @@ int FwiElastic2D<T>::run(){
     
     
     //Close snapshot file
-    Vxsnap->closeSnap();
-    Vzsnap->closeSnap();
+    Uxsnap->closeSnap();
+    Uzsnap->closeSnap();
 
     // Reset waves
     waves.reset();
-    waves  = std::make_shared<WavesElastic2D<T>>(model, nt, dt, ot);
+    waves  = std::make_shared<WavesElastic2D_DS<T>>(model, nt, dt, ot);
 
     // Create image
     if(this->vpgradset) vpgrad->allocateImage();
     if(this->vsgradset) vsgrad->allocateImage();
     if(this->rhogradset) rhograd->allocateImage();
 
-    Vxsnap->openSnap(this->getSnapfile() + "-vx", 'r');
-    Vxsnap->allocSnap(0);
+    Uxsnap->openSnap(this->getSnapfile() + "-ux", 'r');
+    Uxsnap->allocSnap(0);
 
-    Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
-    Vzsnap->allocSnap(0);
+    Uzsnap->openSnap(this->getSnapfile() + "-uz", 'r');
+    Uzsnap->allocSnap(0);
 
     // Compute msifit
     computeMisfit();
@@ -1633,18 +1636,21 @@ int FwiElastic2D<T>::run(){
     {
     	// Time stepping 
     	waves->forwardstepStress(model, der);
-    	waves->forwardstepVelocity(model, der);
+    	waves->forwardstepDisplacement(model, der);
 
     	// Inserting residuals
-    	waves->insertSource(model, dataresVx, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataresVz, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataresUx, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataresUz, GMAP, (nt - 1 - it));
 
         //Read forward snapshot
-        Vxsnap->readSnap(nt - 1 - it);
-        Vzsnap->readSnap(nt - 1 - it);
+        Uxsnap->readSnap(nt - 1 - it);
+        Uzsnap->readSnap(nt - 1 - it);
 
         // Do Crosscorrelation
-        crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, waves, model, (nt - 1 - it));
+        crossCorr(Uxsnap->getData(0), Uzsnap->getData(0), 0, waves, model, (nt - 1 - it));
+
+        // Roll pointers
+        waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -1655,8 +1661,8 @@ int FwiElastic2D<T>::run(){
     this->scaleGrad(model);
     
 	//Remove snapshot file
-	Vxsnap->removeSnap();
-	Vzsnap->removeSnap();
+	Uxsnap->removeSnap();
+	Uzsnap->removeSnap();
 
     result=FWI_OK;
     return result;
@@ -1680,8 +1686,8 @@ int FwiElastic2D<T>::run_optimal(){
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<WavesElastic2D<T>> waves_fw (new WavesElastic2D<T>(model, nt, dt, ot));
-     std::shared_ptr<WavesElastic2D<T>> waves_bw (new WavesElastic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_fw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_bw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
      std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
      revolve_action whatodo;
@@ -1711,20 +1717,23 @@ int FwiElastic2D<T>::run_optimal(){
             {
                 // Time stepping
                 waves_fw->forwardstepStress(model, der);
-                waves_fw->forwardstepVelocity(model, der);
+                waves_fw->forwardstepDisplacement(model, der);
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
 
-                // Recording data (Vx)
-                if(this->datamodVxset && !reverse){
-                    waves_fw->recordData(this->datamodVx, GMAP, it);
+                // Recording data (Ux)
+                if(this->datamodUxset && !reverse){
+                    waves_fw->recordData(this->datamodUx, GMAP, it);
                 }
 
-                // Recording data (Vz)
-                if(this->datamodVzset && !reverse){
-                    waves_fw->recordData(this->datamodVz, GMAP, it);
+                // Recording data (Uz)
+                if(this->datamodUzset && !reverse){
+                    waves_fw->recordData(this->datamodUz, GMAP, it);
                 }
+
+                // Roll pointers
+                waves_fw->roll();
 
                 if(!reverse){
                     // Output progress to logfile
@@ -1737,19 +1746,19 @@ int FwiElastic2D<T>::run_optimal(){
         {
             // Time stepping
             waves_fw->forwardstepStress(model, der);
-            waves_fw->forwardstepVelocity(model, der);
+            waves_fw->forwardstepDisplacement(model, der);
 
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, capo);
 
-            // Recording data (Vx)
-            if(this->datamodVxset){
-                waves_fw->recordData(this->datamodVx, GMAP, capo);
+            // Recording data (Ux)
+            if(this->datamodUxset){
+                waves_fw->recordData(this->datamodUx, GMAP, capo);
             }
 
-            // Recording data (Vz)
-            if(this->datamodVzset){
-                waves_fw->recordData(this->datamodVz, GMAP, capo);
+            // Recording data (Uz)
+            if(this->datamodUzset){
+                waves_fw->recordData(this->datamodUz, GMAP, capo);
             }
 
             // Compute msifit
@@ -1759,13 +1768,17 @@ int FwiElastic2D<T>::run_optimal(){
             computeResiduals();
 
             // Inserting residuals
-            waves_bw->insertSource(model, dataresVx, GMAP, capo);
-            waves_bw->insertSource(model, dataresVz, GMAP, capo);
+            waves_bw->insertSource(model, dataresUx, GMAP, capo);
+            waves_bw->insertSource(model, dataresUz, GMAP, capo);
 
             // Do Crosscorrelation 
-            T *wsx = waves_fw->getVx();
-            T *wsz = waves_fw->getVz();
+            T *wsx = waves_fw->getUx1();
+            T *wsz = waves_fw->getUz1();
             crossCorr(wsx, wsz, waves_fw->getLpml(), waves_bw, model, capo);
+
+            // Roll pointers
+            waves_fw->roll();
+            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -1782,16 +1795,19 @@ int FwiElastic2D<T>::run_optimal(){
         {
             // Time stepping
             waves_bw->forwardstepStress(model, der);
-            waves_bw->forwardstepVelocity(model, der);
+            waves_bw->forwardstepDisplacement(model, der);
 
             // Inserting residuals
-            waves_bw->insertSource(model, dataresVx, GMAP, capo);
-            waves_bw->insertSource(model, dataresVz, GMAP, capo);
+            waves_bw->insertSource(model, dataresUx, GMAP, capo);
+            waves_bw->insertSource(model, dataresUz, GMAP, capo);
 
             // Do Crosscorrelation
-            T *wsx = waves_fw->getVx();
-            T *wsz = waves_fw->getVz();
+            T *wsx = waves_fw->getUx1();
+            T *wsz = waves_fw->getUz1();
             crossCorr(wsx, wsz, waves_fw->getLpml(), waves_bw, model, capo);
+
+            // Roll pointers
+            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);
@@ -1980,35 +1996,35 @@ void FwiElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr
                 }
 
                 if(vsgradset || rhogradset){
-                    msyz = 0.25*(wsz[ks3D(ix+pads, iy+pads+1, iz+pads)] - wsz[ks3D(ix+pads, iy+pads, iz+pads)])/dy;
-                    msyz += 0.25*(wsz[ks3D(ix+pads, iy+pads, iz+pads-1)] - wsz[ks3D(ix+pads, iy+pads-1, iz+pads-1)])/dy;
-                    msyz += 0.25*(wsy[ks3D(ix+pads, iy+pads, iz+pads+1)] - wsy[ks3D(ix+pads, iy+pads, iz+pads)])/dz;
-                    msyz += 0.25*(wsy[ks3D(ix+pads, iy+pads-1, iz+pads)] - wsy[ks3D(ix+pads, iy+pads-1, iz+pads-1)])/dz;
+                    msyz = 0.5*(wsz[ks3D(ix+pads, iy+pads+1, iz+pads)] - wsz[ks3D(ix+pads, iy+pads, iz+pads)])/dy;
+                    msyz += 0.5*(wsz[ks3D(ix+pads, iy+pads, iz+pads-1)] - wsz[ks3D(ix+pads, iy+pads-1, iz+pads-1)])/dy;
+                    msyz += 0.5*(wsy[ks3D(ix+pads, iy+pads, iz+pads+1)] - wsy[ks3D(ix+pads, iy+pads, iz+pads)])/dz;
+                    msyz += 0.5*(wsy[ks3D(ix+pads, iy+pads-1, iz+pads)] - wsy[ks3D(ix+pads, iy+pads-1, iz+pads-1)])/dz;
 
-                    mryz = 0.25*(wrz[kr3D(ix+padr, iy+padr+1, iz+padr)] - wrz[kr3D(ix+padr, iy+padr, iz+padr)])/dy;
-                    mryz += 0.25*(wrz[kr3D(ix+padr, iy+padr, iz+padr-1)] - wrz[kr3D(ix+padr, iy+padr-1, iz+padr-1)])/dy;
-                    mryz += 0.25*(wry[kr3D(ix+padr, iy+padr, iz+padr+1)] - wry[kr3D(ix+padr, iy+padr, iz+padr)])/dz;
-                    mryz += 0.25*(wry[kr3D(ix+padr, iy+padr-1, iz+padr)] - wry[kr3D(ix+padr, iy+padr-1, iz+padr-1)])/dz;
+                    mryz = 0.5*(wrz[kr3D(ix+padr, iy+padr+1, iz+padr)] - wrz[kr3D(ix+padr, iy+padr, iz+padr)])/dy;
+                    mryz += 0.5*(wrz[kr3D(ix+padr, iy+padr, iz+padr-1)] - wrz[kr3D(ix+padr, iy+padr-1, iz+padr-1)])/dy;
+                    mryz += 0.5*(wry[kr3D(ix+padr, iy+padr, iz+padr+1)] - wry[kr3D(ix+padr, iy+padr, iz+padr)])/dz;
+                    mryz += 0.5*(wry[kr3D(ix+padr, iy+padr-1, iz+padr)] - wry[kr3D(ix+padr, iy+padr-1, iz+padr-1)])/dz;
 
-                    msxz = 0.25*(wsx[ks3D(ix+pads, iy+pads, iz+pads+1)] - wsx[ks3D(ix+pads, iy+pads, iz+pads)])/dz;
-                    msxz += 0.25*(wsx[ks3D(ix+pads-1, iy+pads, iz+pads)] - wsx[ks3D(ix+pads-1, iy+pads, iz+pads-1)])/dz;
-                    msxz += 0.25*(wsz[ks3D(ix+pads+1, iy+pads, iz+pads)] - wsz[ks3D(ix+pads, iy+pads, iz+pads)])/dx;
-                    msxz += 0.25*(wsz[ks3D(ix+pads, iy+pads, iz+pads-1)] - wsz[ks3D(ix+pads-1, iy+pads, iz+pads-1)])/dx;
+                    msxz = 0.5*(wsx[ks3D(ix+pads, iy+pads, iz+pads+1)] - wsx[ks3D(ix+pads, iy+pads, iz+pads)])/dz;
+                    msxz += 0.5*(wsx[ks3D(ix+pads-1, iy+pads, iz+pads)] - wsx[ks3D(ix+pads-1, iy+pads, iz+pads-1)])/dz;
+                    msxz += 0.5*(wsz[ks3D(ix+pads+1, iy+pads, iz+pads)] - wsz[ks3D(ix+pads, iy+pads, iz+pads)])/dx;
+                    msxz += 0.5*(wsz[ks3D(ix+pads, iy+pads, iz+pads-1)] - wsz[ks3D(ix+pads-1, iy+pads, iz+pads-1)])/dx;
 
-                    mrxz = 0.25*(wrx[kr3D(ix+padr, iy+padr, iz+padr+1)] - wrx[kr3D(ix+padr, iy+padr, iz+padr)])/dz;
-                    mrxz += 0.25*(wrx[kr3D(ix+padr-1, iy+padr, iz+padr)] - wrx[kr3D(ix+padr-1, iy+padr, iz+padr-1)])/dz;
-                    mrxz += 0.25*(wrz[kr3D(ix+padr+1, iy+padr, iz+padr)] - wrz[kr3D(ix+padr, iy+padr, iz+padr)])/dx;
-                    mrxz += 0.25*(wrz[kr3D(ix+padr, iy+padr, iz+padr-1)] - wrz[kr3D(ix+padr-1, iy+padr, iz+padr-1)])/dx;
+                    mrxz = 0.5*(wrx[kr3D(ix+padr, iy+padr, iz+padr+1)] - wrx[kr3D(ix+padr, iy+padr, iz+padr)])/dz;
+                    mrxz += 0.5*(wrx[kr3D(ix+padr-1, iy+padr, iz+padr)] - wrx[kr3D(ix+padr-1, iy+padr, iz+padr-1)])/dz;
+                    mrxz += 0.5*(wrz[kr3D(ix+padr+1, iy+padr, iz+padr)] - wrz[kr3D(ix+padr, iy+padr, iz+padr)])/dx;
+                    mrxz += 0.5*(wrz[kr3D(ix+padr, iy+padr, iz+padr-1)] - wrz[kr3D(ix+padr-1, iy+padr, iz+padr-1)])/dx;
 
-                    msxy = 0.25*(wsx[ks3D(ix+pads, iy+pads+1, iz+pads)] - wsx[ks3D(ix+pads, iy+pads, iz+pads)])/dy;
-                    msxy += 0.25*(wsx[ks3D(ix+pads-1, iy+pads, iz+pads)] - wsx[ks3D(ix+pads-1, iy+pads-1, iz+pads)])/dy;
-                    msxy += 0.25*(wsy[ks3D(ix+pads+1, iy+pads, iz+pads)] - wsy[ks3D(ix+pads, iy+pads, iz+pads)])/dx;
-                    msxy += 0.25*(wsy[ks3D(ix+pads, iy+pads-1, iz+pads)] - wsy[ks3D(ix+pads-1, iy+pads-1, iz+pads)])/dx;
+                    msxy = 0.5*(wsx[ks3D(ix+pads, iy+pads+1, iz+pads)] - wsx[ks3D(ix+pads, iy+pads, iz+pads)])/dy;
+                    msxy += 0.5*(wsx[ks3D(ix+pads-1, iy+pads, iz+pads)] - wsx[ks3D(ix+pads-1, iy+pads-1, iz+pads)])/dy;
+                    msxy += 0.5*(wsy[ks3D(ix+pads+1, iy+pads, iz+pads)] - wsy[ks3D(ix+pads, iy+pads, iz+pads)])/dx;
+                    msxy += 0.5*(wsy[ks3D(ix+pads, iy+pads-1, iz+pads)] - wsy[ks3D(ix+pads-1, iy+pads-1, iz+pads)])/dx;
 
-                    mrxy = 0.25*(wrx[kr3D(ix+padr, iy+padr+1, iz+padr)] - wrx[kr3D(ix+padr, iy+padr, iz+padr)])/dy;
-                    mrxy += 0.25*(wrx[kr3D(ix+padr-1, iy+padr, iz+padr)] - wrx[kr3D(ix+padr-1, iy+padr-1, iz+padr)])/dy;
-                    mrxy += 0.25*(wry[kr3D(ix+padr+1, iy+padr, iz+padr)] - wry[kr3D(ix+padr, iy+padr, iz+padr)])/dx;
-                    mrxy += 0.25*(wry[kr3D(ix+padr, iy+padr-1, iz+padr)] - wry[kr3D(ix+padr-1, iy+padr-1, iz+padr)])/dx;
+                    mrxy = 0.5*(wrx[kr3D(ix+padr, iy+padr+1, iz+padr)] - wrx[kr3D(ix+padr, iy+padr, iz+padr)])/dy;
+                    mrxy += 0.5*(wrx[kr3D(ix+padr-1, iy+padr, iz+padr)] - wrx[kr3D(ix+padr-1, iy+padr-1, iz+padr)])/dy;
+                    mrxy += 0.5*(wry[kr3D(ix+padr+1, iy+padr, iz+padr)] - wry[kr3D(ix+padr, iy+padr, iz+padr)])/dx;
+                    mrxy += 0.5*(wry[kr3D(ix+padr, iy+padr-1, iz+padr)] - wry[kr3D(ix+padr-1, iy+padr-1, iz+padr)])/dx;
                 }
                 if(vsgradset){
                     vsgraddata[ki3D(ix,iy,iz)] += vsscale*(-2.0*(msyy*mrzz + mszz*mryy) -2.0*(msxx*mrzz + mszz*mrxx) -2.0*(msyy*mrxx + msxx*mryy) + msyz*mryz + msxz*mrxz + msxy*mrxy);
