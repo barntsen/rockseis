@@ -85,8 +85,8 @@ if(env['MPI']):
         Acousticfwi2d = mpi.Program(prefix + 'Acousticfwi2d','Acousticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl'],LIBPATH=['../build'])
         mpi.Install('../bin/',Acousticfwi2d)
 
-        hello_inversion = mpi.Program(prefix + 'hello_inversion','hello_inversion.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl'],LIBPATH=['../build'])
-        mpi.Install('../bin/',hello_inversion)
+        Elasticfwi2d = mpi.Program(prefix + 'Elasticfwi2d','Elasticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl'],LIBPATH=['../build'])
+        mpi.Install('../bin/',Elasticfwi2d)
 
         hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl'],LIBPATH=['../build'])
         mpi.Install('../bin/',hello_fdgrad)

@@ -125,6 +125,61 @@ int main(int argc, char** argv) {
     MPImodeling mpi(&argc,&argv);
     int task; 
 
+    if(mpi.getNrank() < 2){
+        rs_error("This is a parallel program, it must run with at least 2 processors, use mpirun.");
+    }
+
+    if(argc < 2){
+        if(mpi.getRank() == 0){
+            PRINT_DOC(# MPI 2d acoustic full-waveform inversion configuration file);
+            PRINT_DOC();
+            PRINT_DOC(# Modelling parameters);
+            PRINT_DOC(freesurface = "true"; # True if free surface should be on);
+            PRINT_DOC(order = "8"; # Order of finite difference stencil);
+            PRINT_DOC(lpml = "8"; # Size of pml absorbing boundary (should be larger than order + 5 ));
+            PRINT_DOC(snapinc = "1"; # Snap interval in multiples of modelling interval);
+            PRINT_DOC(apertx = "900"; # Aperture for local model (source is in the middle));
+            PRINT_DOC();
+            PRINT_DOC(# Checkpointing parameters);
+            PRINT_DOC(snapmethod = "1";  # 0- Full checkpointing; 1- Optimal checkpointing);
+            PRINT_DOC(nsnaps = "11";);
+            PRINT_DOC(incore = "true";);
+            PRINT_DOC();
+            PRINT_DOC(#Fwi parameters);
+            PRINT_DOC(misfit_type = "0";  # 0- Difference; 1- Correlation);
+            PRINT_DOC(dataweight = "false";);
+            PRINT_DOC(Dataweightfile = "weights.rss";);
+            PRINT_DOC(mute = "false";  # Mute gradient and updates);
+            PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
+            PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
+            PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
+            PRINT_DOC(update_vp = "true"; # Update vp);
+            PRINT_DOC(update_rho = "false"; # Update rho);
+            PRINT_DOC(update_source = "false"; # Update source);
+            PRINT_DOC();
+            PRINT_DOC(# Diagonal scaling parameters);
+            PRINT_DOC(kvp = "100.0";);
+            PRINT_DOC(krho = "100.0";);
+            PRINT_DOC(ksource = "1.0";);
+            PRINT_DOC();
+            PRINT_DOC(#Parameterisation);
+            PRINT_DOC(paramtype = "1";  # 0- grid; 1- B-spline;);
+            PRINT_DOC(dtx = "25.0"; # knot sampling in B-spline);
+            PRINT_DOC(dtz = "25.0"; # knot sampling in B-spline);
+            PRINT_DOC();
+            PRINT_DOC(#Regularisation);
+            PRINT_DOC(vpregalpha = "0.0";);
+            PRINT_DOC(rhoregalpha = "0.0";);
+            PRINT_DOC();
+            PRINT_DOC(# Files);
+            PRINT_DOC(Vp = "Vp2d.rss";);
+            PRINT_DOC(Rho = "Rho2d.rss";);
+            PRINT_DOC(Wavelet = "Wav2d.rss";);
+            PRINT_DOC(Precordfile = "Pshot.rss";);
+            PRINT_DOC(Psnapfile = "Local/Psnap.rss";);
+        }
+    }
+
     // Initialize Inversion class
     inv = std::make_shared<rockseis::InversionAcoustic2D<float>>(&mpi);
 	/* General input parameters */
