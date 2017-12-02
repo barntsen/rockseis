@@ -16,6 +16,7 @@ MPI::MPI() {
     MPI_Get_processor_name(name, &length);
 
     logfile = "mpiqueue.log";
+    verbose = true;
 
 }
 
@@ -33,6 +34,7 @@ MPI::MPI(int *argc, char ***argv) {
     MPI_Get_processor_name(name, &length);
 
     logfile = "mpiqueue.log";
+    verbose = true;
 }
 
 MPI::~MPI() {
@@ -137,7 +139,7 @@ void MPImodeling::printWork() {
 	char buffer[256],start[256],end[256];
 	time_t runtime,now;
 
-	if(!logfilename.empty()){
+	if(!logfilename.empty() && this->getVerbose()){
 		std::ofstream Flog; 
 		Flog.open(logfilename);
 		if(!Flog.is_open()) rs_error("MPImodeling::printWork: Error writting to MPI log file.");

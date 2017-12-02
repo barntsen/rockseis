@@ -56,6 +56,9 @@ public:
 
 	// Set functions
     void setLogfile(std::string name) { logfile = name; }    ///< Set log file name
+    void clearLogfile() { logfile.clear(); }    ///< Clear log file name
+    void setVerbose(bool val) { verbose = val; } ///< Set verbose on
+    bool getVerbose() { return verbose; } ///< Set verbose off
 
     void finalize() { MPI_Finalize(); } ///< Finalize MPI
 
@@ -69,6 +72,7 @@ private:
 	int rank;	// Rank for current rank
     char name[MPI_MAX_PROCESSOR_NAME]; // Processors name
     std::string logfile; // Logfile
+    bool verbose;
 	
 	// Functions
 	virtual void sendWorkToAll() = 0;	///< Send work to all slaves

@@ -2653,10 +2653,10 @@ void InversionElastic3D<T>::runGrad() {
 		Uxdatares3D->createEmpty(Uxdata3D->getNtrace());
 
 		Uydatamod3D = std::make_shared<rockseis::Data3D<T>>(1, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
-		Uydatamod3D->setFile(Uxmodelledfile);
+		Uydatamod3D->setFile(Uymodelledfile);
 		Uydatamod3D->createEmpty(Uxdata3D->getNtrace());
 		Uydatares3D = std::make_shared<rockseis::Data3D<T>>(1, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
-		Uydatares3D->setFile(Uxresidualfile);
+		Uydatares3D->setFile(Uyresidualfile);
 		Uydatares3D->createEmpty(Uxdata3D->getNtrace());
 
 		Uzdatamod3D = std::make_shared<rockseis::Data3D<T>>(1, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
@@ -2775,7 +2775,7 @@ void InversionElastic3D<T>::runGrad() {
                 Uydata3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uydata3D, Uydata3Di);
                 Uydata3Di->makeMap(lmodel->getGeom(), GMAP);
-                Uydata3Di->setField(rockseis::VX);
+                Uydata3Di->setField(rockseis::VY);
 
                 Uzdata3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uzdata3D, Uzdata3Di);

@@ -339,8 +339,8 @@ int main(int argc, char** argv) {
     inv->setMisfitfile(MISFITFILE);
     inv->setUxmodelledfile(UXMODFILE);
     inv->setUxresidualfile(UXRESFILE);
-    inv->setUymodelledfile(UXMODFILE);
-    inv->setUyresidualfile(UXRESFILE);
+    inv->setUymodelledfile(UYMODFILE);
+    inv->setUyresidualfile(UYRESFILE);
     inv->setUzmodelledfile(UZMODFILE);
     inv->setUzresidualfile(UZRESFILE);
     inv->setSnapfile(Snapfile);
