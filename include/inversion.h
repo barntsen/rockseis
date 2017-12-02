@@ -461,5 +461,190 @@ private:
     int sourcetype;
 };
 
+// ##### ELASTIC 3D INVERSION CLASS
+template<typename T>
+class InversionElastic3D: public Inversion<T> {
+public:
+    InversionElastic3D(); ///<Constructor
+    InversionElastic3D(MPImodeling *_mpi); ///<Constructor
+    ~InversionElastic3D(); ///<Destructor
+
+    void setDataweight(bool val) { dataweight = val; }
+    bool getDataweight() { return dataweight; }
+
+    void setDataweightfile(std::string file) { Dataweightfile = file; }
+    std::string getDataweightfile() { return Dataweightfile; }
+
+    void setWaveletfile(std::string file) { Waveletfile = file; }
+    std::string getWaveletfile() { return Waveletfile; }
+
+    void setVpfile(std::string file) { Vpfile = file; }
+    std::string getVpfile() { return Vpfile; }
+
+    void setVsfile(std::string file) { Vsfile = file; }
+    std::string getVsfile() { return Vsfile; }
+
+    void setRhofile(std::string file) { Rhofile = file; }
+    std::string getRhofile() { return Rhofile; }
+
+    void setVpgradfile(std::string file) { Vpgradfile = file; }
+    std::string getVpgradfile() { return Vpgradfile; }
+
+    void setVsgradfile(std::string file) { Vsgradfile = file; }
+    std::string getVsgradfile() { return Vsgradfile; }
+
+    void setRhogradfile(std::string file) { Rhogradfile = file; }
+    std::string getRhogradfile() { return Rhogradfile; }
+
+    void setWavgradfile(std::string file) { Wavgradfile = file; }
+    std::string getWavgradfile() { return Wavgradfile; }
+
+    void setMisfitfile(std::string file) { Misfitfile = file; }
+    std::string getMisfitfile() { return Misfitfile; }
+
+    void setUxrecordfile(std::string file) { Uxrecordfile = file; }
+    std::string getUxrecordfile() { return Uxrecordfile; }
+
+    void setUxmodelledfile(std::string file) { Uxmodelledfile = file; }
+    std::string getUxmodelledfile() { return Uxmodelledfile; }
+
+    void setUxresidualfile(std::string file) { Uxresidualfile = file; }
+    std::string getUxresidualfile() { return Uxresidualfile; }
+
+    void setUyrecordfile(std::string file) { Uyrecordfile = file; }
+    std::string getUyrecordfile() { return Uyrecordfile; }
+
+    void setUymodelledfile(std::string file) { Uymodelledfile = file; }
+    std::string getUymodelledfile() { return Uymodelledfile; }
+
+    void setUyresidualfile(std::string file) { Uyresidualfile = file; }
+    std::string getUyresidualfile() { return Uyresidualfile; }
+
+    void setUzrecordfile(std::string file) { Uzrecordfile = file; }
+    std::string getUzrecordfile() { return Uzrecordfile; }
+
+    void setUzmodelledfile(std::string file) { Uzmodelledfile = file; }
+    std::string getUzmodelledfile() { return Uzmodelledfile; }
+
+    void setUzresidualfile(std::string file) { Uzresidualfile = file; }
+    std::string getUzresidualfile() { return Uzresidualfile; }
+
+    void setSnapfile(std::string file) { Snapfile = file; }
+    std::string getSnapfile() { return Snapfile; }
+
+    void setMutefile(std::string file) { Mutefile = file; }
+    std::string getMutefile() { return Mutefile; }
+
+    void setApertx(T val) { apertx = val; }
+    T getApertx() { return apertx; }
+
+    void setAperty(T val) { aperty = val; }
+    T getAperty() { return aperty; }
+
+    void setKvp(T val) { kvp = val; }
+    T getKvp() { return kvp; }
+
+    void setKvs(T val) { kvs = val; }
+    T getKvs() { return kvs; }
+
+    void setKrho(T val) { krho = val; }
+    T getKrho() { return krho; }
+
+    void setKsource(T val) { ksource = val; }
+    T getKsource() { return ksource; }
+
+    void setVpregalpha(T val) { reg_alpha[0] = val; }
+    T getVpregalpha() { return reg_alpha[0]; }
+
+    void setVsregalpha(T val) { reg_alpha[1] = val; }
+    T getVsregalpha() { return reg_alpha[1]; }
+
+    void setRhoregalpha(T val) { reg_alpha[2] = val; }
+    T getRhoregalpha() { return reg_alpha[2]; }
+
+    void setVpregeps(T val) { reg_eps[0] = val; }
+    T getVpregeps() { return reg_eps[0]; }
+
+    void setVsregeps(T val) { reg_eps[1] = val; }
+    T getVsregeps() { return reg_eps[1]; }
+
+    void setRhoregeps(T val) { reg_eps[2] = val; }
+    T getRhoregeps() { return reg_eps[2]; }
+
+    void setSourcetype(int type) { sourcetype = type; }
+    int getSourcetype() { return sourcetype; }
+
+    // Run gradient
+    void runGrad();
+   
+    // Run BSProjection
+    void runBsproj();
+
+    // Mute gradient
+    void applyMute();
+
+    // Regularisation computation
+    void computeRegularisation(double *x);
+
+    // Combine gradients
+    void combineGradients();
+
+    // Set initial
+    int setInitial(double *x, std::string vpfile, std::string vsfile, std::string rhofile, std::string sourcefile);
+
+    // Save line search models
+    void saveLinesearch(double *x);
+
+    // Save Results
+    void saveResults(int i);
+
+    // Read gradient
+    void readGrad(double *g);
+
+    // Read misfit
+    void readMisfit(double *f);
+
+    void setUpdates(bool vp, bool vs, bool rho, bool source) { update_vp = vp; update_vs= vs; update_rho = rho; update_source = source; }
+    void setUpdate_vp(bool vp) { update_vp = vp;}
+    void setUpdate_vs(bool vs) { update_vs = vs;}
+    void setUpdate_rho(bool rho) { update_rho = rho;}
+    void setUpdate_source(bool source) { update_source = source;}
+
+private:
+    bool update_vp;
+    bool update_vs;
+    bool update_rho;
+    bool update_source;
+    bool dataweight;
+    std::string Waveletfile;
+    std::string Vpfile;
+    std::string Vsfile;
+    std::string Rhofile;
+    std::string Vpgradfile;
+    std::string Vsgradfile;
+    std::string Rhogradfile;
+    std::string Wavgradfile;
+    std::string Dataweightfile;
+    std::string Misfitfile;
+    std::string Uxrecordfile;
+    std::string Uxmodelledfile;
+    std::string Uxresidualfile;
+    std::string Uyrecordfile;
+    std::string Uymodelledfile;
+    std::string Uyresidualfile;
+    std::string Uzrecordfile;
+    std::string Uzmodelledfile;
+    std::string Uzresidualfile;
+    std::string Snapfile;
+    std::string Mutefile;
+    T apertx, aperty;
+    T kvp, kvs, krho, ksource;
+    T reg_eps[3];
+    T reg_alpha[3];
+    int sourcetype;
+};
+
+
+
 }
 #endif //INVERSION_H

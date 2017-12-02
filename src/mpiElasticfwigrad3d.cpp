@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC(freesurface = "false";  # True if free surface should be on);
 			PRINT_DOC(order = "8";  # Order of finite difference stencil);
 			PRINT_DOC(lpml = "10"; # Size of pml absorbing boundary (should be larger than order + 5 ));
-            PRINT_DOC(source_type = "0"; # Source type: 0 - pressure; 1 for Vx; 2 for Vy; 3 for Vz.);
+            PRINT_DOC(source_type = "0"; # Source type: 0 - pressure; 1 for Ux; 2 for Uy; 3 for Uz.);
 			PRINT_DOC(snapinc = "4"; # Snap interval in multiples of modelling interval);
 			PRINT_DOC(apertx = "900"; # Aperture for local model (source is in the middle));
 			PRINT_DOC(aperty = "900"; # Aperture for local model (source is in the middle));
@@ -61,15 +61,15 @@ int main(int argc, char** argv) {
 			PRINT_DOC(Vsgradfile = "Vsgrad3d.rss"; # File to output gradient with respect to Vs);
 			PRINT_DOC(Rhogradfile = "Rhograd3d.rss"; # File to output gradient with respect to Rho);
 			PRINT_DOC(Wavgradfile = "Wavgrad3d.rss"; # File to output gradient with respect to Wav);
-            PRINT_DOC(Vxrecordfile = "Vxshot.rss"; # Input observed data);
-			PRINT_DOC(Vxmodelledfile = "Vxmod3d.rss"; # File to output modelled data);
-			PRINT_DOC(Vxresidualfile = "Vxres3d.rss"; # File to output residuals);
-            PRINT_DOC(Vyrecordfile = "Vyshot.rss"; # Input observed data);
-			PRINT_DOC(Vymodelledfile = "Vymod3d.rss"; # File to output modelled data);
-			PRINT_DOC(Vyresidualfile = "Vyres3d.rss"; # File to output residuals);
-            PRINT_DOC(Vzrecordfile = "Vzshot.rss"; # Input observed data);
-			PRINT_DOC(Vzmodelledfile = "Vzmod3d.rss"; # File to output modelled data);
-			PRINT_DOC(Vzresidualfile = "Vzres3d.rss"; # File to output residuals);
+            PRINT_DOC(Uxrecordfile = "Uxshot.rss"; # Input observed data);
+			PRINT_DOC(Uxmodelledfile = "Uxmod3d.rss"; # File to output modelled data);
+			PRINT_DOC(Uxresidualfile = "Uxres3d.rss"; # File to output residuals);
+            PRINT_DOC(Uyrecordfile = "Uyshot.rss"; # Input observed data);
+			PRINT_DOC(Uymodelledfile = "Uymod3d.rss"; # File to output modelled data);
+			PRINT_DOC(Uyresidualfile = "Uyres3d.rss"; # File to output residuals);
+            PRINT_DOC(Uzrecordfile = "Uzshot.rss"; # Input observed data);
+			PRINT_DOC(Uzmodelledfile = "Uzmod3d.rss"; # File to output modelled data);
+			PRINT_DOC(Uzresidualfile = "Uzres3d.rss"; # File to output residuals);
             PRINT_DOC(Snapfile = "snaps.rss";);
 			PRINT_DOC();
 		}
@@ -108,41 +108,41 @@ int main(int argc, char** argv) {
     std::string Wavgradfile;
     std::shared_ptr<rockseis::Data3D<float>> wavgrad;
 
-    std::string Vxrecordfile;
-    std::shared_ptr<rockseis::Data3D<float>> Vxdata3D;
-    std::shared_ptr<rockseis::Data3D<float>> Vxdata3Di;
+    std::string Uxrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Uxdata3D;
+    std::shared_ptr<rockseis::Data3D<float>> Uxdata3Di;
 
-    std::string Vxmodelledfile;
-    std::shared_ptr<rockseis::Data3D<float>> Vxdatamod3D;
-    std::shared_ptr<rockseis::Data3D<float>> Vxdatamod3Di;
+    std::string Uxmodelledfile;
+    std::shared_ptr<rockseis::Data3D<float>> Uxdatamod3D;
+    std::shared_ptr<rockseis::Data3D<float>> Uxdatamod3Di;
 
-    std::string Vxresidualfile;
-    std::shared_ptr<rockseis::Data3D<float>> Vxdatares3D;
-    std::shared_ptr<rockseis::Data3D<float>> Vxdatares3Di;
+    std::string Uxresidualfile;
+    std::shared_ptr<rockseis::Data3D<float>> Uxdatares3D;
+    std::shared_ptr<rockseis::Data3D<float>> Uxdatares3Di;
 
-    std::string Vyrecordfile;
-    std::shared_ptr<rockseis::Data3D<float>> Vydata3D;
-    std::shared_ptr<rockseis::Data3D<float>> Vydata3Di;
+    std::string Uyrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Uydata3D;
+    std::shared_ptr<rockseis::Data3D<float>> Uydata3Di;
 
-    std::string Vymodelledfile;
-    std::shared_ptr<rockseis::Data3D<float>> Vydatamod3D;
-    std::shared_ptr<rockseis::Data3D<float>> Vydatamod3Di;
+    std::string Uymodelledfile;
+    std::shared_ptr<rockseis::Data3D<float>> Uydatamod3D;
+    std::shared_ptr<rockseis::Data3D<float>> Uydatamod3Di;
 
-    std::string Vyresidualfile;
-    std::shared_ptr<rockseis::Data3D<float>> Vydatares3D;
-    std::shared_ptr<rockseis::Data3D<float>> Vydatares3Di;
+    std::string Uyresidualfile;
+    std::shared_ptr<rockseis::Data3D<float>> Uydatares3D;
+    std::shared_ptr<rockseis::Data3D<float>> Uydatares3Di;
 
-    std::string Vzrecordfile;
-    std::shared_ptr<rockseis::Data3D<float>> Vzdata3D;
-    std::shared_ptr<rockseis::Data3D<float>> Vzdata3Di;
+    std::string Uzrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Uzdata3D;
+    std::shared_ptr<rockseis::Data3D<float>> Uzdata3Di;
 
-    std::string Vzmodelledfile;
-    std::shared_ptr<rockseis::Data3D<float>> Vzdatamod3D;
-    std::shared_ptr<rockseis::Data3D<float>> Vzdatamod3Di;
+    std::string Uzmodelledfile;
+    std::shared_ptr<rockseis::Data3D<float>> Uzdatamod3D;
+    std::shared_ptr<rockseis::Data3D<float>> Uzdatamod3Di;
 
-    std::string Vzresidualfile;
-    std::shared_ptr<rockseis::Data3D<float>> Vzdatares3D;
-    std::shared_ptr<rockseis::Data3D<float>> Vzdatares3Di;
+    std::string Uzresidualfile;
+    std::shared_ptr<rockseis::Data3D<float>> Uzdatares3D;
+    std::shared_ptr<rockseis::Data3D<float>> Uzdatares3Di;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -179,15 +179,15 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("Wavgradfile", &Wavgradfile) == INPARSE_ERR) status = true;
     }
     if(Inpar->getPar("Snapfile", &Snapfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vxrecordfile", &Vxrecordfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vxresidualfile", &Vxresidualfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vxmodelledfile", &Vxmodelledfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vyrecordfile", &Vyrecordfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vyresidualfile", &Vyresidualfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vymodelledfile", &Vymodelledfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vzrecordfile", &Vzrecordfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vzresidualfile", &Vzresidualfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vzmodelledfile", &Vzmodelledfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uxrecordfile", &Uxrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uxresidualfile", &Uxresidualfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uxmodelledfile", &Uxmodelledfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uyrecordfile", &Uyrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uyresidualfile", &Uyresidualfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uymodelledfile", &Uymodelledfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uzrecordfile", &Uzrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uzresidualfile", &Uzresidualfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uzmodelledfile", &Uzmodelledfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapmethod", &snapmethod) == INPARSE_ERR) status = true;
     rockseis::rs_snapmethod checkpoint = static_cast<rockseis::rs_snapmethod>(snapmethod);
     switch(checkpoint){
@@ -209,7 +209,7 @@ int main(int argc, char** argv) {
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
-    Sort->setDatafile(Vxrecordfile);
+    Sort->setDatafile(Uxrecordfile);
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelElastic3D<float>> gmodel (new rockseis::ModelElastic3D<float>(Vpfile, Vsfile, Rhofile, lpml ,fs));
@@ -224,7 +224,7 @@ int main(int argc, char** argv) {
 
 	if(mpi.getRank() == 0) {
 		// Master
-        Sort->createShotmap(Vxrecordfile); 
+        Sort->createShotmap(Uxrecordfile); 
         Sort->writeKeymap();
         Sort->writeSortmap();
 
@@ -239,29 +239,29 @@ int main(int argc, char** argv) {
         }
 
         // Create a data class for the recorded data in order to get parameters from file
-        std::shared_ptr<rockseis::Data3D<float>> Vxdata3D (new rockseis::Data3D<float>(Vxrecordfile));
+        std::shared_ptr<rockseis::Data3D<float>> Uxdata3D (new rockseis::Data3D<float>(Uxrecordfile));
 
         // Create modelling and residual data files
-        Vxdatamod3D = std::make_shared<rockseis::Data3D<float>>(1, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-        Vxdatamod3D->setFile(Vxmodelledfile);
-        Vxdatamod3D->createEmpty(Vxdata3D->getNtrace());
-        Vxdatares3D = std::make_shared<rockseis::Data3D<float>>(1, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-        Vxdatares3D->setFile(Vxresidualfile);
-        Vxdatares3D->createEmpty(Vxdata3D->getNtrace());
+        Uxdatamod3D = std::make_shared<rockseis::Data3D<float>>(1, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+        Uxdatamod3D->setFile(Uxmodelledfile);
+        Uxdatamod3D->createEmpty(Uxdata3D->getNtrace());
+        Uxdatares3D = std::make_shared<rockseis::Data3D<float>>(1, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+        Uxdatares3D->setFile(Uxresidualfile);
+        Uxdatares3D->createEmpty(Uxdata3D->getNtrace());
 
-        Vydatamod3D = std::make_shared<rockseis::Data3D<float>>(1, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-        Vydatamod3D->setFile(Vymodelledfile);
-        Vydatamod3D->createEmpty(Vxdata3D->getNtrace());
-        Vydatares3D = std::make_shared<rockseis::Data3D<float>>(1, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-        Vydatares3D->setFile(Vyresidualfile);
-        Vydatares3D->createEmpty(Vxdata3D->getNtrace());
+        Uydatamod3D = std::make_shared<rockseis::Data3D<float>>(1, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+        Uydatamod3D->setFile(Uymodelledfile);
+        Uydatamod3D->createEmpty(Uxdata3D->getNtrace());
+        Uydatares3D = std::make_shared<rockseis::Data3D<float>>(1, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+        Uydatares3D->setFile(Uyresidualfile);
+        Uydatares3D->createEmpty(Uxdata3D->getNtrace());
 
-        Vzdatamod3D = std::make_shared<rockseis::Data3D<float>>(1, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-        Vzdatamod3D->setFile(Vzmodelledfile);
-        Vzdatamod3D->createEmpty(Vxdata3D->getNtrace());
-        Vzdatares3D = std::make_shared<rockseis::Data3D<float>>(1, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-        Vzdatares3D->setFile(Vzresidualfile);
-        Vzdatares3D->createEmpty(Vxdata3D->getNtrace());
+        Uzdatamod3D = std::make_shared<rockseis::Data3D<float>>(1, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+        Uzdatamod3D->setFile(Uzmodelledfile);
+        Uzdatamod3D->createEmpty(Uxdata3D->getNtrace());
+        Uzdatares3D = std::make_shared<rockseis::Data3D<float>>(1, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+        Uzdatares3D->setFile(Uzresidualfile);
+        Uzdatares3D->createEmpty(Uxdata3D->getNtrace());
        
 		// Create work queue
 		for(long int i=0; i<ngathers; i++) {
@@ -323,21 +323,21 @@ int main(int argc, char** argv) {
                 Sort->readSortmap();
 
                 // Get the shot
-                Sort->setDatafile(Vxrecordfile);
-                Vxdata3D = Sort->get3DGather(work.id);
-                size_t ntr = Vxdata3D->getNtrace();
+                Sort->setDatafile(Uxrecordfile);
+                Uxdata3D = Sort->get3DGather(work.id);
+                size_t ntr = Uxdata3D->getNtrace();
 
-                Sort->setDatafile(Vyrecordfile);
-                Vydata3D = Sort->get3DGather(work.id);
+                Sort->setDatafile(Uyrecordfile);
+                Uydata3D = Sort->get3DGather(work.id);
 
-                Sort->setDatafile(Vzrecordfile);
-                Vzdata3D = Sort->get3DGather(work.id);
+                Sort->setDatafile(Uzrecordfile);
+                Uzdata3D = Sort->get3DGather(work.id);
 
-                lmodel = gmodel->getLocal(Vxdata3D, apertx, aperty, SMAP);
+                lmodel = gmodel->getLocal(Uxdata3D, apertx, aperty, SMAP);
 
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();
-                source->copyCoords(Vxdata3D);
+                source->copyCoords(Uxdata3D);
                 source->makeMap(lmodel->getGeom(), SMAP);
 
                 //Setting sourcetype 
@@ -360,57 +360,57 @@ int main(int argc, char** argv) {
                 }
 
                 // Interpolate shot
-                Vxdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Vxdata3D, Vxdata3Di);
-                Vxdata3Di->makeMap(lmodel->getGeom(), GMAP);
-                Vxdata3Di->setField(rockseis::VX);
+                Uxdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(Uxdata3D, Uxdata3Di);
+                Uxdata3Di->makeMap(lmodel->getGeom(), GMAP);
+                Uxdata3Di->setField(rockseis::VX);
 
-                Vydata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Vydata3D, Vydata3Di);
-                Vydata3Di->makeMap(lmodel->getGeom(), GMAP);
-                Vydata3Di->setField(rockseis::VY);
+                Uydata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(Uydata3D, Uydata3Di);
+                Uydata3Di->makeMap(lmodel->getGeom(), GMAP);
+                Uydata3Di->setField(rockseis::VY);
 
-                Vzdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Vzdata3D, Vzdata3Di);
-                Vzdata3Di->makeMap(lmodel->getGeom(), GMAP);
-                Vzdata3Di->setField(rockseis::VZ);
+                Uzdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(Uzdata3D, Uzdata3Di);
+                Uzdata3Di->makeMap(lmodel->getGeom(), GMAP);
+                Uzdata3Di->setField(rockseis::VZ);
 
                 // Create fwi object
-                fwi = std::make_shared<rockseis::FwiElastic3D<float>>(lmodel, source, Vxdata3Di, Vydata3Di, Vzdata3Di, order, snapinc);
+                fwi = std::make_shared<rockseis::FwiElastic3D<float>>(lmodel, source, Uxdata3Di, Uydata3Di, Uzdata3Di, order, snapinc);
 
                 // Create modelled and residual data objects 
-                Vxdatamod3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vxdatamod3D->copyCoords(Vxdata3D);
-                Vxdatamod3D->makeMap(lmodel->getGeom(), GMAP);
-                Vxdatamod3D->setField(rockseis::VX);
-                fwi->setDatamodVx(Vxdatamod3D);
-                Vxdatares3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vxdatares3D->copyCoords(Vxdata3D);
-                Vxdatares3D->makeMap(lmodel->getGeom(), GMAP);
-                Vxdatares3D->setField(rockseis::VX);
-                fwi->setDataresVx(Vxdatares3D);
+                Uxdatamod3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uxdatamod3D->copyCoords(Uxdata3D);
+                Uxdatamod3D->makeMap(lmodel->getGeom(), GMAP);
+                Uxdatamod3D->setField(rockseis::VX);
+                fwi->setDatamodUx(Uxdatamod3D);
+                Uxdatares3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uxdatares3D->copyCoords(Uxdata3D);
+                Uxdatares3D->makeMap(lmodel->getGeom(), GMAP);
+                Uxdatares3D->setField(rockseis::VX);
+                fwi->setDataresUx(Uxdatares3D);
 
-                Vydatamod3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vydatamod3D->copyCoords(Vydata3D);
-                Vydatamod3D->makeMap(lmodel->getGeom(), GMAP);
-                Vydatamod3D->setField(rockseis::VY);
-                fwi->setDatamodVy(Vydatamod3D);
-                Vydatares3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vydatares3D->copyCoords(Vydata3D);
-                Vydatares3D->makeMap(lmodel->getGeom(), GMAP);
-                Vydatares3D->setField(rockseis::VY);
-                fwi->setDataresVy(Vydatares3D);
+                Uydatamod3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uydatamod3D->copyCoords(Uydata3D);
+                Uydatamod3D->makeMap(lmodel->getGeom(), GMAP);
+                Uydatamod3D->setField(rockseis::VY);
+                fwi->setDatamodUy(Uydatamod3D);
+                Uydatares3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uydatares3D->copyCoords(Uydata3D);
+                Uydatares3D->makeMap(lmodel->getGeom(), GMAP);
+                Uydatares3D->setField(rockseis::VY);
+                fwi->setDataresUy(Uydatares3D);
 
-                Vzdatamod3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vzdatamod3D->copyCoords(Vzdata3D);
-                Vzdatamod3D->makeMap(lmodel->getGeom(), GMAP);
-                Vzdatamod3D->setField(rockseis::VZ);
-                fwi->setDatamodVz(Vzdatamod3D);
-                Vzdatares3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                Vzdatares3D->copyCoords(Vzdata3D);
-                Vzdatares3D->makeMap(lmodel->getGeom(), GMAP);
-                Vzdatares3D->setField(rockseis::VZ);
-                fwi->setDataresVz(Vzdatares3D);
+                Uzdatamod3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uzdatamod3D->copyCoords(Uzdata3D);
+                Uzdatamod3D->makeMap(lmodel->getGeom(), GMAP);
+                Uzdatamod3D->setField(rockseis::VZ);
+                fwi->setDatamodUz(Uzdatamod3D);
+                Uzdatares3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                Uzdatares3D->copyCoords(Uzdata3D);
+                Uzdatares3D->makeMap(lmodel->getGeom(), GMAP);
+                Uzdatares3D->setField(rockseis::VZ);
+                fwi->setDataresUz(Uzdatares3D);
 
                 // Setting misfit type
                 fwi->setMisfit_type(fwimisfit);
@@ -494,55 +494,55 @@ int main(int argc, char** argv) {
                 }
 
                 // Output modelled and residual data
-                Vxdatamod3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-                Vxdatamod3Di->setFile(Vxmodelledfile);
-                interp->interp(Vxdatamod3D, Vxdatamod3Di);
-                Sort->put3DGather(Vxdatamod3Di, work.id);
+                Uxdatamod3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                Uxdatamod3Di->setFile(Uxmodelledfile);
+                interp->interp(Uxdatamod3D, Uxdatamod3Di);
+                Sort->put3DGather(Uxdatamod3Di, work.id);
 
-                Vxdatares3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-                Vxdatares3Di->setFile(Vxresidualfile);
-                interp->interp(Vxdatares3D, Vxdatares3Di);
-                Sort->put3DGather(Vxdatares3Di, work.id);
+                Uxdatares3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                Uxdatares3Di->setFile(Uxresidualfile);
+                interp->interp(Uxdatares3D, Uxdatares3Di);
+                Sort->put3DGather(Uxdatares3Di, work.id);
 
-                Vydatamod3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-                Vydatamod3Di->setFile(Vymodelledfile);
-                interp->interp(Vydatamod3D, Vydatamod3Di);
-                Sort->put3DGather(Vydatamod3Di, work.id);
+                Uydatamod3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                Uydatamod3Di->setFile(Uymodelledfile);
+                interp->interp(Uydatamod3D, Uydatamod3Di);
+                Sort->put3DGather(Uydatamod3Di, work.id);
 
-                Vydatares3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-                Vydatares3Di->setFile(Vyresidualfile);
-                interp->interp(Vydatares3D, Vydatares3Di);
-                Sort->put3DGather(Vydatares3Di, work.id);
+                Uydatares3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                Uydatares3Di->setFile(Uyresidualfile);
+                interp->interp(Uydatares3D, Uydatares3Di);
+                Sort->put3DGather(Uydatares3Di, work.id);
 
-                Vzdatamod3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-                Vzdatamod3Di->setFile(Vzmodelledfile);
-                interp->interp(Vzdatamod3D, Vzdatamod3Di);
-                Sort->put3DGather(Vzdatamod3Di, work.id);
+                Uzdatamod3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                Uzdatamod3Di->setFile(Uzmodelledfile);
+                interp->interp(Uzdatamod3D, Uzdatamod3Di);
+                Sort->put3DGather(Uzdatamod3Di, work.id);
 
-                Vzdatares3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Vxdata3D->getNt(), Vxdata3D->getDt(), Vxdata3D->getOt());
-                Vzdatares3Di->setFile(Vzresidualfile);
-                interp->interp(Vzdatares3D, Vzdatares3Di);
-                Sort->put3DGather(Vzdatares3Di, work.id);
+                Uzdatares3Di = std::make_shared<rockseis::Data3D<float>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                Uzdatares3Di->setFile(Uzresidualfile);
+                interp->interp(Uzdatares3D, Uzdatares3Di);
+                Sort->put3DGather(Uzdatares3Di, work.id);
 
                 // Reset all classes
-                Vxdata3D.reset();
-                Vxdata3Di.reset();
-                Vxdatamod3D.reset();
-                Vxdatamod3Di.reset();
-                Vxdatares3D.reset();
-                Vxdatares3Di.reset();
-                Vydata3D.reset();
-                Vydata3Di.reset();
-                Vydatamod3D.reset();
-                Vydatamod3Di.reset();
-                Vydatares3D.reset();
-                Vydatares3Di.reset();
-                Vzdata3D.reset();
-                Vzdata3Di.reset();
-                Vzdatamod3D.reset();
-                Vzdatamod3Di.reset();
-                Vzdatares3D.reset();
-                Vzdatares3Di.reset();
+                Uxdata3D.reset();
+                Uxdata3Di.reset();
+                Uxdatamod3D.reset();
+                Uxdatamod3Di.reset();
+                Uxdatares3D.reset();
+                Uxdatares3Di.reset();
+                Uydata3D.reset();
+                Uydata3Di.reset();
+                Uydatamod3D.reset();
+                Uydatamod3Di.reset();
+                Uydatares3D.reset();
+                Uydatares3Di.reset();
+                Uzdata3D.reset();
+                Uzdata3Di.reset();
+                Uzdatamod3D.reset();
+                Uzdatamod3Di.reset();
+                Uzdatares3D.reset();
+                Uzdatares3Di.reset();
                 lmodel.reset();
                 vpgrad.reset();
                 vsgrad.reset();

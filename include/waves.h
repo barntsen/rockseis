@@ -233,6 +233,56 @@ private:
 
 };
 
+/** The 3D Elastic WAVES class
+ *
+ */
+template<typename T>
+class WavesElastic3D: public Waves<T> {
+public:
+    WavesElastic3D();	///< Constructor
+    WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
+    WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    ~WavesElastic3D();	///< Destructor
+
+    // Get functions
+    std::shared_ptr<PmlElastic3D<T>> getPml() { return Pml; }
+    T * getSxx() { return Sxx; }    ///< Get Stress component at time t+1
+    T * getSyy() { return Syy; }    ///< Get Stress component at time t+1
+    T * getSzz() { return Szz; }    ///< Get Stress component at time t+1
+    T * getSyz() { return Syz; }    ///< Get Stress component at time t+1
+    T * getSxz() { return Sxz; }    ///< Get Stress component at time t+1
+    T * getSxy() { return Sxy; }    ///< Get Stress component at time t+1
+    T * getVx() { return Vx; }    ///< Get Velocity component at time t+1/2
+    T * getVy() { return Vy; }    ///< Get Velocity component at time t+1/2
+    T * getVz() { return Vz; }    ///< Get Velocity component at time t+1/2
+
+    // Time stepping functions
+    void forwardstepVelocity(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity
+    void forwardstepStress(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+    void recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
+
+
+private:
+    T *Sxx;  // Stress component at time t+1
+    T *Syy;  // Stress component at time t+1
+    T *Szz;  // Stress component at time t+1
+    T *Sxz;  // Stress component at time t+1
+    T *Syz;  // Stress component at time t+1
+    T *Sxy;  // Stress component at time t+1
+
+    T *Vx; // Velocity component at time t+1/2
+    T *Vy; // Velocity component at time t+1/2
+    T *Vz; // Velocity component at time t+1/2
+    std::shared_ptr<PmlElastic3D<T>> Pml; // Associated Pml class
+};
+
+/** The 2D Elastic displacement-stress WAVES class
+ *
+*/
+
 template<typename T>
 class WavesElastic2D_DS: public Waves<T> {
 public:
@@ -264,6 +314,7 @@ public:
     void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Displacement type or Pressure )
 
     void roll();  // Roll the displacement pointers
+
 private:
     T *Sxx;  // Stress component at time t
     T *Szz; // Stress component at time t
@@ -275,49 +326,56 @@ private:
     std::shared_ptr<PmlElastic2D<T>> Pml; // Associated Pml class
 };
 
-/** The 3D Elastic WAVES class
+/** The 3D Elastic Displacement-stress WAVES class
  *
  */
 template<typename T>
-class WavesElastic3D: public Waves<T> {
+class WavesElastic3D_DS: public Waves<T> {
 public:
-    WavesElastic3D();	///< Constructor
-    WavesElastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
-    WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
-    ~WavesElastic3D();	///< Destructor
+    WavesElastic3D_DS();	///< Constructor
+    WavesElastic3D_DS(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
+    WavesElastic3D_DS(std::shared_ptr<rockseis::ModelElastic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    ~WavesElastic3D_DS();	///< Destructor
 
     // Get functions
     std::shared_ptr<PmlElastic3D<T>> getPml() { return Pml; }
-    T * getSxx() { return Sxx; }    ///< Get Stress component at time t+1
-    T * getSyy() { return Syy; }    ///< Get Stress component at time t+1
-    T * getSzz() { return Szz; }    ///< Get Stress component at time t+1
-    T * getSyz() { return Syz; }    ///< Get Stress component at time t+1
-    T * getSxz() { return Sxz; }    ///< Get Stress component at time t+1
-    T * getSxy() { return Sxy; }    ///< Get Stress component at time t+1
-    T * getVx() { return Vx; }    ///< Get Velocity component at time t+1/2
-    T * getVy() { return Vy; }    ///< Get Velocity component at time t+1/2
-    T * getVz() { return Vz; }    ///< Get Velocity component at time t+1/2
+    T * getSxx() { return Sxx; }    ///< Get Stress component at time t
+    T * getSyy() { return Syy; }    ///< Get Stress component at time t
+    T * getSzz() { return Szz; }    ///< Get Stress component at time t
+    T * getSyz() { return Syz; }    ///< Get Stress component at time t
+    T * getSxz() { return Sxz; }    ///< Get Stress component at time t
+    T * getSxy() { return Sxy; }    ///< Get Stress component at time t
+    T * getUx1() { return Ux1; }    ///< Get Displacement component at time t
+    T * getUx2() { return Ux2; }    ///< Get Displacement component at time t+1
+    T * getUy1() { return Uy1; }    ///< Get Displacement component at time t
+    T * getUy2() { return Uy2; }    ///< Get Displacement component at time t+1
+    T * getUz1() { return Uz1; }    ///< Get Displacement component at time t
+    T * getUz2() { return Uz2; }    ///< Get Displacement component at time t+1
 
     // Time stepping functions
-    void forwardstepVelocity(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity 
+    void forwardstepDisplacement(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity 
     void forwardstepStress(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity 
 
     // Insert source functions
-    void insertSource(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
-    void recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
+    void insertSource(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Displacement type or Pressure )
+    void recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Displacement type or Pressure )
 
+    void roll();  // Roll the displacement pointers
     
 private:
-    T *Sxx;  // Stress component at time t+1
-    T *Syy;  // Stress component at time t+1
-    T *Szz;  // Stress component at time t+1
-    T *Sxz;  // Stress component at time t+1
-    T *Syz;  // Stress component at time t+1
-    T *Sxy;  // Stress component at time t+1
+    T *Sxx;  // Stress component at time t
+    T *Syy;  // Stress component at time t
+    T *Szz;  // Stress component at time t
+    T *Sxz;  // Stress component at time t
+    T *Syz;  // Stress component at time t
+    T *Sxy;  // Stress component at time t
     
-    T *Vx; // Velocity component at time t+1/2
-    T *Vy; // Velocity component at time t+1/2
-    T *Vz; // Velocity component at time t+1/2
+    T *Ux1; // Displacement component at time t
+    T *Ux2; // Displacement component at time t+1
+    T *Uy1; // Displacement component at time t
+    T *Uy2; // Displacement component at time t+1
+    T *Uz1; // Displacement component at time t
+    T *Uz2; // Displacement component at time t+1
     std::shared_ptr<PmlElastic3D<T>> Pml; // Associated Pml class
 };
 
