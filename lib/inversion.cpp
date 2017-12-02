@@ -3044,6 +3044,7 @@ void InversionElastic3D<T>::runBsproj() {
     if(mpi->getRank() == 0) {
 		// Master
 
+        mpi->setVerbose(false); // Turn off queue printing
 		// Create work queue
 		for(long int i=0; i<nc; i++) {
 			// Work struct
@@ -3107,6 +3108,7 @@ void InversionElastic3D<T>::runBsproj() {
             Fout->close();
         }
 
+       mpi->setVerbose(true); // Turn on queue printing
        }else {
         /* Slave */
         while(1) {
