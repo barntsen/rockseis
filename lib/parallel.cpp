@@ -139,7 +139,7 @@ void MPImodeling::printWork() {
 	char buffer[256],start[256],end[256];
 	time_t runtime,now;
 
-	if(!logfilename.empty() && this->getVerbose()){
+	if(!logfilename.empty() && (this->getVerbose() == true)){
 		std::ofstream Flog; 
 		Flog.open(logfilename);
 		if(!Flog.is_open()) rs_error("MPImodeling::printWork: Error writting to MPI log file.");
