@@ -298,6 +298,7 @@ public:
     void setDataweight(std::shared_ptr<Data3D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
     void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesElastic3D_DS<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic3D<T>> model);
+    void computeMisfit();
     void computeResiduals();
 
     ~FwiElastic3D();	///< Destructor

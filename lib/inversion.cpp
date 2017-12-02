@@ -63,6 +63,9 @@ Inversion<T>::Inversion(MPImodeling *_mpi) {
 template<typename T>
 void Inversion<T>::normalize(double *v, double *f, int n){
 	int i;
+    if(fnorm == 0.0) {
+        fnorm = 1.0;
+    }
     *f /= fabs(fnorm);
 	for(i=0; i<n; i++) {
 		v[i] /= fabs(fnorm);
