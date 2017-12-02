@@ -494,6 +494,7 @@ void InversionAcoustic2D<T>::runBsproj() {
     if(mpi->getRank() == 0) {
 		// Master
 
+        mpi->setVerbose(false); // Turn off queue printing
 		// Create work queue
 		for(long int i=0; i<nc; i++) {
 			// Work struct
@@ -537,6 +538,8 @@ void InversionAcoustic2D<T>::runBsproj() {
         Fout->setData_format(sizeof(float));
         Fout->write(global_stack, nc, 0);
         Fout->close();
+
+        mpi->setVerbose(true); // Turn on queue printing
 
        }else {
         /* Slave */
@@ -1598,6 +1601,7 @@ void InversionElastic2D<T>::runBsproj() {
     if(mpi->getRank() == 0) {
 		// Master
 
+        mpi->setVerbose(false); // Turn off queue printing
 		// Create work queue
 		for(long int i=0; i<nc; i++) {
 			// Work struct
@@ -1660,6 +1664,8 @@ void InversionElastic2D<T>::runBsproj() {
             Fout->write(global_stack, nc, 0);
             Fout->close();
         }
+
+        mpi->setVerbose(true); // Turn on queue printing
 
        }else {
         /* Slave */
