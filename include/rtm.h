@@ -165,17 +165,16 @@ template<typename T>
 class RtmElastic2D: public Rtm<T> {
 public:
     RtmElastic2D();					///< Constructor
-    RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataVx, std::shared_ptr<Data2D<T>> dataVz, int order, int snapinc);					///< Constructor 
+    RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataUx, std::shared_ptr<Data2D<T>> dataUz, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs rtm with full snapshoting
     int run_optimal(); ///< Runs rtm with optimal checkpointing
     void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
-    void setDataVx(std::shared_ptr<Data2D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
-    void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
+    void setDataUz(std::shared_ptr<Data2D<T>> _dataUz) { dataUz = _dataUz; dataUzset = true; }
     void setPimage(std::shared_ptr<Image2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
     void setSimage(std::shared_ptr<Image2D<T>> _simage) { simage = _simage; simageset = true; }
     void crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho);
-
 
     ~RtmElastic2D();	///< Destructor
 
@@ -184,13 +183,13 @@ private:
     std::shared_ptr<Image2D<T>> pimage;
     std::shared_ptr<Image2D<T>> simage;
     std::shared_ptr<Data2D<T>> source;
-    std::shared_ptr<Data2D<T>> dataVx;
-    std::shared_ptr<Data2D<T>> dataVz;
+    std::shared_ptr<Data2D<T>> dataUx;
+    std::shared_ptr<Data2D<T>> dataUz;
     bool modelset;
     bool pimageset;
     bool simageset;
     bool sourceset;
-    bool dataVxset, dataVzset;
+    bool dataUxset, dataUzset;
 };
 
 /** The 3D Elastic Rtm class
@@ -205,9 +204,9 @@ public:
     int run_optimal(); ///< Runs rtm with optimal checkpointing
     void setModel(std::shared_ptr<ModelElastic3D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
-    void setDataVx(std::shared_ptr<Data3D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
-    void setDataVy(std::shared_ptr<Data3D<T>> _dataVy) { dataVy = _dataVy; dataVyset = true; }
-    void setDataVz(std::shared_ptr<Data3D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setDataUx(std::shared_ptr<Data3D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
+    void setDataUy(std::shared_ptr<Data3D<T>> _dataUy) { dataUy = _dataUy; dataUyset = true; }
+    void setDataUz(std::shared_ptr<Data3D<T>> _dataUz) { dataUz = _dataUz; dataUzset = true; }
     void setPimage(std::shared_ptr<Image3D<T>> _pimage) { pimage = _pimage; pimageset = true; }
     void setSimage(std::shared_ptr<Image3D<T>> _simage) { simage = _simage; simageset = true; }
     void crossCorr(T *wsx, T *wsy, T *wsz, int pads, T* wrx, T *wry, T* wrz, int padr, T* Vp, T* Vs, T* Rho);
@@ -220,14 +219,14 @@ private:
     std::shared_ptr<Image3D<T>> pimage;
     std::shared_ptr<Image3D<T>> simage;
     std::shared_ptr<Data3D<T>> source;
-    std::shared_ptr<Data3D<T>> dataVx;
-    std::shared_ptr<Data3D<T>> dataVy;
-    std::shared_ptr<Data3D<T>> dataVz;
+    std::shared_ptr<Data3D<T>> dataUx;
+    std::shared_ptr<Data3D<T>> dataUy;
+    std::shared_ptr<Data3D<T>> dataUz;
     bool modelset;
     bool pimageset;
     bool simageset;
     bool sourceset;
-    bool dataVxset, dataVyset, dataVzset;
+    bool dataUxset, dataUyset, dataUzset;
 };
 
 

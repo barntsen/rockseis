@@ -827,23 +827,23 @@ RtmAcoustic3D<T>::~RtmAcoustic3D() {
 template<typename T>
 RtmElastic2D<T>::RtmElastic2D(){
     sourceset = false;
-    dataVxset = false;
-    dataVzset = false;
+    dataUxset = false;
+    dataUzset = false;
     modelset = false;
     pimageset = false;
     simageset = false;
 }
 
 template<typename T>
-RtmElastic2D<T>::RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataVx, std::shared_ptr<Data2D<T>> _dataVz, int order, int snapinc):Rtm<T>(order, snapinc){
+RtmElastic2D<T>::RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataUx, std::shared_ptr<Data2D<T>> _dataUz, int order, int snapinc):Rtm<T>(order, snapinc){
     source = _source;
-    dataVx = _dataVx;
-    dataVz = _dataVz;
+    dataUx = _dataUx;
+    dataUz = _dataUz;
     model = _model;
     sourceset = true;
     modelset = true;
-    dataVxset = true;
-    dataVzset = true;
+    dataUxset = true;
+    dataUzset = true;
     pimageset = false;
     simageset = false;
 }
@@ -960,19 +960,19 @@ int RtmElastic2D<T>::run(){
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<WavesElastic2D<T>> waves (new WavesElastic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      // Create snapshots
-     std::shared_ptr<Snapshot2D<T>> Vxsnap;
-     Vxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-     Vxsnap->openSnap(this->getSnapfile() + "-vx", 'w'); // Create a new snapshot file
-     Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
+     std::shared_ptr<Snapshot2D<T>> Uxsnap;
+     Uxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+     Uxsnap->openSnap(this->getSnapfile() + "-ux", 'w'); // Create a new snapshot file
+     Uxsnap->setData(waves->getUx1(), 0); //Set Ux as snap field
 
-     std::shared_ptr<Snapshot2D<T>> Vzsnap;
-     Vzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'w'); // Create a new snapshot file
-     Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
+     std::shared_ptr<Snapshot2D<T>> Uzsnap;
+     Uzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+     Uzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
+     Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
 
      this->writeLog("Running 2D Elastic reverse-time migration with full checkpointing.");
      this->writeLog("Doing forward Loop.");
@@ -980,18 +980,21 @@ int RtmElastic2D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	//Writting out results to snapshot files
-        Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
-        Vxsnap->writeSnap(it);
+        Uxsnap->setData(waves->getUx1(), 0); //Set Ux as snap field
+        Uxsnap->writeSnap(it);
 
-        Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
-        Vzsnap->writeSnap(it);
+        Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
+        Uzsnap->writeSnap(it);
 
     	// Time stepping
-    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
+    	waves->forwardstepDisplacement(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
+
+        // Roll pointers
+        waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -999,22 +1002,22 @@ int RtmElastic2D<T>::run(){
     
     
     //Close snapshot file
-    Vxsnap->closeSnap();
-    Vzsnap->closeSnap();
+    Uxsnap->closeSnap();
+    Uzsnap->closeSnap();
 
     // Reset waves
     waves.reset();
-    waves  = std::make_shared<WavesElastic2D<T>>(model, nt, dt, ot);
+    waves  = std::make_shared<WavesElastic2D_DS<T>>(model, nt, dt, ot);
 
     // Create image
     if(this->pimageset) pimage->allocateImage();
     if(this->simageset) simage->allocateImage();
 
-    Vxsnap->openSnap(this->getSnapfile() + "-vx", 'r');
-    Vxsnap->allocSnap(0);
+    Uxsnap->openSnap(this->getSnapfile() + "-ux", 'r');
+    Uxsnap->allocSnap(0);
 
-    Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
-    Vzsnap->allocSnap(0);
+    Uzsnap->openSnap(this->getSnapfile() + "-uz", 'r');
+    Uzsnap->allocSnap(0);
 
     // Get models for scaling
     T *Vp, *Vs, *Rho;
@@ -1022,36 +1025,39 @@ int RtmElastic2D<T>::run(){
     Vs = model->getVs();
     Rho = model->getR();
 
-     this->writeLog("\nDoing reverse-time Loop.");
+    this->writeLog("\nDoing reverse-time Loop.");
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
     	// Time stepping 
     	waves->forwardstepStress(model, der);
-    	waves->forwardstepVelocity(model, der);
+    	waves->forwardstepDisplacement(model, der);
 
     	// Inserting source 
-    	waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataUx, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataUz, GMAP, (nt - 1 - it));
 
         //Read forward snapshot
-        Vxsnap->readSnap(nt - 1 - it);
-        Vzsnap->readSnap(nt - 1 - it);
+        Uxsnap->readSnap(nt - 1 - it);
+        Uzsnap->readSnap(nt - 1 - it);
 
         // Do Crosscorrelation
-        if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
-            T *Vxr = waves->getVx();
-            T *Vzr = waves->getVz();
-            crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vzr, waves->getLpml(), Vp, Vs, Rho);
+        if((((nt - 1 - it)-Uxsnap->getEnddiff()) % Uxsnap->getSnapinc()) == 0){
+            T *Uxr = waves->getUx1();
+            T *Uzr = waves->getUz1();
+            crossCorr(Uxsnap->getData(0), Uzsnap->getData(0), 0, Uxr, Uzr, waves->getLpml(), Vp, Vs, Rho);
         }
+        
+        // Roll pointers
+        waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }
     
 	//Remove snapshot file
-	Vxsnap->removeSnap();
-	Vzsnap->removeSnap();
+	Uxsnap->removeSnap();
+	Uzsnap->removeSnap();
 
     result=RTM_OK;
     return result;
@@ -1075,8 +1081,8 @@ int RtmElastic2D<T>::run_optimal(){
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<WavesElastic2D<T>> waves_fw (new WavesElastic2D<T>(model, nt, dt, ot));
-     std::shared_ptr<WavesElastic2D<T>> waves_bw (new WavesElastic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_fw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_bw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
      std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
      revolve_action whatodo;
@@ -1110,11 +1116,14 @@ int RtmElastic2D<T>::run_optimal(){
             for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
-                waves_fw->forwardstepVelocity(model, der);
                 waves_fw->forwardstepStress(model, der);
+                waves_fw->forwardstepDisplacement(model, der);
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
+
+                // Roll pointers
+                waves_fw->roll();
 
                 if(!reverse){
                     // Output progress to logfile
@@ -1127,22 +1136,26 @@ int RtmElastic2D<T>::run_optimal(){
         {
             // Time stepping
             waves_fw->forwardstepStress(model, der);
-            waves_fw->forwardstepVelocity(model, der);
+            waves_fw->forwardstepDisplacement(model, der);
 
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, capo);
 
             // Inserting data
-            waves_bw->insertSource(model, dataVx, GMAP, capo);
-            waves_bw->insertSource(model, dataVz, GMAP, capo);
+            waves_bw->insertSource(model, dataUx, GMAP, capo);
+            waves_bw->insertSource(model, dataUz, GMAP, capo);
 
             // Do Crosscorrelation 
-            T *wsx = waves_fw->getVx();
-            T *wsz = waves_fw->getVz();
-            T *wrx = waves_bw->getVx();
-            T *wrz = waves_bw->getVz();
+            T *wsx = waves_fw->getUx1();
+            T *wsz = waves_fw->getUz1();
+            T *wrx = waves_bw->getUx1();
+            T *wrz = waves_bw->getUz1();
 
             crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+
+            // Roll pointers
+            waves_fw->roll();
+            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -1159,18 +1172,21 @@ int RtmElastic2D<T>::run_optimal(){
         {
             // Time stepping
             waves_bw->forwardstepStress(model, der);
-            waves_bw->forwardstepVelocity(model, der);
+            waves_bw->forwardstepDisplacement(model, der);
 
             // Inserting data
-            waves_bw->insertSource(model, dataVx, GMAP, capo);
-            waves_bw->insertSource(model, dataVz, GMAP, capo);
+            waves_bw->insertSource(model, dataUx, GMAP, capo);
+            waves_bw->insertSource(model, dataUz, GMAP, capo);
 
             // Do Crosscorrelation
-            T *wsx = waves_fw->getVx();
-            T *wsz = waves_fw->getVz();
-            T *wrx = waves_bw->getVx();
-            T *wrz = waves_bw->getVz();
+            T *wsx = waves_fw->getUx1();
+            T *wsz = waves_fw->getUz1();
+            T *wrx = waves_bw->getUx1();
+            T *wrz = waves_bw->getUz1();
             crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+
+            // Roll pointers
+            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);
@@ -1197,8 +1213,6 @@ int RtmElastic2D<T>::run_optimal(){
     return result;
 }
 
-
-
 template<typename T>
 RtmElastic2D<T>::~RtmElastic2D() {
     // Nothing here
@@ -1209,26 +1223,26 @@ RtmElastic2D<T>::~RtmElastic2D() {
 template<typename T>
 RtmElastic3D<T>::RtmElastic3D(){
     sourceset = false;
-    dataVxset = false;
-    dataVyset = false;
-    dataVzset = false;
+    dataUxset = false;
+    dataUyset = false;
+    dataUzset = false;
     modelset = false;
     pimageset = false;
     simageset = false;
 }
 
 template<typename T>
-RtmElastic3D<T>::RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> _model, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _dataVx, std::shared_ptr<Data3D<T>> _dataVy, std::shared_ptr<Data3D<T>> _dataVz, int order, int snapinc):Rtm<T>(order, snapinc){
+RtmElastic3D<T>::RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> _model, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _dataUx, std::shared_ptr<Data3D<T>> _dataUy, std::shared_ptr<Data3D<T>> _dataUz, int order, int snapinc):Rtm<T>(order, snapinc){
     source = _source;
-    dataVx = _dataVx;
-    dataVy = _dataVy;
-    dataVz = _dataVz;
+    dataUx = _dataUx;
+    dataUy = _dataUy;
+    dataUz = _dataUz;
     model = _model;
     sourceset = true;
     modelset = true;
-    dataVxset = true;
-    dataVyset = true;
-    dataVzset = true;
+    dataUxset = true;
+    dataUyset = true;
+    dataUzset = true;
     pimageset = false;
     simageset = false;
 }
@@ -1384,24 +1398,24 @@ int RtmElastic3D<T>::run(){
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<WavesElastic3D<T>> waves (new WavesElastic3D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic3D_DS<T>> waves (new WavesElastic3D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
      // Create snapshots
-     std::shared_ptr<Snapshot3D<T>> Vxsnap;
-     Vxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-     Vxsnap->openSnap(this->getSnapfile() + "-vx", 'w'); // Create a new snapshot file
-     Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
+     std::shared_ptr<Snapshot3D<T>> Uxsnap;
+     Uxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+     Uxsnap->openSnap(this->getSnapfile() + "-ux", 'w'); // Create a new snapshot file
+     Uxsnap->setData(waves->getUx1(), 0); //Set Ux as snap field
 
-     std::shared_ptr<Snapshot3D<T>> Vysnap;
-     Vysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-     Vysnap->openSnap(this->getSnapfile() + "-vy", 'w'); // Create a new snapshot file
-     Vysnap->setData(waves->getVy(), 0); //Set Vy as snap field
+     std::shared_ptr<Snapshot3D<T>> Uysnap;
+     Uysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+     Uysnap->openSnap(this->getSnapfile() + "-uy", 'w'); // Create a new snapshot file
+     Uysnap->setData(waves->getUy1(), 0); //Set Uy as snap field
 
-     std::shared_ptr<Snapshot3D<T>> Vzsnap;
-     Vzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-     Vzsnap->openSnap(this->getSnapfile() + "-vz", 'w'); // Create a new snapshot file
-     Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
+     std::shared_ptr<Snapshot3D<T>> Uzsnap;
+     Uzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+     Uzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
+     Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
 
      this->writeLog("Running 3D Elastic reverse-time migration with full checkpointing.");
      this->writeLog("Doing forward Loop.");
@@ -1409,21 +1423,24 @@ int RtmElastic3D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	//Writting out results to snapshot files
-        Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
-        Vxsnap->writeSnap(it);
+        Uxsnap->setData(waves->getUx1(), 0); //Set Ux as snap field
+        Uxsnap->writeSnap(it);
 
-        Vysnap->setData(waves->getVy(), 0); //Set Vy as snap field
-        Vysnap->writeSnap(it);
+        Uysnap->setData(waves->getUy1(), 0); //Set Uy as snap field
+        Uysnap->writeSnap(it);
 
-        Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
-        Vzsnap->writeSnap(it);
+        Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
+        Uzsnap->writeSnap(it);
 
     	// Time stepping
-    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
+    	waves->forwardstepDisplacement(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
+
+        // Roll pointers
+        waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -1431,26 +1448,26 @@ int RtmElastic3D<T>::run(){
     
     
     //Close snapshot file
-    Vxsnap->closeSnap();
-    Vysnap->closeSnap();
-    Vzsnap->closeSnap();
+    Uxsnap->closeSnap();
+    Uysnap->closeSnap();
+    Uzsnap->closeSnap();
 
     // Reset waves
     waves.reset();
-    waves  = std::make_shared<WavesElastic3D<T>>(model, nt, dt, ot);
+    waves  = std::make_shared<WavesElastic3D_DS<T>>(model, nt, dt, ot);
 
     // Create image
     if(this->pimageset) pimage->allocateImage();
     if(this->simageset) simage->allocateImage();
 
-    Vxsnap->openSnap(this->getSnapfile() + "-vx", 'r');
-    Vxsnap->allocSnap(0);
+    Uxsnap->openSnap(this->getSnapfile() + "-ux", 'r');
+    Uxsnap->allocSnap(0);
 
-    Vysnap->openSnap(this->getSnapfile() + "-vy", 'r');
-    Vysnap->allocSnap(0);
+    Uysnap->openSnap(this->getSnapfile() + "-uy", 'r');
+    Uysnap->allocSnap(0);
 
-    Vzsnap->openSnap(this->getSnapfile() + "-vz", 'r');
-    Vzsnap->allocSnap(0);
+    Uzsnap->openSnap(this->getSnapfile() + "-uz", 'r');
+    Uzsnap->allocSnap(0);
 
     // Get models for scaling
     T *Vp, *Vs, *Rho;
@@ -1464,34 +1481,37 @@ int RtmElastic3D<T>::run(){
     {
     	// Time stepping 
     	waves->forwardstepStress(model, der);
-    	waves->forwardstepVelocity(model, der);
+    	waves->forwardstepDisplacement(model, der);
 
     	// Inserting source 
-    	waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataVy, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataUx, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataUy, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataUz, GMAP, (nt - 1 - it));
 
         //Read forward snapshot
-        Vxsnap->readSnap(nt - 1 - it);
-        Vysnap->readSnap(nt - 1 - it);
-        Vzsnap->readSnap(nt - 1 - it);
+        Uxsnap->readSnap(nt - 1 - it);
+        Uysnap->readSnap(nt - 1 - it);
+        Uzsnap->readSnap(nt - 1 - it);
 
         // Do Crosscorrelation
-        if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
-            T *Vxr = waves->getVx();
-            T *Vyr = waves->getVy();
-            T *Vzr = waves->getVz();
-            crossCorr(Vxsnap->getData(0), Vysnap->getData(0), Vzsnap->getData(0), 0, Vxr, Vyr, Vzr, waves->getLpml(), Vp, Vs, Rho);
+        if((((nt - 1 - it)-Uxsnap->getEnddiff()) % Uxsnap->getSnapinc()) == 0){
+            T *Uxr = waves->getUx1();
+            T *Uyr = waves->getUy1();
+            T *Uzr = waves->getUz1();
+            crossCorr(Uxsnap->getData(0), Uysnap->getData(0), Uzsnap->getData(0), 0, Uxr, Uyr, Uzr, waves->getLpml(), Vp, Vs, Rho);
         }
+
+        // Roll pointers
+        waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }
     
 	//Remove snapshot file
-	Vxsnap->removeSnap();
-	Vysnap->removeSnap();
-	Vzsnap->removeSnap();
+	Uxsnap->removeSnap();
+	Uysnap->removeSnap();
+	Uzsnap->removeSnap();
 
     result=RTM_OK;
     return result;
@@ -1516,8 +1536,8 @@ int RtmElastic3D<T>::run_optimal(){
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<WavesElastic3D<T>> waves_fw (new WavesElastic3D<T>(model, nt, dt, ot));
-     std::shared_ptr<WavesElastic3D<T>> waves_bw (new WavesElastic3D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic3D_DS<T>> waves_fw (new WavesElastic3D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic3D_DS<T>> waves_bw (new WavesElastic3D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), waves_fw->getNy_pml(), waves_fw->getNz_pml(), waves_fw->getDx(), waves_fw->getDy(), waves_fw->getDz(), this->getOrder()));
      std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
      revolve_action whatodo;
@@ -1551,11 +1571,14 @@ int RtmElastic3D<T>::run_optimal(){
             for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
-                waves_fw->forwardstepVelocity(model, der);
                 waves_fw->forwardstepStress(model, der);
+                waves_fw->forwardstepDisplacement(model, der);
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
+
+                // Roll pointers
+                waves_fw->roll();
 
                 if(!reverse){
                     // Output progress to logfile
@@ -1567,24 +1590,28 @@ int RtmElastic3D<T>::run_optimal(){
         {
             // Time stepping
             waves_fw->forwardstepStress(model, der);
-            waves_fw->forwardstepVelocity(model, der);
+            waves_fw->forwardstepDisplacement(model, der);
 
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, capo);
 
             // Inserting data
-            waves_bw->insertSource(model, dataVx, GMAP, capo);
-            waves_bw->insertSource(model, dataVz, GMAP, capo);
+            waves_bw->insertSource(model, dataUx, GMAP, capo);
+            waves_bw->insertSource(model, dataUz, GMAP, capo);
 
             // Do Crosscorrelation 
-            T *wsx = waves_fw->getVx();
-            T *wsy = waves_fw->getVy();
-            T *wsz = waves_fw->getVz();
-            T *wrx = waves_bw->getVx();
-            T *wry = waves_bw->getVy();
-            T *wrz = waves_bw->getVz();
+            T *wsx = waves_fw->getUx1();
+            T *wsy = waves_fw->getUy1();
+            T *wsz = waves_fw->getUz1();
+            T *wrx = waves_bw->getUx1();
+            T *wry = waves_bw->getUy1();
+            T *wrz = waves_bw->getUz1();
 
             crossCorr(wsx, wsy, wsz, waves_fw->getLpml(), wrx, wry, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+
+                // Roll pointers
+                waves_fw->roll();
+                waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -1601,21 +1628,24 @@ int RtmElastic3D<T>::run_optimal(){
         {
             // Time stepping
             waves_bw->forwardstepStress(model, der);
-            waves_bw->forwardstepVelocity(model, der);
+            waves_bw->forwardstepDisplacement(model, der);
 
             // Inserting data
-            waves_bw->insertSource(model, dataVx, GMAP, capo);
-            waves_bw->insertSource(model, dataVy, GMAP, capo);
-            waves_bw->insertSource(model, dataVz, GMAP, capo);
+            waves_bw->insertSource(model, dataUx, GMAP, capo);
+            waves_bw->insertSource(model, dataUy, GMAP, capo);
+            waves_bw->insertSource(model, dataUz, GMAP, capo);
 
             // Do Crosscorrelation
-            T *wsx = waves_fw->getVx();
-            T *wsy = waves_fw->getVy();
-            T *wsz = waves_fw->getVz();
-            T *wrx = waves_bw->getVx();
-            T *wry = waves_bw->getVy();
-            T *wrz = waves_bw->getVz();
+            T *wsx = waves_fw->getUx1();
+            T *wsy = waves_fw->getUy1();
+            T *wsz = waves_fw->getUz1();
+            T *wrx = waves_bw->getUx1();
+            T *wry = waves_bw->getUy1();
+            T *wrz = waves_bw->getUz1();
             crossCorr(wsx, wsy, wsz, waves_fw->getLpml(), wrx, wry, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
+
+            // Roll pointers
+            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);
