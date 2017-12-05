@@ -938,6 +938,191 @@ ModellingElastic2D_DS<T>::~ModellingElastic2D_DS() {
     // Nothing here
 }
 
+// =============== ELASTIC 3D DISPLACEMENT STRESS MODELLING CLASS =============== //
+template<typename T>
+ModellingElastic3D_DS<T>::ModellingElastic3D_DS(){
+    sourceset = false;
+    modelset = false;
+    recPset = false;
+    recUxset = false;
+    recUyset = false;
+    recUzset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSyyset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapSyzset = false;
+    snapSxyset = false;
+    snapUxset = false;
+    snapUyset = false;
+    snapUzset = false;
+}
+
+template<typename T>
+ModellingElastic3D_DS<T>::ModellingElastic3D_DS(std::shared_ptr<ModelElastic3D<T>> _model,std::shared_ptr<Data3D<T>> _source, int order, int snapinc):Modelling<T>(order, snapinc){
+    source = _source;
+    model = _model;
+    sourceset = true;
+    modelset = true;
+    recPset = false;
+    recUxset = false;
+    recUyset = false;
+    recUzset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSyyset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapSyzset = false;
+    snapSxyset = false;
+    snapUxset = false;
+    snapUyset = false;
+    snapUzset = false;
+}
+
+template<typename T>
+bool ModellingElastic3D_DS<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNy()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dy = model->getDy();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dy*dy))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
+int ModellingElastic3D_DS<T>::run(){
+     int result = MOD_ERR;
+     int nt;
+     float dt;
+     float ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("ModellingElastic3D_DS::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+
+     // Create the classes 
+     std::shared_ptr<WavesElastic3D_DS<T>> waves (new WavesElastic3D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
+
+	// Create log file
+     this->createLog(this->getLogfile());
+
+    // Create snapshots
+     std::shared_ptr<Snapshot3D<T>> Psnap;
+     std::shared_ptr<Snapshot3D<T>> Uxsnap;
+     std::shared_ptr<Snapshot3D<T>> Uysnap;
+     std::shared_ptr<Snapshot3D<T>> Uzsnap;
+    if(this->snapPset){ 
+        Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
+        Psnap->setData(waves->getSxx(), 0); //Set Stress as first field 
+        Psnap->setData(waves->getSyy(), 1); //Set Stress as second field 
+        Psnap->setData(waves->getSzz(), 2); //Set Stress as third field
+    }
+    if(this->snapUxset){ 
+        Uxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Uxsnap->openSnap(this->snapUx, 'w'); // Create a new snapshot file
+        Uxsnap->setData(waves->getUx1(), 0); //Set Ux as field to snap
+    }
+    if(this->snapUyset){ 
+        Uysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Uysnap->openSnap(this->snapUy, 'w'); // Create a new snapshot file
+        Uysnap->setData(waves->getUy1(), 0); //Set Uy as field to snap
+    }
+    if(this->snapUzset){ 
+        Uzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+        Uzsnap->openSnap(this->snapUz, 'w'); // Create a new snapshot file
+        Uzsnap->setData(waves->getUz1(), 0); //Set Uz as field to snap
+    }
+
+     this->writeLog("Running 3D Elastic modelling.");
+    // Loop over time
+    for(int it=0; it < nt; it++)
+    {
+    	// Time stepping
+    	waves->forwardstepStress(model, der);
+    	waves->forwardstepDisplacement(model, der);
+    
+    	// Inserting source 
+    	waves->insertSource(model, source, SMAP, it);
+
+        // Recording data 
+        if(this->recPset){
+            waves->recordData(this->recP, GMAP, it);
+        }
+
+        // Recording data (Ux)
+        if(this->recUxset){
+            waves->recordData(this->recUx, GMAP, it);
+        }
+
+        // Recording data (Uy)
+        if(this->recUyset){
+            waves->recordData(this->recUy, GMAP, it);
+        }
+
+        // Recording data (Uz)
+        if(this->recUzset){
+            waves->recordData(this->recUz, GMAP, it);
+        }
+    
+    	//Writting out results to snapshot file
+        if(this->snapPset){ 
+            Psnap->writeSnap(it);
+        }
+
+        if(this->snapUxset){ 
+            Uxsnap->writeSnap(it);
+        }
+
+        if(this->snapUyset){ 
+            Uysnap->writeSnap(it);
+        }
+
+        if(this->snapUzset){ 
+            Uzsnap->writeSnap(it);
+        }
+        
+        //Roll the pointers
+        waves->roll();
+
+        // Output progress to logfile
+        this->writeProgress(it, nt-1, 20, 48);
+    }	
+    
+    this->writeLog("Modelling is complete.");
+    result=MOD_OK;
+    return result;
+}
+
+
+template<typename T>
+ModellingElastic3D_DS<T>::~ModellingElastic3D_DS() {
+    // Nothing here
+}
+
+
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
@@ -953,6 +1138,9 @@ template class ModellingElastic3D<float>;
 template class ModellingElastic3D<double>;
 template class ModellingElastic2D_DS<float>;
 template class ModellingElastic2D_DS<double>;
+
+template class ModellingElastic3D_DS<float>;
+template class ModellingElastic3D_DS<double>;
 
 
 

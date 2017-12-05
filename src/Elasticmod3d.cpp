@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
     }
 
     std::shared_ptr<rockseis::Data3D<float>> Shotgeom;
-    std::shared_ptr<rockseis::ModellingElastic3D<float>> modelling;
+    std::shared_ptr<rockseis::ModellingElastic3D_DS<float>> modelling;
 
     for(unsigned long int i=0; i<ngathers; i++) {
         Sort->readKeymap();
@@ -231,7 +231,7 @@ int main(int argc, char** argv) {
                 break;
         }
 
-        modelling = std::make_shared<rockseis::ModellingElastic3D<float>>(lmodel, source, order, snapinc);
+        modelling = std::make_shared<rockseis::ModellingElastic3D_DS<float>>(lmodel, source, order, snapinc);
 
         // Set logfile
         modelling->setLogfile("log.txt-" + std::to_string(i));
@@ -241,13 +241,13 @@ int main(int argc, char** argv) {
             modelling->setSnapP(Psnapfile + "-" + std::to_string(i));
         }
         if(Vxsnap){
-            modelling->setSnapVx(Vxsnapfile + "-" + std::to_string(i));
+            modelling->setSnapUx(Vxsnapfile + "-" + std::to_string(i));
         }
         if(Vysnap){
-            modelling->setSnapVy(Vysnapfile + "-" + std::to_string(i));
+            modelling->setSnapUy(Vysnapfile + "-" + std::to_string(i));
         }
         if(Vzsnap){
-            modelling->setSnapVz(Vzsnapfile + "-" + std::to_string(i));
+            modelling->setSnapUz(Vzsnapfile + "-" + std::to_string(i));
         }
 
         // Setting Record
@@ -265,7 +265,7 @@ int main(int argc, char** argv) {
             // Copy geometry to Data
             Vxdata3D->copyCoords(Shotgeom);
             Vxdata3D->makeMap(lmodel->getGeom());
-            modelling->setRecVx(Vxdata3D);
+            modelling->setRecUx(Vxdata3D);
         }
         if(Vyrecord){
             Vydata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
@@ -273,7 +273,7 @@ int main(int argc, char** argv) {
             // Copy geometry to Data
             Vydata3D->copyCoords(Shotgeom);
             Vydata3D->makeMap(lmodel->getGeom());
-            modelling->setRecVy(Vydata3D);
+            modelling->setRecUy(Vydata3D);
         }
         if(Vzrecord){
             Vzdata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
             // Copy geometry to Data
             Vzdata3D->copyCoords(Shotgeom);
             Vzdata3D->makeMap(lmodel->getGeom());
-            modelling->setRecVz(Vzdata3D);
+            modelling->setRecUz(Vzdata3D);
         }
 
         // Stagger model

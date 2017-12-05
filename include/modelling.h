@@ -266,5 +266,49 @@ private:
     bool snapPset, snapSxxset, snapSzzset, snapSxzset, snapUxset, snapUzset;
 };
 
+/** The 3D Displacement Stress Elastic Modelling class
+ *
+ */
+template<typename T>
+class ModellingElastic3D_DS: public Modelling<T> {
+public:
+    ModellingElastic3D_DS();					///< Constructor
+    ModellingElastic3D_DS(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Data3D<T>> source, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs modelling
+    void setModel(std::shared_ptr<ModelElastic3D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
+    void setRecP(std::shared_ptr<Data3D<T>> _recP) { recP = _recP; recPset = true; }
+    void setRecUx(std::shared_ptr<Data3D<T>> _recUx) { recUx = _recUx; recUxset = true; }
+    void setRecUy(std::shared_ptr<Data3D<T>> _recUy) { recUy = _recUy; recUyset = true; }
+    void setRecUz(std::shared_ptr<Data3D<T>> _recUz) { recUz = _recUz; recUzset = true; }
+
+    void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
+    void setSnapSxx(std::string _snapSxx) { snapSxx = _snapSxx; snapSxxset = true; }
+    void setSnapSyy(std::string _snapSyy) { snapSyy = _snapSyy; snapSyyset = true; }
+    void setSnapSzz(std::string _snapSzz) { snapSzz = _snapSzz; snapSzzset = true; }
+    void setSnapSyz(std::string _snapSyz) { snapSyz = _snapSyz; snapSyzset = true; }
+    void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
+    void setSnapSxy(std::string _snapSxy) { snapSxy = _snapSxy; snapSxyset = true; }
+    void setSnapUx(std::string _snapUx) { snapUx = _snapUx; snapUxset = true; }
+    void setSnapUy(std::string _snapUy) { snapUy = _snapUy; snapUyset = true; }
+    void setSnapUz(std::string _snapUz) { snapUz = _snapUz; snapUzset = true; }
+    bool checkStability(); ///< Check stability of finite difference modelling
+
+    ~ModellingElastic3D_DS();	///< Destructor
+
+private:
+    std::shared_ptr<ModelElastic3D<T>> model;
+    std::shared_ptr<Data3D<T>> source;
+    std::shared_ptr<Data3D<T>> recP;
+    std::shared_ptr<Data3D<T>> recUx;
+    std::shared_ptr<Data3D<T>> recUy;
+    std::shared_ptr<Data3D<T>> recUz;
+    bool modelset;
+    bool sourceset;
+    bool recPset, recUxset, recUyset, recUzset;
+    std::string snapP, snapSxx, snapSyy, snapSzz, snapSyz, snapSxz, snapSxy, snapUx, snapUy, snapUz;
+    bool snapPset, snapSxxset, snapSyyset, snapSzzset, snapSxzset, snapSyzset, snapSxyset, snapUxset, snapUyset, snapUzset;
+};
+
 }
 #endif //MODELLING_H
