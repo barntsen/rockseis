@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
     else {
         /* Slave */
         std::shared_ptr<rockseis::Data2D<float>> Shotgeom;
-        std::shared_ptr<rockseis::ModellingElastic2D<float>> modelling;
+        std::shared_ptr<rockseis::ModellingElastic2D_DS<float>> modelling;
         while(1) {
             workModeling_t work = mpi.receiveWork();
 
@@ -238,7 +238,7 @@ int main(int argc, char** argv) {
                         break;
                 }
 
-                modelling = std::make_shared<rockseis::ModellingElastic2D<float>>(lmodel, source, order, snapinc);
+                modelling = std::make_shared<rockseis::ModellingElastic2D_DS<float>>(lmodel, source, order, snapinc);
 
                 // Set logfile
                 modelling->setLogfile("log.txt-" + std::to_string(work.id));
@@ -248,10 +248,10 @@ int main(int argc, char** argv) {
                     modelling->setSnapP(Psnapfile + "-" + std::to_string(work.id));
                 }
                 if(Vxsnap){
-                    modelling->setSnapVx(Vxsnapfile + "-" + std::to_string(work.id));
+                    modelling->setSnapUx(Vxsnapfile + "-" + std::to_string(work.id));
                 }
                 if(Vzsnap){
-                    modelling->setSnapVz(Vzsnapfile + "-" + std::to_string(work.id));
+                    modelling->setSnapUz(Vzsnapfile + "-" + std::to_string(work.id));
                 }
 
                 // Setting Record
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
                     // Copy geometry to Data
                     Vxdata2D->copyCoords(Shotgeom);
                     Vxdata2D->makeMap(lmodel->getGeom());
-                    modelling->setRecVx(Vxdata2D);
+                    modelling->setRecUx(Vxdata2D);
                 }
                 if(Vzrecord){
                     Vzdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
                     // Copy geometry to Data
                     Vzdata2D->copyCoords(Shotgeom);
                     Vzdata2D->makeMap(lmodel->getGeom());
-                    modelling->setRecVz(Vzdata2D);
+                    modelling->setRecUz(Vzdata2D);
                 }
 
                 // Stagger model
