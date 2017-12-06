@@ -178,6 +178,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(Precordfile = "Pshot.rss";);
             PRINT_DOC(Psnapfile = "Local/Psnap.rss";);
         }
+        exit(1);
     }
 
     // Initialize Inversion class

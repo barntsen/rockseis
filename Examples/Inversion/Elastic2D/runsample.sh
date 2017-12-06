@@ -24,5 +24,24 @@ cp ../../Models/Vs2d.rss .
 cp ../../Models/Rho2d.rss .
 cp ../../Models/Wav2d.rss .
 
-#mpirun -np 4 rsmpiElasticmod2d mod.cfg 
-rsElasticmod2d mod.cfg 
+mpirun -np 4 rsmpiElasticmod2d mod.cfg 
+
+#Create a weight file
+rsrss2rsf < Vxshot.rss out=stdout > temp.rsf
+sfmath <temp.rsf output=1.0  out=stdout > temp2.rsf 
+sfheadermutter <temp2.rsf head=tfile.rsf v0=100 delay=0.0 type=0 out=stdout > weight.rsf
+sfsegywrite < weight.rsf tfile=tfile.rsf tape=temp.sgy
+rssegy2rss <temp.sgy > weight.rss segy.cfg
+rm weight.rsf temp.rsf temp2.rsf temp.sgy tfile.rsf
+
+# Add noise
+#rsrss2rsf < Vxshot.rss out=stdout > temp.rsf
+#sfnoise <temp.rsf range=900 out=stdout > noisy.rsf
+#sfsegywrite < noisy.rsf tfile=tfile.rsf tape=temp.sgy
+#rssegy2rss <temp.sgy > Vxshot.rss segy.cfg
+
+#rsrss2rsf < Vzshot.rss out=stdout > temp.rsf
+#sfnoise <temp.rsf range=900 out=stdout > noisy.rsf
+#sfsegywrite < noisy.rsf tfile=tfile.rsf tape=temp.sgy
+#rssegy2rss <temp.sgy > Vzshot.rss segy.cfg
+#rm temp.rsf temp.sgy noisy.rsf tfile.rsf

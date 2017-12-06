@@ -2286,7 +2286,7 @@ void InversionElastic2D<T>::computeRegularisation(double *x)
                 Npar +=N;
             }
             if(update_vs){
-                der->ddx_fw(x);
+                der->ddx_fw(&x[Npar]);
                 for(i=0; i< N; i++)
                 {
                     dvsdx[i] = df[i]*kvs;

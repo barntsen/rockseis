@@ -4,6 +4,10 @@
 #include "util.h"
 
 #define MAXDIM 8
+#define SCALCO 100
+#define SCALEL 1000
+#define NTFILE 91
+#define SQ(x) ((x)*(x))
 
 int main(int argc, char* argv[])
 {
@@ -17,6 +21,7 @@ int main(int argc, char* argv[])
     }
 
     madagascar::oRSF out;
+    madagascar::oRSF *tfile;
 
     int n[MAXDIM];
     float d[MAXDIM];
@@ -89,26 +94,162 @@ int main(int argc, char* argv[])
     }
 
     int Nheader = in->getNheader();
+    std::valarray<int> headtrace(NTFILE);
+    for(int i= 0; i < NTFILE; i++){
+        headtrace[i]=0;
+    }
+
+    if(Nheader == 4 || Nheader == 6){
+        tfile = new madagascar::oRSF("tfile.rsf");
+        headtrace[19] = -SCALEL;
+        headtrace[20] = -SCALCO;
+        (*tfile).put("n1", NTFILE);
+        int ntmp = ntot;
+        float ftmp = 1.0;
+        float otmp = 0.0;
+        (*tfile).put("n2", ntmp);
+        (*tfile).put("d1", ftmp);
+        (*tfile).put("d2", ftmp);
+        (*tfile).put("o1", otmp);
+        (*tfile).put("o2", otmp);
+        (*tfile).type(SF_INT);
+    }
+    
 
     // Make traces for both float and int types
     std::valarray<int> inttrace(n[0]);
     std::valarray<float> floattrace(n[0]);
     std::valarray<double> doubletrace(n[0]);
+    int ival;
+    float fval;
+    double dval;
 
     out.type(type);
+    //in->seekg(in->getStartofdata() + i*(n[0]*dsize+Nheader*hsize) + Nheader*hsize);
+    in->seekg(in->getStartofdata());
     for (int i=0; i < ntot; i++) {
-        in->seekg(in->getStartofdata() + i*(n[0]*dsize+Nheader*hsize) + Nheader*hsize);
+
         switch(filetype)
         {
             case 2:
+                if(Nheader == 4 || Nheader == 6){
+                    switch(Nheader){
+                        case 4:
+                            in->read(&ival, 1);
+                            headtrace[21] = (int) (ival*SCALCO);
+                            in->read(&ival, 1);
+                            headtrace[13] = (int) (ival*SCALEL);
+                            in->read(&ival, 1);
+                            headtrace[23] = (int) (ival*SCALCO);
+                            in->read(&ival, 1);
+                            headtrace[12] = (int) (ival*SCALEL);
+                            headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
+                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]))/SCALCO);
+                            break;
+                        case 6:
+                            in->read(&ival, 1);
+                            headtrace[21] = (int) (ival*SCALCO);
+                            in->read(&ival, 1);
+                            headtrace[22] = (int) (ival*SCALCO);
+                            in->read(&ival, 1);
+                            headtrace[13] = (int) (ival*SCALEL);
+                            in->read(&ival, 1);
+                            headtrace[23] = (int) (ival*SCALCO);
+                            in->read(&ival, 1);
+                            headtrace[24] = (int) (ival*SCALCO);
+                            in->read(&ival, 1);
+                            headtrace[12] = (int) (ival*SCALEL);
+                            headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
+                            headtrace[72] = (int) (0.5*(headtrace[22] + headtrace[24]));
+                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]) + SQ(headtrace[22] - headtrace[24]))/SCALCO);
+                            break;
+                        default:
+                            break;
+                    }
+                    *tfile << headtrace;
+                }
                 in->read(&(inttrace[0]), inttrace.size());
                 out << inttrace;
                 break;
             case 3:
+                if(Nheader == 4 || Nheader == 6){
+                    switch(Nheader){
+                        case 4:
+                            in->read(&fval, 1);
+                            headtrace[21] = (int) (fval*SCALCO);
+                            in->read(&fval, 1);
+                            headtrace[13] = (int) (fval*SCALEL);
+                            in->read(&fval, 1);
+                            headtrace[23] = (int) (fval*SCALCO);
+                            in->read(&fval, 1);
+                            headtrace[12] = (int) (fval*SCALEL);
+                            headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
+                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]))/SCALCO);
+                            break;
+                        case 6:
+                            in->read(&fval, 1);
+                            headtrace[21] = (int) (fval*SCALCO);
+                            in->read(&fval, 1);
+                            headtrace[22] = (int) (fval*SCALCO);
+                            in->read(&fval, 1);
+                            headtrace[13] = (int) (fval*SCALEL);
+                            in->read(&fval, 1);
+                            headtrace[23] = (int) (fval*SCALCO);
+                            in->read(&fval, 1);
+                            headtrace[24] = (int) (fval*SCALCO);
+                            in->read(&fval, 1);
+                            headtrace[12] = (int) (fval*SCALEL);
+                            headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
+                            headtrace[72] = (int) (0.5*(headtrace[22] + headtrace[24]));
+                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]) + SQ(headtrace[22] - headtrace[24]))/SCALCO);
+                            break;
+                        default:
+                            break;
+                    }
+                    *tfile << headtrace;
+                }
+
                 in->read(&(floattrace[0]), floattrace.size());
                 out << floattrace;
                 break;
             case 4:
+                if(Nheader == 4 || Nheader == 6){
+                    switch(Nheader){
+                        case 4:
+                            in->read(&dval, 1);
+                            headtrace[21] = (int) (dval*SCALCO);
+                            in->read(&dval, 1);
+                            headtrace[13] = (int) (dval*SCALEL);
+                            in->read(&dval, 1);
+                            headtrace[23] = (int) (dval*SCALCO);
+                            in->read(&dval, 1);
+                            headtrace[12] = (int) (dval*SCALEL);
+                            headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
+                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]))/SCALCO);
+                            break;
+                        case 6:
+                            in->read(&dval, 1);
+                            headtrace[21] = (int) (dval*SCALCO);
+                            in->read(&dval, 1);
+                            headtrace[22] = (int) (dval*SCALCO);
+                            in->read(&dval, 1);
+                            headtrace[13] = (int) (dval*SCALEL);
+                            in->read(&dval, 1);
+                            headtrace[23] = (int) (dval*SCALCO);
+                            in->read(&dval, 1);
+                            headtrace[24] = (int) (dval*SCALCO);
+                            in->read(&dval, 1);
+                            headtrace[12] = (int) (dval*SCALEL);
+                            headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
+                            headtrace[72] = (int) (0.5*(headtrace[22] + headtrace[24]));
+                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]) + SQ(headtrace[22] - headtrace[24]))/SCALCO);
+                            break;
+                        default:
+                            break;
+                    }
+                    *tfile << headtrace;
+                }
+
                 in->read(&(doubletrace[0]), doubletrace.size());
                 for (int j=0; j < n[0]; j++) floattrace[j] = (float) doubletrace[j];  // Converting from double to float
                 out << floattrace;

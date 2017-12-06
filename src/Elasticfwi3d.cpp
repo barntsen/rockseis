@@ -190,6 +190,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(Uzrecordfile = "Vzshot.rss";);
             PRINT_DOC(Snapfile = "Local/Snap.rss";);
         }
+        exit(1);
     }
 
     // Initialize Inversion class
