@@ -24,17 +24,6 @@
 
 namespace rockseis {
 
-/** The Progress struct
- *
- */
-typedef struct{
-	clock_t previous, current; ///< Time book keeping
-	float persec; ///< Iterations per second 
-	char speed[48]; ///< Iterations per second string
-	char progress[128]; ///< Progress string
-} Progress;
-
-
 // =============== ABSTRACT MODELLING CLASS =============== //
 /** The abstract modelling class
  *

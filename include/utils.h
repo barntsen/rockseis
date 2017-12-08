@@ -22,6 +22,16 @@ typedef enum {FINISHED, RUNNING, NOT_STARTED, FAILED} rs_status; ///< Status of 
 typedef enum {LINEAR, BSPLINE, SINC} rs_interpmode; ///< Interpolation mode.)
 typedef enum {DIFFERENCE, CORRELATION} rs_fwimisfit; ///< Type of misfit for FWI.)
 
+/** The Progress struct
+ *
+ */
+typedef struct{
+	clock_t previous, current; ///< Time book keeping
+	float persec; ///< Iterations per second 
+	char speed[48]; ///< Iterations per second string
+	char progress[128]; ///< Progress string
+} Progress;
+
 // =============== INDEX CLASS =============== //
 /** The Index class.
  * Index for seeking memory in 2D and 3D arrays.
