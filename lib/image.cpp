@@ -129,6 +129,23 @@ Image2D<T>::Image2D(std::string _imagefile, std::shared_ptr<ModelElastic2D<T>> m
 }
 
 template<typename T>
+Image2D<T>::Image2D(const int _nx, const int _nz,  const int _nhx, const int _nhz, const T _dx, const T _dz, const T _ox, const T _oz)
+{
+    this->setNx(_nx);
+    this->setNy(1);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(1.0);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(0.0);
+    this->setOz(_oz);
+    this->setNhx(_nhx);
+    this->setNhz(_nhz);
+    allocated = false;
+}
+
+template<typename T>
 bool Image2D<T>::read()
 {
     bool status;
@@ -376,6 +393,90 @@ bool Image2D<T>::write()
 }
 
 template<typename T>
+std::shared_ptr<rockseis::Image2D<T>> Image2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) 
+{
+    std::shared_ptr<rockseis::Image2D<T>> local;
+    /* Get source or receiver min and max positions */
+    Point2D<T> *coords;
+    size_t ntr = data->getNtrace();
+    T min, max; 
+    if(map == SMAP){
+        coords = (data->getGeom())->getScoords();
+        min = coords[0].x;
+        max = coords[0].x;
+        for (int i=1; i < ntr; i++){
+            if(coords[i].x < min) min = coords[i].x;
+            if(coords[i].x > max) max = coords[i].x;
+        }
+    }else{
+        coords = (data->getGeom())->getGcoords();
+        min = coords[0].x;
+        max = coords[0].x;
+        for (size_t i=1; i < ntr; i++){
+            if(coords[i].x < min) min = coords[i].x;
+            if(coords[i].x > max) max = coords[i].x;
+        }
+    }
+
+    T dx = this->getDx();
+    T ox = this->getOx();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+	/* Determine grid positions and sizes */
+    size_t size = (size_t) (rintf((max-min + aperture)/dx) + 1);
+    if( size % 2 == 0 ) size++; // Get odd size due to symmetry
+    off_t start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
+
+    size_t nhx = this->getNhx();
+    size_t nhz = this->getNhz();
+    /* Create local model */
+    local = std::make_shared<rockseis::Image2D<T>>(size, this->getNz(), this->getNhx(), this->getNhz(), dx, this->getDz(), (ox + start*dx), this->getOz());
+
+    /*Realizing local model */
+    local->allocateImage();
+
+	/* Copying from big model into local model */
+    T *Im = local->getImagedata();
+
+    /* Allocate two traces to read models from file */
+    T *imtrace = (T *) calloc(nx, sizeof(T));
+    if(imtrace == NULL) rs_error("Image2D::getlocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<rockseis::File> Fim (new rockseis::File());
+    status = Fim->input(imagefile);
+    if(status == FILE_ERR){
+	    rs_error("Image2D::getLocal : Error reading from image file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+    rockseis::Index l2d(size,nz,nhx,nhz);
+    rockseis::Index f2d(nx,nz,nhx,nhz);
+    for(long int ih1=0; ih1<nhz; ih1++) {
+        for(long int ih2=0; ih2<nhx; ih2++) {
+            for(long int i1=0; i1<nz; i1++) {
+                fpos = f2d(0, i1, ih2, ih1)*sizeof(T);
+                Fim->read(imtrace, nx, fpos);
+                if(Fim->getFail()) rs_error("Image2D::getLocal: Error reading from image file");
+                for(long int i2=0; i2<size; i2++) {
+                    lpos = i + i2;
+                    if(lpos < 0) lpos = 0;
+                    if(lpos > (nx-1)) lpos = nx - 1;
+                    Im[l2d(i2,i1,ih2,ih1)] = imtrace[lpos];
+                }
+            }
+        }
+    }
+
+    /* Free traces */
+    free(imtrace);
+
+    return local;
+}
+
+template<typename T>
 void Image2D<T>::allocateImage()
 {
     // Allocate the memory for the image
@@ -392,9 +493,6 @@ void Image2D<T>::freeImage()
     }
     allocated = false;
 }
-
-
-
 
 // destructor
 template<typename T>
@@ -522,6 +620,24 @@ Image3D<T>::Image3D(std::string _imagefile, std::shared_ptr<ModelElastic3D<T>> m
     this->setNhy(nhy);
     this->setNhz(nhz);
     imagefile = _imagefile;
+    allocated = false;
+}
+
+template<typename T>
+Image3D<T>::Image3D(const int _nx, const int _ny, const int _nz, const int _nhx, const int _nhy, const int _nhz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz)
+{
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setNhx(_nhx);
+    this->setNhy(_nhy);
+    this->setNhz(_nhz);
     allocated = false;
 }
 
@@ -815,6 +931,122 @@ bool Image3D<T>::stackImage(std::string infile)
 	free(trcout);
 	status = FILE_OK;
     return status;
+}
+
+template<typename T>
+std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
+
+    std::shared_ptr<rockseis::Image3D<T>> local;
+    /* Get source or receiver min and max positions */
+    Point3D<T> *coords;
+    size_t ntr = data->getNtrace();
+    T min_x, max_x; 
+    T min_y, max_y; 
+    if(map == SMAP){
+        coords = (data->getGeom())->getScoords();
+        min_x = coords[0].x;
+        max_x = coords[0].x;
+        min_y = coords[0].y;
+        max_y = coords[0].y;
+        for (int i=1; i < ntr; i++){
+            if(coords[i].x < min_x) min_x = coords[i].x;
+            if(coords[i].x > max_x) max_x = coords[i].x;
+            if(coords[i].y < min_y) min_y = coords[i].y;
+            if(coords[i].y > max_y) max_y = coords[i].y;
+        }
+    }else{
+        coords = (data->getGeom())->getGcoords();
+        min_x = coords[0].x;
+        max_x = coords[0].x;
+        min_y = coords[0].y;
+        max_y = coords[0].y;
+        for (size_t i=1; i < ntr; i++){
+            if(coords[i].x < min_x) min_x = coords[i].x;
+            if(coords[i].x > max_x) max_x = coords[i].x;
+            if(coords[i].y < min_y) min_y = coords[i].y;
+            if(coords[i].y > max_y) max_y = coords[i].y;
+        }
+    }
+
+    T dx = this->getDx();
+    T dy = this->getDy();
+    T ox = this->getOx();
+    T oy = this->getOy();
+    size_t nx = this->getNx();
+    size_t ny = this->getNy();
+    size_t nz = this->getNz();
+
+    size_t nhx = this->getNhx();
+    size_t nhy = this->getNhy();
+    size_t nhz = this->getNhz();
+
+	/* Determine grid positions and sizes */
+    size_t size_x = (size_t) (rintf((max_x-min_x + aperture_x)/dx) + 1);
+    if( size_x % 2 == 0 ) size_x++; // Get odd size due to symmetry
+    off_t start_x = (off_t) (rintf((min_x - ox)/dx) - (size_x - 1)/2); 
+
+    size_t size_y = (size_t) (rintf((max_y-min_y + aperture_y)/dy) + 1);
+    if( size_y % 2 == 0 ) size_y++; // Get odd size due to symmetry
+    off_t start_y = (off_t) (rintf((min_y - oy)/dy) - (size_y - 1)/2); 
+
+    double oxl, oyl; 
+    oxl = (ox + start_x*dx);
+    oyl = (oy + start_y*dy);
+
+    /* Create local model */
+    local = std::make_shared<rockseis::Image3D<T>>(size_x, size_y, nz, nhx, nhy, nhz, dx, dy, this->getDz(), oxl, oyl, this->getOz());
+
+    /*Realizing local model */
+    local->allocateImage();
+
+	/* Copying from big model into local model */
+    T *Im = local->getImagedata();
+
+    /* Allocate two traces to read models from file */
+    T *imtrace = (T *) calloc(nx*ny, sizeof(T));
+    if(imtrace == NULL) rs_error("Image3D::getlocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<rockseis::File> Fim (new rockseis::File());
+    status = Fim->input(imagefile);
+    if(status == FILE_ERR){
+	    rs_error("Image3D::getLocal : Error reading from image file.");
+    }
+
+    off_t i = start_x;
+    off_t j = start_y;
+    off_t lpos_x, lpos_y, fpos;
+    rockseis::Index l3d(size_x, size_y, nz, nhx, nhy, nhz);
+    rockseis::Index f3d(nx, ny, nz, nhx, nhy, nhz);
+    rockseis::Index l2d(nx, ny);
+    for(size_t ih1=0; ih1<nhz; ih1++) {
+        for(size_t ih2=0; ih2<nhy; ih2++) {
+            for(size_t ih3=0; ih3<nhx; ih3++) {
+                for(size_t i1=0; i1<nz; i1++) {
+                    fpos = f3d(0, 0, i1, ih3, ih2, ih1)*sizeof(T);
+                    Fim->read(imtrace, nx*ny, fpos);
+                    if(Fim->getFail()) rs_error("Image3D::getLocal: Error reading from image file");
+                    for(size_t i2=0; i2<size_y; i2++) {
+                        lpos_y = j + i2;
+                        if(lpos_y < 0) lpos_y = 0;
+                        if(lpos_y > (ny-1)) lpos_y = ny - 1;
+                        for(size_t i3=0; i3<size_x; i3++) {
+                            lpos_x = i + i3;
+                            if(lpos_x < 0) lpos_x = 0;
+                            if(lpos_x > (nx-1)) lpos_x = nx - 1;
+                            Im[l3d(i3,i2,i1,ih3,ih2,ih1)] = imtrace[l2d(lpos_x, lpos_y)];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* Free traces */
+    free(imtrace);
+
+    return local;
 }
 
 

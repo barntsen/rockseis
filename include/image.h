@@ -22,7 +22,7 @@ public:
     Image2D(std::string imagefile); ///< Constructor
     Image2D(std::string imagefile, std::shared_ptr<ModelAcoustic2D<T>> model, int nhx, int nhz); 	///< Constructor
     Image2D(std::string imagefile, std::shared_ptr<ModelElastic2D<T>> model, int nhx, int nhz); 	///< Constructor
-    //Image2D(std::string imagefile, ModelAcoustic2D<T> model, T apertx); 	///< Constructor
+    Image2D(const int _nx, const int _nz, const int _nhx, const int _nhz, const T _dx, const T _dz, const T _ox, const T _oz);	///< Constructor
     ~Image2D();       	///< Destructor
 
     // Get functions
@@ -45,6 +45,7 @@ public:
     void freeImage(); /// Free memory for imagedata
     bool createEmpty(); ///< Create empty image for stacking
     bool stackImage(std::string infile); ///< Stack image
+    std::shared_ptr<rockseis::Image2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map); ///< Get image over aperture
 
 private:
     T *imagedata; // Image array
@@ -62,6 +63,7 @@ public:
     Image3D(std::string imagefile); ///< Constructor
     Image3D(std::string imagefile, std::shared_ptr<ModelAcoustic3D<T>> model, int nhx, int nhy, int nhz); 	///< Constructor
     Image3D(std::string imagefile, std::shared_ptr<ModelElastic3D<T>> model, int nhx, int nhy, int nhz); 	///< Constructor
+    Image3D(const int _nx, const int _ny, const int _nz, const int _nhx, const int _nhy, const int _nhz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz); ///< Constructor
     ~Image3D();       	///< Destructor
 
     // Get functions
@@ -86,6 +88,7 @@ public:
     void freeImage(); /// Free memory for imagedata
     bool createEmpty(); ///< Create empty image for stacking
     bool stackImage(std::string infile); ///< Stack image
+    std::shared_ptr<rockseis::Image3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map);///< Get image over aperture
 
 private:
     T *imagedata; // Image array

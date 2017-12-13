@@ -257,6 +257,101 @@ void MvaElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 		}
 	}
 }
+/*
+template<typename T>
+void MvaElastic2D<T>::adjSource(T *wx, T *wz, int pads, std::shared_ptr<WavesElastic2D<T>> waves_adj, T* Vp, T* Vs, T* Rho, bool sign)
+{
+	int ix, iz, ihx, ihz;
+	T *pimagedata = NULL; 
+	T *simagedata = NULL;
+	T mxx, mzz;
+	T C33_minus, C33_plus;
+	T C44_minus, C44_plus;
+	int nhx; 
+	int nhz;
+	int nx;
+	T dx;
+	T dz;
+	int nz;
+	int hx, hz;
+
+	if(pimageset){
+		if(!pimage->getAllocated()){
+			pimage->allocateImage();
+		}
+		pimagedata = pimage->getImagedata();
+	}
+	if(simageset){
+		if(!simage->getAllocated()){
+			simage->allocateImage();
+		}
+		simagedata = simage->getImagedata();
+	}
+	// Getting sizes
+	if(pimageset) {
+		nhx = pimage->getNhx();
+		nhz = pimage->getNhz();
+		nx = pimage->getNx();
+		nz = pimage->getNz();
+		dx = pimage->getDx(); 
+		dz = pimage->getDz(); 
+	}else{
+		nhx = simage->getNhx();
+		nhz = simage->getNhz();
+		nx = simage->getNx();
+		nz = simage->getNz();
+		dx = simage->getDx(); 
+		dz = simage->getDz(); 
+	}
+
+	int nxs = nx+2*pads;
+	int nxr = nx+2*padr;
+
+	for (ihx=0; ihx<nhx; ihx++){
+		hx= -(nhx-1)/2 + ihx;
+		for (ihz=0; ihz<nhz; ihz++){
+			hz= -(nhz-1)/2 + ihz;
+			for (ix=0; ix<nx; ix++){
+				if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
+				{
+					for (iz=0; iz<nz; iz++){
+						if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
+						{
+							C33_minus = Rho[km2D(ix-hx, iz-hz)]*Vp[km2D(ix-hx, iz-hz)]*Vp[km2D(ix-hx, iz-hz)];
+							C33_plus = Rho[km2D(ix+hx, iz+hz)]*Vp[km2D(ix+hx, iz+hz)]*Vp[km2D(ix+hx, iz+hz)];
+							C44_minus = Rho[km2D(ix-hx, iz-hz)]*Vs[km2D(ix-hx, iz-hz)]*Vs[km2D(ix-hx, iz-hz)];
+							C44_plus = Rho[km2D(ix+hx, iz+hz)]*Vs[km2D(ix+hx, iz+hz)]*Vs[km2D(ix+hx, iz+hz)];
+
+							msxx = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx;
+							mszz = (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz;
+							mrxx = (wrx[kr2D(ix+hx+padr, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr)])/dx;
+							mrzz = (wrz[kr2D(ix+hx+padr, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr-1)])/dz;
+
+							if(pimageset){
+								pimagedata[ki2D(ix,iz,ihx,ihz)] += C33_minus*C33_plus*(msxx + mszz) * (mrxx + mrzz);
+							}
+
+							if(simageset){
+								msxz = 0.5*(wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz;
+								msxz += 0.5*(wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz;
+								msxz += 0.5*(wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx;
+								msxz += 0.5*(wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
+
+								mrxz = 0.5*(wrx[kr2D(ix+hx+padr, iz+hz+padr+1)] - wrx[kr2D(ix+hx+padr, iz+hz+padr)])/dz;
+								mrxz += 0.5*(wrx[kr2D(ix+hx+padr-1, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dz;
+								mrxz += 0.5*(wrz[kr2D(ix+hx+padr+1, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr)])/dx;
+								mrxz += 0.5*(wrz[kr2D(ix+hx+padr, iz+hz+padr-1)] - wrz[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dx;
+								simagedata[ki2D(ix,iz,ihx,ihz)] += C44_minus*C44_plus*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
+							}
+						}
+					}	
+				}
+			}
+		}
+	}
+}
+
+*/
 
 template<typename T>
 int MvaElastic2D<T>::runRtm(){

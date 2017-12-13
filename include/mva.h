@@ -95,6 +95,8 @@ public:
     MvaElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataUx, std::shared_ptr<Data2D<T>> dataUz, int order, int snapinc);					///< Constructor 
     int runRtm(); ///< Runs rtm with full snapshoting
     int runRtm_optimal(); ///< Runs rtm with optimal checkpointing
+    int runPPgrad(); ///< Runs PP mva gradient with full snapshoting
+    int runPSgrad(); ///< Runs PS mva gradient with full snapshoting
     void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
