@@ -24,7 +24,7 @@
 #define GMAP 1
 #define SMAP 0
 
-#define PNOISE	0.001
+#define PNOISE	0.0001
 #define MAXH 500
 
 #define ki2D(i,j) ((j)*nx +(i))
