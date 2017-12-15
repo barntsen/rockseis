@@ -55,6 +55,7 @@ class Fwi {
 public:
     Fwi();	///< Constructor
     Fwi(int order, int snapinc);  ///< Constructor
+    ~Fwi();	///< Destructor
     
     // Fwi functions
     int getOrder() { return order; } ///< Get order of FD stencil
@@ -84,7 +85,7 @@ public:
     void stoep(int n, T r[], T g[], T f[], T a[]);
     void convolve(int lx, int ifx, T *x, int ly, int ify, T *y, int lz, int ifz, T *z);
     void xcor(int lx, int ifx, T *x,int ly, int ify, T *y, int lz, int ifz, T *z);
-    ~Fwi();	///< Destructor
+    T gauss(int it, T stdev);
 
 private:
     int order;  ///< Order of the FD stencil 

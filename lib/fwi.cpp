@@ -387,6 +387,15 @@ void Fwi<T>::xcor (int lx, int ifx, T *x,int ly, int ify, T *y, int lz, int ifz,
 }
 
 template<typename T>
+T Fwi<T>::gauss (int it, T stdev)
+{
+    if(stdev == 0.0) return 0;
+    T val; 
+    val = exp(-1.0*(it*it)/(2.0*(stdev*stdev)));
+    return val;
+}
+
+template<typename T>
 Fwi<T>::~Fwi() {
     // Nothing here
 }
@@ -529,6 +538,8 @@ void FwiAcoustic2D<T>::computeMisfit(){
         case ADAPTIVE:
             T norm; 
             T H,res;
+            T stdev;
+            stdev = 5.0*nt/100.0;
             shaper = (T *) calloc(nt, sizeof(T));
             spiker = (T *) calloc(nt, sizeof(T));
             autocorr = (T *) calloc(nt, sizeof(T));
@@ -546,10 +557,9 @@ void FwiAcoustic2D<T>::computeMisfit(){
                 }
                 if (norm == 0.0)  rs_error("FwiAcoustic2D::computeMisfit: Norm is zero");
                 for(it=0; it<nt; it++){
-                    H = it;
-                    if(H > MAXH) H = MAXH;
+                    H = nt*this->gauss(it,stdev);
                     res = H*shaper[it];
-                    misfit += 0.5*res*res/norm;
+                    misfit -= 0.5*res*res/norm;
                 }
             }
             free(shaper);
@@ -643,6 +653,8 @@ void FwiAcoustic2D<T>::computeResiduals(){
         case ADAPTIVE:
             T norm; 
             T H;
+            T stdev;
+            stdev = 5.0*nt/100.0;
             T misfit;
             shaper = (T *) calloc(nt, sizeof(T));
             spiker = (T *) calloc(nt, sizeof(T));
@@ -660,15 +672,13 @@ void FwiAcoustic2D<T>::computeResiduals(){
                 }
                 misfit = 0.0;
                 for(it=0; it<nt; it++){
-                    H = it;
-                    if(H > MAXH) H = MAXH;
+                    H = nt*this->gauss(it, stdev);
                     misfit += 0.5*(H*shaper[it])*(H*shaper[it])/norm;
                 }
 
                 for(it=0; it<nt; it++){
-                    H = it;
-                    if(H > MAXH) H = MAXH;
-                    res[I(it, itr)] = (H*H - 2.0*misfit)*shaper[it]/norm;
+                    H = nt*this->gauss(it, stdev);
+                    res[I(it, itr)] = -1.0*(H*H - 2.0*misfit)*shaper[it]/norm;
                 }
                 this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
                 this->convolve(nt, 0, shaper, nt, 0, &rec[I(0, itr)], nt, 0, &res[I(0, itr)]);        
@@ -1749,6 +1759,8 @@ void FwiElastic2D<T>::computeMisfit(){
         case ADAPTIVE:
             T xnorm,znorm; 
             T H,resx,resz;
+            T stdev;
+            stdev = 5.0*nt/100.0;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));
             autocorrx = (T *) calloc(nt, sizeof(T));
@@ -1776,14 +1788,11 @@ void FwiElastic2D<T>::computeMisfit(){
                     znorm += shaperz[it]*shaperz[it];
                 }
                 if (xnorm == 0.0 || znorm == 0.0)  rs_error("FwiElastic2D::computeMisfit: Norm is zero");
-                //if(xnorm == 0.0) xnorm = 1.0;
-                //if(znorm == 0.0) znorm = 1.0;
                 for(it=0; it<nt; it++){
-                    H = it;
-                    if(H > MAXH) H = MAXH;
+                    H = nt*this->gauss(it,stdev);
                     resx = H*shaperx[it];
                     resz = H*shaperz[it];
-                    misfit += 0.5*(resx*resx/xnorm + resz*resz/znorm);
+                    misfit -= 0.5*(resx*resx/xnorm + resz*resz/znorm);
                 }
             }
             free(shaperx);
@@ -1909,6 +1918,8 @@ void FwiElastic2D<T>::computeResiduals(){
         case ADAPTIVE:
             T xnorm,znorm; 
             T H;
+            T stdev;
+            stdev = 5.0*nt/100.0;
             T misfitx, misfitz;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));
@@ -1937,22 +1948,18 @@ void FwiElastic2D<T>::computeResiduals(){
                     znorm += shaperz[it]*shaperz[it];
                 }
                 if (xnorm == 0.0 || znorm == 0.0)  rs_error("FwiElastic2D::computeMisfit: Norm is zero");
-                //if(xnorm == 0.0) xnorm = 1.0;
-                //if(znorm == 0.0) znorm = 1.0;
                 misfitx = 0.0;
                 misfitz = 0.0;
                 for(it=0; it<nt; it++){
-                    H = it;
-                    if(H > MAXH) H = MAXH;
+                    H = nt*this->gauss(it, stdev);
                     misfitx += 0.5*(H*shaperx[it])*(H*shaperx[it])/xnorm;
                     misfitz += 0.5*(H*shaperz[it])*(H*shaperz[it])/znorm;
                 }
 
                 for(it=0; it<nt; it++){
-                    H = it;
-                    if(H > MAXH) H = MAXH;
-                    resx[I(it, itr)] = (H*H - 2.0*misfitx)*shaperx[it]/xnorm;
-                    resz[I(it, itr)] = (H*H - 2.0*misfitz)*shaperz[it]/znorm;
+                    H = nt*this->gauss(it, stdev);
+                    resx[I(it, itr)] = -1.0*(H*H - 2.0*misfitx)*shaperx[it]/xnorm;
+                    resz[I(it, itr)] = -1.0*(H*H - 2.0*misfitz)*shaperz[it]/znorm;
                 }
                 this->stoep(nt, autocorrx, &resx[I(0, itr)], shaperx, spikerx);
                 this->stoep(nt, autocorrz, &resz[I(0, itr)], shaperz, spikerz);
