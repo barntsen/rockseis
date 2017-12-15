@@ -24,6 +24,9 @@
 #define GMAP 1
 #define SMAP 0
 
+#define PNOISE	0.001
+#define MAXH 500
+
 #define ki2D(i,j) ((j)*nx +(i))
 #define km2D(i,j) ((j)*nx + (i))
 #define ks2D(i,j) ((j)*nxs + (i))
@@ -78,9 +81,10 @@ public:
     void writeProgress(int x, int n, int r, int w);
     void setNoreverse(bool val) { noreverse = val; }
     bool getNoreverse() { return noreverse; }
-
+    void stoep(int n, T r[], T g[], T f[], T a[]);
+    void convolve(int lx, int ifx, T *x, int ly, int ify, T *y, int lz, int ifz, T *z);
+    void xcor(int lx, int ifx, T *x,int ly, int ify, T *y, int lz, int ifz, T *z);
     ~Fwi();	///< Destructor
-
 
 private:
     int order;  ///< Order of the FD stencil 

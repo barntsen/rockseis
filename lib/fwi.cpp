@@ -139,6 +139,252 @@ void Fwi<T>::writeProgress(int x, int n, int r, int w){
 	}
 }
 
+template<typename T>
+void Fwi<T>::stoep (int n, T r[], T g[], T f[], T a[])
+	/*<Solve a symmetric Toeplitz linear system of equations Rf=g.>*/
+{
+	int i,j;
+	T v,e,c,w,bot;
+
+	if (r[0] == 0.0) return;
+
+	a[0] = 1.0;
+	v = r[0];
+	f[0] = g[0]/r[0];
+
+	for (j=1; j<n; j++) {
+
+		/* solve Ra=v as in Claerbout, FGDP, p. 57 */
+		a[j] = 0.0;
+		f[j] = 0.0;
+		for (i=0,e=0.0; i<j; i++)
+			e += a[i]*r[j-i];
+		c = e/v;
+		v -= c*e;
+		for (i=0; i<=j/2; i++) {
+			bot = a[j-i]-c*a[i];
+			a[i] -= c*a[j-i];
+			a[j-i] = bot;
+		}
+
+		/* use a and v above to get f[i], i = 0,1,2,...,j */
+		for (i=0,w=0.0; i<j; i++)
+			w += f[i]*r[j-i];
+		c = (w-g[j])/v;
+		for (i=0; i<=j; i++)
+			f[i] -= c*a[j-i];
+	}
+}
+
+template<typename T>
+void Fwi<T>::convolve(int lx, int ifx, T *x, int ly, int ify, T *y, int lz, int ifz, T *z)
+/*<Compute z = x convolved with y>*/
+{
+	int ilx=ifx+lx-1,ily=ify+ly-1,ilz=ifz+lz-1,
+		i,j,ilow,ihigh,jlow,jhigh;
+	T sa,sb,xa,xb,ya,yb,*t;
+
+	/* if x is longer than y, swap x and y */
+	if (lx>ly) {
+		i = ifx;  ifx = ify;  ify = i;
+		i = ilx;  ilx = ily;  ily = i;
+		i = lx;  lx = ly;  ly = i;
+		t = x;  x = y;  y = t;
+	}
+	
+	/* adjust pointers for indices of first samples */
+	x -= ifx;
+	y -= ify;
+	z -= ifz;
+		
+	/* OFF LEFT:  i < ify+ifx */
+	
+	/* zero output for all i */
+	ilow = ifz;
+	ihigh = ify+ifx-1;  if (ihigh>ilz) ihigh = ilz;
+	for (i=ilow; i<=ihigh; ++i)
+		z[i] = 0.0;
+
+	/* ROLLING ON:  ify+ifx <= i < ify+ilx */
+	
+	/* if necessary, do one i so that number of j in overlap is odd */
+	if (i<ify+ilx && i<=ilz) {
+		jlow = ifx;
+		jhigh = i-ify;
+		if ((jhigh-jlow)%2) {
+			sa = 0.0;
+			for (j=jlow; j<=jhigh; ++j)
+				sa += x[j]*y[i-j];
+			z[i++] = sa;
+		}
+	}
+	
+	/* loop over pairs of i and j */
+	ilow = i;
+	ihigh = ilx+ify-1;  if (ihigh>ilz) ihigh = ilz;
+	jlow = ifx;
+	jhigh = ilow-ify;
+	for (i=ilow; i<ihigh; i+=2,jhigh+=2) {
+		sa = sb = 0.0;
+		xb = x[jhigh+1];
+		yb = 0.0;
+		for (j=jhigh; j>=jlow; j-=2) {
+			sa += xb*yb;
+			ya = y[i-j];
+			sb += xb*ya;
+			xa = x[j];
+			sa += xa*ya;
+			yb = y[i+1-j];
+			sb += xa*yb;
+			xb = x[j-1];
+		}
+		z[i] = sa;
+		z[i+1] = sb;
+	}
+	
+	/* if number of i is odd */
+	if (i==ihigh) {
+		jlow = ifx;
+		jhigh = i-ify;
+		sa = 0.0;
+		for (j=jlow; j<=jhigh; ++j)
+			sa += x[j]*y[i-j];
+		z[i++] = sa;
+	}
+	
+	/* MIDDLE:  ify+ilx <= i <= ily+ifx */
+	
+	/* determine limits for i and j */
+	ilow = i;
+	ihigh = ily+ifx;  if (ihigh>ilz) ihigh = ilz;
+	jlow = ifx;
+	jhigh = ilx;
+	
+	/* if number of j is even, do j in pairs with no leftover */
+	if ((jhigh-jlow)%2) {
+		for (i=ilow; i<ihigh; i+=2) {
+			sa = sb = 0.0;
+			yb = y[i+1-jlow];
+			xa = x[jlow];
+			for (j=jlow; j<jhigh; j+=2) {
+				sb += xa*yb;
+				ya = y[i-j];
+				sa += xa*ya;
+				xb = x[j+1];
+				sb += xb*ya;
+				yb = y[i-1-j];
+				sa += xb*yb;
+				xa = x[j+2];
+			}
+			z[i] = sa;
+			z[i+1] = sb;
+		}
+	
+	/* else, number of j is odd, so do j in pairs with leftover */
+	} else {
+		for (i=ilow; i<ihigh; i+=2) {
+			sa = sb = 0.0;
+			yb = y[i+1-jlow];
+			xa = x[jlow];
+			for (j=jlow; j<jhigh; j+=2) {
+				sb += xa*yb;
+				ya = y[i-j];
+				sa += xa*ya;
+				xb = x[j+1];
+				sb += xb*ya;
+				yb = y[i-1-j];
+				sa += xb*yb;
+				xa = x[j+2];
+			}
+			z[i] = sa+x[jhigh]*y[i-jhigh];
+			z[i+1] = sb+x[jhigh]*y[i+1-jhigh];
+		}
+	}
+	
+	/* if number of i is odd */
+	if (i==ihigh) {
+		sa = 0.0;
+		for (j=jlow; j<=jhigh; ++j)
+			sa += x[j]*y[i-j];
+		z[i++] = sa;
+	}
+
+	/* ROLLING OFF:  ily+ifx < i <= ily+ilx */
+	
+	/* if necessary, do one i so that number of j in overlap is even */
+	if (i<=ily+ilx && i<=ilz) {
+		jlow = i-ily;
+		jhigh = ilx;
+		if (!((jhigh-jlow)%2)) {
+			sa = 0.0;
+			for (j=jlow; j<=jhigh; ++j)
+				sa += x[j]*y[i-j];
+			z[i++] = sa;
+		}
+	}
+	
+	/* number of j is now even, so loop over both i and j in pairs */
+	ilow = i;
+	ihigh = ily+ilx;  if (ihigh>ilz) ihigh = ilz;
+	jlow = ilow-ily;
+	jhigh = ilx-2; /* Dave's new patch */
+        for (i=ilow; i<ihigh; i+=2,jlow+=2) {
+                sa = sb = 0.0;
+                xa = x[jlow];
+                yb = 0.0;
+                for (j=jlow; j<jhigh; j+=2) {
+                        sb += xa*yb;
+                        ya = y[i-j];
+                        sa += xa*ya;
+                        xb = x[j+1];
+                        sb += xb*ya;
+                        yb = y[i-1-j];
+                        sa += xb*yb;
+                        xa = x[j+2];
+                }
+                sb += xa*yb;
+                ya = y[i-j];
+                sa += xa*ya;
+                xb = x[j+1];
+                sb += xb*ya;
+                yb = y[i-1-j];
+                sa += xb*yb;
+                z[i] = sa;
+                z[i+1] = sb;
+        }
+	
+	/* if number of i is odd */
+	if (i==ihigh) {
+		jlow = i-ily;
+		jhigh = ilx;
+		sa = 0.0;
+		for (j=jlow; j<=jhigh; ++j)
+			sa += x[j]*y[i-j];
+		z[i++] = sa;
+	}
+	
+	/* OFF RIGHT:  ily+ilx < i */
+	
+	/* zero output for all i */
+	ilow = i;
+	ihigh = ilz;
+	for (i=ilow; i<=ihigh; ++i)
+		z[i] = 0.0;
+}
+
+template<typename T>
+void Fwi<T>::xcor (int lx, int ifx, T *x,int ly, int ify, T *y, int lz, int ifz, T *z)
+	/*< Compute z = x cross-correlated with y>*/
+{
+	int i,j;
+	T *xr;
+
+	xr = (T *) calloc(lx, sizeof(T));
+	for (i=0,j=lx-1; i<lx; ++i,--j)
+		xr[i] = x[j];
+	convolve(lx,1-ifx-lx,xr,ly,ify,y,lz,ifz,z);
+	free(xr);
+}
 
 template<typename T>
 Fwi<T>::~Fwi() {
@@ -234,6 +480,11 @@ void FwiAcoustic2D<T>::computeMisfit(){
     size_t itr, it;
     T res = 0.0;
     T misfit = 0.0;
+    T *shaper;
+    T *spiker;
+    T *autocorr;
+    T *crosscorr;
+
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
         case DIFFERENCE:
@@ -275,6 +526,37 @@ void FwiAcoustic2D<T>::computeMisfit(){
             }
 
             break;
+        case ADAPTIVE:
+            T norm; 
+            T H,res;
+            shaper = (T *) calloc(nt, sizeof(T));
+            spiker = (T *) calloc(nt, sizeof(T));
+            autocorr = (T *) calloc(nt, sizeof(T));
+            crosscorr = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                this->xcor(nt, 0, &rec[I(0, itr)], nt, 0, &rec[I(0, itr)], nt, 0, autocorr);  /* for matrix */
+                this->xcor(nt, 0, &rec[I(0, itr)], nt, 0, &mod[I(0, itr)], nt, 0, crosscorr); /* right hand side */
+                if (autocorr[0] == 0.0)  rs_error("FwiAcoustic2D::computeMisfit: Can't shape with zero data");
+                autocorr[0] *= (1.0 + PNOISE);			/* whiten */
+                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
+
+                norm = 0.0; 
+                for(it=0; it<nt; it++){
+                    norm += shaper[it]*shaper[it];
+                }
+                if (norm == 0.0)  rs_error("FwiAcoustic2D::computeMisfit: Norm is zero");
+                for(it=0; it<nt; it++){
+                    H = it;
+                    if(H > MAXH) H = MAXH;
+                    res = H*shaper[it];
+                    misfit += 0.5*res*res/norm;
+                }
+            }
+            free(shaper);
+            free(spiker);
+            free(autocorr);
+            free(crosscorr);
+            break;
         default:
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
@@ -309,6 +591,12 @@ void FwiAcoustic2D<T>::computeResiduals(){
     {
         wei = dataweight->getData();
     }
+
+    T *shaper;
+    T *spiker;
+    T *autocorr;
+    T *crosscorr;
+
     size_t itr, it;
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
@@ -351,6 +639,44 @@ void FwiAcoustic2D<T>::computeResiduals(){
                 }
             }
 
+            break;
+        case ADAPTIVE:
+            T norm; 
+            T H;
+            T misfit;
+            shaper = (T *) calloc(nt, sizeof(T));
+            spiker = (T *) calloc(nt, sizeof(T));
+            autocorr = (T *) calloc(nt, sizeof(T));
+            crosscorr = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                this->xcor(nt, 0, &rec[I(0, itr)], nt, 0, &rec[I(0, itr)], nt, 0, autocorr);  /* for matrix */
+                this->xcor(nt, 0, &rec[I(0, itr)], nt, 0, &mod[I(0, itr)], nt, 0, crosscorr); /* right hand side */
+                if (autocorr[0] == 0.0)  rs_error("FwiAcoustic2D::computeResidual: Can't shape with zero data");
+                autocorr[0] *= (1.0 + PNOISE);			/* whiten */
+                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
+                norm = 0.0; 
+                for(it=0; it<nt; it++){
+                    norm += shaper[it]*shaper[it];
+                }
+                misfit = 0.0;
+                for(it=0; it<nt; it++){
+                    H = it;
+                    if(H > MAXH) H = MAXH;
+                    misfit += 0.5*(H*shaper[it])*(H*shaper[it])/norm;
+                }
+
+                for(it=0; it<nt; it++){
+                    H = it;
+                    if(H > MAXH) H = MAXH;
+                    res[I(it, itr)] = (H*H - 2.0*misfit)*shaper[it]/norm;
+                }
+                this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
+                this->convolve(nt, 0, shaper, nt, 0, &rec[I(0, itr)], nt, 0, &res[I(0, itr)]);        
+            }
+            free(shaper);
+            free(spiker);
+            free(autocorr);
+            free(crosscorr);
             break;
         default:
             for(itr=0; itr<ntr; itr++){
@@ -1355,6 +1681,12 @@ void FwiElastic2D<T>::computeMisfit(){
     {
         wei = dataweight->getData();
     }
+
+    T *shaperx, *shaperz;
+    T *spikerx, *spikerz;
+    T *autocorrx, *autocorrz;
+    T *crosscorrx, *crosscorrz;
+
     size_t itr, it;
     T misfit = 0.0;
     Index I(nt, ntr);
@@ -1413,6 +1745,56 @@ void FwiElastic2D<T>::computeMisfit(){
                 }
             }
             break;
+
+        case ADAPTIVE:
+            T xnorm,znorm; 
+            T H,resx,resz;
+            shaperx = (T *) calloc(nt, sizeof(T));
+            spikerx = (T *) calloc(nt, sizeof(T));
+            autocorrx = (T *) calloc(nt, sizeof(T));
+            crosscorrx = (T *) calloc(nt, sizeof(T));
+            shaperz = (T *) calloc(nt, sizeof(T));
+            spikerz = (T *) calloc(nt, sizeof(T));
+            autocorrz = (T *) calloc(nt, sizeof(T));
+            crosscorrz = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                this->xcor(nt, 0, &recx[I(0, itr)], nt, 0, &recx[I(0, itr)], nt, 0, autocorrx);  /* for matrix */
+                this->xcor(nt, 0, &recz[I(0, itr)], nt, 0, &recz[I(0, itr)], nt, 0, autocorrz);  /* for matrix */
+                this->xcor(nt, 0, &recx[I(0, itr)], nt, 0, &modx[I(0, itr)], nt, 0, crosscorrx); /* right hand side */
+                this->xcor(nt, 0, &recz[I(0, itr)], nt, 0, &modz[I(0, itr)], nt, 0, crosscorrz); /* right hand side */
+                if (autocorrx[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
+                if (autocorrz[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
+                autocorrx[0] *= (1.0 + PNOISE);			/* whiten */
+                autocorrz[0] *= (1.0 + PNOISE);			/* whiten */
+                this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+                this->stoep(nt, autocorrz, crosscorrz, shaperz, spikerz);
+
+                xnorm = 0.0; 
+                znorm = 0.0; 
+                for(it=0; it<nt; it++){
+                    xnorm += shaperx[it]*shaperx[it];
+                    znorm += shaperz[it]*shaperz[it];
+                }
+                if (xnorm == 0.0 || znorm == 0.0)  rs_error("FwiElastic2D::computeMisfit: Norm is zero");
+                //if(xnorm == 0.0) xnorm = 1.0;
+                //if(znorm == 0.0) znorm = 1.0;
+                for(it=0; it<nt; it++){
+                    H = it;
+                    if(H > MAXH) H = MAXH;
+                    resx = H*shaperx[it];
+                    resz = H*shaperz[it];
+                    misfit += 0.5*(resx*resx/xnorm + resz*resz/znorm);
+                }
+            }
+            free(shaperx);
+            free(spikerx);
+            free(autocorrx);
+            free(crosscorrx);
+            free(shaperz);
+            free(spikerz);
+            free(autocorrz);
+            free(crosscorrz);
+            break;
         default:
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
@@ -1459,6 +1841,11 @@ void FwiElastic2D<T>::computeResiduals(){
     {
         wei = dataweight->getData();
     }
+
+    T *shaperx, *shaperz;
+    T *spikerx, *spikerz;
+    T *autocorrx, *autocorrz;
+    T *crosscorrx, *crosscorrz;
     size_t itr, it;
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
@@ -1518,6 +1905,68 @@ void FwiElastic2D<T>::computeResiduals(){
                    }
                 }
             }
+            break;
+        case ADAPTIVE:
+            T xnorm,znorm; 
+            T H;
+            T misfitx, misfitz;
+            shaperx = (T *) calloc(nt, sizeof(T));
+            spikerx = (T *) calloc(nt, sizeof(T));
+            autocorrx = (T *) calloc(nt, sizeof(T));
+            crosscorrx = (T *) calloc(nt, sizeof(T));
+
+            shaperz = (T *) calloc(nt, sizeof(T));
+            spikerz = (T *) calloc(nt, sizeof(T));
+            autocorrz = (T *) calloc(nt, sizeof(T));
+            crosscorrz = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                this->xcor(nt, 0, &recx[I(0, itr)], nt, 0, &recx[I(0, itr)], nt, 0, autocorrx);  /* for matrix */
+                this->xcor(nt, 0, &recz[I(0, itr)], nt, 0, &recz[I(0, itr)], nt, 0, autocorrz);  /* for matrix */
+                this->xcor(nt, 0, &recx[I(0, itr)], nt, 0, &modx[I(0, itr)], nt, 0, crosscorrx); /* right hand side */
+                this->xcor(nt, 0, &recz[I(0, itr)], nt, 0, &modz[I(0, itr)], nt, 0, crosscorrz); /* right hand side */
+                if (autocorrx[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
+                if (autocorrz[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
+                autocorrx[0] *= (1.0 + PNOISE);			/* whiten */
+                autocorrz[0] *= (1.0 + PNOISE);			/* whiten */
+                this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+                this->stoep(nt, autocorrz, crosscorrz, shaperz, spikerz);
+                xnorm = 0.0; 
+                znorm = 0.0; 
+                for(it=0; it<nt; it++){
+                    xnorm += shaperx[it]*shaperx[it];
+                    znorm += shaperz[it]*shaperz[it];
+                }
+                if (xnorm == 0.0 || znorm == 0.0)  rs_error("FwiElastic2D::computeMisfit: Norm is zero");
+                //if(xnorm == 0.0) xnorm = 1.0;
+                //if(znorm == 0.0) znorm = 1.0;
+                misfitx = 0.0;
+                misfitz = 0.0;
+                for(it=0; it<nt; it++){
+                    H = it;
+                    if(H > MAXH) H = MAXH;
+                    misfitx += 0.5*(H*shaperx[it])*(H*shaperx[it])/xnorm;
+                    misfitz += 0.5*(H*shaperz[it])*(H*shaperz[it])/znorm;
+                }
+
+                for(it=0; it<nt; it++){
+                    H = it;
+                    if(H > MAXH) H = MAXH;
+                    resx[I(it, itr)] = (H*H - 2.0*misfitx)*shaperx[it]/xnorm;
+                    resz[I(it, itr)] = (H*H - 2.0*misfitz)*shaperz[it]/znorm;
+                }
+                this->stoep(nt, autocorrx, &resx[I(0, itr)], shaperx, spikerx);
+                this->stoep(nt, autocorrz, &resz[I(0, itr)], shaperz, spikerz);
+                this->convolve(nt, 0, shaperx, nt, 0, &recx[I(0, itr)], nt, 0, &resx[I(0, itr)]);        
+                this->convolve(nt, 0, shaperz, nt, 0, &recz[I(0, itr)], nt, 0, &resz[I(0, itr)]);        
+            }
+            free(shaperx);
+            free(spikerx);
+            free(autocorrx);
+            free(crosscorrx);
+            free(shaperz);
+            free(spikerz);
+            free(autocorrz);
+            free(crosscorrz);
             break;
         default:
             for(itr=0; itr<ntr; itr++){
