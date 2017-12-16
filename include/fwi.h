@@ -24,8 +24,8 @@
 #define GMAP 1
 #define SMAP 0
 
-#define PNOISE	0.0001
-#define MAXH 500
+#define PNOISE_ACOUSTIC 0.01
+#define PNOISE_ELASTIC 0.0001
 
 #define ki2D(i,j) ((j)*nx +(i))
 #define km2D(i,j) ((j)*nx + (i))
@@ -178,6 +178,7 @@ public:
     void setDataresP(std::shared_ptr<Data3D<T>> _dataresP) { dataresP = _dataresP; dataresPset = true; }
     void setDataresAz(std::shared_ptr<Data3D<T>> _dataresAz) { dataresAz = _dataresAz; dataresAzset = true; }
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wry, T* wrz, int padr, T *vp, T* rho);
+    void computeMisfit();
     void computeResiduals();
 
     ~FwiAcoustic3D();	///< Destructor
