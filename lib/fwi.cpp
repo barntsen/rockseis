@@ -396,6 +396,18 @@ T Fwi<T>::gauss (int it, T stdev)
 }
 
 template<typename T>
+T Fwi<T>::linear (int it, T stdev)
+{
+    if(stdev == 0.0) return 0;
+    
+    if(it < stdev){
+        return it;
+    }else{
+        return stdev;
+    }
+}
+
+template<typename T>
 Fwi<T>::~Fwi() {
     // Nothing here
 }
@@ -539,7 +551,7 @@ void FwiAcoustic2D<T>::computeMisfit(){
             T norm; 
             T H,res;
             T stdev;
-            stdev = 5.0*nt/100.0;
+            stdev = STDEV*nt;
             shaper = (T *) calloc(nt, sizeof(T));
             spiker = (T *) calloc(nt, sizeof(T));
             autocorr = (T *) calloc(nt, sizeof(T));
@@ -654,7 +666,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
             T norm; 
             T H;
             T stdev;
-            stdev = 5.0*nt/100.0;
+            stdev = STDEV*nt;
             T misfit;
             shaper = (T *) calloc(nt, sizeof(T));
             spiker = (T *) calloc(nt, sizeof(T));
@@ -1127,7 +1139,7 @@ void FwiAcoustic3D<T>::computeMisfit(){
             T norm; 
             T H,res;
             T stdev;
-            stdev = 5.0*nt/100.0;
+            stdev = STDEV*nt;
             shaper = (T *) calloc(nt, sizeof(T));
             spiker = (T *) calloc(nt, sizeof(T));
             autocorr = (T *) calloc(nt, sizeof(T));
@@ -1242,7 +1254,7 @@ void FwiAcoustic3D<T>::computeResiduals(){
             T norm; 
             T H;
             T stdev;
-            stdev = 5.0*nt/100.0;
+            stdev = STDEV*nt;
             T misfit;
             shaper = (T *) calloc(nt, sizeof(T));
             spiker = (T *) calloc(nt, sizeof(T));
@@ -1921,7 +1933,7 @@ void FwiElastic2D<T>::computeMisfit(){
             T xnorm,znorm; 
             T H,resx,resz;
             T stdev;
-            stdev = 5.0*nt/100.0;
+            stdev = STDEV*nt;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));
             autocorrx = (T *) calloc(nt, sizeof(T));
@@ -2080,7 +2092,7 @@ void FwiElastic2D<T>::computeResiduals(){
             T xnorm,znorm; 
             T H;
             T stdev;
-            stdev = 5.0*nt/100.0;
+            stdev = STDEV*nt;
             T misfitx, misfitz;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));
@@ -2904,7 +2916,7 @@ void FwiElastic3D<T>::computeMisfit(){
             T xnorm,ynorm,znorm; 
             T H,resx,resy,resz;
             T stdev;
-            stdev = 5.0*nt/100.0;
+            stdev = STDEV*nt;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));
             autocorrx = (T *) calloc(nt, sizeof(T));
@@ -3111,7 +3123,7 @@ void FwiElastic3D<T>::computeResiduals(){
             T xnorm,ynorm,znorm; 
             T H;
             T stdev;
-            stdev = 5.0*nt/100.0;
+            stdev = STDEV*nt;
             T misfitx, misfity, misfitz;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));

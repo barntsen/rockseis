@@ -26,6 +26,7 @@
 
 #define PNOISE_ACOUSTIC 0.01
 #define PNOISE_ELASTIC 0.0001
+#define STDEV 0.05
 
 #define ki2D(i,j) ((j)*nx +(i))
 #define km2D(i,j) ((j)*nx + (i))
@@ -86,6 +87,7 @@ public:
     void convolve(int lx, int ifx, T *x, int ly, int ify, T *y, int lz, int ifz, T *z);
     void xcor(int lx, int ifx, T *x,int ly, int ify, T *y, int lz, int ifz, T *z);
     T gauss(int it, T stdev);
+    T linear(int it, T stdev);
 
 private:
     int order;  ///< Order of the FD stencil 
