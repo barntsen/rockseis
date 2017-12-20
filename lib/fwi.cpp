@@ -506,6 +506,9 @@ void FwiAcoustic2D<T>::computeMisfit(){
     T *autocorr;
     T *crosscorr;
     T *modwei, *recwei;
+    T norm; 
+    T H;
+    T stdev;
 
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
@@ -548,10 +551,7 @@ void FwiAcoustic2D<T>::computeMisfit(){
             }
 
             break;
-        case ADAPTIVE:
-            T norm; 
-            T H,res;
-            T stdev;
+        case ADAPTIVE_GAUSS:
             stdev = STDEV*nt;
             modwei = (T *) calloc(nt, sizeof(T));
             recwei = (T *) calloc(nt, sizeof(T));
@@ -585,6 +585,49 @@ void FwiAcoustic2D<T>::computeMisfit(){
                     H = this->gauss(it,stdev);
                     res = H*shaper[it];
                     misfit -= 0.5*res*res/norm;
+                }
+            }
+            free(modwei);
+            free(recwei);
+            free(shaper);
+            free(spiker);
+            free(autocorr);
+            free(crosscorr);
+            break;
+        case ADAPTIVE_LINEAR:
+            stdev = HMAX;
+            modwei = (T *) calloc(nt, sizeof(T));
+            recwei = (T *) calloc(nt, sizeof(T));
+            shaper = (T *) calloc(nt, sizeof(T));
+            spiker = (T *) calloc(nt, sizeof(T));
+            autocorr = (T *) calloc(nt, sizeof(T));
+            crosscorr = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
+                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modwei[it] = mod[I(it, itr)];
+                        recwei[it] = rec[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
+                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
+                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
+                autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
+                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
+
+                norm = 0.0; 
+                for(it=0; it<nt; it++){
+                    norm += shaper[it]*shaper[it];
+                }
+                if (norm == 0.0) norm = 1.0;
+                for(it=0; it<nt; it++){
+                    H = this->linear(it,stdev);
+                    res = H*shaper[it];
+                    misfit += 0.5*res*res/norm;
                 }
             }
             free(modwei);
@@ -634,6 +677,10 @@ void FwiAcoustic2D<T>::computeResiduals(){
     T *autocorr;
     T *crosscorr;
     T *modwei, *recwei;
+    T norm; 
+    T misfit;
+    T H;
+    T stdev;
 
     size_t itr, it;
     Index I(nt, ntr);
@@ -678,12 +725,8 @@ void FwiAcoustic2D<T>::computeResiduals(){
             }
 
             break;
-        case ADAPTIVE:
-            T norm; 
-            T H;
-            T stdev;
+        case ADAPTIVE_GAUSS:
             stdev = STDEV*nt;
-            T misfit;
             modwei = (T *) calloc(nt, sizeof(T));
             recwei = (T *) calloc(nt, sizeof(T));
             shaper = (T *) calloc(nt, sizeof(T));
@@ -723,6 +766,64 @@ void FwiAcoustic2D<T>::computeResiduals(){
                 for(it=0; it<nt; it++){
                     H = this->gauss(it, stdev);
                     res[I(it, itr)] = -1.0*(H*H - 2.0*misfit)*shaper[it]/norm;
+                }
+                this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
+                this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
+                if(dataweightset){
+                    for (it=0; it < nt; it++)
+                    {
+                        res[I(it,itr)] *= wei[I(it,itr)];
+                    }
+                }
+            }
+            free(modwei);
+            free(recwei);
+            free(shaper);
+            free(spiker);
+            free(autocorr);
+            free(crosscorr);
+            break;
+        case ADAPTIVE_LINEAR:
+            stdev = HMAX;
+            modwei = (T *) calloc(nt, sizeof(T));
+            recwei = (T *) calloc(nt, sizeof(T));
+            shaper = (T *) calloc(nt, sizeof(T));
+            spiker = (T *) calloc(nt, sizeof(T));
+            autocorr = (T *) calloc(nt, sizeof(T));
+            crosscorr = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
+                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modwei[it] = mod[I(it, itr)];
+                        recwei[it] = rec[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
+                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
+                // If zero trace we need to add something to avoid division by zero
+                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
+                autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
+                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
+                norm = 0.0; 
+                for(it=0; it<nt; it++){
+                    norm += shaper[it]*shaper[it];
+                }
+                
+                // Ensure norm different than 0.0
+                if (norm == 0.0) norm = 1.0;
+                misfit = 0.0;
+                for(it=0; it<nt; it++){
+                    H = this->linear(it, stdev);
+                    misfit += 0.5*(H*shaper[it])*(H*shaper[it])/norm;
+                }
+
+                for(it=0; it<nt; it++){
+                    H = this->linear(it, stdev);
+                    res[I(it, itr)] = (H*H - 2.0*misfit)*shaper[it]/norm;
                 }
                 this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
                 this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
@@ -1133,6 +1234,10 @@ void FwiAcoustic3D<T>::computeMisfit(){
     T *spiker;
     T *autocorr;
     T *crosscorr;
+    T *modwei, *recwei;
+    T norm; 
+    T H;
+    T stdev;
 
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
@@ -1175,19 +1280,28 @@ void FwiAcoustic3D<T>::computeMisfit(){
             }
 
             break;
-        case ADAPTIVE:
-            T norm; 
-            T H,res;
-            T stdev;
+        case ADAPTIVE_GAUSS:
             stdev = STDEV*nt;
+            modwei = (T *) calloc(nt, sizeof(T));
+            recwei = (T *) calloc(nt, sizeof(T));
             shaper = (T *) calloc(nt, sizeof(T));
             spiker = (T *) calloc(nt, sizeof(T));
             autocorr = (T *) calloc(nt, sizeof(T));
             crosscorr = (T *) calloc(nt, sizeof(T));
             for(itr=0; itr<ntr; itr++){
-                this->xcor(nt, 0, &rec[I(0, itr)], nt, 0, &rec[I(0, itr)], nt, 0, autocorr);  /* for matrix */
-                this->xcor(nt, 0, &rec[I(0, itr)], nt, 0, &mod[I(0, itr)], nt, 0, crosscorr); /* right hand side */
-                if (autocorr[0] == 0.0)  rs_error("FwiAcoustic3D::computeMisfit: Can't shape with zero data");
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
+                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modwei[it] = mod[I(it, itr)];
+                        recwei[it] = rec[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
+                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
+                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
                 autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
                 this->stoep(nt, autocorr, crosscorr, shaper, spiker);
 
@@ -1195,13 +1309,58 @@ void FwiAcoustic3D<T>::computeMisfit(){
                 for(it=0; it<nt; it++){
                     norm += shaper[it]*shaper[it];
                 }
-                if (norm == 0.0)  rs_error("FwiAcoustic3D::computeMisfit: Norm is zero");
+                if (norm == 0.0) norm = 1.0;
                 for(it=0; it<nt; it++){
                     H = this->gauss(it,stdev);
                     res = H*shaper[it];
                     misfit -= 0.5*res*res/norm;
                 }
             }
+            free(modwei);
+            free(recwei);
+            free(shaper);
+            free(spiker);
+            free(autocorr);
+            free(crosscorr);
+            break;
+        case ADAPTIVE_LINEAR:
+            stdev = HMAX;
+            modwei = (T *) calloc(nt, sizeof(T));
+            recwei = (T *) calloc(nt, sizeof(T));
+            shaper = (T *) calloc(nt, sizeof(T));
+            spiker = (T *) calloc(nt, sizeof(T));
+            autocorr = (T *) calloc(nt, sizeof(T));
+            crosscorr = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
+                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modwei[it] = mod[I(it, itr)];
+                        recwei[it] = rec[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
+                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
+                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
+                autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
+                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
+
+                norm = 0.0; 
+                for(it=0; it<nt; it++){
+                    norm += shaper[it]*shaper[it];
+                }
+                if (norm == 0.0) norm = 1.0;
+                for(it=0; it<nt; it++){
+                    H = this->linear(it,stdev);
+                    res = H*shaper[it];
+                    misfit += 0.5*res*res/norm;
+                }
+            }
+            free(modwei);
+            free(recwei);
             free(shaper);
             free(spiker);
             free(autocorr);
@@ -1210,9 +1369,9 @@ void FwiAcoustic3D<T>::computeMisfit(){
         default:
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
-                   res = mod[I(it, itr)] - rec[I(it, itr)];
-                   if(dataweightset)
-                   {
+                    res = mod[I(it, itr)] - rec[I(it, itr)];
+                    if(dataweightset)
+                    {
                        res *= wei[I(it, itr)];
                    }
                    misfit += 0.5*res*res;
@@ -1246,6 +1405,11 @@ void FwiAcoustic3D<T>::computeResiduals(){
     T *spiker;
     T *autocorr;
     T *crosscorr;
+    T *modwei, *recwei;
+    T norm; 
+    T misfit;
+    T H;
+    T stdev;
 
     size_t itr, it;
     Index I(nt, ntr);
@@ -1290,26 +1454,38 @@ void FwiAcoustic3D<T>::computeResiduals(){
             }
 
             break;
-        case ADAPTIVE:
-            T norm; 
-            T H;
-            T stdev;
+        case ADAPTIVE_GAUSS:
             stdev = STDEV*nt;
-            T misfit;
+            modwei = (T *) calloc(nt, sizeof(T));
+            recwei = (T *) calloc(nt, sizeof(T));
             shaper = (T *) calloc(nt, sizeof(T));
             spiker = (T *) calloc(nt, sizeof(T));
             autocorr = (T *) calloc(nt, sizeof(T));
             crosscorr = (T *) calloc(nt, sizeof(T));
             for(itr=0; itr<ntr; itr++){
-                this->xcor(nt, 0, &rec[I(0, itr)], nt, 0, &rec[I(0, itr)], nt, 0, autocorr);  /* for matrix */
-                this->xcor(nt, 0, &rec[I(0, itr)], nt, 0, &mod[I(0, itr)], nt, 0, crosscorr); /* right hand side */
-                if (autocorr[0] == 0.0)  rs_error("FwiAcoustic3D::computeResidual: Can't shape with zero data");
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
+                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modwei[it] = mod[I(it, itr)];
+                        recwei[it] = rec[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
+                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
+                // If zero trace we need to add something to avoid division by zero
+                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
                 autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
                 this->stoep(nt, autocorr, crosscorr, shaper, spiker);
                 norm = 0.0; 
                 for(it=0; it<nt; it++){
                     norm += shaper[it]*shaper[it];
                 }
+                
+                // Ensure norm different than 0.0
+                if (norm == 0.0) norm = 1.0;
                 misfit = 0.0;
                 for(it=0; it<nt; it++){
                     H = this->gauss(it, stdev);
@@ -1321,8 +1497,74 @@ void FwiAcoustic3D<T>::computeResiduals(){
                     res[I(it, itr)] = -1.0*(H*H - 2.0*misfit)*shaper[it]/norm;
                 }
                 this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
-                this->convolve(nt, 0, shaper, nt, 0, &rec[I(0, itr)], nt, 0, &res[I(0, itr)]);        
+                this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
+                if(dataweightset){
+                    for (it=0; it < nt; it++)
+                    {
+                        res[I(it,itr)] *= wei[I(it,itr)];
+                    }
+                }
             }
+            free(modwei);
+            free(recwei);
+            free(shaper);
+            free(spiker);
+            free(autocorr);
+            free(crosscorr);
+            break;
+        case ADAPTIVE_LINEAR:
+            stdev = HMAX;
+            modwei = (T *) calloc(nt, sizeof(T));
+            recwei = (T *) calloc(nt, sizeof(T));
+            shaper = (T *) calloc(nt, sizeof(T));
+            spiker = (T *) calloc(nt, sizeof(T));
+            autocorr = (T *) calloc(nt, sizeof(T));
+            crosscorr = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
+                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modwei[it] = mod[I(it, itr)];
+                        recwei[it] = rec[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
+                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
+                // If zero trace we need to add something to avoid division by zero
+                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
+                autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
+                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
+                norm = 0.0; 
+                for(it=0; it<nt; it++){
+                    norm += shaper[it]*shaper[it];
+                }
+                
+                // Ensure norm different than 0.0
+                if (norm == 0.0) norm = 1.0;
+                misfit = 0.0;
+                for(it=0; it<nt; it++){
+                    H = this->linear(it, stdev);
+                    misfit += 0.5*(H*shaper[it])*(H*shaper[it])/norm;
+                }
+
+                for(it=0; it<nt; it++){
+                    H = this->linear(it, stdev);
+                    res[I(it, itr)] = (H*H - 2.0*misfit)*shaper[it]/norm;
+                }
+                this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
+                this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
+                if(dataweightset){
+                    for (it=0; it < nt; it++)
+                    {
+                        res[I(it,itr)] *= wei[I(it,itr)];
+                    }
+                }
+            }
+            free(modwei);
+            free(recwei);
             free(shaper);
             free(spiker);
             free(autocorr);
@@ -1912,6 +2154,9 @@ void FwiElastic2D<T>::computeMisfit(){
     T *crosscorrx, *crosscorrz;
     T *modweix, *modweiz;
     T *recweix, *recweiz;
+    T xnorm,znorm; 
+    T H;
+    T stdev;
 
     size_t itr, it;
     T misfit = 0.0;
@@ -1971,10 +2216,7 @@ void FwiElastic2D<T>::computeMisfit(){
                 }
             }
             break;
-        case ADAPTIVE:
-            T xnorm,znorm; 
-            T H,resx,resz;
-            T stdev;
+        case ADAPTIVE_GAUSS:
             stdev = STDEV*nt;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));
@@ -2027,6 +2269,74 @@ void FwiElastic2D<T>::computeMisfit(){
                     resx = H*shaperx[it];
                     resz = H*shaperz[it];
                     misfit -= 0.5*(resx*resx/xnorm + resz*resz/znorm);
+                }
+            }
+            free(modweix);
+            free(modweiz);
+            free(recweix);
+            free(recweiz);
+            free(shaperx);
+            free(spikerx);
+            free(autocorrx);
+            free(crosscorrx);
+            free(shaperz);
+            free(spikerz);
+            free(autocorrz);
+            free(crosscorrz);
+            break;
+        case ADAPTIVE_LINEAR:
+            stdev = HMAX;
+            shaperx = (T *) calloc(nt, sizeof(T));
+            spikerx = (T *) calloc(nt, sizeof(T));
+            autocorrx = (T *) calloc(nt, sizeof(T));
+            crosscorrx = (T *) calloc(nt, sizeof(T));
+            shaperz = (T *) calloc(nt, sizeof(T));
+            spikerz = (T *) calloc(nt, sizeof(T));
+            autocorrz = (T *) calloc(nt, sizeof(T));
+            crosscorrz = (T *) calloc(nt, sizeof(T));
+            modweix = (T *) calloc(nt, sizeof(T));
+            recweix = (T *) calloc(nt, sizeof(T));
+            modweiz = (T *) calloc(nt, sizeof(T));
+            recweiz = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
+                        recweix[it] = recx[I(it, itr)]*wei[I(it,itr)];
+                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modweix[it] = modx[I(it, itr)];
+                        recweix[it] = recx[I(it, itr)];
+                        modweiz[it] = modz[I(it, itr)];
+                        recweiz[it] = recz[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recweix, nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+                this->xcor(nt, 0, recweiz, nt, 0, recweiz, nt, 0, autocorrz);  /* for matrix */
+                this->xcor(nt, 0, recweix, nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+                this->xcor(nt, 0, recweiz, nt, 0, modweiz, nt, 0, crosscorrz); /* right hand side */
+                if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+                if (autocorrz[0] == 0.0)  autocorrz[0] = 1.0;
+                autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+                autocorrz[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+                this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+                this->stoep(nt, autocorrz, crosscorrz, shaperz, spikerz);
+
+                xnorm = 0.0; 
+                znorm = 0.0; 
+                for(it=0; it<nt; it++){
+                    xnorm += shaperx[it]*shaperx[it];
+                    znorm += shaperz[it]*shaperz[it];
+                }
+                if (xnorm == 0.0) xnorm = 1.0;
+                if (znorm == 0.0) znorm = 1.0;
+                for(it=0; it<nt; it++){
+                    H = this->linear(it,stdev);
+                    resx = H*shaperx[it];
+                    resz = H*shaperz[it];
+                    misfit += 0.5*(resx*resx/xnorm + resz*resz/znorm);
                 }
             }
             free(modweix);
@@ -2095,6 +2405,10 @@ void FwiElastic2D<T>::computeResiduals(){
     T *crosscorrx, *crosscorrz;
     T *modweix, *modweiz;
     T *recweix, *recweiz;
+    T xnorm,znorm; 
+    T misfitx, misfitz;
+    T H;
+    T stdev;
     size_t itr, it;
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
@@ -2155,12 +2469,8 @@ void FwiElastic2D<T>::computeResiduals(){
                 }
             }
             break;
-        case ADAPTIVE:
-            T xnorm,znorm; 
-            T H;
-            T stdev;
+        case ADAPTIVE_GAUSS:
             stdev = STDEV*nt;
-            T misfitx, misfitz;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));
             autocorrx = (T *) calloc(nt, sizeof(T));
@@ -2218,6 +2528,91 @@ void FwiElastic2D<T>::computeResiduals(){
                     H = this->gauss(it, stdev);
                     resx[I(it, itr)] = -1.0*(H*H - 2.0*misfitx)*shaperx[it]/xnorm;
                     resz[I(it, itr)] = -1.0*(H*H - 2.0*misfitz)*shaperz[it]/znorm;
+                }
+                this->stoep(nt, autocorrx, &resx[I(0, itr)], shaperx, spikerx);
+                this->stoep(nt, autocorrz, &resz[I(0, itr)], shaperz, spikerz);
+                this->convolve(nt, 0, shaperx, nt, 0, recweix, nt, 0, &resx[I(0, itr)]);        
+                this->convolve(nt, 0, shaperz, nt, 0, recweiz, nt, 0, &resz[I(0, itr)]);        
+                if(dataweightset){
+                    for(it=0; it<nt; it++)
+                    {
+                        resx[I(it, itr)] *= wei[I(it, itr)];
+                        resz[I(it, itr)] *= wei[I(it, itr)];
+                    }
+                }
+            }
+            free(modweix);
+            free(modweiz);
+            free(recweix);
+            free(recweiz);
+            free(shaperx);
+            free(spikerx);
+            free(autocorrx);
+            free(crosscorrx);
+            free(shaperz);
+            free(spikerz);
+            free(autocorrz);
+            free(crosscorrz);
+            break;
+        case ADAPTIVE_LINEAR:
+            stdev = HMAX;
+            shaperx = (T *) calloc(nt, sizeof(T));
+            spikerx = (T *) calloc(nt, sizeof(T));
+            autocorrx = (T *) calloc(nt, sizeof(T));
+            crosscorrx = (T *) calloc(nt, sizeof(T));
+            shaperz = (T *) calloc(nt, sizeof(T));
+            spikerz = (T *) calloc(nt, sizeof(T));
+            autocorrz = (T *) calloc(nt, sizeof(T));
+            crosscorrz = (T *) calloc(nt, sizeof(T));
+            modweix = (T *) calloc(nt, sizeof(T));
+            recweix = (T *) calloc(nt, sizeof(T));
+            modweiz = (T *) calloc(nt, sizeof(T));
+            recweiz = (T *) calloc(nt, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
+                        recweix[it] = recx[I(it, itr)]*wei[I(it,itr)];
+                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modweix[it] = modx[I(it, itr)];
+                        recweix[it] = recx[I(it, itr)];
+                        modweiz[it] = modz[I(it, itr)];
+                        recweiz[it] = recz[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recweix, nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+                this->xcor(nt, 0, recweiz, nt, 0, recweiz, nt, 0, autocorrz);  /* for matrix */
+                this->xcor(nt, 0, recweix, nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+                this->xcor(nt, 0, recweiz, nt, 0, modweiz, nt, 0, crosscorrz); /* right hand side */
+                if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+                if (autocorrz[0] == 0.0)  autocorrz[0] = 1.0;
+                autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+                autocorrz[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+                this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+                this->stoep(nt, autocorrz, crosscorrz, shaperz, spikerz);
+                xnorm = 0.0; 
+                znorm = 0.0; 
+                for(it=0; it<nt; it++){
+                    xnorm += shaperx[it]*shaperx[it];
+                    znorm += shaperz[it]*shaperz[it];
+                }
+                if (xnorm == 0.0) xnorm = 1.0;
+                if (znorm == 0.0) znorm = 1.0;
+                misfitx = 0.0;
+                misfitz = 0.0;
+                for(it=0; it<nt; it++){
+                    H = this->linear(it, stdev);
+                    misfitx += 0.5*(H*shaperx[it])*(H*shaperx[it])/xnorm;
+                    misfitz += 0.5*(H*shaperz[it])*(H*shaperz[it])/znorm;
+                }
+
+                for(it=0; it<nt; it++){
+                    H = this->linear(it, stdev);
+                    resx[I(it, itr)] = (H*H - 2.0*misfitx)*shaperx[it]/xnorm;
+                    resz[I(it, itr)] = (H*H - 2.0*misfitz)*shaperz[it]/znorm;
                 }
                 this->stoep(nt, autocorrx, &resx[I(0, itr)], shaperx, spikerx);
                 this->stoep(nt, autocorrz, &resz[I(0, itr)], shaperz, spikerz);
@@ -2934,6 +3329,12 @@ void FwiElastic3D<T>::computeMisfit(){
     T *spikerx,*spikery,*spikerz;
     T *autocorrx,*autocorry,*autocorrz;
     T *crosscorrx,*crosscorry,*crosscorrz;
+    T *modweix, *modweiy, *modweiz;
+    T *recweix, *recweiy, *recweiz;
+    T xnorm, ynorm, znorm; 
+    T H;
+    T stdev;
+
     size_t itr, it;
     T misfit = 0.0;
     Index I(nt, ntr);
@@ -3008,10 +3409,7 @@ void FwiElastic3D<T>::computeMisfit(){
                 }
             }
             break;
-        case ADAPTIVE:
-            T xnorm,ynorm,znorm; 
-            T H,resx,resy,resz;
-            T stdev;
+        case ADAPTIVE_GAUSS:
             stdev = STDEV*nt;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));
@@ -3025,16 +3423,40 @@ void FwiElastic3D<T>::computeMisfit(){
             spikerz = (T *) calloc(nt, sizeof(T));
             autocorrz = (T *) calloc(nt, sizeof(T));
             crosscorrz = (T *) calloc(nt, sizeof(T));
+            modweix = (T *) calloc(nt, sizeof(T));
+            recweix = (T *) calloc(nt, sizeof(T));
+            modweiy = (T *) calloc(nt, sizeof(T));
+            recweiy = (T *) calloc(nt, sizeof(T));
+            modweiz = (T *) calloc(nt, sizeof(T));
+            recweiz = (T *) calloc(nt, sizeof(T));
             for(itr=0; itr<ntr; itr++){
-                this->xcor(nt, 0, &recx[I(0, itr)], nt, 0, &recx[I(0, itr)], nt, 0, autocorrx);  /* for matrix */
-                this->xcor(nt, 0, &recy[I(0, itr)], nt, 0, &recy[I(0, itr)], nt, 0, autocorry);  /* for matrix */
-                this->xcor(nt, 0, &recz[I(0, itr)], nt, 0, &recz[I(0, itr)], nt, 0, autocorrz);  /* for matrix */
-                this->xcor(nt, 0, &recx[I(0, itr)], nt, 0, &modx[I(0, itr)], nt, 0, crosscorrx); /* right hand side */
-                this->xcor(nt, 0, &recy[I(0, itr)], nt, 0, &mody[I(0, itr)], nt, 0, crosscorry); /* right hand side */
-                this->xcor(nt, 0, &recz[I(0, itr)], nt, 0, &modz[I(0, itr)], nt, 0, crosscorrz); /* right hand side */
-                if (autocorrx[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
-                if (autocorry[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
-                if (autocorrz[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
+                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
+                        recweiy[it] = recy[I(it, itr)]*wei[I(it,itr)];
+                        recweiy[it] = recy[I(it, itr)]*wei[I(it,itr)];
+                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modweix[it] = modx[I(it, itr)];
+                        recweix[it] = recx[I(it, itr)];
+                        modweiy[it] = mody[I(it, itr)];
+                        recweiy[it] = recy[I(it, itr)];
+                        modweiz[it] = modz[I(it, itr)];
+                        recweiz[it] = recz[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recweix, nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+                this->xcor(nt, 0, recweiy, nt, 0, recweiy, nt, 0, autocorry);  /* for matrix */
+                this->xcor(nt, 0, recweiz, nt, 0, recweiz, nt, 0, autocorrz);  /* for matrix */
+                this->xcor(nt, 0, recweix, nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+                this->xcor(nt, 0, recweiy, nt, 0, modweiy, nt, 0, crosscorry); /* right hand side */
+                this->xcor(nt, 0, recweiz, nt, 0, modweiz, nt, 0, crosscorrz); /* right hand side */
+                if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+                if (autocorry[0] == 0.0)  autocorry[0] = 1.0;
+                if (autocorrz[0] == 0.0)  autocorrz[0] = 1.0;
                 autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
                 autocorry[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
                 autocorrz[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
@@ -3050,15 +3472,23 @@ void FwiElastic3D<T>::computeMisfit(){
                     ynorm += shapery[it]*shapery[it];
                     znorm += shaperz[it]*shaperz[it];
                 }
-                if (xnorm == 0.0 || ynorm == 0.0 || znorm == 0.0)  rs_error("FwiElastic2D::computeMisfit: Norm is zero");
+                if (xnorm == 0.0) xnorm = 1.0;
+                if (ynorm == 0.0) ynorm = 1.0;
+                if (znorm == 0.0) znorm = 1.0;
                 for(it=0; it<nt; it++){
                     H = this->gauss(it,stdev);
                     resx = H*shaperx[it];
                     resy = H*shapery[it];
                     resz = H*shaperz[it];
-                    misfit -= 0.5*(resx*resx/xnorm + resy*resy/ynorm + resz*resz/znorm);
+                    misfit += 0.5*(resx*resx/xnorm + resy*resy/ynorm + resz*resz/znorm);
                 }
             }
+            free(modweix);
+            free(modweiy);
+            free(modweiz);
+            free(recweix);
+            free(recweiy);
+            free(recweiz);
             free(shaperx);
             free(spikerx);
             free(autocorrx);
@@ -3072,7 +3502,6 @@ void FwiElastic3D<T>::computeMisfit(){
             free(autocorrz);
             free(crosscorrz);
             break;
-
         default:
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
@@ -3136,6 +3565,12 @@ void FwiElastic3D<T>::computeResiduals(){
     T *spikerx,*spikery,*spikerz;
     T *autocorrx,*autocorry,*autocorrz;
     T *crosscorrx,*crosscorry,*crosscorrz;
+    T *modweix, *modweiy, *modweiz;
+    T *recweix, *recweiy, *recweiz;
+    T xnorm, ynorm, znorm; 
+    T misfitx, misfity, misfitz;
+    T H;
+    T stdev;
     size_t itr, it;
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
@@ -3215,12 +3650,8 @@ void FwiElastic3D<T>::computeResiduals(){
                 }
             }
             break;
-        case ADAPTIVE:
-            T xnorm,ynorm,znorm; 
-            T H;
-            T stdev;
+        case ADAPTIVE_GAUSS:
             stdev = STDEV*nt;
-            T misfitx, misfity, misfitz;
             shaperx = (T *) calloc(nt, sizeof(T));
             spikerx = (T *) calloc(nt, sizeof(T));
             autocorrx = (T *) calloc(nt, sizeof(T));
@@ -3233,16 +3664,40 @@ void FwiElastic3D<T>::computeResiduals(){
             spikerz = (T *) calloc(nt, sizeof(T));
             autocorrz = (T *) calloc(nt, sizeof(T));
             crosscorrz = (T *) calloc(nt, sizeof(T));
+            modweix = (T *) calloc(nt, sizeof(T));
+            recweix = (T *) calloc(nt, sizeof(T));
+            modweiy = (T *) calloc(nt, sizeof(T));
+            recweiy = (T *) calloc(nt, sizeof(T));
+            modweiz = (T *) calloc(nt, sizeof(T));
+            recweiz = (T *) calloc(nt, sizeof(T));
             for(itr=0; itr<ntr; itr++){
-                this->xcor(nt, 0, &recx[I(0, itr)], nt, 0, &recx[I(0, itr)], nt, 0, autocorrx);  /* for matrix */
-                this->xcor(nt, 0, &recy[I(0, itr)], nt, 0, &recy[I(0, itr)], nt, 0, autocorry);  /* for matrix */
-                this->xcor(nt, 0, &recz[I(0, itr)], nt, 0, &recz[I(0, itr)], nt, 0, autocorrz);  /* for matrix */
-                this->xcor(nt, 0, &recx[I(0, itr)], nt, 0, &modx[I(0, itr)], nt, 0, crosscorrx); /* right hand side */
-                this->xcor(nt, 0, &recy[I(0, itr)], nt, 0, &mody[I(0, itr)], nt, 0, crosscorry); /* right hand side */
-                this->xcor(nt, 0, &recz[I(0, itr)], nt, 0, &modz[I(0, itr)], nt, 0, crosscorrz); /* right hand side */
-                if (autocorrx[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
-                if (autocorry[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
-                if (autocorrz[0] == 0.0)  rs_error("FwiElastic2D::computeMisfit: Can't shape with zero data");
+                for (it=0; it < nt; it++)
+                {
+                    if(dataweightset){
+                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
+                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
+                        recweiy[it] = recy[I(it, itr)]*wei[I(it,itr)];
+                        recweiy[it] = recy[I(it, itr)]*wei[I(it,itr)];
+                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    }else{
+                        modweix[it] = modx[I(it, itr)];
+                        recweix[it] = recx[I(it, itr)];
+                        modweiy[it] = mody[I(it, itr)];
+                        recweiy[it] = recy[I(it, itr)];
+                        modweiz[it] = modz[I(it, itr)];
+                        recweiz[it] = recz[I(it, itr)];
+                    }
+                }
+                this->xcor(nt, 0, recweix, nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+                this->xcor(nt, 0, recweiy, nt, 0, recweiy, nt, 0, autocorry);  /* for matrix */
+                this->xcor(nt, 0, recweiz, nt, 0, recweiz, nt, 0, autocorrz);  /* for matrix */
+                this->xcor(nt, 0, recweix, nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+                this->xcor(nt, 0, recweiy, nt, 0, modweiy, nt, 0, crosscorry); /* right hand side */
+                this->xcor(nt, 0, recweiz, nt, 0, modweiz, nt, 0, crosscorrz); /* right hand side */
+                if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+                if (autocorry[0] == 0.0)  autocorry[0] = 1.0;
+                if (autocorrz[0] == 0.0)  autocorrz[0] = 1.0;
                 autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
                 autocorry[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
                 autocorrz[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
@@ -3257,7 +3712,9 @@ void FwiElastic3D<T>::computeResiduals(){
                     ynorm += shapery[it]*shapery[it];
                     znorm += shaperz[it]*shaperz[it];
                 }
-                if (xnorm == 0.0 || ynorm == 0.0 || znorm == 0.0)  rs_error("FwiElastic2D::computeMisfit: Norm is zero");
+                if (xnorm == 0.0) xnorm = 1.0;
+                if (ynorm == 0.0) ynorm = 1.0;
+                if (znorm == 0.0) znorm = 1.0;
                 misfitx = 0.0;
                 misfity = 0.0;
                 misfitz = 0.0;
@@ -3280,7 +3737,19 @@ void FwiElastic3D<T>::computeResiduals(){
                 this->convolve(nt, 0, shaperx, nt, 0, &recx[I(0, itr)], nt, 0, &resx[I(0, itr)]);        
                 this->convolve(nt, 0, shapery, nt, 0, &recy[I(0, itr)], nt, 0, &resy[I(0, itr)]);        
                 this->convolve(nt, 0, shaperz, nt, 0, &recz[I(0, itr)], nt, 0, &resz[I(0, itr)]);        
+                if(dataweightset)
+                {
+                    resx[I(it, itr)] *= wei[I(it, itr)];
+                    resy[I(it, itr)] *= wei[I(it, itr)];
+                    resz[I(it, itr)] *= wei[I(it, itr)];
+                }
             }
+            free(modweix);
+            free(modweiy);
+            free(modweiz);
+            free(recweix);
+            free(recweiy);
+            free(recweiz);
             free(shaperx);
             free(spikerx);
             free(autocorrx);

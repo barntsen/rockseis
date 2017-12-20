@@ -20,7 +20,7 @@ typedef enum {PRESSURE, VX, VY, VZ, SXX, SYY, SZZ, SYZ, SXZ, SXY} rs_field; ///<
 typedef enum {SOURCE, RECEIVER, CMP} rs_key; ///< Information on how data is sorted
 typedef enum {FINISHED, RUNNING, NOT_STARTED, FAILED} rs_status; ///< Status of a process(ex. in modelling, migration, ...)
 typedef enum {LINEAR, BSPLINE, SINC} rs_interpmode; ///< Interpolation mode.)
-typedef enum {DIFFERENCE, CORRELATION, ADAPTIVE} rs_fwimisfit; ///< Type of misfit for FWI.)
+typedef enum {DIFFERENCE, CORRELATION, ADAPTIVE_GAUSS, ADAPTIVE_LINEAR} rs_fwimisfit; ///< Type of misfit for FWI.)
 
 /** The Progress struct
  *

@@ -25,8 +25,9 @@
 #define SMAP 0
 
 #define PNOISE_ACOUSTIC 0.01
-#define PNOISE_ELASTIC 0.0001
+#define PNOISE_ELASTIC 0.001
 #define STDEV 0.05
+#define HMAX 500
 
 #define ki2D(i,j) ((j)*nx +(i))
 #define km2D(i,j) ((j)*nx + (i))
