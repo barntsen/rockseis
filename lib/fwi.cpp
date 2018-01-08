@@ -17,6 +17,11 @@ Fwi<T>::Fwi() {
     misfit_type = DIFFERENCE;
     misfit = 0.0;
     noreverse = false;
+    filter = false;
+    freqs[0]=0;
+    freqs[1]=0;
+    freqs[2]=0;
+    freqs[3]=0;
 }
 
 template<typename T>
@@ -42,6 +47,11 @@ Fwi<T>::Fwi(int _order, int _snapinc) {
     misfit_type = DIFFERENCE;
     misfit = 0.0;
     noreverse = false;
+    filter = false;
+    freqs[0]=0;
+    freqs[1]=0;
+    freqs[2]=0;
+    freqs[3]=0;
 }
 
 template<typename T>
@@ -407,6 +417,27 @@ T Fwi<T>::linear (int it, T stdev)
     }
 }
 
+
+template<typename T>
+void Fwi<T>::apply_filter (T *data, int nt, T dt)
+{
+    int i;
+    double d_dt = dt;
+    float f[4];
+    f[0] = freqs[0];
+    f[1] = freqs[1];
+    f[2] = freqs[2];
+    f[3] = freqs[3];
+	float *wrk = (float *) calloc(nt, sizeof(float));
+	float *flt = (float *) calloc(nt, sizeof(float));
+    for(i=0; i< nt; i++) flt[i] = data[i];
+    sig_filt(flt, f[0], f[1], f[2], f[3], d_dt, nt); 
+    for(i=0; i< nt; i++) data[i] = flt[i];
+
+    free(wrk);
+    free(flt);
+}
+
 template<typename T>
 Fwi<T>::~Fwi() {
     // Nothing here
@@ -463,9 +494,9 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
     int dz = vpgrad->getDz();
     int nxs = nx+2*pads;
     int nxr = nx+2*padr;
-    for (ix=1; ix<nx; ix++){
+    for (ix=1; ix<nx-1; ix++){
         {
-            for (iz=1; iz<nz; iz++){
+            for (iz=1; iz<nz-1; iz++){
                 L = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
                 vpscale = -2.0/(Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)]);
                 rhoscale1 = -1.0/(Rho[km2D(ix, iz)]*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)]);
@@ -474,10 +505,10 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
                 mrzz = (wrz[kr2D(ix+padr, iz+padr)] - wrz[kr2D(ix+padr, iz+padr-1)])/dz;
                 vpgraddata[ki2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*L*(mrxx + mrzz);
                 rhograddata[ki2D(ix,iz)] -= rhoscale1*wsp[ks2D(ix+pads, iz+pads)]*L*(mrxx + mrzz);
-                mspx = (wsp[ks2D(ix+pads, iz+pads)] - wsp[ks2D(ix+pads-1, iz+pads)])/dx;
-                mspz = (wsp[ks2D(ix+pads, iz+pads)] - wsp[ks2D(ix+pads, iz+pads-1)])/dz;
-                mrpx = (wrp[kr2D(ix+padr, iz+padr)] - wrp[kr2D(ix+padr-1, iz+padr)])/dx;
-                mrpz = (wrp[kr2D(ix+padr, iz+padr)] - wrp[kr2D(ix+padr, iz+padr-1)])/dz;
+                mspx = (wsp[ks2D(ix+pads+1, iz+pads)] - wsp[ks2D(ix+pads-1, iz+pads)])/(2.0*dx);
+                mspz = (wsp[ks2D(ix+pads, iz+pads+1)] - wsp[ks2D(ix+pads, iz+pads-1)])/(2.0*dz);
+                mrpx = (wrp[kr2D(ix+padr+1, iz+padr)] - wrp[kr2D(ix+padr-1, iz+padr)])/(2.0*dx);
+                mrpz = (wrp[kr2D(ix+padr, iz+padr+1)] - wrp[kr2D(ix+padr, iz+padr-1)])/(2.0*dz);
                 rhograddata[ki2D(ix,iz)] -= rhoscale2*(mspx*mrpx + mspz*mrpz);
             }	
         }
@@ -660,6 +691,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
     if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
     if(dataresP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
     size_t nt = datamodP->getNt();
+    T dt = datamodP->getDt();
     if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
     if(dataresP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
@@ -769,6 +801,9 @@ void FwiAcoustic2D<T>::computeResiduals(){
                 }
                 this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
                 this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
+                if(this->getFilter()){
+                    this->apply_filter(&res[I(0, itr)], nt, dt);
+                }
                 if(dataweightset){
                     for (it=0; it < nt; it++)
                     {
@@ -827,6 +862,9 @@ void FwiAcoustic2D<T>::computeResiduals(){
                 }
                 this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
                 this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
+                if(this->getFilter()){
+                    this->apply_filter(&res[I(0, itr)], nt, dt);
+                }
                 if(dataweightset){
                     for (it=0; it < nt; it++)
                     {

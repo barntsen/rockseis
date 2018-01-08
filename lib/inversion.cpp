@@ -365,6 +365,8 @@ void InversionAcoustic2D<T>::runGrad() {
                 
                 // Setting misfit type
                 fwi->setMisfit_type(this->getMisfit_type());
+                fwi->setFilter(this->getFilter());
+                fwi->setAllfreqs(this->getFreqs());
 
                 // Creating gradient objects
                 vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);

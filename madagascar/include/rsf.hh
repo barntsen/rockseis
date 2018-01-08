@@ -25,6 +25,7 @@ extern "C" {
 #include "getpar.h"
 #include "_kiss_fft_guts.h"
 #include "kiss_fft.h"
+#include "sig.h"
 #include "komplex.h"
 #include "simtab.h"
 }

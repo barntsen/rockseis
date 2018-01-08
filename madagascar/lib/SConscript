@@ -9,5 +9,5 @@ builddir = '../build/'
 envc.Append(CPPPATH=['../include'])
 
 # Library
-rsfc = envc.Library(builddir + 'rsfc', ['file.c','getpar.c', 'alloc.c', 'error.c', 'simtab.c', 'komplex.c', 'c99.c', 'kiss_fft.c'])
+rsfc = envc.Library(builddir + 'rsfc', ['file.c','getpar.c', 'alloc.c', 'error.c', 'simtab.c', 'komplex.c', 'c99.c', 'kiss_fft.c', 'sig.c'])
 rsfcpp = env.Library(builddir + 'rsfcpp', ['rsf.cpp'], LIBS=['rsfc'])

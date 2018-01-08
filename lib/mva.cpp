@@ -466,11 +466,11 @@ int MvaElastic2D<T>::runRtm(){
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }
-    
-	//Remove snapshot file
-	Uxsnap->removeSnap();
-	Uzsnap->removeSnap();
 
+    //Close snapshot file
+    Uxsnap->closeSnap();
+    Uzsnap->closeSnap();
+    
     result=MVA_OK;
     return result;
 }

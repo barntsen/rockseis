@@ -201,6 +201,8 @@ int main(int argc, char** argv) {
     float dtz=-1;
     float kvp, krho, ksource;
     float vpregalpha, rhoregalpha;
+    float freqs[4];
+    bool filter;
     int max_linesearch, max_iterations;
     bool update_vp, update_rho, update_source;
     std::string Waveletfile;
@@ -278,6 +280,12 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("update_rho", &update_rho) == INPARSE_ERR) status = true;
     if(Inpar->getPar("update_source", &update_source) == INPARSE_ERR) status = true;
 
+    if(Inpar->getPar("filter", &filter) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("f0", &freqs[0]) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("f1", &freqs[1]) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("f2", &freqs[2]) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("f3", &freqs[3]) == INPARSE_ERR) status = true;
+
     // Set scaling according to updates
     if(!update_vp) kvp = 0.0;
     if(!update_rho) krho = 0.0;
@@ -325,6 +333,8 @@ int main(int argc, char** argv) {
     inv->setRhoregalpha(rhoregalpha);
 
     inv->setUpdates(update_vp, update_rho, update_source);
+    inv->setFilter(filter);
+    inv->setFreqs(&freqs[0]);
 
     //MASTER
     if(mpi.getRank() == 0){

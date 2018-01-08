@@ -17,6 +17,7 @@
 #include "snap.h"
 #include "image.h"
 #include "revolve.h"
+#include <rsf.hh>
 
 #define FWI_OK 1
 #define FWI_ERR 0
@@ -62,6 +63,8 @@ public:
     // Fwi functions
     int getOrder() { return order; } ///< Get order of FD stencil
     int getSnapinc() { return snapinc; } ///< Get snap increment
+    bool getFilter() { return filter; } ///< Get filter status
+    T getFreqs(int i) { if(i >=0 && i < 4) return freqs[i]; else return -1;} ///< Gets filter corner
     std::string getLogfile() { return logfile; } ///< Get name of logfile
     std::string getSnapfile() { return snapfile; } ///< Sets checkpoint filename
     void setOrder(int _order) { if(_order > 1 && _order < 9)  order = _order;} ///< Set order of FD stencil
@@ -71,6 +74,9 @@ public:
     void setIncore(bool val) { incore = val; } ///< Sets optimal checkpoint incore flag
     void setNcheck(int val) { ncheck = val; } ///< Sets optimal checkpointing number of snaps 
     void setSnapfile(std::string file) { snapfile = file; } ///< Sets checkpoint filename
+    void setFilter(bool val) { filter = val; } ///< Sets filter on or off
+    void setFreqs(T freq, int i) { if(i >=0 && i < 4) freqs[i] = freq; } ///< Sets filter corner
+    void setAllfreqs(T *freqptr) { freqs[0] = freqptr[0]; freqs[1] = freqptr[1]; freqs[2] = freqptr[2]; freqs[3] = freqptr[3]; }///< Sets all filter corner
     void setMisfit(T val) { misfit = val; } ///< Sets data misfit value
     T getMisfit() { return misfit; }   ///< Gets misfit value
     int getNcheck() { return ncheck; } ///< Gets the number of checkpoints for the optimal checkpointing scheme
@@ -89,6 +95,7 @@ public:
     void xcor(int lx, int ifx, T *x,int ly, int ify, T *y, int lz, int ifz, T *z);
     T gauss(int it, T stdev);
     T linear(int it, T stdev);
+    void apply_filter(T *data, int nt, T dt);
 
 private:
     int order;  ///< Order of the FD stencil 
@@ -103,6 +110,8 @@ private:
     std::string snapfile;
     T misfit; ///< Misfit value
     bool noreverse; ///< Do only forward loop flag
+    bool filter; ///< Whether or not to filter residuals in Adaptive misfit 
+    T freqs[4];  ///< Four corner filter  
 };
 
 /** The 2D Acoustic Fwi class

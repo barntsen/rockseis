@@ -112,6 +112,7 @@ public:
     int getLpml() { return lpml; }
     void setFs(bool val) { fs = val; } 
     bool getFs() { return fs; }
+    bool getFilter() { return filter; }
     void setIncore(bool val) { incore = val; } 
     bool getIncore() { return incore; }
     int getOrder() { return order; }
@@ -120,6 +121,9 @@ public:
     void setSnapinc(int val) { snapinc = val; }
     int getNsnaps() { return nsnaps; }
     void setNsnaps(int val) { nsnaps = val; }
+    void setFilter(bool val) { filter = val; }
+    T* getFreqs() { return freqs; }
+    void setFreqs(T *pointer) { freqs = pointer; }
     rs_fwimisfit getMisfit_type() { return misfit_type; } 
     void setMisfit_type(rs_fwimisfit val) { misfit_type = val; }
     rs_snapmethod getSnapmethod() { return snapmethod; } 
@@ -146,6 +150,8 @@ private:
 	int order;
 	int snapinc;
 	int nsnaps;
+    bool filter;
+    T *freqs;
     double fnorm;
     std::string logfile; ///< Log file
     std::string progressfile; ///< Log file
