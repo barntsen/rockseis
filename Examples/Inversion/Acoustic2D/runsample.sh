@@ -20,3 +20,5 @@ cp ../../Models/Rho2d.rss .
 cp ../../Models/Wav2d.rss .
 
 mpirun -np 4 rsmpiAcousticmod2d mod.cfg 
+mpirun -np 4 rsAcousticfwi2d fwi.cfg
+
