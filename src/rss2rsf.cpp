@@ -123,6 +123,7 @@ int main(int argc, char* argv[])
     int ival;
     float fval;
     double dval;
+    double dx,dy,doffset;
 
     out.type(type);
     //in->seekg(in->getStartofdata() + i*(n[0]*dsize+Nheader*hsize) + Nheader*hsize);
@@ -144,7 +145,10 @@ int main(int argc, char* argv[])
                             in->read(&ival, 1);
                             headtrace[12] = (int) (ival*SCALEL);
                             headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
-                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]))/SCALCO);
+                            dx = static_cast<double>(headtrace[21]);
+                            dy = static_cast<double>(headtrace[23]);
+                            doffset = sqrt(SQ(dx - dy))/SCALCO;
+                            headtrace[11] = static_cast<int>(doffset);
                             break;
                         case 6:
                             in->read(&ival, 1);
@@ -161,7 +165,10 @@ int main(int argc, char* argv[])
                             headtrace[12] = (int) (ival*SCALEL);
                             headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
                             headtrace[72] = (int) (0.5*(headtrace[22] + headtrace[24]));
-                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]) + SQ(headtrace[22] - headtrace[24]))/SCALCO);
+                            dx = static_cast<double>(headtrace[21] - headtrace[23]);
+                            dy = static_cast<double>(headtrace[22] - headtrace[24]);
+                            doffset = sqrt(SQ(dx) + SQ(dy))/SCALCO;
+                            headtrace[11] = static_cast<int>(doffset);
                             break;
                         default:
                             break;
@@ -184,7 +191,10 @@ int main(int argc, char* argv[])
                             in->read(&fval, 1);
                             headtrace[12] = (int) (fval*SCALEL);
                             headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
-                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]))/SCALCO);
+                            dx = static_cast<double>(headtrace[21]);
+                            dy = static_cast<double>(headtrace[23]);
+                            doffset = sqrt(SQ(dx - dy))/SCALCO;
+                            headtrace[11] = static_cast<int>(doffset);
                             break;
                         case 6:
                             in->read(&fval, 1);
@@ -201,7 +211,10 @@ int main(int argc, char* argv[])
                             headtrace[12] = (int) (fval*SCALEL);
                             headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
                             headtrace[72] = (int) (0.5*(headtrace[22] + headtrace[24]));
-                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]) + SQ(headtrace[22] - headtrace[24]))/SCALCO);
+                            dx = static_cast<double>(headtrace[21] - headtrace[23]);
+                            dy = static_cast<double>(headtrace[22] - headtrace[24]);
+                            doffset = sqrt(SQ(dx) + SQ(dy))/SCALCO;
+                            headtrace[11] = static_cast<int>(doffset);
                             break;
                         default:
                             break;
@@ -225,7 +238,10 @@ int main(int argc, char* argv[])
                             in->read(&dval, 1);
                             headtrace[12] = (int) (dval*SCALEL);
                             headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
-                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]))/SCALCO);
+                            dx = static_cast<double>(headtrace[21]);
+                            dy = static_cast<double>(headtrace[23]);
+                            doffset = sqrt(SQ(dx - dy))/SCALCO;
+                            headtrace[11] = static_cast<int>(doffset);
                             break;
                         case 6:
                             in->read(&dval, 1);
@@ -242,7 +258,10 @@ int main(int argc, char* argv[])
                             headtrace[12] = (int) (dval*SCALEL);
                             headtrace[71] = (int) (0.5*(headtrace[21] + headtrace[23]));
                             headtrace[72] = (int) (0.5*(headtrace[22] + headtrace[24]));
-                            headtrace[11] = (int) (sqrt(SQ(headtrace[21] - headtrace[23]) + SQ(headtrace[22] - headtrace[24]))/SCALCO);
+                            dx = static_cast<double>(headtrace[21] - headtrace[23]);
+                            dy = static_cast<double>(headtrace[22] - headtrace[24]);
+                            doffset = sqrt(SQ(dx) + SQ(dy))/SCALCO;
+                            headtrace[11] = static_cast<int>(doffset);
                             break;
                         default:
                             break;
