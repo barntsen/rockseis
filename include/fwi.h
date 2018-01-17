@@ -26,7 +26,7 @@
 #define SMAP 0
 
 #define PNOISE_ACOUSTIC 0.01
-#define PNOISE_ELASTIC 0.001
+#define PNOISE_ELASTIC 0.01
 #define STDEV 0.05
 #define HMAX 500
 

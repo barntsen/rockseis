@@ -11,7 +11,7 @@ sfmath <Vs2d.rsf x=pert.rsf output="in+x" out=stdout > Vs2d_pert.rsf
 rsrsf2rss <Vs2d_pert.rsf > Vs2d_pert.rss
 
 rsrss2rsf <../../Models/Rho2d.rss out=stdout > Rho2d.rsf
-sfspike <Rho2d.rsf k3=25 l3=26 k1=20 l1=25 mag=200. | sfsmooth rect1=5 rect3=5 out=stdout > pert.rsf
+sfspike <Rho2d.rsf k3=25 l3=26 k1=20 l1=25 mag=00. | sfsmooth rect1=5 rect3=5 out=stdout > pert.rsf
 sfmath <Rho2d.rsf x=pert.rsf output="in+x" out=stdout > Rho2d_pert.rsf 
 rsrsf2rss <Rho2d_pert.rsf > Rho2d_pert.rss
 
@@ -28,7 +28,7 @@ mpirun -np 4 rsmpiElasticmod2d mod.cfg
 
 #Create a weight file
 rsrss2rsf < Vxshot.rss out=stdout > temp.rsf
-sfmath <temp.rsf output=1.0  out=stdout > temp2.rsf 
+sfmath <temp.rsf output=1.0  | sfpow1d tpow=2.0 out=stdout > temp2.rsf 
 sfheadermutter <temp2.rsf head=tfile.rsf v0=100 delay=0.0 type=0 out=stdout > weight.rsf
 sfsegywrite < weight.rsf tfile=tfile.rsf tape=temp.sgy
 rssegy2rss <temp.sgy > weight.rss segy.cfg

@@ -2,4 +2,4 @@ sh makesurvey.sh
 if [ ! -d "Results" ]; then
     mkdir Results
 fi
-rsElasticmod3d mod.cfg 
+mpirun -np 4 rsmpiElasticmod3d mod.cfg 
