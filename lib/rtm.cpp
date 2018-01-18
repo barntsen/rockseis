@@ -161,6 +161,32 @@ RtmAcoustic2D<T>::RtmAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std:
     pimageset = true;
 }
 
+template<typename T>
+bool RtmAcoustic2D<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
 	template<typename T>
 void RtmAcoustic2D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 {
@@ -202,6 +228,8 @@ int RtmAcoustic2D<T>::run(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("RtmAcoustic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
 
      this->createLog(this->getLogfile());
 
@@ -296,6 +324,8 @@ int RtmAcoustic2D<T>::run_edge(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("RtmAcoustic2D::run_edge: Wavelet sampling interval (dt) does not match the stability criteria.");
 
      this->createLog(this->getLogfile());
 
@@ -396,6 +426,8 @@ int RtmAcoustic2D<T>::run_optimal(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("RtmAcoustic2D::run_optimal: Wavelet sampling interval (dt) does not match the stability criteria.");
 
      this->createLog(this->getLogfile());
 
@@ -546,6 +578,33 @@ RtmAcoustic3D<T>::RtmAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> _model, std:
 }
 
 template<typename T>
+bool RtmAcoustic3D<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNy()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dy = model->getDy();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dy*dy))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
 void RtmAcoustic3D<T>::crossCorr(T *ws, int pads, T* wr, int padr)
 {
 	if(!pimage->getAllocated()) pimage->allocateImage();
@@ -594,6 +653,8 @@ int RtmAcoustic3D<T>::run(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("RtmAcoustic3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
 
 	// Create log file
      this->createLog(this->getLogfile());
@@ -693,6 +754,8 @@ int RtmAcoustic3D<T>::run_optimal(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("RtmAcoustic3D::run_optimal: Wavelet sampling interval (dt) does not match the stability criteria.");
 
      this->createLog(this->getLogfile());
 
@@ -849,6 +912,32 @@ RtmElastic2D<T>::RtmElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::sh
 }
 
 template<typename T>
+bool RtmElastic2D<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
 void RtmElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho)
 {
 	int ix, iz, ihx, ihz;
@@ -955,6 +1044,8 @@ int RtmElastic2D<T>::run(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("RtmElastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
 
 	// Create log file
      this->createLog(this->getLogfile());
@@ -1077,6 +1168,8 @@ int RtmElastic2D<T>::run_optimal(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("RtmElastic2D::run_optimal: Wavelet sampling interval (dt) does not match the stability criteria.");
 
      this->createLog(this->getLogfile());
 
@@ -1248,6 +1341,33 @@ RtmElastic3D<T>::RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> _model, std::sh
 }
 
 template<typename T>
+bool RtmElastic3D<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNy()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dy = model->getDy();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dy*dy))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
 void RtmElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, T* wrx, T* wry, T* wrz, int padr, T* Vp, T* Vs, T* Rho)
 {
 	int ix, iy, iz, ihx, ihy, ihz;
@@ -1394,6 +1514,8 @@ int RtmElastic3D<T>::run(){
      dt = source->getDt();
      ot = source->getOt();
 
+     if(!this->checkStability()) rs_error("RtmElastic3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+
 	// Create log file
      this->createLog(this->getLogfile());
 
@@ -1531,6 +1653,8 @@ int RtmElastic3D<T>::run_optimal(){
      nt = source->getNt();
      dt = source->getDt();
      ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("RtmElastic3D::run_optimal: Wavelet sampling interval (dt) does not match the stability criteria.");
 
 	// Create log file
      this->createLog(this->getLogfile());
