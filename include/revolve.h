@@ -17,6 +17,7 @@
 #define CHECKUP 512 
 #define REPSUP 64 
 #define MAXINT 2147483647
+#define LIMIT_WARNING 2147483648 
 
 
 namespace rockseis {

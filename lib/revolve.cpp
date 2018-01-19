@@ -315,7 +315,7 @@ void Revolve<T>::createCheck(std::string _filename, char flag)
                         this->Fc->output(this->filename);
                         this->open = true;
                         this->Fc->setN(1, this->checksize);
-                        this->Fc->setN(2,this->snaps);
+                        this->Fc->setN(2, this->snaps);
                         this->Fc->setData_format(sizeof(T));
                         this->Fc->setType(rockseis::CHECKPOINT);
                         this->Fc->writeHeader();
@@ -372,8 +372,8 @@ void Revolve<T>::createCheck(std::string _filename, char flag)
 template<typename T>
 void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic2D<T>> waves, char flag)
 {
-    int nx_pml, nz_pml;
-    int lpml;
+    long long nx_pml, nz_pml;
+    long long lpml;
 
     nx_pml=waves->getNx_pml();
     nz_pml=waves->getNz_pml();
@@ -385,17 +385,17 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic2
 template<typename T>
 void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic3D<T>> waves, char flag)
 {
-    int nx_pml, ny_pml, nz_pml;
-    int lpml;
+    long long nx_pml, ny_pml, nz_pml;
+    long long lpml;
 
     nx_pml=waves->getNx_pml();
     ny_pml=waves->getNy_pml();
     nz_pml=waves->getNz_pml();
     lpml = waves->getLpml();
     this->checksize = 2*nz_pml*nx_pml*ny_pml + 4*nz_pml*ny_pml*lpml + 4*nz_pml*nx_pml*lpml + 4*nx_pml*ny_pml*lpml;
-    if(4*this->checksize > (1024*1024*2000))
+    if(sizeof(T)*this->checksize > LIMIT_WARNING)
     {
-        rs_warning("Revolve<T>::openCheck::Required memory per core exceeds 2 Gb: ", std::to_string(4.*this->checksize/1024./1024.));
+        rs_warning("Revolve<T>::openCheck::Required memory per core exceeds 2 Gb: ", std::to_string(4.*this->checksize/1024./1024./1024.));
     }
     this->createCheck(_filename, flag); 
 }
@@ -403,8 +403,8 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic3
 template<typename T>
 void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesElastic2D<T>> waves, char flag)
 {
-    int nx_pml, nz_pml;
-    int lpml;
+    long long nx_pml, nz_pml;
+    long long lpml;
 
     nx_pml=waves->getNx_pml();
     nz_pml=waves->getNz_pml();
@@ -416,8 +416,8 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesElastic2D
 template<typename T>
 void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesElastic2D_DS<T>> waves, char flag)
 {
-    int nx_pml, nz_pml;
-    int lpml;
+    long long nx_pml, nz_pml;
+    long long lpml;
 
     nx_pml=waves->getNx_pml();
     nz_pml=waves->getNz_pml();
@@ -429,17 +429,17 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesElastic2D
 template<typename T>
 void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesElastic3D<T>> waves, char flag)
 {
-    int nx_pml, ny_pml, nz_pml;
-    int lpml;
+    long long nx_pml, ny_pml, nz_pml;
+    long long lpml;
 
     nx_pml=waves->getNx_pml();
     ny_pml=waves->getNy_pml();
     nz_pml=waves->getNz_pml();
     lpml = waves->getLpml();
     this->checksize = 9*nz_pml*nx_pml*ny_pml + 12*nz_pml*ny_pml*lpml + 12*nz_pml*nx_pml*lpml + 12*nx_pml*ny_pml*lpml;
-    if(4*this->checksize > (1024*1024*2000))
+    if(sizeof(T)*this->checksize > LIMIT_WARNING)
     {
-        rs_warning("Revolve<T>::openCheck::Required memory per core exceeds 2 Gb: ", std::to_string(4.*this->checksize/1024./1024.));
+        rs_warning("Revolve<T>::openCheck::Required memory per core exceeds 2 Gb: ", std::to_string(4.*this->checksize/1024./1024./1024.));
     }
     this->createCheck(_filename, flag); 
 }
@@ -447,17 +447,19 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesElastic3D
 template<typename T>
 void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesElastic3D_DS<T>> waves, char flag)
 {
-    int nx_pml, ny_pml, nz_pml;
-    int lpml;
+    long long nx_pml, ny_pml, nz_pml;
+    long long lpml;
 
     nx_pml=waves->getNx_pml();
     ny_pml=waves->getNy_pml();
     nz_pml=waves->getNz_pml();
     lpml = waves->getLpml();
     this->checksize = 6*nz_pml*nx_pml*ny_pml + 12*nz_pml*ny_pml*lpml + 12*nz_pml*nx_pml*lpml + 12*nx_pml*ny_pml*lpml;
-    if(4*this->checksize > (1024*1024*2000))
+    std::cerr << this->checksize << std::endl;
+    std::cerr << (this->checksize/(1024.*1024.*1024)) << std::endl;
+    if(sizeof(T)*this->checksize > LIMIT_WARNING)
     {
-        rs_warning("Revolve<T>::openCheck::Required memory per core exceeds 2 Gb: ", std::to_string(4.*this->checksize/1024./1024.));
+        rs_warning("Revolve<T>::openCheck::Required memory per core exceeds 2 Gb: ", std::to_string(4.*this->checksize/1024./1024./1024.));
     }
     this->createCheck(_filename, flag); 
 }
