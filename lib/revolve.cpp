@@ -455,8 +455,6 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesElastic3D
     nz_pml=waves->getNz_pml();
     lpml = waves->getLpml();
     this->checksize = 6*nz_pml*nx_pml*ny_pml + 12*nz_pml*ny_pml*lpml + 12*nz_pml*nx_pml*lpml + 12*nx_pml*ny_pml*lpml;
-    std::cerr << this->checksize << std::endl;
-    std::cerr << (this->checksize/(1024.*1024.*1024)) << std::endl;
     if(sizeof(T)*this->checksize > LIMIT_WARNING)
     {
         rs_warning("Revolve<T>::openCheck::Required memory per core exceeds 2 Gb: ", std::to_string(4.*this->checksize/1024./1024./1024.));
@@ -502,7 +500,7 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
     T *P2 = waves->getP2();
     std::shared_ptr<PmlAcoustic2D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");;
 		memcpy(P1, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
@@ -566,7 +564,7 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
     T *P2 = waves->getP2();
     std::shared_ptr<PmlAcoustic2D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");;
 		memcpy(this->checkpoints+pos, P1, nz_pml*nx_pml*sizeof(T));
@@ -631,7 +629,7 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesAcoustic3D<T>> waves)
     T *P2 = waves->getP2();
     std::shared_ptr<PmlAcoustic3D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");
 		memcpy(P1, this->checkpoints+pos, nz_pml*ny_pml*nx_pml*sizeof(T));
@@ -699,7 +697,7 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesAcoustic3D<T>> waves)
     T *P2 = waves->getP2();
     std::shared_ptr<PmlAcoustic3D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");
 		memcpy(this->checkpoints+pos, P1, nz_pml*ny_pml*nx_pml*sizeof(T));
@@ -769,7 +767,7 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesElastic2D<T>> waves)
     T *Vz = waves->getVz();
     std::shared_ptr<PmlElastic2D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");;
 		memcpy(Sxx, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
@@ -880,7 +878,7 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesElastic2D<T>> waves)
     T *Vz = waves->getVz();
     std::shared_ptr<PmlElastic2D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");;
 		memcpy(this->checkpoints+pos, Sxx, nz_pml*nx_pml*sizeof(T));
@@ -996,7 +994,7 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesElastic3D<T>> waves)
     T *Vz = waves->getVz();
     std::shared_ptr<PmlElastic3D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");
 		memcpy(Sxx, this->checkpoints+pos, nz_pml*ny_pml*nx_pml*sizeof(T));
@@ -1164,7 +1162,7 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesElastic3D<T>> waves)
     T *Vz = waves->getVz();
     std::shared_ptr<PmlElastic3D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");
 		memcpy(this->checkpoints+pos, Sxx, nz_pml*ny_pml*nx_pml*sizeof(T));
@@ -1326,7 +1324,7 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesElastic2D_DS<T>> waves)
     T *Uz2 = waves->getUz2();
     std::shared_ptr<PmlElastic2D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");;
 		memcpy(Ux1, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
@@ -1432,7 +1430,7 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesElastic2D_DS<T>> waves)
     T *Uz2 = waves->getUz2();
     std::shared_ptr<PmlElastic2D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");;
 
@@ -1542,7 +1540,7 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesElastic3D_DS<T>> waves)
     T *Uz2 = waves->getUz2();
     std::shared_ptr<PmlElastic3D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");
 		memcpy(Ux1, this->checkpoints+pos, nz_pml*ny_pml*nx_pml*sizeof(T));
@@ -1698,7 +1696,7 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesElastic3D_DS<T>> waves)
     T *Uz2 = waves->getUz2();
     std::shared_ptr<PmlElastic3D<T>> Pml = waves->getPml();
 
-    size_t pos = this->checksize*this->check; 
+    off_t pos = this->checksize*this->check; 
     if(this->incore){
 		if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");
 		memcpy(this->checkpoints+pos, Ux1, nz_pml*ny_pml*nx_pml*sizeof(T));
