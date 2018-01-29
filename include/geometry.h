@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <math.h>
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include "utils.h"
