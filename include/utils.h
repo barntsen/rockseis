@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #define NHEAD2D 4
 #define NHEAD3D 6
 #define SMAP 0

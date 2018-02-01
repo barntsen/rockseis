@@ -14,10 +14,13 @@
 #include "utils.h"
 #include "data.h"
 #include "file.h"
+#include "interp.h"
 
 #define WAVES_OK 1;
 #define WAVES_ERR 0;
 
+#define LANC_SIZE 3
+#define LANC(x,a) (this->sinc(x)*this->sinc((x)/a))
 
 namespace rockseis {
 
@@ -49,6 +52,9 @@ public:
     T getOy() { return geometry->getO(2); }	///< Get Oy
     T getOz() { return geometry->getO(3); }	///< Get Oz
     T getOt() { return geometry->getO(4); }	///< Get Ot
+
+    //Interpolation function
+    T sinc(T x) { if(x == 0) return 1; else return std::sin(PI*x)/(PI*x); } 
 
         // Set functions
     void setNx(const int _nx) { geometry->setN(1, _nx); }///< Set Nx

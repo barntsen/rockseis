@@ -70,12 +70,16 @@ public:
     rockseis::Point2D<T> *getGcoords() { return gcoords; } ///< Get gcoords
     rockseis::Point2D<int> *getSmap() { return smap; } ///< Get smap
     rockseis::Point2D<int> *getGmap() { return gmap; } ///< Get gmap
+    rockseis::Point2D<T> *getSshift() { return sshift; } ///< Get sshift
+    rockseis::Point2D<T> *getGshift() { return gshift; } ///< Get gshift
 
 private:
     rockseis::Point2D<T> *scoords;             ///< Coordinates (x,z) of the source for the traces
     rockseis::Point2D<T> *gcoords;             ///< Coordinates (x,z) of the receivers for the traces
     rockseis::Point2D<int> *smap;              ///< Map of the coordinates (i,j) to the regular geometry grid of the source coordinates
     rockseis::Point2D<int> *gmap;              ///< Map of the coordinates (i,j) to the regular geometry grid of the receiver coordinates
+    rockseis::Point2D<T> *sshift;              ///< Value of error in source coordinate location between actual geometry and the regular geometry grid of the mapped coordinates
+    rockseis::Point2D<T> *gshift;              ///< Value of error in receiver coordinate location between actual geometry and the regular geometry grid of the mapped coordinates
 };
 
 // =============== 3D DATA GEOMETRY CLASS =============== //
@@ -97,12 +101,16 @@ public:
     rockseis::Point3D<T> *getGcoords() { return gcoords; } ///< Get gcoords
     rockseis::Point3D<int> *getSmap() { return smap; } ///< Get smap
     rockseis::Point3D<int> *getGmap() { return gmap; } ///< Get gmap
+    rockseis::Point3D<T> *getSshift() { return sshift; } ///< Get sshift
+    rockseis::Point3D<T> *getGshift() { return gshift; } ///< Get gshift
 
 private:
     rockseis::Point3D<T> *scoords;             ///< Coordinates (x,y,z) of the sources for the traces
     rockseis::Point3D<T> *gcoords;             ///< Coordinates (x,y,z) of the receivers for the traces
     rockseis::Point3D<int> *smap;              ///< Map of the coordinates (i,j,k) to the regular geometry grid of the source coordinates
     rockseis::Point3D<int> *gmap;              ///< Map of the coordinates (i,j,k) to the regular geometry grid of the receiver coordinates
+    rockseis::Point3D<T> *sshift;              ///< Value of error in source coordinate location between actual geometry and the regular geometry grid of the mapped coordinates
+    rockseis::Point3D<T> *gshift;              ///< Value of error in receiver coordinate location between actual geometry and the regular geometry grid of the mapped coordinates
 };
 
 }
