@@ -1079,7 +1079,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
                     for(i1=0; i1<2*LANC_SIZE; i1++){
                         for(i2=0; i2<2*LANC_SIZE; i2++){
                             for(i3=0; i3<2*LANC_SIZE; i3++){
-                                dataarray[Idat(it,i)] = P1[I(lpml + map[i].x - (LANC_SIZE - 1) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - 1 - i1 ,LANC_SIZE);
+                                dataarray[Idat(it,i)] += P1[I(lpml + map[i].x - (LANC_SIZE - 1) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - 1 - i1 ,LANC_SIZE);
                             }
                         }
                     }
@@ -1095,7 +1095,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
                     for(i1=0; i1<2*LANC_SIZE; i1++){
                         for(i2=0; i2<2*LANC_SIZE; i2++){
                             for(i3=0; i3<2*LANC_SIZE; i3++){
-                                dataarray[Idat(it,i)] = Ax[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)]*LANC(xshift + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - 1 - i1 ,LANC_SIZE);
+                                dataarray[Idat(it,i)] += Ax[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)]*LANC(xshift + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - 1 - i1 ,LANC_SIZE);
                             }
                         }
                     }
@@ -1111,7 +1111,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
                     for(i1=0; i1<2*LANC_SIZE; i1++){
                         for(i2=0; i2<2*LANC_SIZE; i2++){
                             for(i3=0; i3<2*LANC_SIZE; i3++){
-                                dataarray[Idat(it,i)] = Ay[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(yshift + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - 1 - i1 ,LANC_SIZE);
+                                dataarray[Idat(it,i)] += Ay[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(yshift + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - 1 - i1 ,LANC_SIZE);
                             }
                         }
                     }
@@ -1128,7 +1128,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
                     for(i1=0; i1<2*LANC_SIZE; i1++){
                         for(i2=0; i2<2*LANC_SIZE; i2++){
                             for(i3=0; i3<2*LANC_SIZE; i3++){
-                                dataarray[Idat(it,i)] = Az[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(zshift + LANC_SIZE - 1 - i1 ,LANC_SIZE);
+                                dataarray[Idat(it,i)] += Az[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(zshift + LANC_SIZE - 1 - i1 ,LANC_SIZE);
                             }
                         }
                     }

@@ -294,12 +294,12 @@ ModelAcoustic1D<T>::ModelAcoustic1D(std::string _Vpfile, std::string _Rfile, con
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic1D::Error reading from Vp file.");
+	    rs_error("ModelAcoustic1D::Error reading from Vp file: ", Vpfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelAcoustic1D::Error reading from density file.");
+        rs_error("ModelAcoustic1D::Error reading from density file: ", Rfile);
     }
 
     // Compare geometry in the two files
@@ -361,12 +361,12 @@ void ModelAcoustic1D<T>::readModel() {
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic1D::readModel : Error reading from Vp file.");
+	    rs_error("ModelAcoustic1D::readModel : Error reading from Vp file: ", Vpfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic1D::readModel : Error reading from Density file.");
+	    rs_error("ModelAcoustic1D::readModel : Error reading from Density file: ", Rfile );
     }
 
     // Read models
@@ -503,12 +503,12 @@ ModelAcoustic2D<T>::ModelAcoustic2D(std::string _Vpfile, std::string _Rfile, con
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic2D::Error reading from Vp file.");
+	    rs_error("ModelAcoustic2D::Error reading from Vp file: ", Vpfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelAcoustic2D::Error reading from density file.");
+        rs_error("ModelAcoustic2D::Error reading from density file: ", Rfile);
     }
 
     // Compare geometry in the two files
@@ -579,12 +579,12 @@ void ModelAcoustic2D<T>::readModel() {
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic2D::readModel : Error reading from Vp file.");
+	    rs_error("ModelAcoustic2D::readModel : Error reading from Vp file: ", Vpfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic2D::readModel : Error reading from Density file.");
+	    rs_error("ModelAcoustic2D::readModel : Error reading from Density file: ", Rfile);
     }
 
     // Read models
@@ -856,12 +856,12 @@ ModelAcoustic3D<T>::ModelAcoustic3D(std::string _Vpfile, std::string _Rfile, con
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic3D::Error reading from Vp file.");
+	    rs_error("ModelAcoustic3D::Error reading from Vp file: ", Vpfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelAcoustic3D::Error reading from density file.");
+        rs_error("ModelAcoustic3D::Error reading from density file: ", Rfile);
     }
 
     // Compare geometry in the two files
@@ -930,12 +930,12 @@ void ModelAcoustic3D<T>::readModel() {
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic3D::readModel : Error reading from Vp file.");
+	    rs_error("ModelAcoustic3D::readModel : Error reading from Vp file: ", Vpfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic3D::readModel : Error reading from Density file.");
+	    rs_error("ModelAcoustic3D::readModel : Error reading from Density file: ", Rfile);
     }
 
     // Read models
@@ -1282,18 +1282,18 @@ ModelElastic2D<T>::ModelElastic2D(std::string _Vpfile, std::string _Vsfile, std:
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelElastic2D::Error reading from Vp file.");
+	    rs_error("ModelElastic2D::Error reading from Vp file: ", Vpfile);
 	    exit(1);
     }
     std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelElastic2D::Error reading from Vs file.");
+        rs_error("ModelElastic2D::Error reading from Vs file: ", Vsfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelElastic2D::Error reading from density file. ");
+        rs_error("ModelElastic2D::Error reading from density file: ", Rfile);
         exit(1);
     }
 
@@ -1372,17 +1372,17 @@ void ModelElastic2D<T>::readModel() {
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelElastic2D::readModel : Error reading from Vp file. ");
+	    rs_error("ModelElastic2D::readModel : Error reading from Vp file: ", Vpfile);
     }
     std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelElastic2D::readModel : Error reading from Vs file. ");
+	    rs_error("ModelElastic2D::readModel : Error reading from Vs file: ", Vsfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelElastic2D::readModel : Error reading from Density file. ");
+	    rs_error("ModelElastic2D::readModel : Error reading from Density file: ", Rfile);
     }
 
     // Read models
@@ -1749,17 +1749,17 @@ ModelElastic3D<T>::ModelElastic3D(std::string _Vpfile, std::string _Vsfile, std:
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelElastic3D::Error reading from Vp file. ");
+	    rs_error("ModelElastic3D::Error reading from Vp file:  ", _Vpfile);
     }
     std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelElastic3D::Error reading from Vs file. ");
+        rs_error("ModelElastic3D::Error reading from Vs file: ", _Vsfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelElastic3D::Error reading from density file. ");
+        rs_error("ModelElastic3D::Error reading from density file: ", _Rfile);
     }
 
     // Compare geometry in the two files
@@ -1843,17 +1843,17 @@ void ModelElastic3D<T>::readModel() {
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelElastic3D::readModel : Error reading from Vp file. ");
+	    rs_error("ModelElastic3D::readModel : Error reading from Vp file: ", Vpfile);
     }
     std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelElastic3D::readModel : Error reading from Vs file. ");
+	    rs_error("ModelElastic3D::readModel : Error reading from Vs file: ", Vsfile);
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelElastic3D::readModel : Error reading from Density file. ");
+	    rs_error("ModelElastic3D::readModel : Error reading from Density file: ", Rfile);
     }
 
     // Read models

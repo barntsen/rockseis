@@ -55,7 +55,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
     status = Fdata->input(filename);
-    if(status == FILE_ERR) rs_error("Sort::createSort: Error reading input file.");
+    if(status == FILE_ERR) rs_error("Sort::createSort: Error reading input file: ", filename);
     rs_datatype datatype = Fdata->getType(); 
     if(datatype != DATA2D && datatype != DATA3D) rs_error("Sort::createSort: Only DATA2D and DATA3D types are supported.");
 
