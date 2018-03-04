@@ -50,6 +50,7 @@ public:
 private:
     T *imagedata; // Image array
     std::string imagefile;
+    std::string gatherfile;
     bool allocated;
 };
 
@@ -93,6 +94,7 @@ public:
 private:
     T *imagedata; // Image array
     std::string imagefile;
+    std::string gatherfile;
     bool allocated;
 };
 

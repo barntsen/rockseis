@@ -90,6 +90,7 @@ public:
     bool writeTraces(); ///< Writes data and coordinates to the end of the file
     void createEmpty(size_t ntr); ///< Create empty dataset with ntr traces
     void putTrace(std::string filename, size_t number); ///< Writes a trace with a specific number to a file
+    void putImage(std::string imagefile); ///< Output an image to the end of the datafile
 
 private:
     std::shared_ptr<Geometry2D<T>> geometry; // Data geometry 
@@ -128,6 +129,7 @@ public:
     bool writeTraces(); /// Writes data and coordinates to the end of the file
     void createEmpty(size_t ntr); ///< Create empty dataset with ntr traces
     void putTrace(std::string filename, size_t number); ///< Writes a trace with a specific number to a file
+    void putImage(std::string imagefile); ///< Output an image to the end of the datafile
 
 private:
     std::shared_ptr<Geometry3D<T>> geometry;  // Data geometry 

@@ -96,7 +96,9 @@ public:
     int runRtm(); ///< Runs rtm with full snapshoting
     int runRtm_optimal(); ///< Runs rtm with optimal checkpointing
     int runPPgrad(); ///< Runs PP mva gradient with full snapshoting
+    int runPPgrad_optimal(); ///< Runs PP mva gradient optimal checkpointing
     int runPSgrad(); ///< Runs PS mva gradient with full snapshoting
+    int runPSgrad_optimal(); ///< Runs PS mva gradient with optimal checkpointing
     void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }

@@ -45,6 +45,9 @@ int main(int argc, char** argv) {
 			PRINT_DOC(nhx = "1";);
 			PRINT_DOC(nhz = "1";);
 			PRINT_DOC();
+			PRINT_DOC(# Booleans);
+			PRINT_DOC(Gathers = "false"; # If surface gathers are to be output);
+			PRINT_DOC();
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp2d.rss";);
 			PRINT_DOC(Rho = "Rho2d.rss";);
@@ -52,6 +55,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC(Precordfile = "Pshots2d.rss";);
 			PRINT_DOC(Pimagefile = "Pimage2d.rss";);
 			PRINT_DOC(Psnapfile = "Psnaps2d.rss";);
+			PRINT_DOC(Pgatherfile = "Pgather2d.rss";);
 			PRINT_DOC();
 		}
         exit(1);
@@ -76,6 +80,9 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Data2D<float>> shot2D;
     std::shared_ptr<rockseis::Data2D<float>> shot2Di;
     std::shared_ptr<rockseis::Image2D<float>> pimage;
+    bool Gather;
+    std::string Pgatherfile;
+    std::shared_ptr<rockseis::Data2D<float>> pgather;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -97,6 +104,10 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("nhx", &nhx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("nhz", &nhz) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Gather", &Gather) == INPARSE_ERR) status = true;
+    if(Gather){
+        if(Inpar->getPar("Pgatherfile", &Pgatherfile) == INPARSE_ERR) status = true;
+    }
     if(Inpar->getPar("snapmethod", &snapmethod) == INPARSE_ERR) status = true;
     rockseis::rs_snapmethod checkpoint = static_cast<rockseis::rs_snapmethod>(snapmethod);
     switch(checkpoint){
@@ -153,9 +164,21 @@ int main(int argc, char** argv) {
         // Image
         pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
         pimage->createEmpty();
-
 		for(long int i=0; i<ngathers; i++) {
             pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+        }
+
+        // Image gathers
+        if(Gather){
+	    std::shared_ptr<rockseis::File> Fimg (new rockseis::File());
+        Fimg->input(Pimagefile + "-" + std::to_string(0));
+        pgather = std::make_shared<rockseis::Data2D<float>>(Fimg->getN(1),Fimg->getN(3),Fimg->getD(3),Fimg->getO(3));
+        pgather->setFile(Pgatherfile);
+        pgather->open("o");
+		for(long int i=0; i<ngathers; i++) {
+            pgather->putImage(Pimagefile + "-" + std::to_string(i));
+        }
+        pgather->close();
         }
     }
     else {

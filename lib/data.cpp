@@ -426,6 +426,66 @@ bool Data2D<T>::writeTraces()
 }
 
 template<typename T>
+void Data2D<T>::putImage(std::string imagefile)
+{
+    bool status;
+    if(imagefile.empty()){
+        rs_error("Data2D::putImage: No file assigned.");
+    }
+    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
+    status = Fin->input(imagefile);
+    if(status == FILE_ERR){
+	    rs_error("Data2D::putImage: Error reading from file: ", imagefile);
+    }
+    Point2D<T> *scoords = (this->getGeom())->getScoords();
+    Point2D<T> *gcoords = (this->getGeom())->getGcoords();
+    long long nz = this->getNt();
+    
+    long long nx;
+    T dx, ox;
+    long long nhx, nhz;
+
+    nx = Fin->getN(1); 
+    dx = Fin->getD(1); 
+    ox = Fin->getO(1); 
+    nhx = Fin->getN(4); 
+    nhz = Fin->getN(6); 
+    T sx, offset;
+
+    // Create coordinates
+    for (long long i=0; i < nx; i++){
+                sx =  ox + i*dx;
+                offset = (i - ((nx-1)/2))*dx;
+                scoords[i].x = sx;
+                scoords[i].y = 0;
+                gcoords[i].x = sx + offset;
+                gcoords[i].y = 0;
+    }
+    // Get image data
+    T *imagedata = (T *) calloc(nx*nz*nhx*nhz, sizeof(T)); 
+    Fin->read(imagedata, nx*nz*nhx*nhz, 0);
+    Fin->close();
+
+	Index Iimg(nx,nz,nhx,nhz);
+	Index Idata(nz,nx);
+    T *transpose = this->getData(); 
+    // Transpose to trace data and take the zero subsurface offset lag
+    for (long long j=0; j < nx; j++){
+        for (long long i=0; i < nz; i++){
+            transpose[Idata(i,j)] = imagedata[Iimg(j,i,(nhx-1)/2,(nhz-1)/2)];
+        }
+    }
+    // Write out traces and coordinates to end of file
+    status = this->writeTraces();
+    if(status == FILE_ERR){
+	    rs_error("Data2D::putImage: Error writting to file: ", this->getFile());
+    }
+
+    // Free allocated data
+    free(imagedata);
+}
+
+template<typename T>
 void Data2D<T>::createEmpty(size_t ntr)
 {
     bool status;
@@ -907,6 +967,82 @@ void Data3D<T>::putTrace(std::string filename, size_t number)
     }
 
     if(Fdata->getFail()) rs_error("Data3D::PutTrace: Error writting gather to output file");
+}
+
+template<typename T>
+void Data3D<T>::putImage(std::string imagefile)
+{
+    bool status;
+    if(imagefile.empty()){
+        rs_error("Data3D::putImage: No file assigned.");
+    }
+    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
+    status = Fin->input(imagefile);
+    if(status == FILE_ERR){
+	    rs_error("Data3D::putImage: Error reading from file: ", imagefile);
+    }
+    Point3D<T> *scoords = (this->getGeom())->getScoords();
+    Point3D<T> *gcoords = (this->getGeom())->getGcoords();
+    size_t ntr = this->getNtrace();
+    size_t nz = this->getNt();
+    
+    size_t nx,ny;
+    T dx, ox;
+    T dy, oy;
+    size_t nhx, nhy, nhz;
+
+    nx = Fin->getN(1); 
+    dx = Fin->getD(1); 
+    ox = Fin->getO(1); 
+    ny = Fin->getN(2); 
+    dy = Fin->getD(2); 
+    oy = Fin->getO(2); 
+    nhx = Fin->getN(4); 
+    nhy = Fin->getN(5); 
+    nhz = Fin->getN(6); 
+    T sx, sy, offsetx, offsety;
+
+    Index Ixy(nx,ny);
+    // Create coordinates
+    for (size_t j=0; j < ny; j++){
+        for (size_t i=0; i < nx; i++){
+            sx =  ox + i*dx;
+            sy =  oy + j*dy;
+            offsetx = (i - ((nx-1)/2))*dx;
+            offsety = (j - ((ny-1)/2))*dy;
+            scoords[Ixy(i,j)].x = sx;
+            scoords[Ixy(i,j)].y = sy;
+            scoords[Ixy(i,j)].z = 0;
+            gcoords[Ixy(i,j)].x = sx + offsetx;
+            gcoords[Ixy(i,j)].y = sy + offsety;
+            gcoords[Ixy(i,j)].z = 0;
+        }
+    }
+    // Get image data
+    T *imagedata = (T *) calloc(nx*ny*nz*nhx*nhy*nhz, sizeof(T)); 
+    Fin->read(imagedata, nx*ny*nz*nhx*nhy*nhz, 0);
+    Fin->close();
+
+	Index Iimg(nx,ny,nz,nhx,nhy,nhz);
+	Index Idata(nz,ntr);
+    T *transpose = this->getData(); 
+    // Transpose to trace data and take the zero subsurface offset lag
+    for (size_t k=0; k < nz; k++){
+        for (size_t j=0; j < ny; j++){
+            for (size_t i=0; i < nx; i++){
+                transpose[Idata(k,Ixy(i,j))] = imagedata[Iimg(i,j,k,(nhx-1)/2,(nhy-1)/2,(nhz-1)/2)];
+            }
+        }
+    }
+
+    // Write out traces and coordinates to end of file
+    status = this->writeTraces();
+    if(status == FILE_ERR){
+	    rs_error("Data3D::putImage: Error writting to file: ", this->getFile());
+    }
+
+    // Free allocated array
+    free(imagedata);
 }
 
 // destructor
