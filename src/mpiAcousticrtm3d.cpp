@@ -47,12 +47,16 @@ int main(int argc, char** argv) {
 			PRINT_DOC(nhy = "1";);
 			PRINT_DOC(nhz = "1";);
 			PRINT_DOC();
+            PRINT_DOC(# Booleans);
+			PRINT_DOC(Gather = "false"; # If surface gathers are to be output);
+			PRINT_DOC();
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp3d.rss";);
 			PRINT_DOC(Rho = "Rho3d.rss";);
 			PRINT_DOC(Wavelet = "Wav3d.rss";);
 			PRINT_DOC(Precordfile = "Pshots3d.rss";);
 			PRINT_DOC(Pimagefile = "Pimage3d.rss";);
+			PRINT_DOC(Pgatherfile = "Pgather3d.rss";);
 			PRINT_DOC(Psnapfile = "Psnaps3d.rss";);
 			PRINT_DOC();
 		}
@@ -79,6 +83,9 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Data3D<float>> shot3D;
     std::shared_ptr<rockseis::Data3D<float>> shot3Di;
     std::shared_ptr<rockseis::Image3D<float>> pimage;
+    bool Gather;
+    std::string Pgatherfile;
+    std::shared_ptr<rockseis::Data3D<float>> pgather;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -102,6 +109,10 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("nhx", &nhx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("nhy", &nhy) == INPARSE_ERR) status = true;
     if(Inpar->getPar("nhz", &nhz) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Gather", &Gather) == INPARSE_ERR) status = true;
+    if(Gather){
+        if(Inpar->getPar("Pgatherfile", &Pgatherfile) == INPARSE_ERR) status = true;
+    }
     if(Inpar->getPar("snapmethod", &snapmethod) == INPARSE_ERR) status = true;
     rockseis::rs_snapmethod checkpoint = static_cast<rockseis::rs_snapmethod>(snapmethod);
     switch(checkpoint){
@@ -126,9 +137,9 @@ int main(int argc, char** argv) {
     Sort->setDatafile(Precordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic3D<float>> gmodel (new rockseis::ModelAcoustic3D<float>(Vpfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelAcoustic3D<float>> gmodel (new rockseis::ModelAcoustic3D<float>(Vpfile, Rhofile, lpml, fs));
     // Create a local model class
-	std::shared_ptr<rockseis::ModelAcoustic3D<float>> lmodel (new rockseis::ModelAcoustic3D<float>(Vpfile, Rhofile, lpml ,fs));
+	std::shared_ptr<rockseis::ModelAcoustic3D<float>> lmodel (new rockseis::ModelAcoustic3D<float>(Vpfile, Rhofile, lpml, fs));
 
     // Create a data class for the source wavelet
 	std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(Waveletfile));
@@ -155,12 +166,27 @@ int main(int argc, char** argv) {
 		// Perform work in parallel
 		mpi.performWork();
 
+        // Image gathers
+        if(Gather){
+            std::shared_ptr<rockseis::File> Fimg (new rockseis::File());
+            Fimg->input(Pimagefile + "-" + std::to_string(0));
+            pgather = std::make_shared<rockseis::Data3D<float>>(Fimg->getN(1)*Fimg->getN(2),Fimg->getN(3),Fimg->getD(3),Fimg->getO(3));
+            pgather->setFile(Pgatherfile);
+            pgather->open("o");
+            for(long int i=0; i<ngathers; i++) {
+                pgather->putImage(Pimagefile + "-" + std::to_string(i));
+            }
+            pgather->close();
+            Fimg->close();
+        }
+
         // Image
         pimage = std::make_shared<rockseis::Image3D<float>>(Pimagefile, gmodel, nhx, nhy, nhz);
         pimage->createEmpty();
 
 		for(long int i=0; i<ngathers; i++) {
             pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+            remove_file(Pimagefile + "-" + std::to_string(i));
         }
     }
     else {

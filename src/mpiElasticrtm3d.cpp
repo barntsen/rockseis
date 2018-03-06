@@ -50,7 +50,9 @@ int main(int argc, char** argv) {
 			PRINT_DOC();
             PRINT_DOC(# Booleans);
             PRINT_DOC(Pimaging = "true";  # Set these to true if imaging of these events is to be made.);
+			PRINT_DOC(Pgather = "false"; # If surface gathers are to be output);
             PRINT_DOC(Simaging = "true";); 
+			PRINT_DOC(Sgather = "false"; # If surface gathers are to be output);
             PRINT_DOC();
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp3d.rss";);
@@ -58,7 +60,9 @@ int main(int argc, char** argv) {
 			PRINT_DOC(Rho = "Rho3d.rss";);
 			PRINT_DOC(Wavelet = "Wav3d.rss";);
 			PRINT_DOC(Pimagefile = "Pimage3d.rss";);
+			PRINT_DOC(Pgatherfile = "Pgather3d.rss";);
 			PRINT_DOC(Simagefile = "Simage3d.rss";);
+			PRINT_DOC(Sgatherfile = "Sgather3d.rss";);
             PRINT_DOC(Vxrecordfile = "Vxshot.rss";);
             PRINT_DOC(Vyrecordfile = "Vyshot.rss";);
             PRINT_DOC(Vzrecordfile = "Vzshot.rss";);
@@ -89,10 +93,16 @@ int main(int argc, char** argv) {
     bool Pimaging;
     std::string Pimagefile;
     std::shared_ptr<rockseis::Image3D<float>> pimage;
+    bool Pgather;
+    std::string Pgatherfile;
+    std::shared_ptr<rockseis::Data3D<float>> pgather;
 
     bool Simaging;
     std::string Simagefile;
     std::shared_ptr<rockseis::Image3D<float>> simage;
+    bool Sgather;
+    std::string Sgatherfile;
+    std::shared_ptr<rockseis::Data3D<float>> sgather;
 
     std::string Vxrecordfile;
     std::shared_ptr<rockseis::Data3D<float>> Vxdata3D;
@@ -131,6 +141,14 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Simaging", &Simaging) == INPARSE_ERR) status = true;
     if(Simaging){
         if(Inpar->getPar("Simagefile", &Simagefile) == INPARSE_ERR) status = true;
+    }
+    if(Inpar->getPar("Pgather", &Pgather) == INPARSE_ERR) status = true;
+    if(Pgather){
+        if(Inpar->getPar("Pgatherfile", &Pgatherfile) == INPARSE_ERR) status = true;
+    }
+    if(Inpar->getPar("Sgather", &Sgather) == INPARSE_ERR) status = true;
+    if(Sgather){
+        if(Inpar->getPar("Sgatherfile", &Sgatherfile) == INPARSE_ERR) status = true;
     }
     if(Inpar->getPar("Snapfile", &Snapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vxrecordfile", &Vxrecordfile) == INPARSE_ERR) status = true;
@@ -190,12 +208,39 @@ int main(int argc, char** argv) {
 		// Perform work in parallel
 		mpi.performWork();
 
+        // Image gathers
+        if(Pgather){
+            std::shared_ptr<rockseis::File> Fimg (new rockseis::File());
+            Fimg->input(Pimagefile + "-" + std::to_string(0));
+            pgather = std::make_shared<rockseis::Data3D<float>>(Fimg->getN(1)*Fimg->getN(2),Fimg->getN(3),Fimg->getD(3),Fimg->getO(3));
+            pgather->setFile(Pgatherfile);
+            pgather->open("o");
+            for(long int i=0; i<ngathers; i++) {
+                pgather->putImage(Pimagefile + "-" + std::to_string(i));
+            }
+            pgather->close();
+            Fimg->close();
+        }
+        if(Sgather){
+            std::shared_ptr<rockseis::File> Fimg (new rockseis::File());
+            Fimg->input(Simagefile + "-" + std::to_string(0));
+            sgather = std::make_shared<rockseis::Data3D<float>>(Fimg->getN(1)*Fimg->getN(2),Fimg->getN(3),Fimg->getD(3),Fimg->getO(3));
+            sgather->setFile(Sgatherfile);
+            sgather->open("o");
+            for(long int i=0; i<ngathers; i++) {
+                sgather->putImage(Simagefile + "-" + std::to_string(i));
+            }
+            sgather->close();
+            Fimg->close();
+        }
+
         // Images
         if(Pimaging){
             pimage = std::make_shared<rockseis::Image3D<float>>(Pimagefile, gmodel, nhx, nhy, nhz);
             pimage->createEmpty();
             for(long int i=0; i<ngathers; i++) {
                 pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+                remove_file(Pimagefile + "-" + std::to_string(i));
             }
         }
 
@@ -204,11 +249,9 @@ int main(int argc, char** argv) {
             simage->createEmpty();
             for(long int i=0; i<ngathers; i++) {
                 simage->stackImage(Simagefile + "-" + std::to_string(i));
+                remove_file(Simagefile + "-" + std::to_string(i));
             }
         }
-
-
-		
     }
     else {
         /* Slave */

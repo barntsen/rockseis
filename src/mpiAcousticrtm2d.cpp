@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC(nhz = "1";);
 			PRINT_DOC();
 			PRINT_DOC(# Booleans);
-			PRINT_DOC(Gathers = "false"; # If surface gathers are to be output);
+			PRINT_DOC(Gather = "false"; # If surface gathers are to be output);
 			PRINT_DOC();
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp2d.rss";);
@@ -161,25 +161,28 @@ int main(int argc, char** argv) {
 		// Perform work in parallel
 		mpi.performWork();
 
+        // Image gathers
+        if(Gather){
+            std::shared_ptr<rockseis::File> Fimg (new rockseis::File());
+            Fimg->input(Pimagefile + "-" + std::to_string(0));
+            pgather = std::make_shared<rockseis::Data2D<float>>(Fimg->getN(1),Fimg->getN(3),Fimg->getD(3),Fimg->getO(3));
+            pgather->setFile(Pgatherfile);
+            pgather->open("o");
+            for(long int i=0; i<ngathers; i++) {
+                pgather->putImage(Pimagefile + "-" + std::to_string(i));
+            }
+            pgather->close();
+            Fimg->close();
+        }
         // Image
         pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
         pimage->createEmpty();
 		for(long int i=0; i<ngathers; i++) {
             pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+            remove_file(Pimagefile + "-" + std::to_string(i));
         }
 
-        // Image gathers
-        if(Gather){
-	    std::shared_ptr<rockseis::File> Fimg (new rockseis::File());
-        Fimg->input(Pimagefile + "-" + std::to_string(0));
-        pgather = std::make_shared<rockseis::Data2D<float>>(Fimg->getN(1),Fimg->getN(3),Fimg->getD(3),Fimg->getO(3));
-        pgather->setFile(Pgatherfile);
-        pgather->open("o");
-		for(long int i=0; i<ngathers; i++) {
-            pgather->putImage(Pimagefile + "-" + std::to_string(i));
-        }
-        pgather->close();
-        }
+
     }
     else {
         /* Slave */

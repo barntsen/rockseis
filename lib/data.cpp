@@ -983,13 +983,13 @@ void Data3D<T>::putImage(std::string imagefile)
     }
     Point3D<T> *scoords = (this->getGeom())->getScoords();
     Point3D<T> *gcoords = (this->getGeom())->getGcoords();
-    size_t ntr = this->getNtrace();
-    size_t nz = this->getNt();
+    long long ntr = this->getNtrace();
+    long long nz = this->getNt();
     
-    size_t nx,ny;
+    long long nx,ny;
     T dx, ox;
     T dy, oy;
-    size_t nhx, nhy, nhz;
+    long long nhx, nhy, nhz;
 
     nx = Fin->getN(1); 
     dx = Fin->getD(1); 
@@ -1004,8 +1004,8 @@ void Data3D<T>::putImage(std::string imagefile)
 
     Index Ixy(nx,ny);
     // Create coordinates
-    for (size_t j=0; j < ny; j++){
-        for (size_t i=0; i < nx; i++){
+    for (long long j=0; j < ny; j++){
+        for (long long i=0; i < nx; i++){
             sx =  ox + i*dx;
             sy =  oy + j*dy;
             offsetx = (i - ((nx-1)/2))*dx;
@@ -1027,9 +1027,9 @@ void Data3D<T>::putImage(std::string imagefile)
 	Index Idata(nz,ntr);
     T *transpose = this->getData(); 
     // Transpose to trace data and take the zero subsurface offset lag
-    for (size_t k=0; k < nz; k++){
-        for (size_t j=0; j < ny; j++){
-            for (size_t i=0; i < nx; i++){
+    for (long long k=0; k < nz; k++){
+        for (long long j=0; j < ny; j++){
+            for (long long i=0; i < nx; i++){
                 transpose[Idata(k,Ixy(i,j))] = imagedata[Iimg(i,j,k,(nhx-1)/2,(nhy-1)/2,(nhz-1)/2)];
             }
         }
