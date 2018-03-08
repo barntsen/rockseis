@@ -304,6 +304,7 @@ void MPImodeling::performWork() {
 
 		// Sending work to slave
 		sendWork(work,result.fromRank);
+        printWork();
 		
 		// Getting new job
 		work = getWork();

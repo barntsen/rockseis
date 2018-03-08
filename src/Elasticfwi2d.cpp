@@ -213,6 +213,9 @@ int main(int argc, char** argv) {
     float vpregalpha, vsregalpha, rhoregalpha;
     int max_linesearch, max_iterations;
     bool update_vp, update_vs, update_rho, update_source;
+
+    int linesearch;
+    int optmethod; 
     std::string Waveletfile;
     std::string Vpfile;
     std::string Vsfile;
@@ -299,6 +302,9 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("update_rho", &update_rho) == INPARSE_ERR) status = true;
     if(Inpar->getPar("update_source", &update_source) == INPARSE_ERR) status = true;
 
+    if(Inpar->getPar("linesearch", &linesearch) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("optmethod", &optmethod) == INPARSE_ERR) status = true;
+
     // Set scaling according to updates
     if(!update_vp) kvp = 0.0;
     if(!update_vs) kvs = 0.0;
@@ -372,9 +378,34 @@ int main(int argc, char** argv) {
         x = (double *) calloc(N, sizeof(double));
         std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(N));
         opt->opt_set_initial_guess(x);
-        opt->setGtol(0.9);
         opt->setMax_linesearch(max_linesearch);
         opt->setMax_iterations(max_iterations);
+
+        switch(optmethod) {
+            case 1:
+                opt->setGtol(0.9);
+                break;
+            case 4:
+                opt->setGtol(0.1);
+            default:
+                break;
+        }
+
+        switch(linesearch) {
+            case 1:
+                opt->setLinesearch_condition(OPT_CONDITION_DECREASE);
+                break;
+            case 2:
+                opt->setLinesearch_condition(OPT_CONDITION_ARMIJO);
+                break;
+            case 4:
+                opt->setLinesearch_condition(OPT_CONDITION_STRONG_WOLFE);
+                break;
+            case 3:
+            default:
+                opt->setLinesearch_condition(OPT_CONDITION_WOLFE);
+                break;
+        }
 
         // Create results folder
         inv->createResult();
@@ -384,7 +415,23 @@ int main(int argc, char** argv) {
         inv->writeProgress("Maximum number of iterations: " + std::to_string(opt->getMax_iterations()));
         inv->writeProgress("Maximum number of linesearches: " + std::to_string(opt->getMax_linesearch()));
         inv->writeProgress("ITERATION\t   STEP LENGTH            MISFIT               GNORM             MNORM                TIME");
-        opt->opt_lbfgs(evaluate, progress);
+        switch(optmethod) {
+            case 4:
+                opt->opt_conjugate_gradient_pr(evaluate,progress);
+                break;
+            case 3:
+                opt->opt_steepest_descent(evaluate,progress);
+                break;
+            case 2:
+                opt->opt_conjugate_gradient_fr(evaluate,progress);
+                break;
+            case 1:
+            default:
+                opt->opt_lbfgs(evaluate,progress);
+                break;
+        }
+
+
 
         // Send message for slaves to quit
         inv->writeLog("Optimisation algorithm finished");
