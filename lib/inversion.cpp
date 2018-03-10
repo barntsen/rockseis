@@ -1211,8 +1211,10 @@ void InversionElastic2D<T>::runGrad() {
     std::shared_ptr<rockseis::Data2D<T>> Uzdatamod2Di;
     std::shared_ptr<rockseis::Data2D<T>> Uzdatares2D;
     std::shared_ptr<rockseis::Data2D<T>> Uzdatares2Di;
-    std::shared_ptr<rockseis::Data2D<T>> shotweight2D;
-    std::shared_ptr<rockseis::Data2D<T>> shotweight2Di;
+    std::shared_ptr<rockseis::Data2D<T>> xweight2D;
+    std::shared_ptr<rockseis::Data2D<T>> xweight2Di;
+    std::shared_ptr<rockseis::Data2D<T>> zweight2D;
+    std::shared_ptr<rockseis::Data2D<T>> zweight2Di;
     std::shared_ptr<rockseis::Image2D<T>> vpgrad;
     std::shared_ptr<rockseis::Image2D<T>> vsgrad;
     std::shared_ptr<rockseis::Image2D<T>> rhograd;
@@ -1341,9 +1343,13 @@ void InversionElastic2D<T>::runGrad() {
                 Uzdata2D = Sort->get2DGather(work.id);
 
                 // Get the weight
-                if(dataweight){
-                    Sort->setDatafile(Dataweightfile);
-                    shotweight2D = Sort->get2DGather(work.id);
+                if(dataweightx){
+                    Sort->setDatafile(Dataweightxfile);
+                    xweight2D = Sort->get2DGather(work.id);
+                }
+                if(dataweightz){
+                    Sort->setDatafile(Dataweightzfile);
+                    zweight2D = Sort->get2DGather(work.id);
                 }
 
                 lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
@@ -1407,11 +1413,17 @@ void InversionElastic2D<T>::runGrad() {
                 fwi->setDataresUz(Uzdatares2D);
 
                 // Interpolate weight
-                if(dataweight){
-                    shotweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                    interp->interp(shotweight2D, shotweight2Di);
-                    shotweight2Di->makeMap(lmodel->getGeom(), GMAP);
-                    fwi->setDataweight(shotweight2Di);
+                if(dataweightx){
+                    xweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    interp->interp(xweight2D, xweight2Di);
+                    xweight2Di->makeMap(lmodel->getGeom(), GMAP);
+                    fwi->setDataweightx(xweight2Di);
+                }
+                if(dataweightz){
+                    zweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    interp->interp(zweight2D, zweight2Di);
+                    zweight2Di->makeMap(lmodel->getGeom(), GMAP);
+                    fwi->setDataweightz(zweight2Di);
                 }
 
                 // Setting misfit type
@@ -2606,8 +2618,12 @@ void InversionElastic3D<T>::runGrad() {
     std::shared_ptr<rockseis::Data3D<T>> Uzdatamod3Di;
     std::shared_ptr<rockseis::Data3D<T>> Uzdatares3D;
     std::shared_ptr<rockseis::Data3D<T>> Uzdatares3Di;
-    std::shared_ptr<rockseis::Data3D<T>> shotweight3D;
-    std::shared_ptr<rockseis::Data3D<T>> shotweight3Di;
+    std::shared_ptr<rockseis::Data3D<T>> xweight3D;
+    std::shared_ptr<rockseis::Data3D<T>> xweight3Di;
+    std::shared_ptr<rockseis::Data3D<T>> yweight3D;
+    std::shared_ptr<rockseis::Data3D<T>> yweight3Di;
+    std::shared_ptr<rockseis::Data3D<T>> zweight3D;
+    std::shared_ptr<rockseis::Data3D<T>> zweight3Di;
     std::shared_ptr<rockseis::Image3D<T>> vpgrad;
     std::shared_ptr<rockseis::Image3D<T>> vsgrad;
     std::shared_ptr<rockseis::Image3D<T>> rhograd;
@@ -2746,9 +2762,17 @@ void InversionElastic3D<T>::runGrad() {
                 Uzdata3D = Sort->get3DGather(work.id);
 
                 // Get the weight
-                if(dataweight){
-                    Sort->setDatafile(Dataweightfile);
-                    shotweight3D = Sort->get3DGather(work.id);
+                if(dataweightx){
+                    Sort->setDatafile(Dataweightxfile);
+                    xweight3D = Sort->get3DGather(work.id);
+                }
+                if(dataweighty){
+                    Sort->setDatafile(Dataweightyfile);
+                    yweight3D = Sort->get3DGather(work.id);
+                }
+                if(dataweightz){
+                    Sort->setDatafile(Dataweightzfile);
+                    zweight3D = Sort->get3DGather(work.id);
                 }
 
                 lmodel = gmodel->getLocal(Uxdata3D, apertx, aperty, SMAP);
@@ -2831,11 +2855,24 @@ void InversionElastic3D<T>::runGrad() {
                 fwi->setDataresUz(Uzdatares3D);
 
                 // Interpolate weight
-                if(dataweight){
-                    shotweight3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                    interp->interp(shotweight3D, shotweight3Di);
-                    shotweight3Di->makeMap(lmodel->getGeom(), GMAP);
-                    fwi->setDataweight(shotweight3Di);
+                if(dataweightx){
+                    xweight3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    interp->interp(xweight3D, xweight3Di);
+                    xweight3Di->makeMap(lmodel->getGeom(), GMAP);
+                    fwi->setDataweightx(xweight3Di);
+                }
+
+                if(dataweighty){
+                    yweight3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    interp->interp(yweight3D, yweight3Di);
+                    yweight3Di->makeMap(lmodel->getGeom(), GMAP);
+                    fwi->setDataweighty(yweight3Di);
+                }
+                if(dataweightz){
+                    zweight3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    interp->interp(zweight3D, zweight3Di);
+                    zweight3Di->makeMap(lmodel->getGeom(), GMAP);
+                    fwi->setDataweightz(zweight3Di);
                 }
 
                 // Setting misfit type

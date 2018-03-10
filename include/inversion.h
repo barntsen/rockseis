@@ -307,11 +307,17 @@ public:
     InversionElastic2D(MPImodeling *_mpi); ///<Constructor
     ~InversionElastic2D(); ///<Destructor
 
-    void setDataweight(bool val) { dataweight = val; }
-    bool getDataweight() { return dataweight; }
+    void setDataweightx(bool val) { dataweightx = val; }
+    bool getDataweightx() { return dataweightx; }
 
-    void setDataweightfile(std::string file) { Dataweightfile = file; }
-    std::string getDataweightfile() { return Dataweightfile; }
+    void setDataweightz(bool val) { dataweightz = val; }
+    bool getDataweightz() { return dataweightz; }
+
+    void setDataweightxfile(std::string file) { Dataweightxfile = file; }
+    std::string getDataweightxfile() { return Dataweightxfile; }
+
+    void setDataweightzfile(std::string file) { Dataweightzfile = file; }
+    std::string getDataweightzfile() { return Dataweightzfile; }
 
     void setWaveletfile(std::string file) { Waveletfile = file; }
     std::string getWaveletfile() { return Waveletfile; }
@@ -441,7 +447,8 @@ private:
     bool update_vs;
     bool update_rho;
     bool update_source;
-    bool dataweight;
+    bool dataweightx;
+    bool dataweightz;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Vsfile;
@@ -450,7 +457,8 @@ private:
     std::string Vsgradfile;
     std::string Rhogradfile;
     std::string Wavgradfile;
-    std::string Dataweightfile;
+    std::string Dataweightxfile;
+    std::string Dataweightzfile;
     std::string Misfitfile;
     std::string Uxrecordfile;
     std::string Uxmodelledfile;
@@ -475,11 +483,23 @@ public:
     InversionElastic3D(MPImodeling *_mpi); ///<Constructor
     ~InversionElastic3D(); ///<Destructor
 
-    void setDataweight(bool val) { dataweight = val; }
-    bool getDataweight() { return dataweight; }
+    void setDataweightx(bool val) { dataweightx = val; }
+    bool getDataweightx() { return dataweightx; }
 
-    void setDataweightfile(std::string file) { Dataweightfile = file; }
-    std::string getDataweightfile() { return Dataweightfile; }
+    void setDataweightxfile(std::string file) { Dataweightxfile = file; }
+    std::string getDataweightxfile() { return Dataweightxfile; }
+
+    void setDataweighty(bool val) { dataweighty = val; }
+    bool getDataweighty() { return dataweighty; }
+
+    void setDataweightyfile(std::string file) { Dataweightyfile = file; }
+    std::string getDataweightyfile() { return Dataweightyfile; }
+
+    void setDataweightz(bool val) { dataweightz = val; }
+    bool getDataweightz() { return dataweightz; }
+
+    void setDataweightzfile(std::string file) { Dataweightzfile = file; }
+    std::string getDataweightzfile() { return Dataweightzfile; }
 
     void setWaveletfile(std::string file) { Waveletfile = file; }
     std::string getWaveletfile() { return Waveletfile; }
@@ -621,7 +641,9 @@ private:
     bool update_vs;
     bool update_rho;
     bool update_source;
-    bool dataweight;
+    bool dataweightx;
+    bool dataweighty;
+    bool dataweightz;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Vsfile;
@@ -630,7 +652,9 @@ private:
     std::string Vsgradfile;
     std::string Rhogradfile;
     std::string Wavgradfile;
-    std::string Dataweightfile;
+    std::string Dataweightxfile;
+    std::string Dataweightyfile;
+    std::string Dataweightzfile;
     std::string Misfitfile;
     std::string Uxrecordfile;
     std::string Uxmodelledfile;

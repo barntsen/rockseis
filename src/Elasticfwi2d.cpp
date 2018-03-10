@@ -151,8 +151,10 @@ int main(int argc, char** argv) {
             PRINT_DOC();
             PRINT_DOC(#Fwi parameters);
             PRINT_DOC(misfit_type = "0";  # 0- Difference; 1- Correlation);
-            PRINT_DOC(dataweight = "false";);
-            PRINT_DOC(Dataweightfile = "weights.rss";);
+            PRINT_DOC(dataweightx = "false";);
+            PRINT_DOC(dataweightz = "false";);
+            PRINT_DOC(Dataweightxfile = "xweights.rss";);
+            PRINT_DOC(Dataweightzfile = "zweights.rss";);
             PRINT_DOC(mute = "false";  # Mute gradient and updates);
             PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
             PRINT_DOC(max_linesearch = "10"; # maximum number of linesearches);
@@ -197,7 +199,8 @@ int main(int argc, char** argv) {
 	int lpml;
 	bool fs;
     bool incore = false;
-    bool dataweight;
+    bool dataweightx;
+    bool dataweightz;
     bool mute;
 	int order;
 	int snapinc;
@@ -224,7 +227,8 @@ int main(int argc, char** argv) {
     std::string Vsgradfile;
     std::string Rhogradfile;
     std::string Wavgradfile;
-    std::string Dataweightfile;
+    std::string Dataweightxfile;
+    std::string Dataweightzfile;
     std::string Misfitfile;
     std::string Snapfile;
     std::string Uxrecordfile;
@@ -281,9 +285,14 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
     rockseis::rs_fwimisfit fwimisfit = static_cast<rockseis::rs_fwimisfit>(misfit_type);
 
-    if(Inpar->getPar("dataweight", &dataweight) == INPARSE_ERR) status = true;
-    if(dataweight){
-        if(Inpar->getPar("Dataweightfile", &Dataweightfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("dataweightx", &dataweightx) == INPARSE_ERR) status = true;
+    if(dataweightx){
+        if(Inpar->getPar("Dataweightxfile", &Dataweightxfile) == INPARSE_ERR) status = true;
+    }
+
+    if(Inpar->getPar("dataweightz", &dataweightz) == INPARSE_ERR) status = true;
+    if(dataweightz){
+        if(Inpar->getPar("Dataweightzfile", &Dataweightzfile) == INPARSE_ERR) status = true;
     }
 
     if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
@@ -322,8 +331,11 @@ int main(int argc, char** argv) {
 
     inv->setUxrecordfile(Uxrecordfile);
     inv->setUzrecordfile(Uzrecordfile);
-    inv->setDataweight(dataweight);
-    inv->setDataweightfile(Dataweightfile);
+    inv->setDataweightx(dataweightx);
+    inv->setDataweightxfile(Dataweightxfile);
+
+    inv->setDataweightz(dataweightz);
+    inv->setDataweightzfile(Dataweightzfile);
     if(mute){
         inv->setMutefile(Mutefile);
     }

@@ -1922,7 +1922,8 @@ FwiElastic2D<T>::FwiElastic2D(){
     datamodUzset = false;
     dataresUxset = false;
     dataresUzset = false;
-    dataweightset = false;
+    dataweightxset = false;
+    dataweightzset = false;
 }
 
 template<typename T>
@@ -1943,7 +1944,8 @@ FwiElastic2D<T>::FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::sh
     datamodUzset = false;
     dataresUxset = false;
     dataresUzset = false;
-    dataweightset = false;
+    dataweightxset = false;
+    dataweightzset = false;
 }
 
 template<typename T>
@@ -2180,10 +2182,16 @@ void FwiElastic2D<T>::computeMisfit(){
     T* recz = dataUz->getData();
     T resx = 0.0;
     T resz = 0.0;
-    T *wei = NULL;
-    if(dataweightset)
+    T *weix = NULL;
+    T *weiz = NULL;
+    if(dataweightxset)
     {
-        wei = dataweight->getData();
+        weix = dataweightx->getData();
+    }
+
+    if(dataweightzset)
+    {
+        weiz = dataweightz->getData();
     }
 
     T *shaperx, *shaperz;
@@ -2205,10 +2213,14 @@ void FwiElastic2D<T>::computeMisfit(){
                 for(it=0; it<nt; it++){
                    resx = modx[I(it, itr)] - recx[I(it, itr)];
                    resz = modz[I(it, itr)] - recz[I(it, itr)];
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx *= wei[I(it, itr)];
-                       resz *= wei[I(it, itr)];
+                       resx *= weix[I(it, itr)];
+                   }
+
+                   if(dataweightzset)
+                   {
+                       resz *= weiz[I(it, itr)];
                    }
                    misfit += 0.5*(resx*resx + resz*resz);
                 }
@@ -2244,10 +2256,13 @@ void FwiElastic2D<T>::computeMisfit(){
                 for(it=0; it<nt; it++){
                     resx=(-1.0)*(modx[I(it, itr)]*recx[I(it, itr)]/(xnorm1*xnorm2));
                     resz=((-1.0)*(modz[I(it, itr)]*recz[I(it, itr)]/(znorm1*znorm2)));
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx *= wei[I(it, itr)];
-                       resz *= wei[I(it, itr)];
+                       resx *= weix[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz *= weiz[I(it, itr)];
                    }
 
                    misfit += (resx + resz);
@@ -2271,14 +2286,17 @@ void FwiElastic2D<T>::computeMisfit(){
             for(itr=0; itr<ntr; itr++){
                 for (it=0; it < nt; it++)
                 {
-                    if(dataweightset){
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        recweix[it] = recx[I(it, itr)]*wei[I(it,itr)];
-                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
-                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    if(dataweightxset){
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                        recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
                     }else{
                         modweix[it] = modx[I(it, itr)];
                         recweix[it] = recx[I(it, itr)];
+                    }
+                    if(dataweightzset){
+                        modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                    }else{
                         modweiz[it] = modz[I(it, itr)];
                         recweiz[it] = recz[I(it, itr)];
                     }
@@ -2339,14 +2357,17 @@ void FwiElastic2D<T>::computeMisfit(){
             for(itr=0; itr<ntr; itr++){
                 for (it=0; it < nt; it++)
                 {
-                    if(dataweightset){
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        recweix[it] = recx[I(it, itr)]*wei[I(it,itr)];
-                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
-                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    if(dataweightxset){
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                        recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
                     }else{
                         modweix[it] = modx[I(it, itr)];
                         recweix[it] = recx[I(it, itr)];
+                    }
+                    if(dataweightzset){
+                        modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                    }else{
                         modweiz[it] = modz[I(it, itr)];
                         recweiz[it] = recz[I(it, itr)];
                     }
@@ -2401,14 +2422,17 @@ void FwiElastic2D<T>::computeMisfit(){
             for(itr=0; itr<ntr; itr++){
                 for (it=0; it < nt; it++)
                 {
-                    if(dataweightset){
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        recweix[it] = recx[I(it, itr)]*wei[I(it,itr)];
-                        modweix[nt+it] = modz[I(it, itr)]*wei[I(it,itr)];
-                        recweix[nt+it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    if(dataweightxset){
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                        recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
                     }else{
                         modweix[it] = modx[I(it, itr)];
                         recweix[it] = recx[I(it, itr)];
+                    }
+                    if(dataweightzset){
+                        modweix[nt+it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                        recweix[nt+it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                    }else{
                         modweix[nt+it] = modz[I(it, itr)];
                         recweix[nt+it] = recz[I(it, itr)];
                     }
@@ -2442,10 +2466,13 @@ void FwiElastic2D<T>::computeMisfit(){
                 for(it=0; it<nt; it++){
                    resx = modx[I(it, itr)] - recx[I(it, itr)];
                    resz = modz[I(it, itr)] - recz[I(it, itr)];
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx *= wei[I(it, itr)];
-                       resz *= wei[I(it, itr)];
+                       resx *= weix[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz *= weiz[I(it, itr)];
                    }
                    misfit += 0.5*(resx*resx + resz*resz);
                 }
@@ -2478,10 +2505,15 @@ void FwiElastic2D<T>::computeResiduals(){
     T* modz = datamodUz->getData();
     T* recz = dataUz->getData();
     T* resz = dataresUz->getData();
-    T *wei = NULL;
-    if(dataweightset)
+    T *weix = NULL;
+    T *weiz = NULL;
+    if(dataweightxset)
     {
-        wei = dataweight->getData();
+        weix = dataweightx->getData();
+    }
+    if(dataweightzset)
+    {
+        weiz = dataweightz->getData();
     }
 
     T *shaperx, *shaperz;
@@ -2502,10 +2534,13 @@ void FwiElastic2D<T>::computeResiduals(){
                 for(it=0; it<nt; it++){
                    resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
                    resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz[I(it, itr)] *= weiz[I(it, itr)]*weiz[I(it, itr)];
                    }
                 }
             }
@@ -2546,10 +2581,13 @@ void FwiElastic2D<T>::computeResiduals(){
                 for(it=0; it<nt; it++){
                     resx[I(it, itr)]=((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3));
                     resz[I(it, itr)]=((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3));
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz[I(it, itr)] *= weiz[I(it, itr)]*weiz[I(it, itr)];
                    }
                 }
             }
@@ -2571,14 +2609,17 @@ void FwiElastic2D<T>::computeResiduals(){
             for(itr=0; itr<ntr; itr++){
                 for (it=0; it < nt; it++)
                 {
-                    if(dataweightset){
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        recweix[it] = recx[I(it, itr)]*wei[I(it,itr)];
-                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
-                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    if(dataweightxset){
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                        recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
                     }else{
                         modweix[it] = modx[I(it, itr)];
                         recweix[it] = recx[I(it, itr)];
+                    }
+                    if(dataweightzset){
+                        modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                    }else{
                         modweiz[it] = modz[I(it, itr)];
                         recweiz[it] = recz[I(it, itr)];
                     }
@@ -2618,11 +2659,17 @@ void FwiElastic2D<T>::computeResiduals(){
                 this->stoep(nt, autocorrz, &resz[I(0, itr)], shaperz, spikerz);
                 this->convolve(nt, 0, shaperx, nt, 0, recweix, nt, 0, &resx[I(0, itr)]);        
                 this->convolve(nt, 0, shaperz, nt, 0, recweiz, nt, 0, &resz[I(0, itr)]);        
-                if(dataweightset){
+                if(dataweightxset){
                     for(it=0; it<nt; it++)
                     {
-                        resx[I(it, itr)] *= wei[I(it, itr)];
-                        resz[I(it, itr)] *= wei[I(it, itr)];
+                        resx[I(it, itr)] *= weix[I(it, itr)];
+                    }
+                }
+
+                if(dataweightzset){
+                    for(it=0; it<nt; it++)
+                    {
+                        resz[I(it, itr)] *= weiz[I(it, itr)];
                     }
                 }
             }
@@ -2656,14 +2703,18 @@ void FwiElastic2D<T>::computeResiduals(){
             for(itr=0; itr<ntr; itr++){
                 for (it=0; it < nt; it++)
                 {
-                    if(dataweightset){
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        recweix[it] = recx[I(it, itr)]*wei[I(it,itr)];
-                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
-                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    if(dataweightxset){
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                        recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
                     }else{
                         modweix[it] = modx[I(it, itr)];
                         recweix[it] = recx[I(it, itr)];
+                    }
+
+                    if(dataweightzset){
+                        modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                    }else{
                         modweiz[it] = modz[I(it, itr)];
                         recweiz[it] = recz[I(it, itr)];
                     }
@@ -2703,11 +2754,16 @@ void FwiElastic2D<T>::computeResiduals(){
                 this->stoep(nt, autocorrz, &resz[I(0, itr)], shaperz, spikerz);
                 this->convolve(nt, 0, shaperx, nt, 0, recweix, nt, 0, &resx[I(0, itr)]);        
                 this->convolve(nt, 0, shaperz, nt, 0, recweiz, nt, 0, &resz[I(0, itr)]);        
-                if(dataweightset){
+                if(dataweightxset){
                     for(it=0; it<nt; it++)
                     {
-                        resx[I(it, itr)] *= wei[I(it, itr)];
-                        resz[I(it, itr)] *= wei[I(it, itr)];
+                        resx[I(it, itr)] *= weix[I(it, itr)];
+                    }
+                }
+                if(dataweightzset){
+                    for(it=0; it<nt; it++)
+                    {
+                        resz[I(it, itr)] *= weiz[I(it, itr)];
                     }
                 }
             }
@@ -2735,14 +2791,17 @@ void FwiElastic2D<T>::computeResiduals(){
             for(itr=0; itr<ntr; itr++){
                 for (it=0; it < nt; it++)
                 {
-                    if(dataweightset){
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        recweix[it] = recx[I(it, itr)]*wei[I(it,itr)];
-                        modweix[nt+it] = modz[I(it, itr)]*wei[I(it,itr)];
-                        recweix[nt+it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    if(dataweightxset){
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                        recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
                     }else{
                         modweix[it] = modx[I(it, itr)];
                         recweix[it] = recx[I(it, itr)];
+                    }
+                    if(dataweightzset){
+                        modweix[nt+it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                        recweix[nt+it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                    }else{
                         modweix[nt+it] = modz[I(it, itr)];
                         recweix[nt+it] = recz[I(it, itr)];
                     }
@@ -2769,16 +2828,25 @@ void FwiElastic2D<T>::computeResiduals(){
                 }
                 this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
                 this->convolve(nt, 0, shaperx, 2*nt, 0, recweix, 2*nt, 0, modweix);        
-                if(dataweightset){
+                if(dataweightxset){
                     for(it=0; it<nt; it++)
                     {
-                        resx[I(it, itr)] = modweix[it]*wei[I(it, itr)];
-                        resz[I(it, itr)] = modweix[nt+it]*wei[I(it, itr)];
+                        resx[I(it, itr)] = modweix[it]*weix[I(it, itr)];
                     }
                 }else{
                     for(it=0; it<nt; it++)
                     {
                         resx[I(it, itr)] = modweix[it];
+                    }
+                }
+                if(dataweightzset){
+                    for(it=0; it<nt; it++)
+                    {
+                        resz[I(it, itr)] = modweix[nt+it]*weiz[I(it, itr)];
+                    }
+                }else{
+                    for(it=0; it<nt; it++)
+                    {
                         resz[I(it, itr)] = modweix[nt+it];
                     }
                 }
@@ -2796,10 +2864,13 @@ void FwiElastic2D<T>::computeResiduals(){
                 for(it=0; it<nt; it++){
                    resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
                    resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz[I(it, itr)] *= weiz[I(it, itr)]*weiz[I(it, itr)];
                    }
                 }
             }
@@ -3134,7 +3205,9 @@ FwiElastic3D<T>::FwiElastic3D(){
     dataresUxset = false;
     dataresUyset = false;
     dataresUzset = false;
-    dataweightset = false;
+    dataweightxset = false;
+    dataweightyset = false;
+    dataweightzset = false;
 }
 
 template<typename T>
@@ -3159,7 +3232,9 @@ FwiElastic3D<T>::FwiElastic3D(std::shared_ptr<ModelElastic3D<T>> _model, std::sh
     dataresUxset = false;
     dataresUyset = false;
     dataresUzset = false;
-    dataweightset = false;
+    dataweightxset = false;
+    dataweightyset = false;
+    dataweightzset = false;
 }
 
 template<typename T>
@@ -3471,10 +3546,20 @@ void FwiElastic3D<T>::computeMisfit(){
     T resx = 0.0;
     T resy = 0.0;
     T resz = 0.0;
-    T *wei = NULL;
-    if(dataweightset)
+    T *weix = NULL;
+    T *weiy = NULL;
+    T *weiz = NULL;
+    if(dataweightxset)
     {
-        wei = dataweight->getData();
+        weix = dataweightx->getData();
+    }
+    if(dataweightyset)
+    {
+        weiy = dataweighty->getData();
+    }
+    if(dataweightzset)
+    {
+        weiz = dataweightz->getData();
     }
 
     T *shaperx,*shapery,*shaperz;
@@ -3497,11 +3582,17 @@ void FwiElastic3D<T>::computeMisfit(){
                    resx = modx[I(it, itr)] - recx[I(it, itr)];
                    resy = mody[I(it, itr)] - recy[I(it, itr)];
                    resz = modz[I(it, itr)] - recz[I(it, itr)];
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx *= wei[I(it, itr)];
-                       resy *= wei[I(it, itr)];
-                       resz *= wei[I(it, itr)];
+                       resx *= weix[I(it, itr)];
+                   }
+                   if(dataweightyset)
+                   {
+                       resy *= weiy[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz *= weiz[I(it, itr)];
                    }
                    misfit += 0.5*(resx*resx + resy*resy + resz*resz);
                 }
@@ -3550,13 +3641,18 @@ void FwiElastic3D<T>::computeMisfit(){
                     resx=(-1.0)*(modx[I(it, itr)]*recx[I(it, itr)]/(xnorm1*xnorm2));
                     resy=(-1.0)*(mody[I(it, itr)]*recy[I(it, itr)]/(ynorm1*ynorm2));
                     resz=((-1.0)*(modz[I(it, itr)]*recz[I(it, itr)]/(znorm1*znorm2)));
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx *= wei[I(it, itr)];
-                       resy *= wei[I(it, itr)];
-                       resz *= wei[I(it, itr)];
+                       resx *= weix[I(it, itr)];
                    }
-
+                   if(dataweightyset)
+                   {
+                       resy *= weiy[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz *= weiz[I(it, itr)];
+                   }
                    misfit += (resx + resy + resz);
                 }
             }
@@ -3584,18 +3680,24 @@ void FwiElastic3D<T>::computeMisfit(){
             for(itr=0; itr<ntr; itr++){
                 for (it=0; it < nt; it++)
                 {
-                    if(dataweightset){
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        recweiy[it] = recy[I(it, itr)]*wei[I(it,itr)];
-                        recweiy[it] = recy[I(it, itr)]*wei[I(it,itr)];
-                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
-                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    if(dataweightxset){
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
                     }else{
                         modweix[it] = modx[I(it, itr)];
                         recweix[it] = recx[I(it, itr)];
+                    }
+                    if(dataweightyset){
+                        recweiy[it] = recy[I(it, itr)]*weiy[I(it,itr)];
+                        recweiy[it] = recy[I(it, itr)]*weiy[I(it,itr)];
+                    }else{
                         modweiy[it] = mody[I(it, itr)];
                         recweiy[it] = recy[I(it, itr)];
+                    }
+                    if(dataweightzset){
+                        modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                    }else{
                         modweiz[it] = modz[I(it, itr)];
                         recweiz[it] = recz[I(it, itr)];
                     }
@@ -3660,11 +3762,17 @@ void FwiElastic3D<T>::computeMisfit(){
                    resx = modx[I(it, itr)] - recx[I(it, itr)];
                    resy = mody[I(it, itr)] - recy[I(it, itr)];
                    resz = modz[I(it, itr)] - recz[I(it, itr)];
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx *= wei[I(it, itr)];
-                       resy *= wei[I(it, itr)];
-                       resz *= wei[I(it, itr)];
+                       resx *= weix[I(it, itr)];
+                   }
+                   if(dataweightyset)
+                   {
+                       resy *= weiy[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz *= weiz[I(it, itr)];
                    }
                    misfit += 0.5*(resx*resx + resy*resy + resz*resz);
                 }
@@ -3707,10 +3815,20 @@ void FwiElastic3D<T>::computeResiduals(){
     T* modz = datamodUz->getData();
     T* recz = dataUz->getData();
     T* resz = dataresUz->getData();
-    T *wei = NULL;
-    if(dataweightset)
+    T *weix = NULL;
+    T *weiy = NULL;
+    T *weiz = NULL;
+    if(dataweightxset)
     {
-        wei = dataweight->getData();
+        weix = dataweightx->getData();
+    }
+    if(dataweightyset)
+    {
+        weiy = dataweighty->getData();
+    }
+    if(dataweightzset)
+    {
+        weiz = dataweightz->getData();
     }
 
     T *shaperx,*shapery,*shaperz;
@@ -3732,11 +3850,17 @@ void FwiElastic3D<T>::computeResiduals(){
                    resx[I(it, itr)] = (modx[I(it, itr)] - recx[I(it, itr)]);
                    resy[I(it, itr)] = (mody[I(it, itr)] - recy[I(it, itr)]);
                    resz[I(it, itr)] = (modz[I(it, itr)] - recz[I(it, itr)]);
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
-                       resy[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
+                   }
+                   if(dataweightyset)
+                   {
+                       resy[I(it, itr)] *= weiy[I(it, itr)]*weiy[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz[I(it, itr)] *= weiz[I(it, itr)]*weiz[I(it, itr)];
                    }
                 }
             }
@@ -3793,11 +3917,17 @@ void FwiElastic3D<T>::computeResiduals(){
                     resx[I(it, itr)]=((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3));
                     resy[I(it, itr)]=((-1.0)*((recy[I(it, itr)]/(ynorm1*ynorm2)) - (mody[I(it, itr)]/(ynorm1*ynorm1))*ynorm3));
                     resz[I(it, itr)]=((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3));
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
-                       resy[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
+                   }
+                   if(dataweightyset)
+                   {
+                       resy[I(it, itr)] *= weiy[I(it, itr)]*weiy[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz[I(it, itr)] *= weiz[I(it, itr)]*weiz[I(it, itr)];
                    }
                 }
             }
@@ -3825,18 +3955,24 @@ void FwiElastic3D<T>::computeResiduals(){
             for(itr=0; itr<ntr; itr++){
                 for (it=0; it < nt; it++)
                 {
-                    if(dataweightset){
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        modweix[it] = modx[I(it, itr)]*wei[I(it,itr)];
-                        recweiy[it] = recy[I(it, itr)]*wei[I(it,itr)];
-                        recweiy[it] = recy[I(it, itr)]*wei[I(it,itr)];
-                        modweiz[it] = modz[I(it, itr)]*wei[I(it,itr)];
-                        recweiz[it] = recz[I(it, itr)]*wei[I(it,itr)];
+                    if(dataweightxset){
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                        modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
                     }else{
                         modweix[it] = modx[I(it, itr)];
                         recweix[it] = recx[I(it, itr)];
+                    }
+                    if(dataweightyset){
+                        recweiy[it] = recy[I(it, itr)]*weiy[I(it,itr)];
+                        recweiy[it] = recy[I(it, itr)]*weiy[I(it,itr)];
+                    }else{
                         modweiy[it] = mody[I(it, itr)];
                         recweiy[it] = recy[I(it, itr)];
+                    }
+                    if(dataweightzset){
+                        modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                        recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                    }else{
                         modweiz[it] = modz[I(it, itr)];
                         recweiz[it] = recz[I(it, itr)];
                     }
@@ -3889,11 +4025,17 @@ void FwiElastic3D<T>::computeResiduals(){
                 this->convolve(nt, 0, shaperx, nt, 0, &recx[I(0, itr)], nt, 0, &resx[I(0, itr)]);        
                 this->convolve(nt, 0, shapery, nt, 0, &recy[I(0, itr)], nt, 0, &resy[I(0, itr)]);        
                 this->convolve(nt, 0, shaperz, nt, 0, &recz[I(0, itr)], nt, 0, &resz[I(0, itr)]);        
-                if(dataweightset)
+                if(dataweightxset)
                 {
-                    resx[I(it, itr)] *= wei[I(it, itr)];
-                    resy[I(it, itr)] *= wei[I(it, itr)];
-                    resz[I(it, itr)] *= wei[I(it, itr)];
+                    resx[I(it, itr)] *= weix[I(it, itr)];
+                }
+                if(dataweightyset)
+                {
+                    resy[I(it, itr)] *= weiy[I(it, itr)];
+                }
+                if(dataweightzset)
+                {
+                    resz[I(it, itr)] *= weiz[I(it, itr)];
                 }
             }
             free(modweix);
@@ -3922,11 +4064,17 @@ void FwiElastic3D<T>::computeResiduals(){
                    resx[I(it, itr)] = (modx[I(it, itr)] - recx[I(it, itr)]);
                    resy[I(it, itr)] = (mody[I(it, itr)] - recy[I(it, itr)]);
                    resz[I(it, itr)] = (modz[I(it, itr)] - recz[I(it, itr)]);
-                   if(dataweightset)
+                   if(dataweightxset)
                    {
-                       resx[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
-                       resy[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
-                       resz[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
+                       resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
+                   }
+                   if(dataweightyset)
+                   {
+                       resy[I(it, itr)] *= weiy[I(it, itr)]*weiy[I(it, itr)];
+                   }
+                   if(dataweightzset)
+                   {
+                       resz[I(it, itr)] *= weiz[I(it, itr)]*weiz[I(it, itr)];
                    }
                 }
             }

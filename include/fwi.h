@@ -241,7 +241,8 @@ public:
     void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setVsgrad(std::shared_ptr<Image2D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
-    void setDataweight(std::shared_ptr<Data2D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
+    void setDataweightx(std::shared_ptr<Data2D<T>> _dataweightx) { dataweightx = _dataweightx; dataweightxset = true; }
+    void setDataweightz(std::shared_ptr<Data2D<T>> _dataweightz) { dataweightz = _dataweightz; dataweightzset = true; }
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void crossCorr2(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic2D<T>> model);
@@ -264,8 +265,10 @@ private:
     std::shared_ptr<Data2D<T>> datamodUz;
     std::shared_ptr<Data2D<T>> dataresUx;
     std::shared_ptr<Data2D<T>> dataresUz;
-    std::shared_ptr<Data2D<T>> dataweight;
-    bool dataweightset;
+    std::shared_ptr<Data2D<T>> dataweightx;
+    std::shared_ptr<Data2D<T>> dataweightz;
+    bool dataweightxset;
+    bool dataweightzset;
     bool modelset;
     bool vpgradset;
     bool vsgradset;
@@ -303,7 +306,9 @@ public:
     void setVpgrad(std::shared_ptr<Image3D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setVsgrad(std::shared_ptr<Image3D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
     void setRhograd(std::shared_ptr<Image3D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
-    void setDataweight(std::shared_ptr<Data3D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
+    void setDataweightx(std::shared_ptr<Data3D<T>> _dataweightx) { dataweightx = _dataweightx; dataweightxset = true; }
+    void setDataweighty(std::shared_ptr<Data3D<T>> _dataweighty) { dataweighty = _dataweighty; dataweightyset = true; }
+    void setDataweightz(std::shared_ptr<Data3D<T>> _dataweightz) { dataweightz = _dataweightz; dataweightzset = true; }
     void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesElastic3D_DS<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic3D<T>> model);
     void computeMisfit();
@@ -327,7 +332,9 @@ private:
     std::shared_ptr<Data3D<T>> dataUz;
     std::shared_ptr<Data3D<T>> datamodUz;
     std::shared_ptr<Data3D<T>> dataresUz;
-    std::shared_ptr<Data3D<T>> dataweight;
+    std::shared_ptr<Data3D<T>> dataweightx;
+    std::shared_ptr<Data3D<T>> dataweighty;
+    std::shared_ptr<Data3D<T>> dataweightz;
     bool modelset;
     bool vpgradset;
     bool vsgradset;
@@ -337,9 +344,10 @@ private:
     bool dataUxset, dataUyset, dataUzset;
     bool datamodUxset, datamodUyset, datamodUzset;
     bool dataresUxset, dataresUyset, dataresUzset;
-    bool dataweightset;
+    bool dataweightxset;
+    bool dataweightyset;
+    bool dataweightzset;
 };
-
 
 }
 #endif //FWI_H
