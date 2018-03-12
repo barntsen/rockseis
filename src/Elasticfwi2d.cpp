@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(incore = "true";);
             PRINT_DOC();
             PRINT_DOC(#Fwi parameters);
-            PRINT_DOC(misfit_type = "0";  # 0- Difference; 1- Correlation);
+            PRINT_DOC(misfit_type = "0";  # 0- Difference; 1- Correlation; 2- Adaptive with Gaussian; 3- Adaptive with linear);
             PRINT_DOC(dataweightx = "false";);
             PRINT_DOC(dataweightz = "false";);
             PRINT_DOC(Dataweightxfile = "xweights.rss";);
@@ -159,6 +159,8 @@ int main(int argc, char** argv) {
             PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
             PRINT_DOC(max_linesearch = "10"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
+            PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
+            PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
             PRINT_DOC(update_vp = "true"; # Update vp);
             PRINT_DOC(update_vs = "true"; # Update vs);
             PRINT_DOC(update_rho = "true"; # Update rho);

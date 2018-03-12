@@ -162,6 +162,8 @@ int main(int argc, char** argv) {
             PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
             PRINT_DOC(max_linesearch = "10"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
+            PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
+            PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
             PRINT_DOC(update_vp = "true"; # Update vp);
             PRINT_DOC(update_vs = "true"; # Update vs);
             PRINT_DOC(update_rho = "true"; # Update rho);
