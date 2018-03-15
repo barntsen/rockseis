@@ -29,6 +29,10 @@ void evaluate(rockseis::OptInstancePtr instance)
     inv->runGrad();
     inv->writeLog("Gradient computation finished");
 
+    // Apply source ilumination
+    inv->writeLog("Applying source ilumination correction");
+    inv->applySrcilum();
+
     // Compute regularization
     inv->writeLog("Computing regularisation");
     inv->computeRegularisation(x);
@@ -151,6 +155,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(Dataweightfile = "weights.rss";);
             PRINT_DOC(mute = "false";  # Mute gradient and updates);
             PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
+            PRINT_DOC(Srcilum = "false"; # Correct gradient for source ilumination);
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
 
@@ -210,6 +215,7 @@ int main(int argc, char** argv) {
     int linesearch;
     int optmethod; 
     bool update_vp, update_rho, update_source;
+    bool srcilum;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Rhofile;
@@ -285,14 +291,18 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("update_rho", &update_rho) == INPARSE_ERR) status = true;
     if(Inpar->getPar("update_source", &update_source) == INPARSE_ERR) status = true;
 
+    if(Inpar->getPar("srcilum", &srcilum) == INPARSE_ERR) status = true;
+
     if(Inpar->getPar("linesearch", &linesearch) == INPARSE_ERR) status = true;
     if(Inpar->getPar("optmethod", &optmethod) == INPARSE_ERR) status = true;
 
+    /*
     if(Inpar->getPar("filter", &filter) == INPARSE_ERR) status = true;
     if(Inpar->getPar("f0", &freqs[0]) == INPARSE_ERR) status = true;
     if(Inpar->getPar("f1", &freqs[1]) == INPARSE_ERR) status = true;
     if(Inpar->getPar("f2", &freqs[2]) == INPARSE_ERR) status = true;
     if(Inpar->getPar("f3", &freqs[3]) == INPARSE_ERR) status = true;
+    */
 
     // Set scaling according to updates
     if(!update_vp) kvp = 0.0;
@@ -341,6 +351,12 @@ int main(int argc, char** argv) {
     inv->setRhoregalpha(rhoregalpha);
 
     inv->setUpdates(update_vp, update_rho, update_source);
+    inv->setSrcilum(srcilum);
+    inv->setSrcilumfile(SRCILUMFILE);
+    inv->setRecilum(false);
+    inv->setRecilumfile(RECILUMFILE);
+    // Filter to be removed
+    filter = false;
     inv->setFilter(filter);
     inv->setFreqs(&freqs[0]);
 

@@ -480,9 +480,24 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
     if(!vpgradset && !rhogradset) rs_error("FwiAcoustic2D:crossCorr: No gradient set in fwi class");
     if(!vpgrad->getAllocated()) vpgrad->allocateImage();
     if(!rhograd->getAllocated()) rhograd->allocateImage();
+    if(srcilumset){
+        if(!srcilum->getAllocated()) srcilum->allocateImage();
+    }
+
+    if(recilumset){
+        if(!recilum->getAllocated()) recilum->allocateImage();
+    }
     int ix, iz;
     T *vpgraddata = vpgrad->getImagedata();
     T *rhograddata = rhograd->getImagedata();
+    T *srcilumdata;
+    if(srcilumset){
+        srcilumdata = srcilum->getImagedata();
+    }
+    T *recilumdata;
+    if(recilumset){
+        recilumdata = recilum->getImagedata();
+    }
     T mspx, mspz;
     T mrpx, mrpz;
     T mrxx, mrzz;
@@ -510,6 +525,13 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
                 mrpx = (wrp[kr2D(ix+padr+1, iz+padr)] - wrp[kr2D(ix+padr-1, iz+padr)])/(2.0*dx);
                 mrpz = (wrp[kr2D(ix+padr, iz+padr+1)] - wrp[kr2D(ix+padr, iz+padr-1)])/(2.0*dz);
                 rhograddata[ki2D(ix,iz)] -= rhoscale2*(mspx*mrpx + mspz*mrpz);
+
+                if(srcilumset){
+                    srcilumdata[ki2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*wsp[ks2D(ix+pads, iz+pads)];
+                }
+                if(recilumset){
+                    recilumdata[ki2D(ix,iz)] -= vpscale*L*(mrxx + mrzz)*L*(mrxx + mrzz);
+                }
             }	
         }
     }

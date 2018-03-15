@@ -53,6 +53,9 @@
 #define VSREGGRADFILE "vs_reg_grad.rss"
 #define RHOREGGRADFILE "rho_reg_grad.rss"
 
+#define SRCILUMFILE "src_ilum.rss"
+#define RECILUMFILE "rec_ilum.rss"
+
 #define VPGRADCOMBFILE "vp_grad_comb.rss"
 #define VSGRADCOMBFILE "vs_grad_comb.rss"
 #define RHOGRADCOMBFILE "rho_grad_comb.rss"
@@ -88,6 +91,7 @@
 #define SOURCE_UP "source_up.rss"
 
 #define RESULTDIR "Results"
+
 
 
 namespace rockseis {
@@ -199,6 +203,12 @@ public:
     void setWavgradfile(std::string file) { Wavgradfile = file; }
     std::string getWavgradfile() { return Wavgradfile; }
 
+    void setSrcilumfile(std::string file) { Srcilumfile = file; }
+    std::string getSrcilumfile() { return Srcilumfile; }
+
+    void setRecilumfile(std::string file) { Recilumfile = file; }
+    std::string getRecilumfile() { return Recilumfile; }
+
     void setMisfitfile(std::string file) { Misfitfile = file; }
     std::string getMisfitfile() { return Misfitfile; }
 
@@ -210,6 +220,7 @@ public:
 
     void setPmodelledfile(std::string file) { Pmodelledfile = file; }
     std::string getPmodelledfile() { return Pmodelledfile; }
+
     void setMutefile(std::string file) { Mutefile = file; }
     std::string getMutefile() { return Mutefile; }
 
@@ -249,6 +260,12 @@ public:
     // Mute gradient
     void applyMute();
 
+    // Correct for source ilumination
+    void applySrcilum();
+
+    // Correct for source ilumination
+    void applyRecilum();
+
     // Regularisation computation
     void computeRegularisation(double *x);
 
@@ -274,12 +291,19 @@ public:
     void setUpdate_vp(bool vp) { update_vp = vp;}
     void setUpdate_rho(bool rho) { update_rho = rho;}
     void setUpdate_source(bool source) { update_source = source;}
+    void setSrcilum(bool val) { srcilum = val;}
+    bool getSrcilum() { return srcilum;}
+    void setRecilum(bool val) { recilum = val;}
+    bool getRecilum() { return recilum;}
+
 
 private:
     bool update_vp;
     bool update_rho;
     bool update_source;
     bool dataweight;
+    bool srcilum;
+    bool recilum;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Rhofile;
@@ -293,6 +317,8 @@ private:
     std::string Pmodelledfile;
     std::string Presidualfile;
     std::string Mutefile;
+    std::string Srcilumfile;
+    std::string Recilumfile;
     T apertx;
     T kvp, krho, ksource;
     T reg_eps[2];
@@ -324,6 +350,12 @@ public:
 
     void setVpfile(std::string file) { Vpfile = file; }
     std::string getVpfile() { return Vpfile; }
+
+    void setSrcilumfile(std::string file) { Srcilumfile = file; }
+    std::string getSrcilumfile() { return Srcilumfile; }
+
+    void setRecilumfile(std::string file) { Recilumfile = file; }
+    std::string getRecilumfile() { return Recilumfile; }
 
     void setVsfile(std::string file) { Vsfile = file; }
     std::string getVsfile() { return Vsfile; }
@@ -447,6 +479,8 @@ private:
     bool update_vs;
     bool update_rho;
     bool update_source;
+    bool srcilum;
+    bool recilum;
     bool dataweightx;
     bool dataweightz;
     std::string Waveletfile;
@@ -468,6 +502,8 @@ private:
     std::string Uzresidualfile;
     std::string Snapfile;
     std::string Mutefile;
+    std::string Srcilumfile;
+    std::string Recilumfile;
     T apertx;
     T kvp, kvs, krho, ksource;
     T reg_eps[3];

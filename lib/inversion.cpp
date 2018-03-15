@@ -222,6 +222,8 @@ void InversionAcoustic2D<T>::runGrad() {
     std::shared_ptr<rockseis::Data2D<T>> shotweight2Di;
     std::shared_ptr<rockseis::Image2D<T>> vpgrad;
     std::shared_ptr<rockseis::Image2D<T>> rhograd;
+    std::shared_ptr<rockseis::Image2D<T>> srcilum;
+    std::shared_ptr<rockseis::Image2D<T>> recilum;
     std::shared_ptr<rockseis::Data2D<T>> wavgrad;
 
     // Create a sort class
@@ -291,11 +293,23 @@ void InversionAcoustic2D<T>::runGrad() {
         rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile, gmodel, 1, 1);
         rhograd->createEmpty();
 
+        srcilum = std::make_shared<rockseis::Image2D<T>>(Srcilumfile, gmodel, 1, 1);
+        srcilum->createEmpty();
+
+        recilum = std::make_shared<rockseis::Image2D<T>>(Recilumfile, gmodel, 1, 1);
+        recilum->createEmpty();
+
+
         for(long int i=0; i<ngathers; i++) {
             vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
             remove_file(Vpgradfile + "-" + std::to_string(i));
             rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
             remove_file(Rhogradfile + "-" + std::to_string(i));
+
+            srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
+            remove_file(Srcilumfile + "-" + std::to_string(i));
+            recilum->stackImage(Recilumfile + "-" + std::to_string(i));
+            remove_file(Recilumfile + "-" + std::to_string(i));
         }
 
 		//Clear work vector 
@@ -372,9 +386,15 @@ void InversionAcoustic2D<T>::runGrad() {
                 vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
                 rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
 
+                srcilum = std::make_shared<rockseis::Image2D<T>>(Srcilumfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                recilum = std::make_shared<rockseis::Image2D<T>>(Recilumfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+
                 // Setting up gradient objects in fwi class
                 fwi->setVpgrad(vpgrad);
                 fwi->setRhograd(rhograd);
+
+                fwi->setSrcilum(srcilum);
+                fwi->setRecilum(recilum);
 
                 wavgrad = std::make_shared<rockseis::Data2D<T>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
                 wavgrad->setField(rockseis::PRESSURE);
@@ -413,6 +433,10 @@ void InversionAcoustic2D<T>::runGrad() {
                 rhograd->write();
                 wavgrad->putTrace(Wavgradfile, work.id);
 
+                // Output ilumination
+                srcilum->write();
+                recilum->write();
+
                 // Output misfit
                 Fmisfit->append(Misfitfile);
                 T val = fwi->getMisfit();
@@ -442,6 +466,8 @@ void InversionAcoustic2D<T>::runGrad() {
                 vpgrad.reset();
                 rhograd.reset();
                 wavgrad.reset();
+                srcilum.reset();
+                recilum.reset();
                 fwi.reset();
                 work.status = WORK_FINISHED;
 
@@ -914,6 +940,77 @@ void InversionAcoustic2D<T>::combineGradients()
     grad->writeModel();
 }
 
+template<typename T>
+void InversionAcoustic2D<T>::applySrcilum()
+{
+    if(this->getSrcilum()){
+        // Models
+        std::shared_ptr<rockseis::ModelAcoustic2D<T>> model;
+        model = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADFILE, RHOGRADFILE, 1 ,0);
+        // Ilumination
+        std::shared_ptr<rockseis::ModelAcoustic2D<T>> ilum (new rockseis::ModelAcoustic2D<T>(Srcilumfile, Srcilumfile, 1 ,0));
+
+        // Mute model and write
+        model->readModel();
+        ilum->readModel();
+        T *vp, *rho, *ilumodel;
+        vp = model->getVp(); 
+        rho = model->getR(); 
+        ilumodel = ilum->getVp(); 
+        int i;
+        int N;
+        T norm = 0.0;
+
+        N = (model->getGeom())->getNtot();
+        // Find norm of ilumination map
+        for(i=0; i<N; i++) {
+			if(((T) fabs(ilumodel[i])) >= norm) {
+				norm = (T) fabs(ilumodel[i]);
+			}
+		}
+
+        for(i=0; i< N; i++)
+        {
+            if(ilumodel[i] != 0.0){
+                vp[i] = norm*vp[i]/ilumodel[i];
+                rho[i] = norm*rho[i]/ilumodel[i];
+            }
+        }
+        model->writeModel();
+    }
+}
+
+template<typename T>
+void InversionAcoustic2D<T>::applyRecilum()
+{
+    if(this->getRecilum()){
+        // Models
+        std::shared_ptr<rockseis::ModelAcoustic2D<T>> model;
+        model = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADFILE, RHOGRADFILE, 1 ,0);
+        // Ilumination
+        std::shared_ptr<rockseis::ModelAcoustic2D<T>> ilum (new rockseis::ModelAcoustic2D<T>(Recilumfile, Recilumfile, 1 ,0));
+
+        // Mute model and write
+        model->readModel();
+        ilum->readModel();
+        T *vp, *rho, *ilumodel;
+        vp = model->getVp(); 
+        rho = model->getR(); 
+        ilumodel = ilum->getVp(); 
+        int i;
+        int N;
+
+        N = (model->getGeom())->getNtot();
+        for(i=0; i< N; i++)
+        {
+            if(ilumodel[i] != 0.0){
+                vp[i] = vp[i]/ilumodel[i];
+                rho[i] = rho[i]/ilumodel[i];
+            }
+        }
+        model->writeModel();
+    }
+}
 
 template<typename T>
 void InversionAcoustic2D<T>::applyMute()
