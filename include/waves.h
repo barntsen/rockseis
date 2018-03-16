@@ -314,10 +314,11 @@ public:
     void forwardstepStress(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with Stress
 
     // Insert source functions
-    void insertSource(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+    void insertPressuresource(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Pressure type)
+    void insertForcesource(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Force type )
 
     // Record data at receivers functions
-    void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Displacement type or Pressure )
+    void recordData(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Displacement type or Pressure )
 
     void roll();  // Roll the displacement pointers
 

@@ -885,26 +885,32 @@ int ModellingElastic2D_DS<T>::run(){
     // Loop over time
     for(int it=0; it < nt; it++)
     {
-    	// Time stepping
+
+    	// Time stepping stress
     	waves->forwardstepStress(model, der);
+
+        // Inserting pressure source 
+        waves->insertPressuresource(model, source, SMAP, it);
+
+    	// Time stepping displacement
     	waves->forwardstepDisplacement(model, der);
     
-        // Inserting source 
-        waves->insertSource(model, source, SMAP, it);
+        // Inserting force source 
+        waves->insertForcesource(model, source, SMAP, it);
 
         // Recording data 
         if(this->recPset){
-            waves->recordData(this->recP, GMAP, it);
+            waves->recordData(model, this->recP, GMAP, it);
         }
 
         // Recording data (Ux)
         if(this->recUxset){
-            waves->recordData(this->recUx, GMAP, it);
+            waves->recordData(model, this->recUx, GMAP, it);
         }
 
         // Recording data (Uz)
         if(this->recUzset){
-            waves->recordData(this->recUz, GMAP, it);
+            waves->recordData(model, this->recUz, GMAP, it);
         }
     
     	//Writting out results to snapshot file

@@ -2725,7 +2725,7 @@ void WavesElastic2D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElas
 }
 
 template<typename T>
-void WavesElastic2D_DS<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
+void WavesElastic2D_DS<T>::insertForcesource(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
     Point2D<int> *map;
     Point2D<T> *shift;
     T *wav; 
@@ -2735,12 +2735,8 @@ void WavesElastic2D_DS<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D
     nx = this->getNx() + 2*lpml;
     nz = this->getNz() + 2*lpml;
     T *Mod;
-    T *Modx;
-    T *Modz;
     int nt = this->getNt();
     T dt = this->getDt();
-    T dx = this->getDx();
-    T dz = this->getDz();
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
@@ -2758,23 +2754,6 @@ void WavesElastic2D_DS<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D
     Index Idat(nt, ntrace); // Data indexes
     switch(sourcetype)
     {
-        case PRESSURE:
-            Modx = model->getRx();
-            Modz = model->getRz();
-            for (i=0; i < ntrace; i++) 
-            { 
-                if(map[i].x >= 0 && map[i].y >=0){
-                    for(i1=0; i1<2*LANC_SIZE; i1++){
-                        for(i2=0; i2<2*LANC_SIZE; i2++){
-                            Ux2[I(lpml + map[i].x-1 - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)] += dt*dt*Modx[I(lpml + map[i].x-1 - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE)/dx; 
-                            Ux2[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)] -= dt*dt*Modx[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE)/dx; 
-                            Uz2[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y-1 - (LANC_SIZE - 1) + i1)] += dt*dt*Modz[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y-1 - (LANC_SIZE - 1) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE)/dz; 
-                            Uz2[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)] -= dt*dt*Modz[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE)/dz; 
-                        }
-                    }
-                }
-            }
-            break;
         case VX:
             Mod = model->getRx();
             for (i=0; i < ntrace; i++) 
@@ -2809,12 +2788,60 @@ void WavesElastic2D_DS<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D
 }
 
 template<typename T>
-void WavesElastic2D_DS<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
+void WavesElastic2D_DS<T>::insertPressuresource(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
+    Point2D<int> *map;
+    Point2D<T> *shift;
+    T *wav; 
+    int ntrace = source->getNtrace();
+    int nx, nz, lpml;
+    lpml = this->getLpml();
+    nx = this->getNx() + 2*lpml;
+    nz = this->getNz() + 2*lpml;
+    int nt = this->getNt();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+        shift = (source->getGeom())->getSshift();
+    }else{
+        map = (source->getGeom())->getGmap();
+        shift = (source->getGeom())->getGshift();
+    }
+
+    rs_field sourcetype = source->getField();
+    wav = source->getData();
+    int i,i1,i2;
+    Index I(nx, nz); //Model and Field indexes
+    Index Idat(nt, ntrace); // Data indexes
+    switch(sourcetype)
+    {
+        case PRESSURE:
+            for (i=0; i < ntrace; i++) 
+            { 
+                if(map[i].x >= 0 && map[i].y >=0){
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            Sxx[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)] -= wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE);
+                            Szz[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)] -= wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE);
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+template<typename T>
+void WavesElastic2D_DS<T>::recordData(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
     Point2D<int> *map;
     Point2D<T> *shift;
     T *dataarray; 
     T *Fielddata1 = NULL;
     T *Fielddata2 = NULL;
+    T *Vp, *Vs, *R;
+    T factor;
     int ntrace = data->getNtrace();
     int nt = data->getNt();
     int nx, nz, lpml;
@@ -2835,20 +2862,27 @@ void WavesElastic2D_DS<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data,
     dataarray = data->getData();
     int i,i1,i2;
     Index I(nx, nz);
+    Index Im(this->getNx(), this->getNz());
     Index Idat(nt, ntrace);
     switch(field)
     {
         case PRESSURE:
             Fielddata1 = this->getSxx();
             Fielddata2 = this->getSzz();
+            Vp = model->getVp();
+            Vs = model->getVs();
+            R = model->getR();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >= 0)
                 {
+
+                    // Factor to make reciprocity work
+                    factor = R[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)] - R[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)];
                     for(i1=0; i1<2*LANC_SIZE; i1++){
                         for(i2=0; i2<2*LANC_SIZE; i2++){
-                            dataarray[Idat(it,i)] += Fielddata1[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE);
-                            dataarray[Idat(it,i)] += Fielddata2[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE);
+                            dataarray[Idat(it,i)] += (1./2.)*Fielddata1[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE)/factor;
+                            dataarray[Idat(it,i)] += (1./2.)*Fielddata2[I(lpml + map[i].x - (LANC_SIZE - 1) + i2, lpml + map[i].y - (LANC_SIZE - 1) + i1)]*LANC(shift[i].x + LANC_SIZE - 1 - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i1 ,LANC_SIZE)/factor;
                         }
                     }
                 }

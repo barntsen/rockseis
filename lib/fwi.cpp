@@ -2945,21 +2945,26 @@ int FwiElastic2D<T>::run(){
         Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
         Uzsnap->writeSnap(it);
 
-    	// Time stepping
+    	// Time stepping stress
     	waves->forwardstepStress(model, der);
+
+    	// Inserting force source 
+    	waves->insertPressuresource(model, source, SMAP, it);
+
+    	// Time stepping displacement
     	waves->forwardstepDisplacement(model, der);
     
-    	// Inserting source 
-    	waves->insertSource(model, source, SMAP, it);
+    	// Inserting force source 
+    	waves->insertForcesource(model, source, SMAP, it);
 
         // Recording data (Ux)
         if(this->datamodUxset){
-            waves->recordData(this->datamodUx, GMAP, it);
+            waves->recordData(model, this->datamodUx, GMAP, it);
         }
 
         // Recording data (Uz)
         if(this->datamodUzset){
-            waves->recordData(this->datamodUz, GMAP, it);
+            waves->recordData(model, this->datamodUz, GMAP, it);
         }
 
         // Roll pointers
@@ -3001,11 +3006,13 @@ int FwiElastic2D<T>::run(){
     {
     	// Time stepping 
     	waves->forwardstepStress(model, der);
+
+    	// Time stepping 
     	waves->forwardstepDisplacement(model, der);
 
     	// Inserting residuals
-    	waves->insertSource(model, dataresUx, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataresUz, GMAP, (nt - 1 - it));
+    	waves->insertForcesource(model, dataresUx, GMAP, (nt - 1 - it));
+    	waves->insertForcesource(model, dataresUz, GMAP, (nt - 1 - it));
 
         //Read forward snapshot
         Uxsnap->readSnap(nt - 1 - it);
@@ -3080,21 +3087,26 @@ int FwiElastic2D<T>::run_optimal(){
         {
             for(int it=oldcapo; it < capo; it++)
             {
-                // Time stepping
+                // Time stepping stress
                 waves_fw->forwardstepStress(model, der);
+
+                // Inserting source 
+                waves_fw->insertPressuresource(model, source, SMAP, it);
+
+                // Time stepping displacement
                 waves_fw->forwardstepDisplacement(model, der);
 
                 // Inserting source 
-                waves_fw->insertSource(model, source, SMAP, it);
+                waves_fw->insertForcesource(model, source, SMAP, it);
 
                 // Recording data (Ux)
                 if(this->datamodUxset && !reverse){
-                    waves_fw->recordData(this->datamodUx, GMAP, it);
+                    waves_fw->recordData(model, this->datamodUx, GMAP, it);
                 }
 
                 // Recording data (Uz)
                 if(this->datamodUzset && !reverse){
-                    waves_fw->recordData(this->datamodUz, GMAP, it);
+                    waves_fw->recordData(model, this->datamodUz, GMAP, it);
                 }
 
                 // Roll pointers
@@ -3109,21 +3121,26 @@ int FwiElastic2D<T>::run_optimal(){
         }
         if (whatodo == firsturn)
         {
-            // Time stepping
+            // Time stepping stess
             waves_fw->forwardstepStress(model, der);
+
+            // Inserting pressure source 
+            waves_fw->insertPressuresource(model, source, SMAP, capo);
+            
+            // Time stepping displacement
             waves_fw->forwardstepDisplacement(model, der);
 
             // Inserting source 
-            waves_fw->insertSource(model, source, SMAP, capo);
+            waves_fw->insertForcesource(model, source, SMAP, capo);
 
             // Recording data (Ux)
             if(this->datamodUxset){
-                waves_fw->recordData(this->datamodUx, GMAP, capo);
+                waves_fw->recordData(model, this->datamodUx, GMAP, capo);
             }
 
             // Recording data (Uz)
             if(this->datamodUzset){
-                waves_fw->recordData(this->datamodUz, GMAP, capo);
+                waves_fw->recordData(model, this->datamodUz, GMAP, capo);
             }
 
             // Compute misfit
@@ -3133,8 +3150,8 @@ int FwiElastic2D<T>::run_optimal(){
             computeResiduals();
 
             // Inserting residuals
-            waves_bw->insertSource(model, dataresUx, GMAP, capo);
-            waves_bw->insertSource(model, dataresUz, GMAP, capo);
+            waves_bw->insertForcesource(model, dataresUx, GMAP, capo);
+            waves_bw->insertForcesource(model, dataresUz, GMAP, capo);
 
             // Do Crosscorrelation 
             T *wsx = waves_fw->getUx1();
@@ -3158,13 +3175,15 @@ int FwiElastic2D<T>::run_optimal(){
         }
         if (whatodo == youturn)
         {
-            // Time stepping
+            // Time stepping stress
             waves_bw->forwardstepStress(model, der);
+
+            // Time stepping displacement
             waves_bw->forwardstepDisplacement(model, der);
 
             // Inserting residuals
-            waves_bw->insertSource(model, dataresUx, GMAP, capo);
-            waves_bw->insertSource(model, dataresUz, GMAP, capo);
+            waves_bw->insertForcesource(model, dataresUx, GMAP, capo);
+            waves_bw->insertForcesource(model, dataresUz, GMAP, capo);
 
             // Do Crosscorrelation
             T *wsx = waves_fw->getUx1();
