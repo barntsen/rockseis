@@ -158,11 +158,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		pos = this->mapfloor((scoords[i].y - oy)/dy);
 		if(pos >=0 && pos < ny)
 		{
-			smap[i].y  = pos; // indey is within bounds
+			smap[i].y  = pos; // index is within bounds
             sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
 		}else
 		{
-			smap[i].y  = -1;  // indey is off bounds
+			smap[i].y  = -1;  // index is off bounds
 		}
 	}
 	// Compute index gmap
@@ -179,11 +179,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		pos = this->mapfloor((gcoords[i].y - oy)/dy);
 		if(pos >=0 && pos < ny)
 		{
-			gmap[i].y  = pos; // indey is within bounds
+			gmap[i].y  = pos; // index is within bounds
             gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
 		}else
 		{
-			gmap[i].y  = -1;  // indey is off bounds
+			gmap[i].y  = -1;  // index is off bounds
 		}
 	}
 
@@ -229,11 +229,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
             pos = this->mapfloor((scoords[i].y - oy)/dy);
             if(pos >=0 && pos < ny)
             {
-                smap[i].y  = pos; // indey is within bounds
+                smap[i].y  = pos; // index is within bounds
                 sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
             }else
             {
-                smap[i].y  = -1;  // indey is off bounds
+                smap[i].y  = -1;  // index is off bounds
             }
         }
         // Issue a warning if all coordinates are out of bounds
@@ -259,11 +259,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
             pos = this->mapfloor((gcoords[i].y - oy)/dy);
             if(pos >=0 && pos < ny)
             {
-                gmap[i].y  = pos; // indey is within bounds
+                gmap[i].y  = pos; // index is within bounds
                 gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
             }else
             {
-                gmap[i].y  = -1;  // indey is off bounds
+                gmap[i].y  = -1;  // index is off bounds
             }
         }
         // Issue a warning if all coordinates are out of bounds
@@ -350,20 +350,20 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		pos = this->mapfloor((scoords[i].y - oy)/dy);
 		if(pos >=0 && pos < ny)
 		{
-			smap[i].y  = pos; // indey is within bounds
+			smap[i].y  = pos; // index is within bounds
             sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
 		}else
 		{
-			smap[i].y  = -1;  // indey is off bounds
+			smap[i].y  = -1;  // index is off bounds
 		}
 		pos = this->mapfloor((scoords[i].z - oz)/dz);
 		if(pos >=0 && pos < nz)
 		{
-			smap[i].z  = pos; // indez is within bounds
+			smap[i].z  = pos; // index is within bounds
             sshift[i].z = ((scoords[i].z - oz)/dz) - pos;
 		}else
 		{
-			smap[i].z  = -1;  // indez is off bounds
+			smap[i].z  = -1;  // index is off bounds
 		}
 	}
 	for (size_t i = 0; i < n ; i++){
@@ -379,20 +379,20 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 		pos = this->mapfloor((gcoords[i].y - oy)/dy);
 		if(pos >=0 && pos < ny)
 		{
-			gmap[i].y  = pos; // indey is within bounds
+			gmap[i].y  = pos; // index is within bounds
             gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
 		}else
 		{
-			gmap[i].y  = -1;  // indey is off bounds
+			gmap[i].y  = -1;  // index is off bounds
 		}
 		pos = this->mapfloor((gcoords[i].z - oz)/dz);
 		if(pos >=0 && pos < nz)
 		{
-			gmap[i].z  = pos; // indez is within bounds
+			gmap[i].z  = pos; // index is within bounds
             gshift[i].z = ((gcoords[i].z - oz)/dz) - pos;
 		}else
 		{
-			gmap[i].z  = -1;  // indez is off bounds
+			gmap[i].z  = -1;  // index is off bounds
 		}
 	}
     // Issue a warning if all receivers are out of bounds
@@ -438,20 +438,20 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
             pos = this->mapfloor((scoords[i].y - oy)/dy);
             if(pos >=0 && pos < ny)
             {
-                smap[i].y  = pos; // indey is within bounds
+                smap[i].y  = pos; // index is within bounds
                 sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
             }else
             {
-                smap[i].y  = -1;  // indey is off bounds
+                smap[i].y  = -1;  // index is off bounds
             }
             pos = this->mapfloor((scoords[i].z - oz)/dz);
             if(pos >=0 && pos < nz)
             {
-                smap[i].z  = pos; // indez is within bounds
+                smap[i].z  = pos; // index is within bounds
                 sshift[i].z = ((scoords[i].z - oz)/dz) - pos;
             }else
             {
-                smap[i].z  = -1;  // indez is off bounds
+                smap[i].z  = -1;  // index is off bounds
             }
         }
 
@@ -477,20 +477,20 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
             pos = this->mapfloor((gcoords[i].y - oy)/dy);
             if(pos >=0 && pos < ny)
             {
-                gmap[i].y  = pos; // indey is within bounds
+                gmap[i].y  = pos; // index is within bounds
                 gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
             }else
             {
-                gmap[i].y  = -1;  // indey is off bounds
+                gmap[i].y  = -1;  // index is off bounds
             }
             pos = this->mapfloor((gcoords[i].z - oz)/dz);
             if(pos >=0 && pos < nz)
             {
-                gmap[i].z  = pos; // indez is within bounds
+                gmap[i].z  = pos; // index is within bounds
                 gshift[i].z = ((gcoords[i].z - oz)/dz) - pos;
             }else
             {
-                gmap[i].z  = -1;  // indez is off bounds
+                gmap[i].z  = -1;  // index is off bounds
             }
         }
 

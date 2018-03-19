@@ -3133,7 +3133,7 @@ void WavesElastic3D_DS<T>::forwardstepDisplacement(std::shared_ptr<rockseis::Mod
     }
  
 
-    // Derivate Sxy backward with respect to z
+    // Derivate Sxz backward with respect to z
     der->ddz_bw(Sxz);
     // Compute Ux
     for(iz=0; iz < nz; iz++){
@@ -3508,7 +3508,7 @@ void WavesElastic3D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElas
    //////////////////////////// Syz //////////////////////////
     // Derivate Uy forward with respect to z
     der->ddz_fw(Uy1);
-    // Compute Sxz
+    // Compute Syz
     for(iz=0; iz < nz; iz++){
         for(iy=0; iy < ny; iy++){
             for(ix=0; ix < nx; ix++){
@@ -3535,7 +3535,7 @@ void WavesElastic3D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElas
 
     // Derivate Uz1 forward with respect to y
     der->ddy_fw(Uz1);
-    // Compute Sxz
+    // Compute Syz
     for(iz=0; iz < nz; iz++){
         for(iy=0; iy < ny; iy++){
             for(ix=0; ix < nx; ix++){
@@ -3564,7 +3564,7 @@ void WavesElastic3D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElas
    //////////////////////////// Sxy //////////////////////////
     // Derivate Ux1 forward with respect to y
     der->ddy_fw(Ux1);
-    // Compute Sxz
+    // Compute Sxy
     for(iz=0; iz < nz; iz++){
         for(iy=0; iy < ny; iy++){
             for(ix=0; ix < nx; ix++){

@@ -2037,6 +2037,8 @@ void ModelElastic3D<T>::staggerModels(){
     this->padmodel3d(Rz, R, nx, ny, nz, lpml);
     this->padmodel3d(L, Vp, nx, ny, nz, lpml);
     this->padmodel3d(M_xz, Vs, nx, ny, nz, lpml);
+    this->padmodel3d(M_yz, Vs, nx, ny, nz, lpml);
+    this->padmodel3d(M_xy, Vs, nx, ny, nz, lpml);
     
     // Computing moduli
     T _rho, _vp, _vs;
