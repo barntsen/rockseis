@@ -1573,12 +1573,17 @@ int RtmElastic3D<T>::run(){
         Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
         Uzsnap->writeSnap(it);
 
-    	// Time stepping
+    	// Time stepping stress
     	waves->forwardstepStress(model, der);
+
+    	// Inserting source 
+    	waves->insertPressuresource(model, source, SMAP, it);
+
+    	// Time stepping displacement
     	waves->forwardstepDisplacement(model, der);
     
     	// Inserting source 
-    	waves->insertSource(model, source, SMAP, it);
+    	waves->insertForcesource(model, source, SMAP, it);
 
         // Roll pointers
         waves->roll();
@@ -1620,14 +1625,16 @@ int RtmElastic3D<T>::run(){
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
-    	// Time stepping 
+    	// Time stepping stress
     	waves->forwardstepStress(model, der);
+
+    	// Time stepping displacement
     	waves->forwardstepDisplacement(model, der);
 
     	// Inserting source 
-    	waves->insertSource(model, dataUx, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataUy, GMAP, (nt - 1 - it));
-    	waves->insertSource(model, dataUz, GMAP, (nt - 1 - it));
+    	waves->insertForcesource(model, dataUx, GMAP, (nt - 1 - it));
+    	waves->insertForcesource(model, dataUy, GMAP, (nt - 1 - it));
+    	waves->insertForcesource(model, dataUz, GMAP, (nt - 1 - it));
 
         //Read forward snapshot
         Uxsnap->readSnap(nt - 1 - it);
@@ -1713,12 +1720,18 @@ int RtmElastic3D<T>::run_optimal(){
         {
             for(int it=oldcapo; it < capo; it++)
             {
-                // Time stepping
+                // Time stepping stress
                 waves_fw->forwardstepStress(model, der);
+
+                // Inserting source 
+                waves_fw->insertPressuresource(model, source, SMAP, it);
+
+                // Time stepping displacement
                 waves_fw->forwardstepDisplacement(model, der);
 
                 // Inserting source 
-                waves_fw->insertSource(model, source, SMAP, it);
+                waves_fw->insertForcesource(model, source, SMAP, it);
+
 
                 // Roll pointers
                 waves_fw->roll();
@@ -1731,16 +1744,21 @@ int RtmElastic3D<T>::run_optimal(){
         }
         if (whatodo == firsturn)
         {
-            // Time stepping
+            // Time stepping stress
             waves_fw->forwardstepStress(model, der);
+
+            // Inserting source 
+            waves_fw->insertPressuresource(model, source, SMAP, capo);
+
+            // Time stepping displacement
             waves_fw->forwardstepDisplacement(model, der);
 
             // Inserting source 
-            waves_fw->insertSource(model, source, SMAP, capo);
+            waves_fw->insertForcesource(model, source, SMAP, capo);
 
             // Inserting data
-            waves_bw->insertSource(model, dataUx, GMAP, capo);
-            waves_bw->insertSource(model, dataUz, GMAP, capo);
+            waves_bw->insertForcesource(model, dataUx, GMAP, capo);
+            waves_bw->insertForcesource(model, dataUz, GMAP, capo);
 
             // Do Crosscorrelation 
             T *wsx = waves_fw->getUx1();
@@ -1769,14 +1787,16 @@ int RtmElastic3D<T>::run_optimal(){
         }
         if (whatodo == youturn)
         {
-            // Time stepping
+            // Time stepping stress
             waves_bw->forwardstepStress(model, der);
+
+            // Time stepping displacement
             waves_bw->forwardstepDisplacement(model, der);
 
             // Inserting data
-            waves_bw->insertSource(model, dataUx, GMAP, capo);
-            waves_bw->insertSource(model, dataUy, GMAP, capo);
-            waves_bw->insertSource(model, dataUz, GMAP, capo);
+            waves_bw->insertForcesource(model, dataUx, GMAP, capo);
+            waves_bw->insertForcesource(model, dataUy, GMAP, capo);
+            waves_bw->insertForcesource(model, dataUz, GMAP, capo);
 
             // Do Crosscorrelation
             T *wsx = waves_fw->getUx1();
