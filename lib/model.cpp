@@ -746,35 +746,53 @@ template<typename T>
 std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) {
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> local;
     /* Get source or receiver min and max positions */
-    Point2D<T> *coords;
+    Point2D<T> *scoords;
+    Point2D<T> *gcoords;
     size_t ntr = data->getNtrace();
     T min, max; 
-    if(map == SMAP){
-        coords = (data->getGeom())->getScoords();
-        min = coords[0].x;
-        max = coords[0].x;
-        for (int i=1; i < ntr; i++){
-            if(coords[i].x < min) min = coords[i].x;
-            if(coords[i].x > max) max = coords[i].x;
-        }
-    }else{
-        coords = (data->getGeom())->getGcoords();
-        min = coords[0].x;
-        max = coords[0].x;
-        for (size_t i=1; i < ntr; i++){
-            if(coords[i].x < min) min = coords[i].x;
-            if(coords[i].x > max) max = coords[i].x;
-        }
-    }
-
     T dx = this->getDx();
     T ox = this->getOx();
     size_t nz = this->getNz();
     size_t nx = this->getNx();
-	/* Determine grid positions and sizes */
-    size_t size = (size_t) (rintf((max-min + aperture)/dx) + 1);
-    if( size % 2 == 0 ) size++; // Get odd size due to symmetry
-    off_t start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
+    size_t size;
+    off_t start;
+
+    /* Determine grid positions and sizes */
+    if(aperture > 0){
+        if(map == SMAP){
+            scoords = (data->getGeom())->getScoords();
+            min = scoords[0].x;
+            max = scoords[0].x;
+            for (long long i=1; i < ntr; i++){
+                if(scoords[i].x < min) min = scoords[i].x;
+                if(scoords[i].x > max) max = scoords[i].x;
+            }
+        }else{
+            gcoords = (data->getGeom())->getGcoords();
+            min = gcoords[0].x;
+            max = gcoords[0].x;
+            for (long long i=1; i < ntr; i++){
+                if(gcoords[i].x < min) min = gcoords[i].x;
+                if(gcoords[i].x > max) max = gcoords[i].x;
+            }
+        }
+        size = (size_t) (rintf((max-min + aperture)/dx) + 1);
+        if( size % 2 == 0 ) size++; // Get odd size due to symmetry
+        start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
+    }else{
+        scoords = (data->getGeom())->getScoords();
+        gcoords = (data->getGeom())->getGcoords();
+        min = scoords[0].x;
+        max = scoords[0].x;
+        for (long long i=0; i < ntr; i++){
+            if(scoords[i].x < min) min = scoords[i].x;
+            if(scoords[i].x > max) max = scoords[i].x;
+            if(gcoords[i].x < min) min = gcoords[i].x;
+            if(gcoords[i].x > max) max = gcoords[i].x;
+        }
+        size = (size_t) (rintf((max-min + 2*std::abs(aperture))/dx) + 2);
+        start = (off_t) (rintf((min - ox)/dx) - rintf(std::abs(aperture/dx))) - 1; 
+    }
 
     /* Create local model */
     local = std::make_shared<rockseis::ModelAcoustic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getFs());

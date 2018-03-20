@@ -588,12 +588,6 @@ void Opt::opt_lbfgs_container_update(OptLbfgsContPtr cont, OptInstancePtr curren
 	cont->rho[mod] = 1.0/dot;
 }
 
-
-
-
-
-
-
 //####### Opt Constructor
 //
 Opt::Opt() 

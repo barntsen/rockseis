@@ -1465,7 +1465,6 @@ void WavesElastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
 template<typename T>
 void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
     Point2D<int> *map;
-    Point2D<T> *shift;
     T *wav; 
     int ntrace = source->getNtrace();
     int nx, nz, lpml;
@@ -1479,10 +1478,8 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
-        shift = (source->getGeom())->getSshift();
     }else{
         map = (source->getGeom())->getGmap();
-        shift = (source->getGeom())->getGshift();
     }
 
     rs_field sourcetype = source->getField();
