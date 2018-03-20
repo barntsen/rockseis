@@ -131,7 +131,7 @@ void Model<T>::padmodel3d(T *padded, T *model, const int nx, const int ny, const
     
     Index ind(nx, ny, nz);
     Index ind_pml(nx_pml, ny_pml, nz_pml);
-    
+
     T val;
     // Padding
     // Padding center
@@ -143,7 +143,17 @@ void Model<T>::padmodel3d(T *padded, T *model, const int nx, const int ny, const
             }
         }
     }
-    
+
+    //Front and back
+    for(ix=0; ix<nx_pml; ix++){
+        for(iy=0; iy<lpml; iy++){
+            for(iz=0; iz<nz_pml; iz++){
+                padded[ind_pml(ix,iy,iz)]=padded[ind_pml(ix,lpml,iz)];
+                padded[ind_pml(ix,ny_pml-lpml+iy,iz)]=padded[ind_pml(ix,ny_pml-lpml-1,iz)];
+            }
+        }
+    }
+
     //Left and right
     for(ix=0; ix < lpml; ix++){
         for(iy=0; iy < ny_pml; iy++){
@@ -153,23 +163,13 @@ void Model<T>::padmodel3d(T *padded, T *model, const int nx, const int ny, const
             }
         }
     }
-    
+
     //Top and bottom
     for(ix=0; ix<nx_pml; ix++){
         for(iy=0; iy<ny_pml; iy++){
             for(iz=0; iz<lpml; iz++){
                 padded[ind_pml(ix,iy,iz)]=padded[ind_pml(ix,iy,lpml)];
                 padded[ind_pml(ix,iy,nz_pml-lpml+iz)]=padded[ind_pml(ix,iy,nz_pml-lpml-1)];
-            }
-        }
-    }
-    
-    //Front and back
-    for(ix=0; ix<nx_pml; ix++){
-        for(iy=0; iy<lpml; iy++){
-            for(iz=0; iz<nz_pml; iz++){
-                padded[ind_pml(ix,iy,iz)]=padded[ind_pml(ix,lpml,iy)];
-                padded[ind_pml(ix,ny_pml-lpml+iy,iz)]=padded[ind_pml(ix,ny_pml-lpml-1,iz)];
             }
         }
     }
@@ -788,9 +788,9 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
 
     /* Allocate two traces to read models from file */
     T *vptrace = (T *) calloc(nx, sizeof(T));
-    if(vptrace == NULL) rs_error("ModelAcoustic2d::getlocal: Failed to allocate memory.");
+    if(vptrace == NULL) rs_error("ModelAcoustic2d::getLocal: Failed to allocate memory.");
     T *rhotrace = (T *) calloc(nx, sizeof(T));
-    if(rhotrace == NULL) rs_error("ModelAcoustic2d::getlocal: Failed to allocate memory.");
+    if(rhotrace == NULL) rs_error("ModelAcoustic2d::getLocal: Failed to allocate memory.");
 
     // Open files for reading
     bool status;
@@ -1083,7 +1083,7 @@ void ModelAcoustic3D<T>::staggerModels(){
     this->padmodel3d(Ry, R, nx, ny, nz, lpml);
     this->padmodel3d(Rz, R, nx, ny, nz, lpml);
     this->padmodel3d(L, Vp, nx, ny, nz, lpml);
-    
+
     // Computing moduli
     T _rho, _vp;
     for(ix=0; ix < nx_pml; ix++){
@@ -1196,9 +1196,9 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
 
     /* Allocate two traces to read models from file */
     T *vptrace = (T *) calloc(nx*ny, sizeof(T));
-    if(vptrace == NULL) rs_error("ModelAcoustic3D::getlocal: Failed to allocate memory.");
+    if(vptrace == NULL) rs_error("ModelAcoustic3D::getLocal: Failed to allocate memory.");
     T *rhotrace = (T *) calloc(nx*ny, sizeof(T));
-    if(rhotrace == NULL) rs_error("ModelAcoustic3D::getlocal: Failed to allocate memory.");
+    if(rhotrace == NULL) rs_error("ModelAcoustic3D::getLocal: Failed to allocate memory.");
 
     // Open files for reading
     bool status;
@@ -1645,11 +1645,11 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
 
     /* Allocate two traces to read models from file */
     T *vptrace = (T *) calloc(nx, sizeof(T));
-    if(vptrace == NULL) rs_error("ModelElastic2d::getlocal: Failed to allocate memory.");
+    if(vptrace == NULL) rs_error("ModelElastic2d::getLocal: Failed to allocate memory.");
     T *vstrace = (T *) calloc(nx, sizeof(T));
-    if(vstrace == NULL) rs_error("ModelElastic2d::getlocal: Failed to allocate memory.");
+    if(vstrace == NULL) rs_error("ModelElastic2d::getLocal: Failed to allocate memory.");
     T *rhotrace = (T *) calloc(nx, sizeof(T));
-    if(rhotrace == NULL) rs_error("ModelElastic2d::getlocal: Failed to allocate memory.");
+    if(rhotrace == NULL) rs_error("ModelElastic2d::getLocal: Failed to allocate memory.");
 
     // Open files for reading
     bool status;
@@ -2037,8 +2037,6 @@ void ModelElastic3D<T>::staggerModels(){
     this->padmodel3d(Rz, R, nx, ny, nz, lpml);
     this->padmodel3d(L, Vp, nx, ny, nz, lpml);
     this->padmodel3d(M_xz, Vs, nx, ny, nz, lpml);
-    this->padmodel3d(M_yz, Vs, nx, ny, nz, lpml);
-    this->padmodel3d(M_xy, Vs, nx, ny, nz, lpml);
     
     // Computing moduli
     T _rho, _vp, _vs;
@@ -2166,11 +2164,11 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
 
     /* Allocate two traces to read models from file */
     T *vptrace = (T *) calloc(nx*ny, sizeof(T));
-    if(vptrace == NULL) rs_error("ModelElastic3D::getlocal: Failed to allocate memory.");
+    if(vptrace == NULL) rs_error("ModelElastic3D::getLocal: Failed to allocate memory.");
     T *vstrace = (T *) calloc(nx*ny, sizeof(T));
-    if(vstrace == NULL) rs_error("ModelElastic3D::getlocal: Failed to allocate memory.");
+    if(vstrace == NULL) rs_error("ModelElastic3D::getLocal: Failed to allocate memory.");
     T *rhotrace = (T *) calloc(nx*ny, sizeof(T));
-    if(rhotrace == NULL) rs_error("ModelElastic3D::getlocal: Failed to allocate memory.");
+    if(rhotrace == NULL) rs_error("ModelElastic3D::getLocal: Failed to allocate memory.");
 
     // Open files for reading
     bool status;
@@ -2206,8 +2204,8 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
         if(Frho->getFail()) rs_error("ModelElastic3D::getLocal: Error reading from rho file");
         for(size_t i3=0; i3<size_y; i3++) {
             lpos_y = j + i3;
-                if(lpos_y < 0) lpos_y = 0;
-                if(lpos_y > (ny-1)) lpos_y = ny - 1;
+            if(lpos_y < 0) lpos_y = 0;
+            if(lpos_y > (ny-1)) lpos_y = ny - 1;
             for(size_t i2=0; i2<size_x; i2++) {
                 lpos_x = i + i2;
                 if(lpos_x < 0) lpos_x = 0;
