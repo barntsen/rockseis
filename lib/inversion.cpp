@@ -3165,7 +3165,7 @@ void InversionElastic3D<T>::runGrad() {
                 Uzdatamod3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatamod3D->copyCoords(Uzdata3D);
                 Uzdatamod3D->makeMap(lmodel->getGeom(), GMAP);
-                Uzdatamod3D->setField(rockseis::VZ);
+                Uzdatares3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatares3D->copyCoords(Uzdata3D);
                 Uzdatares3D->makeMap(lmodel->getGeom(), GMAP);
 
