@@ -1430,7 +1430,6 @@ void InversionElastic2D<T>::runGrad() {
                 Sort->readKeymap();
                 Sort->readSortmap();
 
-
                 // Get the shot
                 Sort->setDatafile(Uxrecordfile);
                 Uxdata2D = Sort->get2DGather(work.id);
