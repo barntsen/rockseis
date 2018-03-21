@@ -3223,7 +3223,6 @@ void InversionElastic3D<T>::runGrad() {
                 fwi->setDatamodUz(Uzdatamod3D);
                 fwi->setDataresUz(Uzdatares3D);
 
-
                 // Interpolate weight
                 if(applyweightx){
                     xweight3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
@@ -3352,35 +3351,35 @@ void InversionElastic3D<T>::runGrad() {
 
                 // Output modelled and residual data
                 if(!Sort->getReciprocity()){
-                Uxdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
-                Uxdatamod3Di->setFile(Uxmodelledfile);
-                interp->interp(Uxdatamod3D, Uxdatamod3Di);
-                Sort->put3DGather(Uxdatamod3Di, gatherid);
+                    Uxdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                    Uxdatamod3Di->setFile(Uxmodelledfile);
+                    interp->interp(Uxdatamod3D, Uxdatamod3Di);
+                    Sort->put3DGather(Uxdatamod3Di, gatherid);
 
-                Uxdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
-                Uxdatares3Di->setFile(Uxresidualfile);
-                interp->interp(Uxdatares3D, Uxdatares3Di);
-                Sort->put3DGather(Uxdatares3Di, gatherid);
+                    Uxdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                    Uxdatares3Di->setFile(Uxresidualfile);
+                    interp->interp(Uxdatares3D, Uxdatares3Di);
+                    Sort->put3DGather(Uxdatares3Di, gatherid);
 
-                Uydatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
-                Uydatamod3Di->setFile(Uymodelledfile);
-                interp->interp(Uydatamod3D, Uydatamod3Di);
-                Sort->put3DGather(Uydatamod3Di, gatherid);
+                    Uydatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
+                    Uydatamod3Di->setFile(Uymodelledfile);
+                    interp->interp(Uydatamod3D, Uydatamod3Di);
+                    Sort->put3DGather(Uydatamod3Di, gatherid);
 
-                Uydatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
-                Uydatares3Di->setFile(Uyresidualfile);
-                interp->interp(Uydatares3D, Uydatares3Di);
-                Sort->put3DGather(Uydatares3Di, gatherid);
+                    Uydatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
+                    Uydatares3Di->setFile(Uyresidualfile);
+                    interp->interp(Uydatares3D, Uydatares3Di);
+                    Sort->put3DGather(Uydatares3Di, gatherid);
 
-                Uzdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
-                Uzdatamod3Di->setFile(Uzmodelledfile);
-                interp->interp(Uzdatamod3D, Uzdatamod3Di);
-                Sort->put3DGather(Uzdatamod3Di, gatherid);
+                    Uzdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                    Uzdatamod3Di->setFile(Uzmodelledfile);
+                    interp->interp(Uzdatamod3D, Uzdatamod3Di);
+                    Sort->put3DGather(Uzdatamod3Di, gatherid);
 
-                Uzdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
-                Uzdatares3Di->setFile(Uzresidualfile);
-                interp->interp(Uzdatares3D, Uzdatares3Di);
-                Sort->put3DGather(Uzdatares3Di, gatherid);
+                    Uzdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                    Uzdatares3Di->setFile(Uzresidualfile);
+                    interp->interp(Uzdatares3D, Uzdatares3Di);
+                    Sort->put3DGather(Uzdatares3Di, gatherid);
                 }else{
                     switch(work.id % 3){
                         case 0:
