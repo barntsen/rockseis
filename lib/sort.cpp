@@ -520,12 +520,21 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather()
         for (size_t j=0; j < n2; j++){
             traceno = this->sortmap[this->keymap[i].i0 + j];
             Fdata->seekg(Fdata->getStartofdata() + traceno*(n1+NHEAD3D)*sizeof(T));
-            Fdata->read(&scoords[j].x, 1);
-            Fdata->read(&scoords[j].y, 1);
-            Fdata->read(&scoords[j].z, 1);
-            Fdata->read(&gcoords[j].x, 1);
-            Fdata->read(&gcoords[j].y, 1);
-            Fdata->read(&gcoords[j].z, 1);
+            if(!this->getReciprocity()){
+                Fdata->read(&scoords[j].x, 1);
+                Fdata->read(&scoords[j].y, 1);
+                Fdata->read(&scoords[j].z, 1);
+                Fdata->read(&gcoords[j].x, 1);
+                Fdata->read(&gcoords[j].y, 1);
+                Fdata->read(&gcoords[j].z, 1);
+            }else{
+                Fdata->read(&gcoords[j].x, 1);
+                Fdata->read(&gcoords[j].y, 1);
+                Fdata->read(&gcoords[j].z, 1);
+                Fdata->read(&scoords[j].x, 1);
+                Fdata->read(&scoords[j].y, 1);
+                Fdata->read(&scoords[j].z, 1);
+            }
             Fdata->read(&data[j*n1], n1);
         }
         // Flag shot as running
@@ -568,12 +577,21 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather(size_t number)
     for (size_t j=0; j < n2; j++){
         traceno = this->sortmap[this->keymap[number].i0 + j];
         Fdata->seekg(Fdata->getStartofdata() + traceno*(n1+NHEAD3D)*sizeof(T));
-        Fdata->read(&scoords[j].x, 1);
-        Fdata->read(&scoords[j].y, 1);
-        Fdata->read(&scoords[j].z, 1);
-        Fdata->read(&gcoords[j].x, 1);
-        Fdata->read(&gcoords[j].y, 1);
-        Fdata->read(&gcoords[j].z, 1);
+        if(!this->getReciprocity()){
+            Fdata->read(&scoords[j].x, 1);
+            Fdata->read(&scoords[j].y, 1);
+            Fdata->read(&scoords[j].z, 1);
+            Fdata->read(&gcoords[j].x, 1);
+            Fdata->read(&gcoords[j].y, 1);
+            Fdata->read(&gcoords[j].z, 1);
+        }else{
+            Fdata->read(&gcoords[j].x, 1);
+            Fdata->read(&gcoords[j].y, 1);
+            Fdata->read(&gcoords[j].z, 1);
+            Fdata->read(&scoords[j].x, 1);
+            Fdata->read(&scoords[j].y, 1);
+            Fdata->read(&scoords[j].z, 1);
+        }
         Fdata->read(&data[j*n1], n1);
     }
     // Flag shot as running

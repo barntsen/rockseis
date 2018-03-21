@@ -1449,8 +1449,8 @@ void InversionElastic2D<T>::runGrad() {
                 Sort->setDatafile(Uzrecordfile);
                 Uzdata2D = Sort->get2DGather(gatherid);
 
+                // Get the weight
                 if(!Sort->getReciprocity()){
-                    // Get the weight
                     if(applyweightx){
                         Sort->setDatafile(Dataweightxfile);
                         xweight2D = Sort->get2DGather(gatherid);
@@ -1707,25 +1707,55 @@ void InversionElastic2D<T>::runGrad() {
                 Fmisfit->close();
 
                 // Output modelled and residual data
-                Uxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
-                Uxdatamod2Di->setFile(Uxmodelledfile);
-                interp->interp(Uxdatamod2D, Uxdatamod2Di);
-                Sort->put2DGather(Uxdatamod2Di, gatherid);
+                if(!Sort->getReciprocity()){
+                    Uxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                    Uxdatamod2Di->setFile(Uxmodelledfile);
+                    interp->interp(Uxdatamod2D, Uxdatamod2Di);
+                    Sort->put2DGather(Uxdatamod2Di, gatherid);
 
-                Uxdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
-                Uxdatares2Di->setFile(Uxresidualfile);
-                interp->interp(Uxdatares2D, Uxdatares2Di);
-                Sort->put2DGather(Uxdatares2Di, gatherid);
+                    Uxdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                    Uxdatares2Di->setFile(Uxresidualfile);
+                    interp->interp(Uxdatares2D, Uxdatares2Di);
+                    Sort->put2DGather(Uxdatares2Di, gatherid);
 
-                Uzdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
-                Uzdatamod2Di->setFile(Uzmodelledfile);
-                interp->interp(Uzdatamod2D, Uzdatamod2Di);
-                Sort->put2DGather(Uzdatamod2Di, gatherid);
+                    Uzdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                    Uzdatamod2Di->setFile(Uzmodelledfile);
+                    interp->interp(Uzdatamod2D, Uzdatamod2Di);
+                    Sort->put2DGather(Uzdatamod2Di, gatherid);
 
-                Uzdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
-                Uzdatares2Di->setFile(Uzresidualfile);
-                interp->interp(Uzdatares2D, Uzdatares2Di);
-                Sort->put2DGather(Uzdatares2Di, gatherid);
+                    Uzdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                    Uzdatares2Di->setFile(Uzresidualfile);
+                    interp->interp(Uzdatares2D, Uzdatares2Di);
+                    Sort->put2DGather(Uzdatares2Di, gatherid);
+                }else{
+                    switch(work.id % 2){
+                        case 0:
+                            Uxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                            Uxdatamod2Di->setFile(Uxmodelledfile);
+                            interp->interp(Uxdatamod2D, Uxdatamod2Di);
+                            Sort->put2DGather(Uxdatamod2Di, gatherid);
+
+                            Uxdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                            Uxdatares2Di->setFile(Uxresidualfile);
+                            interp->interp(Uxdatares2D, Uxdatares2Di);
+                            Sort->put2DGather(Uxdatares2Di, gatherid);
+                            break;
+                        case 1:
+                            Uzdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                            Uzdatamod2Di->setFile(Uzmodelledfile);
+                            interp->interp(Uzdatamod2D, Uzdatamod2Di);
+                            Sort->put2DGather(Uzdatamod2Di, gatherid);
+
+                            Uzdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                            Uzdatares2Di->setFile(Uzresidualfile);
+                            interp->interp(Uzdatares2D, Uzdatares2Di);
+                            Sort->put2DGather(Uzdatares2Di, gatherid);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
 
                 // Reset all classes
                 Uxdata2D.reset();
@@ -2848,6 +2878,9 @@ void InversionElastic3D<T>::runGrad() {
 		Sort->readKeymap();
 		Sort->readSortmap();
 		size_t ngathers =  Sort->getNensemb();
+        if(Sort->getReciprocity()){
+            ngathers *= 3;
+        }
 
 		// Wavelet gradient
 		wavgrad = std::make_shared<rockseis::Data3D<T>>(1, source->getNt(), source->getDt(), 0.0);
@@ -2943,35 +2976,86 @@ void InversionElastic3D<T>::runGrad() {
                 Sort->readKeymap();
                 Sort->readSortmap();
 
+                size_t gatherid;
+                if(!Sort->getReciprocity()){
+                    gatherid = work.id;
+                }else{
+                    gatherid = work.id/3;
+                }
+
                 bool applyweightx = this->getDataweightx();
                 bool applyweighty = this->getDataweighty();
                 bool applyweightz = this->getDataweightz();
 
                 // Get the shot
                 Sort->setDatafile(Uxrecordfile);
-                Uxdata3D = Sort->get3DGather(work.id);
+                Uxdata3D = Sort->get3DGather(gatherid);
                 size_t ntr = Uxdata3D->getNtrace();
 
                 Sort->setDatafile(Uyrecordfile);
-                Uydata3D = Sort->get3DGather(work.id);
+                Uydata3D = Sort->get3DGather(gatherid);
 
                 Sort->setDatafile(Uzrecordfile);
-                Uzdata3D = Sort->get3DGather(work.id);
+                Uzdata3D = Sort->get3DGather(gatherid);
 
                 // Get the weight
-                if(applyweightx){
-                    Sort->setDatafile(Dataweightxfile);
-                    xweight3D = Sort->get3DGather(work.id);
-                }
-                if(applyweighty){
-                    Sort->setDatafile(Dataweightyfile);
-                    yweight3D = Sort->get3DGather(work.id);
-                }
-                if(applyweightz){
-                    Sort->setDatafile(Dataweightzfile);
-                    zweight3D = Sort->get3DGather(work.id);
+                if(!Sort->getReciprocity()){
+                    if(applyweightx){
+                        Sort->setDatafile(Dataweightxfile);
+                        xweight3D = Sort->get3DGather(gatherid);
+                    }
+                    if(applyweighty){
+                        Sort->setDatafile(Dataweightyfile);
+                        yweight3D = Sort->get3DGather(gatherid);
+                    }
+                    if(applyweightz){
+                        Sort->setDatafile(Dataweightzfile);
+                        zweight3D = Sort->get3DGather(gatherid);
+                    }
+                }else{
+                    switch(work.id % 3){
+                        case 0:
+                            if(applyweightx){
+                                Sort->setDatafile(Dataweightxfile);
+                                xweight3D = Sort->get3DGather(gatherid);
+                            }
+                            applyweighty = true;
+                            yweight3D = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            yweight3D->copyCoords(Uydata3D);
+                            applyweightz = true;
+                            zweight3D = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            zweight3D->copyCoords(Uzdata3D);
+                            break;
+                        case 1:
+                            if(applyweighty){
+                                Sort->setDatafile(Dataweightyfile);
+                                yweight3D = Sort->get3DGather(gatherid);
+                            }
+                            applyweightx = true;
+                            xweight3D = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            xweight3D->copyCoords(Uxdata3D);
+                            applyweightz = true;
+                            zweight3D = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            zweight3D->copyCoords(Uzdata3D);
+                            break;
+                        case 2:
+                            if(applyweightz){
+                                Sort->setDatafile(Dataweightzfile);
+                                zweight3D = Sort->get3DGather(gatherid);
+                            }
+                            applyweightx = true;
+                            xweight3D = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            xweight3D->copyCoords(Uxdata3D);
+                            applyweighty = true;
+                            yweight3D = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            yweight3D->copyCoords(Uydata3D);
+                            break;
+                        default:
+                            break;
+                    }
                 }
 
+                // Get local model
                 lmodel = gmodel->getLocal(Uxdata3D, apertx, aperty, SMAP);
 
                 // Read wavelet data, set shot coordinates and make a map
@@ -2980,39 +3064,85 @@ void InversionElastic3D<T>::runGrad() {
                 source->makeMap(lmodel->getGeom(), SMAP);
 
                 //Setting sourcetype 
-                switch(this->getSourcetype()){
-                    case 0:
-                        source->setField(PRESSURE);
-                        break;
-                    case 1:
-                        source->setField(VX);
-                        break;
-                    case 2:
-                        source->setField(VY);
-                        break;
-                    case 3:
-                        source->setField(VZ);
-                        break;
-                    default:
-                        rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                        break;
+                if(!Sort->getReciprocity()){
+                    switch(this->getSourcetype()){
+                        case 0:
+                            source->setField(PRESSURE);
+                            break;
+                        case 1:
+                            source->setField(VX);
+                            break;
+                        case 2:
+                            source->setField(VY);
+                            break;
+                        case 3:
+                            source->setField(VZ);
+                            break;
+                        default:
+                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
+                            break;
+                    }
+                }else{
+                    switch(work.id % 3){
+                        case 0:
+                            source->setField(VX);
+                            break;
+                        case 1:
+                            source->setField(VY);
+                            break;
+                        case 2:
+                            source->setField(VZ);
+                            break;
+                        default:
+                            break;
+                    }
                 }
 
                 // Interpolate shot
                 Uxdata3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uxdata3D, Uxdata3Di);
                 Uxdata3Di->makeMap(lmodel->getGeom(), GMAP);
-                Uxdata3Di->setField(rockseis::VX);
 
                 Uydata3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uydata3D, Uydata3Di);
                 Uydata3Di->makeMap(lmodel->getGeom(), GMAP);
-                Uydata3Di->setField(rockseis::VY);
 
                 Uzdata3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uzdata3D, Uzdata3Di);
                 Uzdata3Di->makeMap(lmodel->getGeom(), GMAP);
-                Uzdata3Di->setField(rockseis::VZ);
+
+                if(!Sort->getReciprocity()){
+                    Uxdata3Di->setField(VX);
+                    Uydata3Di->setField(VY);
+                    Uzdata3Di->setField(VZ);
+                }else{
+                    switch(this->getSourcetype()){
+                        case 0:
+                            Uxdata3Di->setField(PRESSURE);
+                            Uydata3Di->setField(PRESSURE);
+                            Uzdata3Di->setField(PRESSURE);
+                            break;
+                        case 1:
+                            Uxdata3Di->setField(VX);
+                            Uydata3Di->setField(VX);
+                            Uzdata3Di->setField(VX);
+                            break;
+                        case 2:
+                            Uxdata3Di->setField(VX);
+                            Uydata3Di->setField(VX);
+                            Uzdata3Di->setField(VX);
+                            break;
+                        case 3:
+                            Uxdata3Di->setField(VZ);
+                            Uydata3Di->setField(VZ);
+                            Uzdata3Di->setField(VZ);
+                            break;
+                        default:
+                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
+                            break;
+                    }
+                }
+
 
                 // Create fwi object
                 fwi = std::make_shared<rockseis::FwiElastic3D<T>>(lmodel, source, Uxdata3Di, Uydata3Di, Uzdata3Di, this->getOrder(), this->getSnapinc());
@@ -3021,35 +3151,78 @@ void InversionElastic3D<T>::runGrad() {
                 Uxdatamod3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uxdatamod3D->copyCoords(Uxdata3D);
                 Uxdatamod3D->makeMap(lmodel->getGeom(), GMAP);
-                Uxdatamod3D->setField(rockseis::VX);
-                fwi->setDatamodUx(Uxdatamod3D);
                 Uxdatares3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uxdatares3D->copyCoords(Uxdata3D);
                 Uxdatares3D->makeMap(lmodel->getGeom(), GMAP);
-                Uxdatares3D->setField(rockseis::VX);
-                fwi->setDataresUx(Uxdatares3D);
 
                 Uydatamod3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uydatamod3D->copyCoords(Uydata3D);
                 Uydatamod3D->makeMap(lmodel->getGeom(), GMAP);
-                Uydatamod3D->setField(rockseis::VY);
-                fwi->setDatamodUy(Uydatamod3D);
                 Uydatares3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uydatares3D->copyCoords(Uydata3D);
                 Uydatares3D->makeMap(lmodel->getGeom(), GMAP);
-                Uydatares3D->setField(rockseis::VY);
-                fwi->setDataresUy(Uydatares3D);
 
                 Uzdatamod3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatamod3D->copyCoords(Uzdata3D);
                 Uzdatamod3D->makeMap(lmodel->getGeom(), GMAP);
                 Uzdatamod3D->setField(rockseis::VZ);
-                fwi->setDatamodUz(Uzdatamod3D);
-                Uzdatares3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatares3D->copyCoords(Uzdata3D);
                 Uzdatares3D->makeMap(lmodel->getGeom(), GMAP);
-                Uzdatares3D->setField(rockseis::VZ);
+
+                if(!Sort->getReciprocity()){
+                    Uxdatamod3D->setField(VX);
+                    Uxdatares3D->setField(VX);
+                    Uydatamod3D->setField(VY);
+                    Uydatares3D->setField(VY);
+                    Uzdatamod3D->setField(VZ);
+                    Uzdatares3D->setField(VZ);
+                }else{
+                    switch(this->getSourcetype()){
+                        case 0:
+                            Uxdatamod3D->setField(PRESSURE);
+                            Uxdatares3D->setField(PRESSURE);
+                            Uydatamod3D->setField(PRESSURE);
+                            Uydatares3D->setField(PRESSURE);
+                            Uzdatamod3D->setField(PRESSURE);
+                            Uzdatares3D->setField(PRESSURE);
+                            break;
+                        case 1:
+                            Uxdatamod3D->setField(VX);
+                            Uxdatares3D->setField(VX);
+                            Uydatamod3D->setField(VX);
+                            Uydatares3D->setField(VX);
+                            Uzdatamod3D->setField(VX);
+                            Uzdatares3D->setField(VX);
+                            break;
+                        case 2:
+                            Uxdatamod3D->setField(VY);
+                            Uxdatares3D->setField(VY);
+                            Uydatamod3D->setField(VY);
+                            Uydatares3D->setField(VY);
+                            Uzdatamod3D->setField(VY);
+                            Uzdatares3D->setField(VY);
+                            break;
+                        case 3:
+                            Uxdatamod3D->setField(VZ);
+                            Uxdatares3D->setField(VZ);
+                            Uydatamod3D->setField(VZ);
+                            Uydatares3D->setField(VZ);
+                            Uzdatamod3D->setField(VZ);
+                            Uzdatares3D->setField(VZ);
+                            break;
+                        default:
+                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
+                            break;
+                    }
+                }
+
+                fwi->setDatamodUx(Uxdatamod3D);
+                fwi->setDataresUx(Uxdatares3D);
+                fwi->setDatamodUy(Uydatamod3D);
+                fwi->setDataresUy(Uydatares3D);
+                fwi->setDatamodUz(Uzdatamod3D);
                 fwi->setDataresUz(Uzdatares3D);
+
 
                 // Interpolate weight
                 if(applyweightx){
@@ -3092,22 +3265,38 @@ void InversionElastic3D<T>::runGrad() {
                     // Copy geometry
                     wavgrad->copyCoords(source);
                     wavgrad->makeMap(lmodel->getGeom(), SMAP);
-                    switch(this->getSourcetype()){
-                        case 0:
-                            wavgrad->setField(PRESSURE);
-                            break;
-                        case 1:
-                            wavgrad->setField(VX);
-                            break;
-                        case 2:
-                            wavgrad->setField(VY);
-                            break;
-                        case 3:
-                            wavgrad->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown wavgrad type: ", std::to_string(this->getSourcetype()));
-                            break;
+                    if(!Sort->getReciprocity()){
+                        switch(this->getSourcetype()){
+                            case 0:
+                                wavgrad->setField(PRESSURE);
+                                break;
+                            case 1:
+                                wavgrad->setField(VX);
+                                break;
+                            case 2:
+                                wavgrad->setField(VY);
+                                break;
+                            case 3:
+                                wavgrad->setField(VZ);
+                                break;
+                            default:
+                                rs_error("Unknown wavgrad type: ", std::to_string(this->getSourcetype()));
+                                break;
+                        }
+                    }else{
+                        switch(work.id % 3){
+                            case 0:
+                                wavgrad->setField(VX);
+                                break;
+                            case 1:
+                                wavgrad->setField(VY);
+                                break;
+                            case 2:
+                                wavgrad->setField(VZ);
+                                break;
+                            default:
+                                break;
+                        }
                     }
 
                     fwi->setWavgrad(wavgrad);
@@ -3162,35 +3351,75 @@ void InversionElastic3D<T>::runGrad() {
                 Fmisfit->close();
 
                 // Output modelled and residual data
+                if(!Sort->getReciprocity()){
                 Uxdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                 Uxdatamod3Di->setFile(Uxmodelledfile);
                 interp->interp(Uxdatamod3D, Uxdatamod3Di);
-                Sort->put3DGather(Uxdatamod3Di, work.id);
+                Sort->put3DGather(Uxdatamod3Di, gatherid);
 
                 Uxdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                 Uxdatares3Di->setFile(Uxresidualfile);
                 interp->interp(Uxdatares3D, Uxdatares3Di);
-                Sort->put3DGather(Uxdatares3Di, work.id);
+                Sort->put3DGather(Uxdatares3Di, gatherid);
 
                 Uydatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
                 Uydatamod3Di->setFile(Uymodelledfile);
                 interp->interp(Uydatamod3D, Uydatamod3Di);
-                Sort->put3DGather(Uydatamod3Di, work.id);
+                Sort->put3DGather(Uydatamod3Di, gatherid);
 
                 Uydatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
                 Uydatares3Di->setFile(Uyresidualfile);
                 interp->interp(Uydatares3D, Uydatares3Di);
-                Sort->put3DGather(Uydatares3Di, work.id);
+                Sort->put3DGather(Uydatares3Di, gatherid);
 
                 Uzdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                 Uzdatamod3Di->setFile(Uzmodelledfile);
                 interp->interp(Uzdatamod3D, Uzdatamod3Di);
-                Sort->put3DGather(Uzdatamod3Di, work.id);
+                Sort->put3DGather(Uzdatamod3Di, gatherid);
 
                 Uzdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                 Uzdatares3Di->setFile(Uzresidualfile);
                 interp->interp(Uzdatares3D, Uzdatares3Di);
-                Sort->put3DGather(Uzdatares3Di, work.id);
+                Sort->put3DGather(Uzdatares3Di, gatherid);
+                }else{
+                    switch(work.id % 3){
+                        case 0:
+                            Uxdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            Uxdatamod3Di->setFile(Uxmodelledfile);
+                            interp->interp(Uxdatamod3D, Uxdatamod3Di);
+                            Sort->put3DGather(Uxdatamod3Di, gatherid);
+
+                            Uxdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            Uxdatares3Di->setFile(Uxresidualfile);
+                            interp->interp(Uxdatares3D, Uxdatares3Di);
+                            Sort->put3DGather(Uxdatares3Di, gatherid);
+                            break;
+                        case 1:
+                            Uydatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
+                            Uydatamod3Di->setFile(Uymodelledfile);
+                            interp->interp(Uydatamod3D, Uydatamod3Di);
+                            Sort->put3DGather(Uydatamod3Di, gatherid);
+
+                            Uydatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
+                            Uydatares3Di->setFile(Uyresidualfile);
+                            interp->interp(Uydatares3D, Uydatares3Di);
+                            Sort->put3DGather(Uydatares3Di, gatherid);
+                            break;
+                        case 2:
+                            Uzdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            Uzdatamod3Di->setFile(Uzmodelledfile);
+                            interp->interp(Uzdatamod3D, Uzdatamod3Di);
+                            Sort->put3DGather(Uzdatamod3Di, gatherid);
+
+                            Uzdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
+                            Uzdatares3Di->setFile(Uzresidualfile);
+                            interp->interp(Uzdatares3D, Uzdatares3Di);
+                            Sort->put3DGather(Uzdatares3Di, gatherid);
+                            break;
+                        default:
+                            break;
+                    }
+                }
 
                 // Reset all classes
                 Uxdata3D.reset();

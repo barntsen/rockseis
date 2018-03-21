@@ -4259,6 +4259,11 @@ int FwiElastic3D<T>::run(){
             // Time stepping stress
             waves->forwardstepStress(model, der);
 
+            // Inserting residuals
+            waves->insertPressuresource(model, dataresUx, GMAP, (nt - 1 - it));
+            waves->insertPressuresource(model, dataresUy, GMAP, (nt - 1 - it));
+            waves->insertPressuresource(model, dataresUz, GMAP, (nt - 1 - it));
+
             // Time stepping displacement
             waves->forwardstepDisplacement(model, der);
 
@@ -4418,6 +4423,9 @@ int FwiElastic3D<T>::run_optimal(){
             computeResiduals();
 
             // Inserting residuals
+            waves_bw->insertPressuresource(model, dataresUx, GMAP, capo);
+            waves_bw->insertPressuresource(model, dataresUy, GMAP, capo);
+            waves_bw->insertPressuresource(model, dataresUz, GMAP, capo);
             waves_bw->insertForcesource(model, dataresUx, GMAP, capo);
             waves_bw->insertForcesource(model, dataresUy, GMAP, capo);
             waves_bw->insertForcesource(model, dataresUz, GMAP, capo);
@@ -4447,6 +4455,11 @@ int FwiElastic3D<T>::run_optimal(){
         {
             // Time stepping stress
             waves_bw->forwardstepStress(model, der);
+
+            // Inserting residuals
+            waves_bw->insertPressuresource(model, dataresUx, GMAP, capo);
+            waves_bw->insertPressuresource(model, dataresUy, GMAP, capo);
+            waves_bw->insertPressuresource(model, dataresUz, GMAP, capo);
 
             // Time stepping displacement
             waves_bw->forwardstepDisplacement(model, der);
