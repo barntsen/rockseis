@@ -309,7 +309,7 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather()
         bool status;
         std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
         status = Fdata->input(this->datafile);
-        if(status == FILE_ERR) rs_error("Sort::get2DGather: Error reading input data file.");
+        if(status == FILE_ERR) rs_error("Sort::get2DGather: Error reading input data file: ", this->datafile);
         rs_datatype datatype = Fdata->getType(); 
         if(datatype != DATA2D) rs_error("Sort::get2DGather: Datafile must be of type Data2D.");
         //Get gather size information
@@ -341,6 +341,7 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather()
             }
             Fdata->read(&data[j*n1], n1);
         }
+
         // Flag shot as running
         this->keymap[i].status = RUNNING;
         return gather;
@@ -360,7 +361,7 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather(size_t number)
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
     status = Fdata->input(this->datafile);
-    if(status == FILE_ERR) rs_error("Sort::get2DGather: Error reading input data file.");
+    if(status == FILE_ERR) rs_error("Sort::get2DGather: Error reading input data file: ", this->datafile);
     rs_datatype datatype = Fdata->getType(); 
     if(datatype != DATA2D) rs_error("Sort::get2DGather: Datafile must be of type Data2D.");
     //Get gather size information
@@ -383,10 +384,17 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather(size_t number)
     for (size_t j=0; j < n2; j++){
         traceno = this->sortmap[this->keymap[number].i0 + j];
         Fdata->seekg(Fdata->getStartofdata() + traceno*(n1+NHEAD2D)*sizeof(T));
-        Fdata->read(&scoords[j].x, 1);
-        Fdata->read(&scoords[j].y, 1);
-        Fdata->read(&gcoords[j].x, 1);
-        Fdata->read(&gcoords[j].y, 1);
+        if(!this->getReciprocity()){
+            Fdata->read(&scoords[j].x, 1);
+            Fdata->read(&scoords[j].y, 1);
+            Fdata->read(&gcoords[j].x, 1);
+            Fdata->read(&gcoords[j].y, 1);
+        }else{
+            Fdata->read(&gcoords[j].x, 1);
+            Fdata->read(&gcoords[j].y, 1);
+            Fdata->read(&scoords[j].x, 1);
+            Fdata->read(&scoords[j].y, 1);
+        }
         Fdata->read(&data[j*n1], n1);
     }
     // Flag shot as running
@@ -493,7 +501,7 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather()
         bool status;
         std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
         status = Fdata->input(this->datafile);
-        if(status == FILE_ERR) rs_error("Sort::get3DGather: Error reading input data file.");
+        if(status == FILE_ERR) rs_error("Sort::get3DGather: Error reading input data file: ", this->datafile);
         rs_datatype datatype = Fdata->getType(); 
         if(datatype != DATA3D) rs_error("Sort::get3DGather: Datafile must be of type Data3D.");
         //Get gather size information
@@ -534,14 +542,14 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather(size_t number)
 {
     if(this->ngathers == 0 || this->ntraces == 0) rs_error("No sort map created.");
 
-    if(number > ngathers-1) rs_error("Sort::get2DGather: Trying to get a gather with number that is larger than ngathers");
+    if(number > ngathers-1) rs_error("Sort::get3DGather: Trying to get a gather with number that is larger than ngathers");
 
 
     // Found a shot
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
     status = Fdata->input(this->datafile);
-    if(status == FILE_ERR) rs_error("Sort::get3DGather: Error reading input data file.");
+    if(status == FILE_ERR) rs_error("Sort::get3DGather: Error reading input data file: ", this->datafile);
     rs_datatype datatype = Fdata->getType(); 
     if(datatype != DATA3D) rs_error("Sort::get3DGather: Datafile must be of type Data3D.");
     //Get gather size information
@@ -686,7 +694,7 @@ void Sort<T>::createEmptydataset(std::string filename, size_t n1, T d1, T o1){
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
     status = Fdata->input(this->datafile);
-    if(status == FILE_ERR) rs_error("Sort::createEmptydata: Error reading input survey data file.");
+    if(status == FILE_ERR) rs_error("Sort::createEmptydata: Error reading input survey data file: ", this->datafile);
     rs_datatype datatype = Fdata->getType(); 
     if(datatype != DATA2D && datatype != DATA3D ) rs_error("Sort::createEmptydata: Datafile must be of type Data2D or Data3D.");
 

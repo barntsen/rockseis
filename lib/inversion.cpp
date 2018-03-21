@@ -1459,11 +1459,21 @@ void InversionElastic2D<T>::runGrad() {
                     }
                 }else{
                     if(work.id % 2 == 0){
+                        if(dataweightx){
+                            Sort->setDatafile(Dataweightxfile);
+                            xweight2D = Sort->get2DGather(gatherid);
+                        }
                         dataweightz = true;
                         zweight2D = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                        zweight2D->copyCoords(Uzdata2D);
                     }else{
                         dataweightx = true;
                         xweight2D = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                        xweight2D->copyCoords(Uxdata2D);
+                        if(dataweightz){
+                            Sort->setDatafile(Dataweightzfile);
+                            zweight2D = Sort->get2DGather(gatherid);
+                        }
                     }
                 }
 
