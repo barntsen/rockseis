@@ -12,6 +12,7 @@ Sort<T>::Sort()
     smapfile = "smap.rss";
     keymap=(key *) calloc(1,1);
     sortmap=(size_t *) calloc(1,1);
+    reciprocity = false;
 }
 
 template<typename T>
@@ -292,7 +293,6 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 template<typename T>
 std::shared_ptr<Data2D<T>> Sort<T>::get2DGather()
 {
-
     if(this->ngathers == 0 || this->ntraces == 0) rs_error("No sort map created.");
 
     size_t i;
@@ -328,10 +328,17 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather()
         for (size_t j=0; j < n2; j++){
             traceno = this->sortmap[this->keymap[i].i0 + j];
             Fdata->seekg(Fdata->getStartofdata() + traceno*(n1+NHEAD2D)*sizeof(T));
-            Fdata->read(&scoords[j].x, 1);
-            Fdata->read(&scoords[j].y, 1);
-            Fdata->read(&gcoords[j].x, 1);
-            Fdata->read(&gcoords[j].y, 1);
+            if(!this->getReciprocity()){
+                Fdata->read(&scoords[j].x, 1);
+                Fdata->read(&scoords[j].y, 1);
+                Fdata->read(&gcoords[j].x, 1);
+                Fdata->read(&gcoords[j].y, 1);
+            }else{
+                Fdata->read(&gcoords[j].x, 1);
+                Fdata->read(&gcoords[j].y, 1);
+                Fdata->read(&scoords[j].x, 1);
+                Fdata->read(&scoords[j].y, 1);
+            }
             Fdata->read(&data[j*n1], n1);
         }
         // Flag shot as running
@@ -573,10 +580,11 @@ void Sort<T>::readKeymap(){
     std::shared_ptr<rockseis::File> Fin (new rockseis::File());
     if(Fin->input(this->kmapfile) == FILE_ERR) rs_error("Sort::readKeymap: Error opening file: ", this->kmapfile);
     if(Fin->getType() != KEYMAP) rs_error("Sort::readKeymap: Key map file is not of correct type (KEYMAP)");
-    this->ngathers = Fin->getN(1);
+    this->ngathers = Fin->getN(1) - 1;
     free(keymap);
     keymap = (key *) calloc(this->ngathers, sizeof(key));
     int status;
+    size_t reciprocityflag;
     for (size_t i=0; i < this->ngathers; i++)
     {
         Fin->read(&(this->keymap[i].i0), 1);
@@ -584,6 +592,17 @@ void Sort<T>::readKeymap(){
         Fin->read(&status, 1);
         this->keymap[i].status = static_cast<rockseis::rs_status>(status);
     }
+    // Read one more value with sort key and reciprocity flag
+    Fin->read(&(reciprocityflag), 1);
+    Fin->read(&(reciprocityflag), 1);
+    if(reciprocityflag)
+        reciprocity = true;
+    else{
+        reciprocity = false;
+    }
+    Fin->read(&status, 1);
+    sortkey = static_cast<rs_key>(status);
+    Fin->close();
 }
 
 template<typename T>
@@ -595,13 +614,14 @@ void Sort<T>::writeKeymap(){
 
     std::shared_ptr<rockseis::File> Fout (new rockseis::File());
     Fout->output(this->kmapfile);
-    Fout->setN(1,n1);
+    Fout->setN(1,n1+1);
     Fout->setD(1,1);
     Fout->setData_format(2*sizeof(size_t) + sizeof(int));
     Fout->setType(KEYMAP);
     Fout->writeHeader();
     Fout->seekp(Fout->getStartofdata());
     int status;
+    size_t reciprocityflag;
     for (size_t i=0; i < n1; i++)
     {
         Fout->write(&(this->keymap[i].i0), 1);
@@ -609,6 +629,17 @@ void Sort<T>::writeKeymap(){
         status = static_cast<int>(this->keymap[i].status);
         Fout->write(&status, 1);
     }
+    // Write one more value with sort key and reciprocity flag
+    if(this->getReciprocity())
+        reciprocityflag = 1;
+    else{
+        reciprocityflag = 0;
+    }
+    Fout->write(&(reciprocityflag), 1);
+    Fout->write(&(reciprocityflag), 1);
+    status = static_cast<int>(this->getSortkey());
+    Fout->write(&status, 1);
+    Fout->close();
 }
 
 template<typename T>

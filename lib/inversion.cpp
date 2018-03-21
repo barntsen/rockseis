@@ -1342,6 +1342,9 @@ void InversionElastic2D<T>::runGrad() {
 		Sort->readKeymap();
 		Sort->readSortmap();
 		size_t ngathers =  Sort->getNensemb();
+        if(Sort->getReciprocity()){
+            ngathers *= 2;
+        }
 
 		// Wavelet gradient
 		wavgrad = std::make_shared<rockseis::Data2D<T>>(1, source->getNt(), source->getDt(), 0.0);
@@ -1429,25 +1432,42 @@ void InversionElastic2D<T>::runGrad() {
                 // Do migration
                 Sort->readKeymap();
                 Sort->readSortmap();
+                int gatherid;
+                if(!Sort->getReciprocity()){
+                    gatherid = work.id;
+                }else{
+                    gatherid = work.id/2;
+                }
 
                 // Get the shot
                 Sort->setDatafile(Uxrecordfile);
-                Uxdata2D = Sort->get2DGather(work.id);
+                Uxdata2D = Sort->get2DGather(gatherid);
                 size_t ntr = Uxdata2D->getNtrace();
 
                 Sort->setDatafile(Uzrecordfile);
-                Uzdata2D = Sort->get2DGather(work.id);
+                Uzdata2D = Sort->get2DGather(gatherid);
 
-                // Get the weight
-                if(dataweightx){
-                    Sort->setDatafile(Dataweightxfile);
-                    xweight2D = Sort->get2DGather(work.id);
-                }
-                if(dataweightz){
-                    Sort->setDatafile(Dataweightzfile);
-                    zweight2D = Sort->get2DGather(work.id);
+                if(!Sort->getReciprocity()){
+                    // Get the weight
+                    if(dataweightx){
+                        Sort->setDatafile(Dataweightxfile);
+                        xweight2D = Sort->get2DGather(gatherid);
+                    }
+                    if(dataweightz){
+                        Sort->setDatafile(Dataweightzfile);
+                        zweight2D = Sort->get2DGather(gatherid);
+                    }
+                }else{
+                    if(work.id % 2 == 0){
+                        dataweightz = true;
+                        zweight2D = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                    }else{
+                        dataweightx = true;
+                        xweight2D = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+                    }
                 }
 
+                // Get local model
                 lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
 
                 // Read wavelet data, set shot coordinates and make a map
@@ -1456,31 +1476,60 @@ void InversionElastic2D<T>::runGrad() {
                 source->makeMap(lmodel->getGeom(), SMAP);
 
                 //Setting sourcetype 
-                switch(this->getSourcetype()){
-                    case 0:
-                        source->setField(PRESSURE);
-                        break;
-                    case 1:
-                        source->setField(VX);
-                        break;
-                    case 3:
-                        source->setField(VZ);
-                        break;
-                    default:
-                        rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                        break;
+                if(!Sort->getReciprocity()){
+                    switch(this->getSourcetype()){
+                        case 0:
+                            source->setField(PRESSURE);
+                            break;
+                        case 1:
+                            source->setField(VX);
+                            break;
+                        case 3:
+                            source->setField(VZ);
+                            break;
+                        default:
+                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
+                            break;
+                    }
+                }else{
+                    if(work.id % 2 == 0){
+                            source->setField(VX);
+                    }else{
+                            source->setField(VZ);
+                    }
                 }
 
                 // Interpolate shot
                 Uxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uxdata2D, Uxdata2Di);
                 Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
-                Uxdata2Di->setField(rockseis::VX);
 
                 Uzdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uzdata2D, Uzdata2Di);
                 Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
-                Uzdata2Di->setField(rockseis::VZ);
+
+                if(!Sort->getReciprocity()){
+                    Uxdata2Di->setField(VX);
+                    Uzdata2Di->setField(VZ);
+                }else{
+                    switch(this->getSourcetype()){
+                        case 0:
+                            Uxdata2Di->setField(PRESSURE);
+                            Uzdata2Di->setField(PRESSURE);
+                            break;
+                        case 1:
+                            Uxdata2Di->setField(VX);
+                            Uzdata2Di->setField(VX);
+                            break;
+                        case 3:
+                            Uxdata2Di->setField(VZ);
+                            Uzdata2Di->setField(VZ);
+                            break;
+                        default:
+                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
+                            break;
+                    }
+                }
 
                 // Create fwi object
                 fwi = std::make_shared<rockseis::FwiElastic2D<T>>(lmodel, source, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
@@ -1489,23 +1538,51 @@ void InversionElastic2D<T>::runGrad() {
                 Uxdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uxdatamod2D->copyCoords(Uxdata2D);
                 Uxdatamod2D->makeMap(lmodel->getGeom(), GMAP);
-                Uxdatamod2D->setField(rockseis::VX);
-                fwi->setDatamodUx(Uxdatamod2D);
                 Uxdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uxdatares2D->copyCoords(Uxdata2D);
                 Uxdatares2D->makeMap(lmodel->getGeom(), GMAP);
-                Uxdatares2D->setField(rockseis::VX);
-                fwi->setDataresUx(Uxdatares2D);
 
                 Uzdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatamod2D->copyCoords(Uzdata2D);
                 Uzdatamod2D->makeMap(lmodel->getGeom(), GMAP);
-                Uzdatamod2D->setField(rockseis::VZ);
-                fwi->setDatamodUz(Uzdatamod2D);
                 Uzdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatares2D->copyCoords(Uzdata2D);
                 Uzdatares2D->makeMap(lmodel->getGeom(), GMAP);
-                Uzdatares2D->setField(rockseis::VZ);
+
+                if(!Sort->getReciprocity()){
+                    Uxdatamod2D->setField(VX);
+                    Uxdatares2D->setField(VX);
+                    Uzdatamod2D->setField(VZ);
+                    Uzdatares2D->setField(VZ);
+                }else{
+                    switch(this->getSourcetype()){
+                        case 0:
+                            Uxdatamod2D->setField(PRESSURE);
+                            Uxdatares2D->setField(PRESSURE);
+                            Uzdatamod2D->setField(PRESSURE);
+                            Uzdatares2D->setField(PRESSURE);
+                            break;
+                        case 1:
+                            Uxdatamod2D->setField(VX);
+                            Uxdatares2D->setField(VX);
+                            Uzdatamod2D->setField(VX);
+                            Uzdatares2D->setField(VX);
+                            break;
+                        case 3:
+                            Uxdatamod2D->setField(VZ);
+                            Uxdatares2D->setField(VZ);
+                            Uzdatamod2D->setField(VZ);
+                            Uzdatares2D->setField(VZ);
+                            break;
+                        default:
+                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
+                            break;
+                    }
+                }
+
+                fwi->setDatamodUx(Uxdatamod2D);
+                fwi->setDataresUx(Uxdatares2D);
+                fwi->setDatamodUz(Uzdatamod2D);
                 fwi->setDataresUz(Uzdatares2D);
 
                 // Interpolate weight
@@ -1542,23 +1619,32 @@ void InversionElastic2D<T>::runGrad() {
                     // Copy geometry
                     wavgrad->copyCoords(source);
                     wavgrad->makeMap(lmodel->getGeom(), SMAP);
-                    switch(this->getSourcetype()){
-                        case 0:
-                            wavgrad->setField(PRESSURE);
-                            break;
-                        case 1:
+                    if(!Sort->getReciprocity()){
+                        switch(this->getSourcetype()){
+                            case 0:
+                                wavgrad->setField(PRESSURE);
+                                break;
+                            case 1:
+                                wavgrad->setField(VX);
+                                break;
+                            case 3:
+                                wavgrad->setField(VZ);
+                                break;
+                            default:
+                                rs_error("Unknown wavgrad type: ", std::to_string(this->getSourcetype()));
+                                break;
+                        }
+                    }else{
+                        if(work.id % 2 == 0){
                             wavgrad->setField(VX);
-                            break;
-                        case 3:
+                        }else{
                             wavgrad->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown wavgrad type: ", std::to_string(this->getSourcetype()));
-                            break;
+                        }
                     }
 
                     fwi->setWavgrad(wavgrad);
                 }
+
 
                 // Setting Snapshot file 
                 fwi->setSnapfile(Snapfile + "-" + std::to_string(work.id));
@@ -1612,22 +1698,22 @@ void InversionElastic2D<T>::runGrad() {
                 Uxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                 Uxdatamod2Di->setFile(Uxmodelledfile);
                 interp->interp(Uxdatamod2D, Uxdatamod2Di);
-                Sort->put2DGather(Uxdatamod2Di, work.id);
+                Sort->put2DGather(Uxdatamod2Di, gatherid);
 
                 Uxdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                 Uxdatares2Di->setFile(Uxresidualfile);
                 interp->interp(Uxdatares2D, Uxdatares2Di);
-                Sort->put2DGather(Uxdatares2Di, work.id);
+                Sort->put2DGather(Uxdatares2Di, gatherid);
 
                 Uzdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                 Uzdatamod2Di->setFile(Uzmodelledfile);
                 interp->interp(Uzdatamod2D, Uzdatamod2Di);
-                Sort->put2DGather(Uzdatamod2Di, work.id);
+                Sort->put2DGather(Uzdatamod2Di, gatherid);
 
                 Uzdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                 Uzdatares2Di->setFile(Uzresidualfile);
                 interp->interp(Uzdatares2D, Uzdatares2Di);
-                Sort->put2DGather(Uzdatares2Di, work.id);
+                Sort->put2DGather(Uzdatares2Di, gatherid);
 
                 // Reset all classes
                 Uxdata2D.reset();

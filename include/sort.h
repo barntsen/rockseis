@@ -44,8 +44,6 @@ class Sort {
 public:
     Sort(); ///<Constructor
     virtual ~Sort();	///< Destructor
-    void setStatus(size_t key, rs_status status); ///< Set status for a key 
-    rs_status getStatus(size_t key) { if(key < ngathers && key >= 0) return keymap[key].status; else rs_error("key out of bounds."); return FAILED;} ///< Set status for a key 
     bool createShotmap(std::string filename) { return createSort(filename, SOURCE, 0., 0.); } ///< Create a shot map using a data file
     bool createReceivermap(std::string filename) { return createSort(filename, RECEIVER, 0., 0.); } ///< Create a receiver map using a data file
     bool createCMPmap(std::string filename, T dx, T dy) { return createSort(filename, CMP, dx, dy); } ///< Create a CMP map using a data file
@@ -70,11 +68,16 @@ public:
     size_t getNtraces() { return ntraces; }  ///< Get number of traces in file
     std::string getKmapfile() { return kmapfile; } ///< Get Kmapfile
     std::string getSmapfile() { return smapfile; }  ///< Get Smapfile
+    rs_status getStatus(size_t key) { if(key < ngathers && key >= 0) return keymap[key].status; else rs_error("key out of bounds."); return FAILED;} ///< Set status for a key 
+    bool getReciprocity() { return reciprocity; } ///< Get reciprocity flag
+    rs_key getSortkey() {  return sortkey; } ///< return sortkey
 
     //Set functions
     void setKmapfile(std::string name) { kmapfile = name; }
     void setSmapfile(std::string name) { smapfile = name; }
     void setDatafile(std::string name) { datafile = name; }
+    void setStatus(size_t key, rs_status status); ///< Set status for a key 
+    void setReciprocity(bool val) { reciprocity = val; } ///< Set reciprocity flag
 
 private:
     size_t ngathers;
@@ -85,6 +88,7 @@ private:
     std::string kmapfile;
     std::string smapfile;
     std::string datafile;
+    bool reciprocity;
 
     bool createSort(std::string filename, rs_key _sortkey, T dx, T dy); ///< Create a sort map using a data file
 };

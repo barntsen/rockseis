@@ -165,6 +165,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(update_vs = "true"; # Update vs);
             PRINT_DOC(update_rho = "true"; # Update rho);
             PRINT_DOC(update_source = "false"; # Update source);
+            PRINT_DOC(reciprocity = "false"; # Use receiver gathers instead of source gathers);
             PRINT_DOC();
             PRINT_DOC(# Diagonal scaling parameters);
             PRINT_DOC(kvp = "100.0";);
@@ -203,6 +204,7 @@ int main(int argc, char** argv) {
     bool incore = false;
     bool dataweightx;
     bool dataweightz;
+    bool reciprocity;
     bool mute;
 	int order;
 	int snapinc;
@@ -315,6 +317,7 @@ int main(int argc, char** argv) {
 
     if(Inpar->getPar("linesearch", &linesearch) == INPARSE_ERR) status = true;
     if(Inpar->getPar("optmethod", &optmethod) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("reciprocity", &reciprocity) == INPARSE_ERR) status = true;
 
     // Set scaling according to updates
     if(!update_vp) kvp = 0.0;
@@ -381,7 +384,13 @@ int main(int argc, char** argv) {
         // Create a sort class and map over shots
         std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
         Sort->setDatafile(Uxrecordfile);
-        Sort->createShotmap(Uxrecordfile); 
+        if(!reciprocity){
+            Sort->createShotmap(Uxrecordfile); 
+        }else{
+            Sort->createReceivermap(Uxrecordfile); 
+            Sort->setReciprocity(true);
+        }
+
         Sort->writeKeymap();
         Sort->writeSortmap();
 
