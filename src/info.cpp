@@ -14,36 +14,10 @@ int main(int argc, char* argv[])
     bool status;
 
     /* Parameters */
-    bool attributes;
     Point3D<float> s[ATTR];
     Point3D<float> g[ATTR];
     Point3D<float> offset[ATTR];
     Point3D<float> aoffset[ATTR];
-
-
-    std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
-    if(argc < 2) {
-        PRINT_DOC(# RSINFO - Get information from RSS files);
-        PRINT_DOC(# Default configuration file for rsinfo );
-        PRINT_DOC();
-        PRINT_DOC(#Parameters );
-        PRINT_DOC(getattributes = "true";   # Get min and maximum from data coordinates);
-
-        rs_error("No configuration file given");
-    }
-
-
-    /* Get parameters from input */
-    if(Inpar->parse(argv[1]) == INPARSE_ERR) 
-    {
-        rs_error("Parse error on input config file", argv[1]);
-    }
-    status = false; 
-    if(Inpar->getPar("getattributes", &attributes) == INPARSE_ERR) status = true;
-
-	if(status == true){
-		rs_error("Program terminated due to input errors.");
-	}
 
     status = in->input();
 	if(status == FILE_ERR){
@@ -88,7 +62,7 @@ int main(int argc, char* argv[])
     std::cerr << "Nheader: " << in->getNheader() << "\n"; 
     std::cerr << "Header format: " << in->getHeader_format() << "\n"; 
 
-    if(attributes && (type == rockseis::DATA2D || type == rockseis::DATA3D))
+    if((type == rockseis::DATA2D || type == rockseis::DATA3D))
     {
         std::shared_ptr<rockseis::Data2D<float>> Bdata2d;
         std::shared_ptr<rockseis::Data3D<float>> Bdata3d;
@@ -150,18 +124,18 @@ int main(int argc, char* argv[])
                 std::cerr << std::endl;
                 std::cerr <<"Atributes" << std::endl;
                 std::cerr <<"*******************************************************************************" << std::endl;
-                std::cerr <<"key                    min                       max                 mean      " << std::endl;
+                std::cerr <<"key      \t\t\t\t" << "min\t\t\t\t" << "max\t\t\t\t\t" << std::endl;
                 std::cerr <<"-------------------------------------------------------------------------------" << std::endl;
-                std::cerr <<"sx:                     " << s[0].x << "                        " << s[1].x << std::endl;
-                std::cerr <<"sz:                     " << s[0].y << "                        " << s[1].y << std::endl;
+                std::cerr <<"sx:      \t\t\t\t" << s[0].x << "\t\t\t\t" << s[1].x << std::endl;
+                std::cerr <<"sz:      \t\t\t\t" << s[0].y << "\t\t\t\t" << s[1].y << std::endl;
 
-                std::cerr <<"gx:                     " << g[0].x << "                        " << g[1].x << std::endl;
-                std::cerr <<"gz:                     " << g[0].y << "                        " << g[1].y << std::endl;
+                std::cerr <<"gx:      \t\t\t\t" << g[0].x << "\t\t\t\t" << g[1].x << std::endl;
+                std::cerr <<"gz:      \t\t\t\t" << g[0].y << "\t\t\t\t" << g[1].y << std::endl;
 
-                std::cerr <<"offsetx:                 " << offset[0].x << "                        " << offset[1].x << std::endl;
-                std::cerr <<"offsetz:                 " << offset[0].y << "                        " << offset[1].y << std::endl;
-                std::cerr <<"Aoffsetx:                 " << aoffset[0].x << "                        " << aoffset[1].x << std::endl;
-                std::cerr <<"Aoffsetz:                 " << aoffset[0].y << "                        " << aoffset[1].y << std::endl;
+                std::cerr <<"offsetx: \t\t\t\t" << offset[0].x << "\t\t\t\t" << offset[1].x << std::endl;
+                std::cerr <<"offsetz: \t\t\t\t" << offset[0].y << "\t\t\t\t" << offset[1].y << std::endl;
+                std::cerr <<"Aoffsetx:\t\t\t\t" << aoffset[0].x << "\t\t\t\t" << aoffset[1].x << std::endl;
+                std::cerr <<"Aoffsetz:\t\t\t\t" << aoffset[0].y << "\t\t\t\t" << aoffset[1].y << std::endl;
                 std::cerr <<"*******************************************************************************" << std::endl;
                 break;
             case DATA3D:
@@ -231,23 +205,23 @@ int main(int argc, char* argv[])
                 std::cerr << std::endl;
                 std::cerr <<"Atributes" << std::endl;
                 std::cerr <<"*******************************************************************************" << std::endl;
-                std::cerr <<"key                    min                       max                 mean      " << std::endl;
+                std::cerr <<"key      \t\t\t\t" << "min\t\t\t\t" << "max\t\t\t\t\t" << std::endl;
                 std::cerr <<"-------------------------------------------------------------------------------" << std::endl;
-                std::cerr <<"sx:                     " << s[0].x << "                        " << s[1].x << std::endl;
-                std::cerr <<"sy:                     " << s[0].y << "                        " << s[1].y << std::endl;
-                std::cerr <<"sz:                     " << s[0].z << "                        " << s[1].z << std::endl;
+                std::cerr <<"sx:      \t\t\t\t" << s[0].x << "\t\t\t\t" << s[1].x << std::endl;
+                std::cerr <<"sy:      \t\t\t\t" << s[0].y << "\t\t\t\t" << s[1].y << std::endl;
+                std::cerr <<"sz:      \t\t\t\t" << s[0].z << "\t\t\t\t" << s[1].z << std::endl;
 
-                std::cerr <<"gx:                     " << g[0].x << "                        " << g[1].x << std::endl;
-                std::cerr <<"gy:                     " << g[0].y << "                        " << g[1].y << std::endl;
-                std::cerr <<"gz:                     " << g[0].z << "                        " << g[1].z << std::endl;
+                std::cerr <<"gx:      \t\t\t\t" << g[0].x << "\t\t\t\t" << g[1].x << std::endl;
+                std::cerr <<"gy:      \t\t\t\t" << g[0].y << "\t\t\t\t" << g[1].y << std::endl;
+                std::cerr <<"gz:      \t\t\t\t" << g[0].z << "\t\t\t\t" << g[1].z << std::endl;
 
-                std::cerr <<"offsetx:                 " << offset[0].x << "                        " << offset[1].x << std::endl;
-                std::cerr <<"offsety:                 " << offset[0].y << "                        " << offset[1].y << std::endl;
-                std::cerr <<"offsetz:                 " << offset[0].z << "                        " << offset[1].z << std::endl;
+                std::cerr <<"offsetx: \t\t\t\t" << offset[0].x << "\t\t\t\t" << offset[1].x << std::endl;
+                std::cerr <<"offsety: \t\t\t\t" << offset[0].y << "\t\t\t\t" << offset[1].y << std::endl;
+                std::cerr <<"offsetz: \t\t\t\t" << offset[0].z << "\t\t\t\t" << offset[1].z << std::endl;
 
-                std::cerr <<"Aoffsetx:                 " << aoffset[0].x << "                        " << aoffset[1].x << std::endl;
-                std::cerr <<"Aoffsety:                 " << aoffset[0].y << "                        " << aoffset[1].y << std::endl;
-                std::cerr <<"Aoffsetz:                 " << aoffset[0].z << "                        " << aoffset[1].z << std::endl;
+                std::cerr <<"Aoffsetx:\t\t\t\t" << aoffset[0].x << "\t\t\t\t" << aoffset[1].x << std::endl;
+                std::cerr <<"Aoffsety:\t\t\t\t" << aoffset[0].y << "\t\t\t\t" << aoffset[1].y << std::endl;
+                std::cerr <<"Aoffsetz:\t\t\t\t" << aoffset[0].z << "\t\t\t\t" << aoffset[1].z << std::endl;
                 std::cerr <<"*******************************************************************************" << std::endl;
                 break;
             default:
