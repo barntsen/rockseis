@@ -2066,7 +2066,7 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
                         {
                             if((map[i].x == ix) && (map[i].y == iz))
                             {
-                                wavgraddata[kwav(it,i)] = -1.0*(mrxx + mrzz);
+                                wavgraddata[kwav(it,i)] = +1.0*(mrxx + mrzz);
                             }
                         }
                         break;
@@ -3422,7 +3422,7 @@ void FwiElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr
                             {
                                 if((map[i].x == ix) && (map[i].y == iy) && (map[i].z == iz))
                                 {
-                                    wavgraddata[kwav(it,i)] = -1.0*(mrxx + mryy + mrzz);
+                                    wavgraddata[kwav(it,i)] = 1.0*(mrxx + mryy + mrzz);
                                 }
                             }
                             break;
