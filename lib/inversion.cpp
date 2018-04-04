@@ -2157,6 +2157,14 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
                     rhols[i] = rho0[i];
                 }
             }
+            /*Ensure vp/vs boundary */
+            for(i=0; i< N; i++)
+            {
+                if(vpls[i] < 1.2*vsls[i])
+                {
+                    vsls[i] = vpls[i]/1.2;
+                }
+            }
             lsmodel->writeModel();
             break;
         case PAR_BSPLINE:
@@ -2220,7 +2228,17 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
                 {
                     rhols[i] = rho0[i];
                 }
+
             }
+
+            /*Ensure vp/vs boundary */
+            for(i=0; i< Nmod; i++){
+                if(vpls[i] < 1.2*vsls[i])
+                {
+                    vsls[i] = vpls[i]/1.2;
+                }
+            }
+
             lsmodel->writeModel();
             break;
         default:
