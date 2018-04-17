@@ -36,7 +36,8 @@ public:
     void setO(int dim, T val) { if( (dim <= MAXDIMS) && (dim > 0) ) o[dim-1] = val; }	///< Set origin
 
     // Floor function (to avoid calling std::floor which is unstable in Centos)
-    int mapfloor( const T x ) { return x > 0 ? (int) x : (int) x - 1; } ///< Rounds to the lowest integer
+    //int mapfloor( const T x ) { return x > 0 ? (int) x : (int) x - 1; } ///< Rounds to the lowest integer
+    int mapfloor( const T x ) { return ((int) std::floor(x)); } ///< Rounds to the lowest integer
 
     // Print geometry functions
     void print(); ///< Print geometry information 
