@@ -41,18 +41,18 @@ class RSSdata:
             self.geomO[i] = st.unpack('d', f.read(8))[0]
 
         #Reading coordinates and data
-        fullsize = 1;
+        self.fullsize = 1;
         self.Ndims = 0
         for i in range(0, MAXDIMS):
             if(self.geomN[i] > 0):    
-                fullsize = fullsize*self.geomN[i];
+                self.fullsize = self.fullsize*self.geomN[i];
                 self.Ndims = self.Ndims + 1
         resize = np.zeros([self.Ndims,1], dtype='uint64')
         for i in range(0,self.Ndims):
             resize[i] = self.geomN[i];
 
         # Allocate 1d array for data
-        self.data = np.zeros([fullsize,1], dtype='float32')
+        self.data = np.zeros([self.fullsize,1], dtype='float32')
         if(self.Nheader):
             self.srcX = np.zeros([self.geomN[1],1], dtype='float32')
             self.srcY = np.zeros([self.geomN[1],1], dtype='float32')
@@ -78,11 +78,52 @@ class RSSdata:
                 for j in range(0,self.geomN[0]):
                     self.data[j*self.geomN[1] + i] = st.unpack('f', f.read(4))[0];
         else:
-            for i in range(0,fullsize):
+            for i in range(0,self.fullsize):
                 self.data[i] = st.unpack('f', f.read(4))[0];
 
         # Reshape data to correct dimensions
         self.data=self.data.reshape(resize)
+
+    def write(self,filename):
+        f = open(filename, 'wb')
+        f.write(MAGICNUMBER)
+    
+        # Writting header
+        f.write(st.pack('i', self.data_format))
+        f.write(st.pack('i', self.header_format))
+        f.write(st.pack('i', self.type))
+        f.write(st.pack('Q', self.Nheader))
+        f.write(st.pack('Q', self.Ndims))
+        for i in range(0,MAXDIMS):
+            f.write(st.pack('Q', self.geomN[i]))
+        for i in range(0,MAXDIMS):
+            f.write(st.pack('d', self.geomD[i]))
+        for i in range(0,MAXDIMS):
+            f.write(st.pack('d', self.geomO[i]))
+
+        #Writting Coordinates and data
+        dataout=self.data.reshape([self.fullsize,1])
+        if(self.Nheader):
+            for i in range(0,self.geomN[1]):
+                if(self.Nheader == 4):
+                    f.write(st.pack('f', self.srcX[i]))
+                    f.write(st.pack('f', self.srcZ[i]))
+                    f.write(st.pack('f', self.GroupX[i]))
+                    f.write(st.pack('f', self.GroupZ[i]))
+        
+                if(self.Nheader == 6):
+                    f.write(st.pack('f', self.srcX[i]))
+                    f.write(st.pack('f', self.srcY[i]))
+                    f.write(st.pack('f', self.srcZ[i]))
+                    f.write(st.pack('f', self.GroupX[i]))
+                    f.write(st.pack('f', self.GroupY[i]))
+                    f.write(st.pack('f', self.GroupZ[i]))
+                            
+                for j in range(0,self.geomN[0]):
+                    f.write(st.pack('f', dataout[j*self.geomN[1] + i]))
+        else:
+            for i in range(0,self.fullsize):
+               f.write(st.pack('f',  dataout[i]))
         
     def imageshow(self):
         nx = self.geomN[0];
