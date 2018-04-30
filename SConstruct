@@ -60,4 +60,3 @@ SConscript('dev/SConscript','env')
 SConscript('gui/SConscript','env')
 SConscript('config4cpp/src/SConscript','env')
 SConscript('madagascar/lib/SConscript','env envc')
-
