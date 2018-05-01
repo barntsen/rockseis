@@ -431,10 +431,17 @@ void Sort<T>::put2DGather(std::shared_ptr<Data2D<T>> data, size_t number)
     for (size_t j=0; j < n2; j++){
         traceno = this->sortmap[this->keymap[number].i0 + j];
         Fdata->seekp(Fdata->getStartofdata() + traceno*(n1+NHEAD2D)*sizeof(T));
-        Fdata->write(&scoords[j].x, 1);
-        Fdata->write(&scoords[j].y, 1);
-        Fdata->write(&gcoords[j].x, 1);
-        Fdata->write(&gcoords[j].y, 1);
+        if(!this->getReciprocity()){
+            Fdata->write(&scoords[j].x, 1);
+            Fdata->write(&scoords[j].y, 1);
+            Fdata->write(&gcoords[j].x, 1);
+            Fdata->write(&gcoords[j].y, 1);
+        }else{
+            Fdata->write(&gcoords[j].x, 1);
+            Fdata->write(&gcoords[j].y, 1);
+            Fdata->write(&scoords[j].x, 1);
+            Fdata->write(&scoords[j].y, 1);
+        }
         Fdata->write(&tracedata[j*n1], n1);
     }
 
@@ -470,12 +477,21 @@ void Sort<T>::put3DGather(std::shared_ptr<Data3D<T>> data, size_t number)
     for (size_t j=0; j < n2; j++){
         traceno = this->sortmap[this->keymap[number].i0 + j];
         Fdata->seekp(Fdata->getStartofdata() + traceno*(n1+NHEAD3D)*sizeof(T));
-        Fdata->write(&scoords[j].x, 1);
-        Fdata->write(&scoords[j].y, 1);
-        Fdata->write(&scoords[j].z, 1);
-        Fdata->write(&gcoords[j].x, 1);
-        Fdata->write(&gcoords[j].y, 1);
-        Fdata->write(&gcoords[j].z, 1);
+        if(!this->getReciprocity()){
+            Fdata->write(&scoords[j].x, 1);
+            Fdata->write(&scoords[j].y, 1);
+            Fdata->write(&scoords[j].z, 1);
+            Fdata->write(&gcoords[j].x, 1);
+            Fdata->write(&gcoords[j].y, 1);
+            Fdata->write(&gcoords[j].z, 1);
+        }else{
+            Fdata->write(&gcoords[j].x, 1);
+            Fdata->write(&gcoords[j].y, 1);
+            Fdata->write(&gcoords[j].z, 1);
+            Fdata->write(&scoords[j].x, 1);
+            Fdata->write(&scoords[j].y, 1);
+            Fdata->write(&scoords[j].z, 1);
+        }
         Fdata->write(&tracedata[j*n1], n1);
     }
 

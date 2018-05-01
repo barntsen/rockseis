@@ -13,8 +13,8 @@ outdata2.read('Vxshot.rss')
 ntraces = indata.geomN[1] # Number of traces
 fs = 1.0/indata.geomD[0] # Sampling frequency
 for i in range(0, ntraces):
-    trc=indata.data[:,i];
-    z= hilbert(trc) #form the analytical signal
+    trc = indata.data[:,i];
+    z = hilbert(trc) #form the analytical signal
     inst_amplitude = np.abs(z) #envelope extraction
     inst_phase = np.unwrap(np.angle(z))#inst phase
     inst_freq = np.diff(inst_phase)/(2*np.pi)*fs #inst frequency

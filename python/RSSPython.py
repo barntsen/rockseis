@@ -13,6 +13,7 @@ class RSSdata:
         self.type=0;
         self.Nheader=0;
         self.Ndims=0;
+        self.fullsize=0
         self.geomN = np.zeros([MAXDIMS,1], dtype='uint64')
         self.geomD = np.zeros([MAXDIMS,1], dtype='float64')
         self.geomO = np.zeros([MAXDIMS,1], dtype='float64')
