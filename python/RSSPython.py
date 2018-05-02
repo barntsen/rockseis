@@ -102,6 +102,14 @@ class RSSdata:
         for i in range(0,MAXDIMS):
             f.write(st.pack('d', self.geomO[i]))
 
+        #Estimating sizes for output
+        self.fullsize = 1;
+        self.Ndims = 0
+        for i in range(0, MAXDIMS):
+            if(self.geomN[i] > 0):    
+                self.fullsize = self.fullsize*self.geomN[i];
+                self.Ndims = self.Ndims + 1
+
         #Writting Coordinates and data
         dataout=self.data.reshape([self.fullsize,1])
         if(self.Nheader):
