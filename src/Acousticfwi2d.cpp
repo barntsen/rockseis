@@ -155,7 +155,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(Dataweightfile = "weights.rss";);
             PRINT_DOC(mute = "false";  # Mute gradient and updates);
             PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
-            PRINT_DOC(Srcilum = "false"; # Correct gradient for source ilumination);
+            PRINT_DOC(srcilum = "false"; # Correct gradient for source ilumination);
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
 
@@ -353,8 +353,6 @@ int main(int argc, char** argv) {
     inv->setUpdates(update_vp, update_rho, update_source);
     inv->setSrcilum(srcilum);
     inv->setSrcilumfile(SRCILUMFILE);
-    inv->setRecilum(false);
-    inv->setRecilumfile(RECILUMFILE);
     // Filter to be removed
     filter = false;
     inv->setFilter(filter);

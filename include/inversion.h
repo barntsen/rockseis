@@ -54,7 +54,6 @@
 #define RHOREGGRADFILE "rho_reg_grad.rss"
 
 #define SRCILUMFILE "src_ilum.rss"
-#define RECILUMFILE "rec_ilum.rss"
 
 #define VPGRADCOMBFILE "vp_grad_comb.rss"
 #define VSGRADCOMBFILE "vs_grad_comb.rss"
@@ -206,9 +205,6 @@ public:
     void setSrcilumfile(std::string file) { Srcilumfile = file; }
     std::string getSrcilumfile() { return Srcilumfile; }
 
-    void setRecilumfile(std::string file) { Recilumfile = file; }
-    std::string getRecilumfile() { return Recilumfile; }
-
     void setMisfitfile(std::string file) { Misfitfile = file; }
     std::string getMisfitfile() { return Misfitfile; }
 
@@ -263,9 +259,6 @@ public:
     // Correct for source ilumination
     void applySrcilum();
 
-    // Correct for source ilumination
-    void applyRecilum();
-
     // Regularisation computation
     void computeRegularisation(double *x);
 
@@ -291,10 +284,8 @@ public:
     void setUpdate_vp(bool vp) { update_vp = vp;}
     void setUpdate_rho(bool rho) { update_rho = rho;}
     void setUpdate_source(bool source) { update_source = source;}
-    void setSrcilum(bool val) { srcilum = val;}
-    bool getSrcilum() { return srcilum;}
-    void setRecilum(bool val) { recilum = val;}
-    bool getRecilum() { return recilum;}
+    void setSrcilum(bool val) { srcilumset = val;}
+    bool getSrcilum() { return srcilumset;}
 
 
 private:
@@ -302,8 +293,7 @@ private:
     bool update_rho;
     bool update_source;
     bool dataweight;
-    bool srcilum;
-    bool recilum;
+    bool srcilumset;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Rhofile;
@@ -318,7 +308,6 @@ private:
     std::string Presidualfile;
     std::string Mutefile;
     std::string Srcilumfile;
-    std::string Recilumfile;
     T apertx;
     T kvp, krho, ksource;
     T reg_eps[2];
@@ -353,9 +342,6 @@ public:
 
     void setSrcilumfile(std::string file) { Srcilumfile = file; }
     std::string getSrcilumfile() { return Srcilumfile; }
-
-    void setRecilumfile(std::string file) { Recilumfile = file; }
-    std::string getRecilumfile() { return Recilumfile; }
 
     void setVsfile(std::string file) { Vsfile = file; }
     std::string getVsfile() { return Vsfile; }
@@ -503,7 +489,6 @@ private:
     std::string Snapfile;
     std::string Mutefile;
     std::string Srcilumfile;
-    std::string Recilumfile;
     T apertx;
     T kvp, kvs, krho, ksource;
     T reg_eps[3];

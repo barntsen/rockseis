@@ -129,7 +129,6 @@ public:
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setWavgrad(std::shared_ptr<Data2D<T>> _wavgrad) { wavgrad = _wavgrad; wavgradset = true; }
     void setSrcilum(std::shared_ptr<Image2D<T>> _srcilum) { srcilum = _srcilum; srcilumset = true; }
-    void setRecilum(std::shared_ptr<Image2D<T>> _recilum) { recilum = _recilum; recilumset = true; }
     void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
@@ -149,7 +148,6 @@ public:
 private:
     std::shared_ptr<ModelAcoustic2D<T>> model;
     std::shared_ptr<Image2D<T>> srcilum;
-    std::shared_ptr<Image2D<T>> recilum;
     std::shared_ptr<Image2D<T>> vpgrad;
     std::shared_ptr<Image2D<T>> rhograd;
     std::shared_ptr<Data2D<T>> wavgrad;
@@ -164,7 +162,6 @@ private:
     bool modelset;
     bool wavgradset;
     bool srcilumset;
-    bool recilumset;
     bool vpgradset;
     bool rhogradset;
     bool sourceset;

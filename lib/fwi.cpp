@@ -456,6 +456,7 @@ FwiAcoustic2D<T>::FwiAcoustic2D(){
     datamodPset = false;
     dataresPset = false;
     dataweightset = false;
+    srcilumset = false;
 }
 
 template<typename T>
@@ -472,6 +473,7 @@ FwiAcoustic2D<T>::FwiAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std:
     datamodPset = false;
     dataresPset = false;
     dataweightset = false;
+    srcilumset = false;
 }
 
 template<typename T>
@@ -484,19 +486,12 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
         if(!srcilum->getAllocated()) srcilum->allocateImage();
     }
 
-    if(recilumset){
-        if(!recilum->getAllocated()) recilum->allocateImage();
-    }
     int ix, iz;
     T *vpgraddata = vpgrad->getImagedata();
     T *rhograddata = rhograd->getImagedata();
     T *srcilumdata;
     if(srcilumset){
         srcilumdata = srcilum->getImagedata();
-    }
-    T *recilumdata;
-    if(recilumset){
-        recilumdata = recilum->getImagedata();
     }
     T mspx, mspz;
     T mrpx, mrpz;
@@ -528,9 +523,6 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
 
                 if(srcilumset){
                     srcilumdata[ki2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*wsp[ks2D(ix+pads, iz+pads)];
-                }
-                if(recilumset){
-                    recilumdata[ki2D(ix,iz)] -= vpscale*L*(mrxx + mrzz)*L*(mrxx + mrzz);
                 }
             }	
         }
