@@ -1203,6 +1203,1182 @@ void InversionAcoustic2D<T>::computeRegularisation(double *x)
     free(gwrk);
 }
 
+// =============== 3D ACOUSTIC INVERSION CLASS =============== //
+//
+template<typename T>
+InversionAcoustic3D<T>::InversionAcoustic3D() {
+    // Set default parameters
+    apertx = -1;
+    aperty = -1;
+
+    kvp = 1.0;
+    krho = 1.0;
+    ksource = 1.0;
+
+    reg_alpha[0]=0.0;
+    reg_alpha[1]=0.0;
+    reg_eps[0]=1e-3;
+    reg_eps[1]=1e-3;
+
+    update_vp = true;
+    update_rho = false;
+    update_source = false;
+}
+
+template<typename T>
+InversionAcoustic3D<T>::InversionAcoustic3D(MPImodeling *mpi): Inversion<T>(mpi) {
+    // Set default parameters
+    apertx = -1;
+    aperty = -1;
+
+    kvp = 1.0;
+    krho = 1.0;
+    ksource = 1.0;
+    reg_alpha[0]=0.0;
+    reg_alpha[1]=0.0;
+    reg_eps[0]=1e-3;
+    reg_eps[1]=1e-3;
+
+    update_vp = true;
+    update_rho = false;
+    update_source = false;
+}
+
+template<typename T>
+InversionAcoustic3D<T>::~InversionAcoustic3D() {
+    //Do nothing
+}
+
+template<typename T>
+void InversionAcoustic3D<T>::runGrad() {
+    MPImodeling *mpi = this->getMpi();
+    std::shared_ptr<rockseis::Data3D<T>> shot3D;
+    std::shared_ptr<rockseis::Data3D<T>> shot3Di;
+    std::shared_ptr<rockseis::Data3D<T>> shotmod3D;
+    std::shared_ptr<rockseis::Data3D<T>> shotmod3Di;
+    std::shared_ptr<rockseis::Data3D<T>> shotres3D;
+    std::shared_ptr<rockseis::Data3D<T>> shotres3Di;
+    std::shared_ptr<rockseis::Data3D<T>> shotweight3D;
+    std::shared_ptr<rockseis::Data3D<T>> shotweight3Di;
+    std::shared_ptr<rockseis::Image3D<T>> vpgrad;
+    std::shared_ptr<rockseis::Image3D<T>> rhograd;
+    std::shared_ptr<rockseis::Image3D<T>> srcilum;
+    std::shared_ptr<rockseis::Data3D<T>> wavgrad;
+
+    // Create a sort class
+    std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
+    Sort->setDatafile(Precordfile);
+	
+    // Create a global model class
+	std::shared_ptr<rockseis::ModelAcoustic3D<T>> gmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
+    // Create a local model class
+	std::shared_ptr<rockseis::ModelAcoustic3D<T>> lmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
+
+    // Create a data class for the source wavelet
+	std::shared_ptr<rockseis::Data3D<T>> source (new rockseis::Data3D<T>(Waveletfile));
+
+    // Create an interpolation class
+    std::shared_ptr<rockseis::Interp<T>> interp (new rockseis::Interp<T>(SINC));
+
+    // Create a file to output data misfit values
+    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
+
+	if(mpi->getRank() == 0) {
+		// Master
+
+        // Get shot map
+        Sort->readKeymap();
+        Sort->readSortmap();
+        size_t ngathers =  Sort->getNensemb();
+
+        // Wavelet gradient
+        wavgrad = std::make_shared<rockseis::Data3D<T>>(1, source->getNt(), source->getDt(), 0.0);
+        wavgrad->setFile(Wavgradfile);
+        wavgrad->createEmpty(ngathers);
+
+        // Misfit file creation
+        Fmisfit->output(Misfitfile);
+        Fmisfit->setN(1,ngathers);
+        Fmisfit->setD(1,1.0);
+        Fmisfit->setData_format(sizeof(T));
+        Fmisfit->createEmpty();
+        Fmisfit->close();
+
+        // Create a data class for the recorded data
+        std::shared_ptr<rockseis::Data3D<T>> shot3D (new rockseis::Data3D<T>(Precordfile));
+        // Create modelling and residual data files
+        shotmod3D = std::make_shared<rockseis::Data3D<T>>(1, shot3D->getNt(), shot3D->getDt(), shot3D->getOt());
+        shotmod3D->setFile(Pmodelledfile);
+        shotmod3D->createEmpty(shot3D->getNtrace());
+
+        shotres3D = std::make_shared<rockseis::Data3D<T>>(1, shot3D->getNt(), shot3D->getDt(), shot3D->getOt());
+        shotres3D->setFile(Presidualfile);
+        shotres3D->createEmpty(shot3D->getNtrace());
+        
+		// Create work queue
+		for(long int i=0; i<ngathers; i++) {
+			// Work struct
+			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
+			mpi->addWork(work);
+		}
+
+		// Perform work in parallel
+		mpi->performWork();
+
+        // Image
+        vpgrad = std::make_shared<rockseis::Image3D<T>>(Vpgradfile, gmodel, 1, 1, 1);
+        vpgrad->createEmpty();
+
+        rhograd = std::make_shared<rockseis::Image3D<T>>(Rhogradfile, gmodel, 1, 1, 1);
+        rhograd->createEmpty();
+
+//        if(this->srcilumset){
+//            srcilum = std::make_shared<rockseis::Image3D<T>>(Srcilumfile, gmodel, 1, 1);
+//            srcilum->createEmpty();
+//        }
+
+        for(long int i=0; i<ngathers; i++) {
+            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            remove_file(Vpgradfile + "-" + std::to_string(i));
+            rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+            remove_file(Rhogradfile + "-" + std::to_string(i));
+
+//            if(this->srcilumset){
+//                srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
+//                remove_file(Srcilumfile + "-" + std::to_string(i));
+//            }
+        }
+
+		//Clear work vector 
+		mpi->clearWork();
+	}
+    else {
+        /* Slave */
+        std::shared_ptr<rockseis::FwiAcoustic3D<T>> fwi;
+        while(1) {
+            workModeling_t work = mpi->receiveWork();
+
+            if(work.MPItag == MPI_TAG_DIE) {
+                break;
+            }
+
+            if(work.MPItag == MPI_TAG_NO_WORK) {
+                mpi->sendNoWork(0);
+            }
+            else {
+                // Do migration
+                Sort->readKeymap();
+                Sort->readSortmap();
+
+                // Get the shot
+                Sort->setDatafile(Precordfile);
+                shot3D = Sort->get3DGather(work.id);
+                size_t ntr = shot3D->getNtrace();
+
+                // Get the weight
+                if(dataweight){
+                    Sort->setDatafile(Dataweightfile);
+                    shotweight3D = Sort->get3DGather(work.id);
+                }
+
+                lmodel = gmodel->getLocal(shot3D, apertx, aperty, SMAP);
+
+                // Read wavelet data, set shot coordinates and make a map
+                source->read();
+                source->copyCoords(shot3D);
+                source->makeMap(lmodel->getGeom(), SMAP);
+
+                // Interpolate shot
+                shot3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(shot3D, shot3Di);
+                shot3Di->makeMap(lmodel->getGeom(), GMAP);
+
+                // Create fwi object
+                fwi = std::make_shared<rockseis::FwiAcoustic3D<T>>(lmodel, source, shot3Di, this->getOrder(), this->getSnapinc());
+
+                // Create modelled and residual data objects 
+                shotmod3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotmod3D->copyCoords(shot3D);
+                shotmod3D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDatamodP(shotmod3D);
+                shotres3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotres3D->copyCoords(shot3D);
+                shotres3D->makeMap(lmodel->getGeom(), GMAP);
+                fwi->setDataresP(shotres3D);
+
+                // Interpolate weight
+                if(dataweight){
+                    shotweight3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    interp->interp(shotweight3D, shotweight3Di);
+                    shotweight3Di->makeMap(lmodel->getGeom(), GMAP);
+                    fwi->setDataweight(shotweight3Di);
+                }
+                
+                // Setting misfit type
+                fwi->setMisfit_type(this->getMisfit_type());
+                fwi->setFilter(this->getFilter());
+                fwi->setAllfreqs(this->getFreqs());
+
+                // Creating gradient objects
+                vpgrad = std::make_shared<rockseis::Image3D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1, 1);
+                rhograd = std::make_shared<rockseis::Image3D<T>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, 1, 1,1);
+
+//                if(this->srcilumset){
+//                    srcilum = std::make_shared<rockseis::Image3D<T>>(Srcilumfile + "-" + std::to_string(work.id), lmodel, 1, 1,1);
+//                    fwi->setSrcilum(srcilum);
+//                }
+
+                // Setting up gradient objects in fwi class
+                fwi->setVpgrad(vpgrad);
+                fwi->setRhograd(rhograd);
+
+                wavgrad = std::make_shared<rockseis::Data3D<T>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
+                wavgrad->setField(rockseis::PRESSURE);
+                // Copy geometry
+                wavgrad->copyCoords(source);
+                wavgrad->makeMap(lmodel->getGeom(), SMAP);
+                fwi->setWavgrad(wavgrad);
+
+                // Setting Snapshot file 
+                fwi->setSnapfile(Psnapfile + "-" + std::to_string(work.id));
+
+                // Setting Snapshot parameters
+                fwi->setNcheck(this->getNsnaps());
+                fwi->setIncore(this->getIncore());
+
+                // Set logfile
+                fwi->setLogfile("log.txt-" + std::to_string(work.id));
+
+                // Stagger model
+                lmodel->staggerModels();
+
+                // Run simulation
+                switch(this->getSnapmethod()){
+                    case rockseis::FULL:
+                        fwi->run();
+                        break;
+                    case rockseis::OPTIMAL:
+                        fwi->run_optimal();
+                        break;
+                    default:
+                        rockseis::rs_error("Invalid option of snapshot saving."); 
+                }
+
+                // Output gradients
+                vpgrad->write();
+                rhograd->write();
+                wavgrad->putTrace(Wavgradfile, work.id);
+
+                // Output ilumination
+                if(this->srcilumset){
+                    srcilum->write();
+                }
+
+                // Output misfit
+                Fmisfit->append(Misfitfile);
+                T val = fwi->getMisfit();
+                Fmisfit->write(&val, 1, work.id*sizeof(T));
+                Fmisfit->close();
+
+                // Output modelled and residual data
+                shotmod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, shot3D->getNt(), shot3D->getDt(), shot3D->getOt());
+                shotmod3Di->setFile(Pmodelledfile);
+                interp->interp(shotmod3D, shotmod3Di);
+                Sort->put3DGather(shotmod3Di, work.id);
+
+                shotres3Di = std::make_shared<rockseis::Data3D<T>>(ntr, shot3D->getNt(), shot3D->getDt(), shot3D->getOt());
+                shotres3Di->setFile(Presidualfile);
+                interp->interp(shotres3D, shotres3Di);
+                Sort->put3DGather(shotres3Di, work.id);
+
+                
+                // Reset all classes
+                shot3D.reset();
+                shot3Di.reset();
+                shotmod3D.reset();
+                shotmod3Di.reset();
+                shotres3D.reset();
+                shotres3Di.reset();
+                lmodel.reset();
+                vpgrad.reset();
+                rhograd.reset();
+                wavgrad.reset();
+                srcilum.reset();
+                fwi.reset();
+                work.status = WORK_FINISHED;
+
+                // Send result back
+                mpi->sendResult(work);		
+            }
+        }
+    }
+}
+
+template<typename T>
+void InversionAcoustic3D<T>::runBsproj() {
+    MPImodeling *mpi = this->getMpi();
+	T vpsum = 0.0; // Sum over splines
+	T rhosum = 0.0; // Sum over splines
+	float *global_stack;
+    T *c;
+    T *wrk;
+
+    std::string vpgradfile;
+    std::string rhogradfile;
+
+    if(Mutefile.empty()){
+        vpgradfile = VPGRADCOMBFILE;
+        rhogradfile = RHOGRADCOMBFILE;
+    }else{
+        vpgradfile = VPGRADMUTEFILE;
+        rhogradfile = RHOGRADMUTEFILE;
+    }
+
+	// Get gradients
+	std::shared_ptr<rockseis::ModelAcoustic3D<T>> grad (new rockseis::ModelAcoustic3D<T>(vpgradfile, rhogradfile, this->getLpml() ,this->getFs()));
+
+	// Read model
+	grad->readModel();
+	
+	T *vpgrad, *rhograd;
+	vpgrad = grad->getVp();
+	rhograd = grad->getR();
+
+    /* Initializing spline */
+    std::shared_ptr<rockseis::Bspl3D<T>> spline (new rockseis::Bspl3D<T>(grad->getNx(), grad->getNy(), grad->getNz(), grad->getDx(), grad->getDy(), grad->getDz(), this->getDtx(), this->getDty(), this->getDtz(), 3, 3, 3));
+    int nc = spline->getNc();
+
+	/* Allocating projection arrays */
+	float *vpproj= (float *) calloc(nc, sizeof(float));
+	if(vpproj==NULL){
+		rs_error("InversionAcoustic3D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
+	}
+	float *rhoproj= (float *) calloc(nc, sizeof(float));
+	if(rhoproj==NULL){
+		rs_error("InversionAcoustic3D<T>::runBsproj(): Not enough memory to allocate projection array (rhoproj)");
+	}
+
+    if(mpi->getRank() == 0) {
+		// Master
+
+        mpi->setVerbose(false); // Turn off queue printing
+		// Create work queue
+		for(long int i=0; i<nc; i++) {
+			// Work struct
+			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
+			mpi->addWork(work);
+		}
+
+		// Perform work in parallel
+		mpi->performWork();
+
+		//Clear work vector 
+		mpi->clearWork();
+
+		global_stack= (float *) calloc(nc, sizeof(float));
+		if(global_stack==NULL){
+			rs_error("InversionAcoustic3D<T>::runBsproj(): Not enough memory to allocate global stack array");
+		}
+
+		/* Starting reduce operation */
+		MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
+
+		/* Output spline */
+        std::shared_ptr<File> Fout (new File());
+        Fout->output(VPPROJGRADFILE);
+        Fout->setN(1,nc);
+        Fout->setD(1,1.0);
+        Fout->setData_format(sizeof(float));
+        Fout->write(global_stack, nc, 0);
+        Fout->close();
+
+		for(long int i=0; i< nc; i++){
+			global_stack[i] = 0.0;
+		}
+		/* Starting reduce operation */
+		MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
+
+		/* Output spline */
+        Fout->output(RHOPROJGRADFILE);
+        Fout->setN(1,nc);
+        Fout->setD(1,1.0);
+        Fout->setData_format(sizeof(float));
+        Fout->write(global_stack, nc, 0);
+        Fout->close();
+
+        mpi->setVerbose(true); // Turn on queue printing
+
+       }else {
+        /* Slave */
+        while(1) {
+            workModeling_t work = mpi->receiveWork();
+
+            if(work.MPItag == MPI_TAG_DIE) {
+                break;
+            }
+
+            if(work.MPItag == MPI_TAG_NO_WORK) {
+                mpi->sendNoWork(0);
+            }
+            else {
+                // Do work
+                c = spline->getSpline();
+				c[work.id]=1.0; // Projection point
+				spline->bisp(); // Evaluate spline for this coefficient
+                wrk = spline->getMod();
+				vpsum = 0.0;
+				rhosum = 0.0;
+                for(long int i=0; i<grad->getNx()*grad->getNy()*grad->getNz(); i++){
+                    if(update_vp){
+						vpsum += wrk[i]*vpgrad[i];
+                    }
+                    if(update_rho){
+						rhosum += wrk[i]*rhograd[i];
+                    }
+				}
+				vpproj[work.id]=vpsum;
+				rhoproj[work.id]=rhosum;
+				c[work.id]=0.0; // Reset coefficient to 0
+			}
+
+			// Send result back
+			work.status = WORK_FINISHED;
+			mpi->sendResult(work);		
+		}
+
+		global_stack= (float *) calloc(nc, sizeof(float));
+		if(global_stack==NULL){
+			rs_error("InversionAcoustic3D<T>::runBsproj(): Not enough memory to allocate global stack array");
+		}
+
+		/* Starting reduce operation */
+        MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
+        for(long int i=0; i< nc; i++){
+            global_stack[i] = 0.0;
+        }
+        MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
+
+	   }
+    // Free variables
+    free(global_stack);
+    free(vpproj);
+    free(rhoproj);
+}
+
+template<typename T>
+int InversionAcoustic3D<T>::setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile)
+{
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> model_in (new rockseis::ModelAcoustic3D<T>(vpfile, rhofile, 1 ,0));
+    std::shared_ptr<rockseis::Data3D<T>> source_in (new rockseis::Data3D<T>(sourcefile));
+    std::shared_ptr<rockseis::Bspl3D<T>> spline;
+    model_in->readModel();  
+    // Write initial model files
+    model_in->setVpfile(VP0FILE);
+    model_in->setRfile(RHO0FILE);
+    model_in->writeModel();
+    // Write linesearch model files
+    model_in->setVpfile(VPLSFILE);
+    model_in->setRfile(RHOLSFILE);
+    model_in->writeModel();
+    source_in->read();
+    // Write source initial model
+    source_in->setFile(SOURCE0FILE);
+    source_in->write();
+    // Write source linesearch file
+    source_in->setFile(SOURCELSFILE);
+    source_in->write();
+    int N, Ns;
+    int Npar = 0;
+    switch(this->getParamtype()){
+        case PAR_GRID:
+            N = (model_in->getGeom())->getNtot();
+            Ns = source_in->getNt();
+            Npar = 0;
+            if(update_vp) Npar += N;
+            if(update_rho) Npar += N;
+            if(update_source) Npar += Ns;
+            break;
+        case PAR_BSPLINE:
+            spline = std::make_shared<rockseis::Bspl3D<T>>(model_in->getNx(), model_in->getNy(), model_in->getNz(), model_in->getDx(), model_in->getDy(), model_in->getDz(), this->getDtx(), this->getDty(), this->getDtz(), 3, 3, 3);
+            N=spline->getNc();
+            Ns = source_in->getNt();
+            Npar = 0;
+            if(update_vp) Npar += N;
+            if(update_rho) Npar += N;
+            if(update_source) Npar += Ns;
+            break;
+        default:
+            rs_error("InversionAcoustic3D<T>::setInitial(): Unknown parameterisation."); 
+            break;
+    }
+
+    return Npar;
+}
+
+template<typename T>
+void InversionAcoustic3D<T>::saveResults(int iter)
+{
+    std::string name;
+    std::string dir;
+    dir = RESULTDIR;
+    // Write out new models
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> lsmodel (new rockseis::ModelAcoustic3D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::Data3D<T>> sourcels (new rockseis::Data3D<T>(SOURCELSFILE));
+    lsmodel->readModel();
+    sourcels->read();
+    if(update_vp){
+        name = dir + "/" + VP_UP + "-" + std::to_string(iter);
+        lsmodel->setVpfile(name);
+        lsmodel->writeVp();
+    }
+    if(update_rho){
+        name = dir + "/" + RHO_UP + "-" + std::to_string(iter);
+        lsmodel->setRfile(name);
+        lsmodel->writeR();
+    }
+    if(update_source){
+        name = dir + "/" + RHO_UP + "-" + std::to_string(iter);
+        name = dir + "/" + SOURCE_UP + "-" + std::to_string(iter);
+        sourcels->setFile(name);
+        sourcels->write();
+    }
+}
+
+template<typename T>
+void InversionAcoustic3D<T>::saveLinesearch(double *x)
+{
+    // Models
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> model0 (new rockseis::ModelAcoustic3D<T>(VP0FILE, RHO0FILE, 1 ,0));
+    std::shared_ptr<rockseis::Data3D<T>> source0 (new rockseis::Data3D<T>(SOURCE0FILE));
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> lsmodel (new rockseis::ModelAcoustic3D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::Data3D<T>> lssource (new rockseis::Data3D<T>(SOURCELSFILE));
+    std::shared_ptr<rockseis::Bspl3D<T>> spline;
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> mute;
+
+    // Write linesearch model
+    model0->readModel();
+    lsmodel->readModel();
+    source0->read();
+    lssource->read();
+    T *vp0, *rho0, *wav0, *vpls, *rhols, *wavls;
+    T *c, *mod;
+    T *vpmutedata;
+    T *rhomutedata;
+    vp0 = model0->getVp(); 
+    rho0 = model0->getR(); 
+    wav0 = source0->getData();
+    vpls = lsmodel->getVp(); 
+    rhols = lsmodel->getR(); 
+    wavls = lssource->getData();
+    int i;
+    int N=0, Ns=0, Nmod=0, Npar=0;
+
+    // If mute
+    if(!Mutefile.empty()){
+        mute = std::make_shared <rockseis::ModelAcoustic3D<T>>(Mutefile, Mutefile, 1 ,0);
+        int Nmute = (mute->getGeom())->getNtot();
+        N = (lsmodel->getGeom())->getNtot();
+        if(N != Nmute) rs_error("InversionAcoustic3D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
+        mute->readModel();
+        vpmutedata = mute->getVp();
+        rhomutedata = mute->getR();
+        N = (lsmodel->getGeom())->getNtot();
+    }else{
+        N = (lsmodel->getGeom())->getNtot();
+        vpmutedata = (T *) calloc(N, sizeof(T)); 
+        rhomutedata = (T *) calloc(N, sizeof(T)); 
+        for(i=0; i < N; i++){
+            vpmutedata[i] = 1.0;
+            rhomutedata[i] = 1.0;
+        }
+    }
+
+    switch (this->getParamtype()){
+        case PAR_GRID:
+            N = (lsmodel->getGeom())->getNtot();
+            Npar = 0;
+            if(update_vp){
+                for(i=0; i< N; i++)
+                {
+                    vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< N; i++)
+                {
+                    vpls[i] = vp0[i];
+                }
+            }
+            if(update_rho){
+                for(i=0; i< N; i++)
+                {
+                    rhols[i] = rho0[i] + x[Npar+i]*rhomutedata[i]*krho;
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< N; i++)
+                {
+                    rhols[i] = rho0[i];
+                }
+            }
+            lsmodel->writeModel();
+            break;
+        case PAR_BSPLINE:
+            Nmod = (lsmodel->getGeom())->getNtot();
+            Npar = 0;
+            spline = std::make_shared<rockseis::Bspl3D<T>>(model0->getNx(), model0->getNy(), model0->getNz(), model0->getDx(), model0->getDy(), model0->getDz(), this->getDtx(), this->getDty(), this->getDtz(), 3, 3, 3);
+            N = spline->getNc();
+            c = spline->getSpline();
+            if(update_vp){
+                for(i=0; i< N; i++)
+                {
+                    c[i] = x[i];
+                }
+                spline->bisp();
+                mod = spline->getMod();
+
+                for(i=0; i< Nmod; i++)
+                {
+                    vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< Nmod; i++)
+                {
+                    vpls[i] = vp0[i];
+                }
+            }
+            if(update_rho){
+                for(i=0; i< N; i++)
+                {
+                    c[i] = x[Npar+i];
+                }
+                spline->bisp();
+                mod = spline->getMod();
+
+                for(i=0; i< Nmod; i++)
+                {
+                    rhols[i] = rho0[i] + mod[i]*rhomutedata[i]*krho;
+                }
+                Npar += N;
+            }else{
+
+                for(i=0; i< Nmod; i++)
+                {
+                    rhols[i] = rho0[i];
+                }
+            }
+            lsmodel->writeModel();
+            break;
+        default:
+            rs_error("InversionAcoustic3D<T>::saveLinesearch(): Unknown parameterisation."); 
+            break;
+    }
+    // Source wavelet
+    Ns = lssource->getNt();
+    for(i=0; i< Ns; i++)
+    {
+        if(update_source){
+            wavls[i] = wav0[i] + x[Npar+i]*ksource;
+        }else{
+            wavls[i] = wav0[i];
+        }
+    }
+    lssource->write();
+
+    if(Mutefile.empty()){
+        free(vpmutedata);
+        free(rhomutedata);
+    }
+}
+
+template<typename T>
+void InversionAcoustic3D<T>::readMisfit(double *f)
+{
+    // Data misfit
+    *f = 0.0;
+    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
+    Fmisfit->input(MISFITFILE);
+    T val;
+    for(int i=0; i<Fmisfit->getN(1); i++){
+        Fmisfit->read(&val, 1); 
+        *f += val;
+    }
+    Fmisfit->close();
+
+    // Regularisation misfit
+    Fmisfit->input(VPREGMISFITFILE);
+    Fmisfit->read(&val, 1, 0); 
+    *f += reg_alpha[0]*val;
+    Fmisfit->close();
+
+    Fmisfit->input(RHOREGMISFITFILE);
+    Fmisfit->read(&val, 1, 0); 
+    *f += reg_alpha[1]*val;
+    Fmisfit->close();
+}
+
+template<typename T>
+void InversionAcoustic3D<T>::readGrad(double *g)
+{
+    int i;
+    int N,Ns,Npar=0;
+    float *g_in;
+    T *gvp, *grho, *gwav;
+    std::string vpgradfile;
+    std::string rhogradfile;
+    if(Mutefile.empty()){
+        vpgradfile = VPGRADFILE;
+        rhogradfile = RHOGRADFILE;
+    }else{
+        vpgradfile = VPGRADMUTEFILE;
+        rhogradfile = RHOGRADMUTEFILE;
+    }
+
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> modelgrad (new rockseis::ModelAcoustic3D<T>(vpgradfile, rhogradfile, 1 ,0));
+    std::shared_ptr<rockseis::Data3D<T>> sourcegrad (new rockseis::Data3D<T>(SOURCEGRADFILE));
+    std::shared_ptr<rockseis::Bspl3D<T>> spline;
+    std::shared_ptr<rockseis::File> Fgrad;
+    switch (this->getParamtype()){
+        case PAR_GRID:
+            modelgrad->readModel();
+            N = (modelgrad->getGeom())->getNtot();
+            Npar = 0;
+            gvp = modelgrad->getVp(); 
+            grho = modelgrad->getR(); 
+            if(update_vp){
+                for(i=0; i < N; i++)
+                {
+                    g[i] = gvp[i]*kvp;
+                }
+                Npar += N;
+            }
+            if(update_rho){
+                for(i=0; i < N; i++)
+                {
+                    g[Npar+i] = grho[i]*krho;
+                }
+                Npar += N;
+            }
+        
+            break;
+        case PAR_BSPLINE:
+           spline = std::make_shared<rockseis::Bspl3D<T>>(modelgrad->getNx(), modelgrad->getNy(), modelgrad->getNz(), modelgrad->getDx(), modelgrad->getDy(), modelgrad->getDz(), this->getDtx(), this->getDty(), this->getDtz(), 3, 3, 3);
+            N = spline->getNc();
+            Npar = 0;
+            g_in = (float *) calloc(N, sizeof(float));
+            Fgrad = std::make_shared<rockseis::File>();
+
+            if(update_vp){
+                Fgrad->input(VPPROJGRADFILE);
+                Fgrad->read(&g_in[0], N, 0);
+                Fgrad->close();
+                for(i=0; i< N; i++)
+                {
+                    g[i] = g_in[i]*kvp;
+                }
+                Npar += N;
+            }
+            if(update_rho){
+                Fgrad->input(RHOPROJGRADFILE);
+                Fgrad->read(&g_in[0], N, 0);
+                Fgrad->close();
+                for(i=0; i< N; i++)
+                {
+                    g[Npar+i] = g_in[i]*krho;
+                }
+                Npar += N;
+            }
+
+            // Free temporary array
+            free(g_in);
+            break;
+        default:
+            rs_error("InversionAcoustic3D<T>::readGrad(): Unknown parameterisation."); 
+            break;
+    }
+    if(update_source){
+        Ns = sourcegrad->getNt();
+        sourcegrad->read();
+        gwav = sourcegrad->getData();
+        for(i=0; i< Ns; i++)
+        {
+            g[Npar+i] = gwav[i]*ksource;
+
+        }
+    }
+}
+
+template<typename T>
+void InversionAcoustic3D<T>::combineGradients()
+{
+    // Gradients
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> grad;
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> reggrad;
+    grad = std::make_shared<rockseis::ModelAcoustic3D<T>>(VPGRADFILE, RHOGRADFILE, 1 ,0);
+    reggrad = std::make_shared<rockseis::ModelAcoustic3D<T>>(VPREGGRADFILE, RHOREGGRADFILE, 1 ,0);
+
+    // Read gradients
+    grad->readModel();
+    reggrad->readModel();
+    T *vp, *rho, *regvp, *regrho;
+    vp = grad->getVp(); 
+    rho = grad->getR(); 
+    regvp = reggrad->getVp(); 
+    regrho = reggrad->getR(); 
+    int i;
+    int N;
+
+    N = (grad->getGeom())->getNtot();
+    // Compute 
+    for(i=0; i< N; i++)
+    {
+        if(update_vp){
+            vp[i] = vp[i] + reg_alpha[0]*regvp[i];
+        }
+        if(update_rho){
+            rho[i] = rho[i] + reg_alpha[1]*regrho[i];
+        }
+    }
+    grad->setVpfile(VPGRADCOMBFILE);
+    grad->setRfile(RHOGRADCOMBFILE);
+    grad->writeModel();
+}
+
+//template<typename T>
+//void InversionAcoustic3D<T>::applySrcilum()
+//{
+//    if(this->getSrcilum()){
+//        // Models
+//        std::shared_ptr<rockseis::ModelAcoustic3D<T>> model;
+//        model = std::make_shared<rockseis::ModelAcoustic3D<T>>(VPGRADFILE, RHOGRADFILE, 1 ,0);
+//        // Ilumination
+//        std::shared_ptr<rockseis::ModelAcoustic3D<T>> ilum (new rockseis::ModelAcoustic3D<T>(Srcilumfile, Srcilumfile, 1 ,0));
+//
+//        // Mute model and write
+//        model->readModel();
+//        ilum->readModel();
+//        T *vp, *rho, *ilumodel;
+//        vp = model->getVp(); 
+//        rho = model->getR(); 
+//        ilumodel = ilum->getVp(); 
+//        int i;
+//        int N;
+//        T norm = 0.0;
+//
+//        N = (model->getGeom())->getNtot();
+//        // Find norm of ilumination map
+//        for(i=0; i<N; i++) {
+//			if(((T) fabs(ilumodel[i])) >= norm) {
+//				norm = (T) fabs(ilumodel[i]);
+//			}
+//		}
+//
+//        for(i=0; i< N; i++)
+//        {
+//            if(ilumodel[i] != 0.0){
+//                vp[i] = norm*vp[i]/ilumodel[i];
+//                rho[i] = norm*rho[i]/ilumodel[i];
+//            }
+//        }
+//        model->writeModel();
+//    }
+//}
+
+template<typename T>
+void InversionAcoustic3D<T>::applyMute()
+{
+    if(!Mutefile.empty()){
+        // Models
+        std::shared_ptr<rockseis::ModelAcoustic3D<T>> model;
+        model = std::make_shared<rockseis::ModelAcoustic3D<T>>(VPGRADCOMBFILE, RHOGRADCOMBFILE, 1 ,0);
+        // Mute
+        std::shared_ptr<rockseis::ModelAcoustic3D<T>> mute (new rockseis::ModelAcoustic3D<T>(Mutefile, Mutefile, 1 ,0));
+
+        // Mute model and write
+        model->readModel();
+        mute->readModel();
+        T *vp, *rho, *vpmute, *rhomute;
+        vp = model->getVp(); 
+        rho = model->getR(); 
+        vpmute = mute->getVp(); 
+        rhomute = mute->getR(); 
+        int i;
+        int N;
+
+        N = (model->getGeom())->getNtot();
+        for(i=0; i< N; i++)
+        {
+            vp[i] = vp[i]*vpmute[i];
+            rho[i] = rho[i]*rhomute[i];
+        }
+        model->setVpfile(VPGRADMUTEFILE);
+        model->setRfile(RHOGRADMUTEFILE);
+        model->writeModel();
+    }
+}
+
+template<typename T>
+void InversionAcoustic3D<T>::computeRegularisation(double *x)
+{
+    // Models
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> model (new rockseis::ModelAcoustic3D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), model->getNy(), model->getNz(), model->getDx(), model->getDy(), model->getDz(), 8));
+    std::shared_ptr<rockseis::Bspl3D<double>> spline;
+
+    // Write linesearch model
+    model->readModel();
+    double *dvpdx,*dvpdy,*dvpdz;
+    double *drhodx,*drhody,*drhodz;
+    T *vpgrad, *rhograd;
+    double *gwrk;
+    double *c, *mod;
+    double *df = der->getDf();
+    int i;
+    int N, Npar=0,Nmod;
+
+    Nmod = (model->getGeom())->getNtot();
+    dvpdx = (double *) calloc(Nmod, sizeof(double));
+    dvpdy = (double *) calloc(Nmod, sizeof(double));
+    dvpdz = (double *) calloc(Nmod, sizeof(double));
+    drhodx = (double *) calloc(Nmod, sizeof(double));
+    drhody = (double *) calloc(Nmod, sizeof(double));
+    drhodz = (double *) calloc(Nmod, sizeof(double));
+    gwrk = (double *) calloc(Nmod, sizeof(double));
+    model->readModel();
+    model->setVpfile(VPREGGRADFILE);
+    model->setRfile(RHOREGGRADFILE);
+    vpgrad = model->getVp();
+    rhograd = model->getR();
+    switch (this->getParamtype()){
+        case PAR_GRID:
+            N = (model->getGeom())->getNtot();
+            Npar=0;
+            if(update_vp){
+                der->ddx_fw(x);
+                for(i=0; i< N; i++)
+                {
+                    dvpdx[i] = df[i]*kvp;
+                }
+                der->ddy_fw(x);
+                for(i=0; i< N; i++)
+                {
+                    dvpdy[i] = df[i]*kvp;
+                }
+                der->ddz_fw(x);
+                for(i=0; i< N; i++)
+                {
+                    dvpdz[i] = df[i]*kvp;
+                }
+                Npar +=N;
+            }
+            if(update_rho){
+                der->ddx_fw(&x[Npar]);
+                for(i=0; i< N; i++)
+                {
+                    drhodx[i] = df[i]*krho;
+                }
+                der->ddy_fw(&x[Npar]);
+                for(i=0; i< N; i++)
+                {
+                    drhody[i] = df[i]*krho;
+                }
+                der->ddz_fw(&x[Npar]);
+                for(i=0; i< N; i++)
+                {
+                    drhodz[i] = df[i]*krho;
+                }
+                Npar +=N;
+            }
+            break;
+        case PAR_BSPLINE:
+            Nmod = (model->getGeom())->getNtot();
+            Npar=0;
+           spline = std::make_shared<rockseis::Bspl3D<double>>(model->getNx(), model->getNy(), model->getNz(), model->getDx(), model->getDy(), model->getDz(), this->getDtx(), this->getDty(), this->getDtz(), 3, 3, 3);
+            N = spline->getNc();
+            c = spline->getSpline();
+            if(update_vp){
+                for(i=0; i< N; i++)
+                {
+                    c[i] = x[i];
+                }
+                spline->bisp();
+                mod = spline->getMod();
+                der->ddx_fw(mod);
+                for(i=0; i< Nmod; i++)
+                {
+                    dvpdx[i] = df[i]*kvp;
+                }
+                der->ddy_fw(mod);
+                for(i=0; i< Nmod; i++)
+                {
+                    dvpdy[i] = df[i]*kvp;
+                }
+                der->ddz_fw(mod);
+                for(i=0; i< Nmod; i++)
+                {
+                    dvpdz[i] = df[i]*kvp;
+                }
+                Npar += N;
+            }
+            if(update_rho){
+                for(i=0; i< N; i++)
+                {
+                    c[i] = x[Npar+i];
+                }
+                spline->bisp();
+                mod = spline->getMod();
+                der->ddx_fw(mod);
+                for(i=0; i< Nmod; i++)
+                {
+                    drhodx[i] = df[i]*krho;
+                }
+                der->ddy_fw(mod);
+                for(i=0; i< Nmod; i++)
+                {
+                    drhody[i] = df[i]*krho;
+                }
+                der->ddz_fw(mod);
+                for(i=0; i< Nmod; i++)
+                {
+                    drhodz[i] = df[i]*krho;
+                }
+                Npar += N;
+            }
+
+            break;
+        default:
+            rs_error("InversionAcoustic3D<T>::computeRegularization(): Unknown parameterisation."); 
+            break;
+    }
+    // Computing misfit
+    double M; 
+    T fvp = 0.0;
+    for(i=0; i< Nmod; i++)
+    {
+        M = dvpdx[i]*dvpdx[i] + dvpdy[i]*dvpdy[i] + dvpdz[i]*dvpdz[i];
+        M = sqrt(M);
+        fvp += M;
+    }
+
+    // Computing gradient
+    for(i=0; i< Nmod; i++)
+    {
+        M = dvpdx[i]*dvpdx[i] + dvpdy[i]*dvpdy[i] + dvpdz[i]*dvpdz[i] + reg_eps[0]*reg_eps[0];
+        M = sqrt(M);
+        gwrk[i] = dvpdx[i]/M;
+    }
+    der->ddx_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        vpgrad[i] = -1.0*df[i];
+    }
+
+    for(i=0; i< Nmod; i++)
+    {
+        M = dvpdx[i]*dvpdx[i] + dvpdy[i]*dvpdy[i] + dvpdz[i]*dvpdz[i] + reg_eps[0]*reg_eps[0];
+        M = sqrt(M);
+        gwrk[i] = dvpdy[i]/M;
+    }
+    der->ddy_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        vpgrad[i] = -1.0*df[i];
+    }
+
+    for(i=0; i< Nmod; i++)
+    {
+        M = dvpdx[i]*dvpdx[i] + dvpdy[i]*dvpdy[i] + dvpdz[i]*dvpdz[i] + reg_eps[0]*reg_eps[0];
+        M = sqrt(M);
+        gwrk[i] = dvpdz[i]/M;
+    }
+    der->ddz_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        vpgrad[i] -= df[i];
+    }
+
+    // Computing misfit
+    T frho = 0.0;
+    for(i=0; i< Nmod; i++)
+    {
+        M = drhodx[i]*drhodx[i] + drhody[i]*drhody[i] + drhodz[i]*drhodz[i];
+        M = sqrt(M);
+        frho += M;
+    }
+
+    // Computing gradient
+    for(i=0; i< Nmod; i++)
+    {
+        M = drhodx[i]*drhodx[i] + drhody[i]*drhody[i] + drhodz[i]*drhodz[i] + reg_eps[1]*reg_eps[1];
+        M = sqrt(M);
+        gwrk[i] = drhodx[i]/M;
+    }
+    der->ddx_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        rhograd[i] = -1.0*df[i];
+    }
+
+   for(i=0; i< Nmod; i++)
+    {
+        M = drhodx[i]*drhodx[i] + drhody[i]*drhody[i] + drhodz[i]*drhodz[i] + reg_eps[1]*reg_eps[1];
+        M = sqrt(M);
+        gwrk[i] = drhody[i]/M;
+    }
+    der->ddy_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        rhograd[i] = -1.0*df[i];
+    }
+
+    for(i=0; i< Nmod; i++)
+    {
+        M = drhodx[i]*drhodx[i] + drhody[i]*drhody[i] + drhodz[i]*drhodz[i] + reg_eps[1]*reg_eps[1];
+        M = sqrt(M);
+        gwrk[i] = drhodz[i]/M;
+    }
+    der->ddz_bw(gwrk);
+
+    for(i=0; i< Nmod; i++)
+    {
+        rhograd[i] -= df[i];
+    }
+
+    /* Write out misfit */
+    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
+    Fmisfit->output(VPREGMISFITFILE);
+    Fmisfit->setN(1,1);
+    Fmisfit->setD(1,1.0);
+    Fmisfit->setData_format(sizeof(T));
+    Fmisfit->write(&fvp,1,0);
+    Fmisfit->close();
+
+    Fmisfit->output(RHOREGMISFITFILE);
+    Fmisfit->setN(1,1);
+    Fmisfit->setD(1,1.0);
+    Fmisfit->setData_format(sizeof(T));
+    Fmisfit->write(&frho,1,0);
+    Fmisfit->close();
+
+    /* Write out gradient */
+    model->writeModel();
+
+    // Free variables
+    free(dvpdx);
+    free(dvpdy);
+    free(dvpdz);
+    free(drhodx);
+    free(drhody);
+    free(drhodz);
+    free(gwrk);
+}
+
 // =============== 2D ELASTIC INVERSION CLASS =============== //
 //
 template<typename T>
@@ -4495,6 +5671,9 @@ template class Inversion<double>;
 
 template class InversionAcoustic2D<float>;
 template class InversionAcoustic2D<double>;
+
+template class InversionAcoustic3D<float>;
+template class InversionAcoustic3D<double>;
 
 template class InversionElastic2D<float>;
 template class InversionElastic2D<double>;

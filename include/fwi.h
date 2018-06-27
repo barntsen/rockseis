@@ -192,6 +192,7 @@ public:
     void setDatamodAz(std::shared_ptr<Data3D<T>> _datamodAz) { datamodAz = _datamodAz; datamodAzset = true; }
     void setDataresP(std::shared_ptr<Data3D<T>> _dataresP) { dataresP = _dataresP; dataresPset = true; }
     void setDataresAz(std::shared_ptr<Data3D<T>> _dataresAz) { dataresAz = _dataresAz; dataresAzset = true; }
+    void setDataweight(std::shared_ptr<Data3D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wry, T* wrz, int padr, T *vp, T* rho);
     void computeMisfit();
     void computeResiduals();

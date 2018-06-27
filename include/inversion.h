@@ -314,6 +314,152 @@ private:
     T reg_alpha[2];
 };
 
+// ##### ACOUSTIC 3D INVERSION CLASS
+template<typename T>
+class InversionAcoustic3D: public Inversion<T> {
+public:
+    InversionAcoustic3D(); ///<Constructor
+    InversionAcoustic3D(MPImodeling *_mpi); ///<Constructor
+    ~InversionAcoustic3D(); ///<Destructor
+
+    void setDataweight(bool val) { dataweight = val; }
+    bool getDataweight() { return dataweight; }
+
+    void setDataweightfile(std::string file) { Dataweightfile = file; }
+    std::string getDataweightfile() { return Dataweightfile; }
+
+    void setWaveletfile(std::string file) { Waveletfile = file; }
+    std::string getWaveletfile() { return Waveletfile; }
+
+    void setVpfile(std::string file) { Vpfile = file; }
+    std::string getVpfile() { return Vpfile; }
+
+    void setRhofile(std::string file) { Rhofile = file; }
+    std::string getRhofile() { return Rhofile; }
+
+    void setVpgradfile(std::string file) { Vpgradfile = file; }
+    std::string getVpgradfile() { return Vpgradfile; }
+
+    void setRhogradfile(std::string file) { Rhogradfile = file; }
+    std::string getRhogradfile() { return Rhogradfile; }
+
+    void setWavgradfile(std::string file) { Wavgradfile = file; }
+    std::string getWavgradfile() { return Wavgradfile; }
+
+    void setSrcilumfile(std::string file) { Srcilumfile = file; }
+    std::string getSrcilumfile() { return Srcilumfile; }
+
+    void setMisfitfile(std::string file) { Misfitfile = file; }
+    std::string getMisfitfile() { return Misfitfile; }
+
+    void setPsnapfile(std::string file) { Psnapfile = file; }
+    std::string getPsnapfile() { return Psnapfile; }
+
+    void setPrecordfile(std::string file) { Precordfile = file; }
+    std::string getPrecordfile() { return Precordfile; }
+
+    void setPmodelledfile(std::string file) { Pmodelledfile = file; }
+    std::string getPmodelledfile() { return Pmodelledfile; }
+
+    void setMutefile(std::string file) { Mutefile = file; }
+    std::string getMutefile() { return Mutefile; }
+
+    void setPresidualfile(std::string file) { Presidualfile = file; }
+    std::string getPresidualfile() { return Presidualfile; }
+
+    void setApertx(T val) { apertx = val; }
+    T getApertx() { return apertx; }
+
+    void setAperty(T val) { aperty = val; }
+    T getAperty() { return aperty; }
+
+    void setKvp(T val) { kvp = val; }
+    T getKvp() { return kvp; }
+
+    void setKrho(T val) { krho = val; }
+    T getKrho() { return krho; }
+
+    void setKsource(T val) { ksource = val; }
+    T getKsource() { return ksource; }
+
+    void setVpregalpha(T val) { reg_alpha[0] = val; }
+    T getVpregalpha() { return reg_alpha[0]; }
+
+    void setRhoregalpha(T val) { reg_alpha[1] = val; }
+    T getRhoregalpha() { return reg_alpha[1]; }
+
+    void setVpregeps(T val) { reg_eps[0] = val; }
+    T getVpregeps() { return reg_eps[0]; }
+
+    void setRhoregeps(T val) { reg_eps[1] = val; }
+    T getRhoregeps() { return reg_eps[1]; }
+
+    // Run gradient
+    void runGrad();
+   
+    // Run BSProjection
+    void runBsproj();
+
+    // Mute gradient
+    void applyMute();
+
+    // Correct for source ilumination
+    void applySrcilum();
+
+    // Regularisation computation
+    void computeRegularisation(double *x);
+
+    // Combine gradients
+    void combineGradients();
+
+    // Set initial
+    int setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile);
+
+    // Save line search models
+    void saveLinesearch(double *x);
+
+    // Save Results
+    void saveResults(int i);
+
+    // Read gradient
+    void readGrad(double *g);
+
+    // Read misfit
+    void readMisfit(double *f);
+
+    void setUpdates(bool vp, bool rho, bool source) { update_vp = vp; update_rho = rho; update_source = source; }
+    void setUpdate_vp(bool vp) { update_vp = vp;}
+    void setUpdate_rho(bool rho) { update_rho = rho;}
+    void setUpdate_source(bool source) { update_source = source;}
+    void setSrcilum(bool val) { srcilumset = val;}
+    bool getSrcilum() { return srcilumset;}
+
+private:
+    bool update_vp;
+    bool update_rho;
+    bool update_source;
+    bool dataweight;
+    bool srcilumset;
+    std::string Waveletfile;
+    std::string Vpfile;
+    std::string Rhofile;
+    std::string Vpgradfile;
+    std::string Rhogradfile;
+    std::string Wavgradfile;
+    std::string Dataweightfile;
+    std::string Misfitfile;
+    std::string Psnapfile;
+    std::string Precordfile;
+    std::string Pmodelledfile;
+    std::string Presidualfile;
+    std::string Mutefile;
+    std::string Srcilumfile;
+    T apertx, aperty;
+    T kvp, krho, ksource;
+    T reg_eps[2];
+    T reg_alpha[2];
+};
+
 // ##### ELASTIC 2D INVERSION CLASS
 template<typename T>
 class InversionElastic2D: public Inversion<T> {

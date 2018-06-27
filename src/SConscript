@@ -88,6 +88,10 @@ if(env['MPI']):
         Acousticfwi2d = mpi.Program(prefix + 'Acousticfwi2d','Acousticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'],LIBPATH=['../build', '../madagascar/build'])
         mpi.Install('../bin/',Acousticfwi2d)
 
+        Acousticfwi3d = mpi.Program(prefix + 'Acousticfwi3d','Acousticfwi3d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'],LIBPATH=['../build', '../madagascar/build'])
+        mpi.Install('../bin/',Acousticfwi3d)
+
+
         Elasticfwi2d = mpi.Program(prefix + 'Elasticfwi2d','Elasticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'],LIBPATH=['../build', '../madagascar/build'])
         mpi.Install('../bin/',Elasticfwi2d)
 
