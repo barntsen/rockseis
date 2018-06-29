@@ -278,6 +278,29 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
 }
 
 
+// copy map
+template<typename T>
+void Geometry2D<T>::copyGmap2Smap() {
+    size_t n = this->getN(1);  //Get number of traces 
+    for (size_t i = 0; i < n; i++) 
+    {
+        smap[i].x = gmap[i].x;
+        smap[i].y = gmap[i].y;
+    }
+}
+
+// copy map
+template<typename T>
+void Geometry2D<T>::copySmap2Gmap() {
+    size_t n = this->getN(1);  //Get number of traces 
+    for (size_t i = 0; i < n; i++) 
+    {
+        gmap[i].x = smap[i].x;
+        gmap[i].y = smap[i].y;
+    }
+}
+
+
 
 /// =============== 3D DATA GEOMETRY CLASS =============== //
 
@@ -502,6 +525,30 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
             if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)  && (gmap[i].z >= 0)) g_inbound = true;
         }
         if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+    }
+}
+
+// copy map
+template<typename T>
+void Geometry3D<T>::copyGmap2Smap() {
+    size_t n = this->getN(1);  //Get number of traces 
+    for (size_t i = 0; i < n; i++) 
+    {
+        smap[i].x = gmap[i].x;
+        smap[i].y = gmap[i].y;
+        smap[i].z = gmap[i].z;
+    }
+}
+
+// copy map
+template<typename T>
+void Geometry3D<T>::copySmap2Gmap() {
+    size_t n = this->getN(1);  //Get number of traces 
+    for (size_t i = 0; i < n; i++) 
+    {
+        gmap[i].x = smap[i].x;
+        gmap[i].y = smap[i].y;
+        gmap[i].z = smap[i].z;
     }
 }
 

@@ -79,6 +79,9 @@ public:
      * */
     void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); } 
     void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
+    
+    void copyGmap2Smap() { geometry->copyGmap2Smap(); } 
+    void copySmap2Gmap() { geometry->copySmap2Gmap(); } 
 
     // File input/output
     /** Read and write data files */
@@ -118,6 +121,9 @@ public:
      * */
     void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); }  
     void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
+
+    void copyGmap2Smap() { geometry->copyGmap2Smap(); } 
+    void copySmap2Gmap() { geometry->copySmap2Gmap(); } 
 
     // File input/output
     /** Read and write data files */

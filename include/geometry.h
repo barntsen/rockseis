@@ -67,6 +67,8 @@ public:
      * */
     void makeMap(std::shared_ptr<Geometry<T>> _geom); 
     void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map); 
+    void copySmap2Gmap();
+    void copyGmap2Smap();
 
     // Get functions
     rockseis::Point2D<T> *getScoords() { return scoords; } ///< Get scoords
@@ -98,6 +100,8 @@ public:
      * */
     void makeMap(std::shared_ptr<Geometry<T>> _geom);
     void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map);
+    void copySmap2Gmap();
+    void copyGmap2Smap();
 
     // Get functions
     rockseis::Point3D<T> *getScoords() { return scoords; } ///< Get scoords
