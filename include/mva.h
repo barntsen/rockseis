@@ -16,6 +16,7 @@
 #include "der.h"
 #include "snap.h"
 #include "image.h"
+#include "rtm.h"
 #include "revolve.h"
 
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
@@ -36,8 +37,6 @@
 
 namespace rockseis {
 
-// =============== ENUMS =============== //
-typedef enum {FULL, OPTIMAL, EDGES} rs_snapmethod; ///< Snapshot saving method
 
 // =============== ABSTRACT RTM CLASS =============== //
 /** The abstract rtm class
@@ -87,45 +86,45 @@ private:
 
 
 
-/** The 2D Elastic Mva class
- *
- */
-template<typename T>
-class MvaElastic2D: public Mva<T> {
-public:
-    MvaElastic2D();					///< Constructor
-    MvaElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataUx, std::shared_ptr<Data2D<T>> dataUz, int order, int snapinc);					///< Constructor 
-    int runRtm(); ///< Runs rtm with full snapshoting
-    int runRtm_optimal(); ///< Runs rtm with optimal checkpointing
-    int runPPgrad(); ///< Runs PP mva gradient with full snapshoting
-    int runPPgrad_optimal(); ///< Runs PP mva gradient optimal checkpointing
-    int runPSgrad(); ///< Runs PS mva gradient with full snapshoting
-    int runPSgrad_optimal(); ///< Runs PS mva gradient with optimal checkpointing
-    void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
-    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
-    void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
-    void setDataUz(std::shared_ptr<Data2D<T>> _dataUz) { dataUz = _dataUz; dataUzset = true; }
-    void setPimage(std::shared_ptr<Image2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
-    void setSimage(std::shared_ptr<Image2D<T>> _simage) { simage = _simage; simageset = true; }
-    void crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho);
-
-    ~MvaElastic2D();	///< Destructor
-
-private:
-    std::shared_ptr<ModelElastic2D<T>> model;
-    std::shared_ptr<Image2D<T>> pimage;
-    std::shared_ptr<Image2D<T>> simage;
-    std::shared_ptr<Data2D<T>> source;
-    std::shared_ptr<Data2D<T>> dataUx;
-    std::shared_ptr<Data2D<T>> dataUz;
-    bool modelset;
-    bool pimageset;
-    bool simageset;
-    bool sourceset;
-    bool dataUxset, dataUzset;
-};
-
-
+///** The 2D Elastic Mva class
+// *
+// */
+//template<typename T>
+//class MvaElastic2D: public Mva<T> {
+//public:
+//    MvaElastic2D();					///< Constructor
+//    MvaElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataUx, std::shared_ptr<Data2D<T>> dataUz, int order, int snapinc);					///< Constructor 
+//    int runRtm(); ///< Runs rtm with full snapshoting
+//    int runRtm_optimal(); ///< Runs rtm with optimal checkpointing
+//    int runPPgrad(); ///< Runs PP mva gradient with full snapshoting
+//    int runPPgrad_optimal(); ///< Runs PP mva gradient optimal checkpointing
+//    int runPSgrad(); ///< Runs PS mva gradient with full snapshoting
+//    int runPSgrad_optimal(); ///< Runs PS mva gradient with optimal checkpointing
+//    void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
+//    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
+//    void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
+//    void setDataUz(std::shared_ptr<Data2D<T>> _dataUz) { dataUz = _dataUz; dataUzset = true; }
+//    void setPimage(std::shared_ptr<Image2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
+//    void setSimage(std::shared_ptr<Image2D<T>> _simage) { simage = _simage; simageset = true; }
+//    void crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int padr, T* Vp, T* Vs, T* Rho);
+//
+//    ~MvaElastic2D();	///< Destructor
+//
+//private:
+//    std::shared_ptr<ModelElastic2D<T>> model;
+//    std::shared_ptr<Image2D<T>> pimage;
+//    std::shared_ptr<Image2D<T>> simage;
+//    std::shared_ptr<Data2D<T>> source;
+//    std::shared_ptr<Data2D<T>> dataUx;
+//    std::shared_ptr<Data2D<T>> dataUz;
+//    bool modelset;
+//    bool pimageset;
+//    bool simageset;
+//    bool sourceset;
+//    bool dataUxset, dataUzset;
+//};
+//
+//
 
 }
 #endif //MVA_H

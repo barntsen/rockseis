@@ -655,8 +655,8 @@ Mva<T>::~Mva() {
 template class Mva<float>;
 template class Mva<double>;
 
-template class MvaAcoustic2D<float>;
-template class MvaAcoustic2D<double>;
+//template class MvaAcoustic2D<float>;
+//template class MvaAcoustic2D<double>;
 
 //template class MvaElastic2D<float>;
 //template class MvaElastic2D<double>;
