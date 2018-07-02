@@ -314,11 +314,11 @@ void WemvaAcoustic2D<T>::runGrad() {
                 interp->interp(shot2D, shot2Di);
                 shot2Di->makeMap(lmodel->getGeom(), GMAP);
 
-                // Create rtm object
-                rtm = std::make_shared<rockseis::RtmAcoustic2D<T>>(lmodel, pimage, source, shot2Di, this->getOrder(), this->getSnapinc());
-
                 // Creating image object
                 pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile + "-" + std::to_string(work.id), lmodel, this->getNhx(), this->getNhz());
+
+                // Create rtm object
+                rtm = std::make_shared<rockseis::RtmAcoustic2D<T>>(lmodel, pimage, source, shot2Di, this->getOrder(), this->getSnapinc());
 
                 // Setting Snapshot file 
                 rtm->setSnapfile(Fwsnapfile + "-" + std::to_string(work.id));
