@@ -133,7 +133,6 @@ void Mva<T>::writeProgress(int x, int n, int r, int w){
 	}
 }
 
-
 template<typename T>
 Mva<T>::~Mva() {
     // Nothing here
@@ -188,6 +187,82 @@ bool MvaAcoustic2D<T>::checkStability(){
 }
 
 template<typename T>
+void MvaAcoustic2D<T>::insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>> waves_fw, T* wsp, int pads, std::shared_ptr<WavesAcoustic2D<T>> waves_bw, T* wrp, int padr, T* L)
+{
+	if(!pimage->getAllocated()) rs_error("MvaAcoustic2D<T>::MvaAcoustic2D<T>::insertAdjointsource: pimage is not allocated.");
+	int ix, iz, ihx, ihz;
+	T *imagedata = pimage->getImagedata();
+	int nhx = pimage->getNhx();
+	int nhz = pimage->getNhz();
+	int nx = pimage->getNx();
+	int nxs = nx+2*pads;
+	int nxr = nx+2*padr;
+	int nz = pimage->getNz();
+	int hx, hz;
+    T dt = waves_fw->getDt();
+    int padw = waves_fw->getLpml();
+	int nxw = nx+2*padw;
+    T* ws = waves_fw->getP2();
+    T* wr = waves_bw->getP2();
+    for (ihx=0; ihx<nhx; ihx++){
+        hx= -(nhx-1)/2 + ihx;
+        for (ihz=0; ihz<nhz; ihz++){
+            hz= -(nhz-1)/2 + ihz;
+            for (ix=0; ix<nx; ix++){
+                if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
+                {
+                    for (iz=0; iz<nz; iz++){
+                        if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz))
+                        {
+							ws[kw2D(ix+padw,iz+padw)] += dt*dt*L[kw2D(ix+padw,iz+padw)]*imagedata[ki2D(ix-hx,iz,ihx,ihz)]*wsp[ks2D(ix-2*hx+pads, iz-2*hz+pads)];
+							wr[kw2D(ix+padw,iz+padw)] += dt*dt*L[kw2D(ix+padw,iz+padw)]*imagedata[ki2D(ix+hx,iz,ihx,ihz)]*wrp[kr2D(ix+2*hx+padr, iz+2*hz+padr)];
+
+                        }
+
+                    }	
+                }
+            }
+        }
+    }
+}
+
+template<typename T>
+void MvaAcoustic2D<T>::modifyImage()
+{
+	if(!pimage->getAllocated()) rs_error("MvaAcoustic2D<T>::modifyImage(): pimage is not allocated.");
+	int ix, iz, ihx, ihz;
+	T *imagedata = pimage->getImagedata();
+	int nhx = pimage->getNhx();
+	int nhz = pimage->getNhz();
+	int nx = pimage->getNx();
+	int nz = pimage->getNz();
+	int hx, hz;
+    T G1,G2;
+    // Allocate work array
+    T *wrk = (T *) calloc(nz, sizeof(T));
+	for (ihx=0; ihx<nhx; ihx++){
+		hx= -(nhx-1)/2 + ihx;
+        G1 = GAUSS(hx, 0.5*nhx);
+		for (ihz=0; ihz<nhz; ihz++){
+			hz= -(nhz-1)/2 + ihz;
+            G2 = G1*GAUSS(hz, 0.5*nhz);
+			for (ix=0; ix<nx; ix++){
+				{
+					for (iz=1; iz<nz-1; iz++){
+						wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
+					}	
+					for (iz=0; iz<nz; iz++){
+						imagedata[ki2D(ix,iz,ihx,ihz)] = (G2*G2)*wrk[iz]; 
+					}	
+				}
+			}
+		}
+	}
+    // Free work array
+    free(wrk);
+}
+
+template<typename T>
 void MvaAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T* Vp, T* Rho)
 {
     if(!vpgradset) rs_error("MvaAcoustic2D:crossCorr: No gradient set in mva class");
@@ -217,13 +292,15 @@ void MvaAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
     }
 }
 
-
 template<typename T>
 int MvaAcoustic2D<T>::run(){
      int result = MVA_ERR;
      int nt;
      float dt;
 	 float ot;
+     T *wrp;
+     T *wrx;
+     T *wrz;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -246,11 +323,14 @@ int MvaAcoustic2D<T>::run(){
 
      std::shared_ptr<Snapshot2D<T>> Bwsnap;
      Bwsnap = std::make_shared<Snapshot2D<T>>(waves_adj_fw, this->getSnapinc());
-     Bwsnap->openSnap(this->getBwsnapfile(), 'r'); // Open a snapshot file for reading
+     Bwsnap->openSnap(this->getFwsnapfile(), 'r'); // Open a snapshot file for reading
      Bwsnap->allocSnap(0);
 
-    // Create images 
+    // Create gradient array
     vpgrad->allocateImage();
+
+    // Modify local image
+    this->modifyImage();
 
      this->writeLog("Running 2D Acoustic reverse-time migration with full checkpointing.");
      this->writeLog("Doing forward Loop.");
@@ -265,21 +345,20 @@ int MvaAcoustic2D<T>::run(){
     	waves_adj_bw->forwardstepStress(model, der);
     
         //Read snapshots
-        Fwsnap->readSnap(nt - 1 - it);
-        Bwsnap->readSnap(nt - 1 - it);
+        Fwsnap->readSnap(it);
+        Bwsnap->readSnap(nt + it);
     	
         // Inserting adjoint sources
-    	//waves->insertSource(model, source, SMAP, it);
-        //
+    	this->insertAdjointsource(waves_adj_fw, Fwsnap->getData(0), 0, waves_adj_bw, Bwsnap->getData(0), 0, model->getL());
 
         //Read snapshots
         Fwsnap->readSnap(nt - 1 - it);
-        Bwsnap->readSnap(nt - 1 - it);
+        Bwsnap->readSnap(nt + nt - 1 - it);
         // Do Crosscorrelation
         if((((nt - 1 - it)-Fwsnap->getEnddiff()) % Fwsnap->getSnapinc()) == 0){
-            T *wrp = waves_adj_bw->getP1();
-            T* wrx = waves_adj_bw->getAx(); 
-            T* wrz = waves_adj_bw->getAz(); 
+            wrp = waves_adj_bw->getP1();
+            wrx = waves_adj_bw->getAx(); 
+            wrz = waves_adj_bw->getAz(); 
             crossCorr(Fwsnap->getData(0), 0, wrp, wrx, wrz, waves_adj_bw->getLpml(), model->getVp(), model->getR());
             wrp = waves_adj_fw->getP1();
             wrx = waves_adj_fw->getAx(); 
@@ -295,10 +374,8 @@ int MvaAcoustic2D<T>::run(){
         this->writeProgress(it, nt-1, 20, 48);
     }//End of time loop
     
-    
-	//Remove snapshot files
+	//Remove snapshot file
 	Fwsnap->removeSnap();
-	Bwsnap->removeSnap();
 
     result=MVA_OK;
     return result;
@@ -310,6 +387,10 @@ int MvaAcoustic2D<T>::run_optimal(){
      int nt;
      float dt;
 	 float ot;
+     T *wsp;
+     T *wrp;
+     T *wrx;
+     T *wrz;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -339,7 +420,10 @@ int MvaAcoustic2D<T>::run_optimal(){
      optimal_bw->openCheck(this->getBwsnapfile(), waves_bw1, 'w');
 
      // Create image
-     pimage->allocateImage();
+     vpgrad->allocateImage();
+
+    // Modify local image
+    this->modifyImage();
 
      this->writeLog("Running 2D Acoustic reverse-time migration with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
@@ -401,12 +485,15 @@ int MvaAcoustic2D<T>::run_optimal(){
             waves_bw2->insertSource(model, dataP, GMAP, capo);
 
             // Inserting adjoint sources
+            wsp = waves_fw2->getP1();
+            wrp = waves_bw2->getP1();
+            this->insertAdjointsource(waves_adj_fw, wsp, waves_adj_fw->getLpml(), waves_adj_bw, wrp, waves_adj_bw->getLpml(), model->getL());
 
             /* Do Crosscorrelation */
-            T *wsp = waves_bw1->getP1();
-            T *wrp = waves_adj_fw->getP1();
-            T* wrx = waves_adj_fw->getAx(); 
-            T* wrz = waves_adj_fw->getAz(); 
+            wsp = waves_bw1->getP1();
+            wrp = waves_adj_fw->getP1();
+            wrx = waves_adj_fw->getAx(); 
+            wrz = waves_adj_fw->getAz(); 
             crossCorr(wsp, waves_bw1->getLpml(), wrp, wrx, wrz, waves_adj_fw->getLpml(), model->getVp(), model->getR());
             wsp = waves_fw1->getP1();
             wrp = waves_adj_bw->getP1();
@@ -452,11 +539,13 @@ int MvaAcoustic2D<T>::run_optimal(){
             waves_bw2->insertSource(model, dataP, GMAP, capo);
 
             // Inserting adjoint sources
-
+            T *wsp = waves_fw2->getP1();
+            T *wrp = waves_bw2->getP1();
+            this->insertAdjointsource(waves_adj_fw, wsp, waves_adj_fw->getLpml(), waves_adj_bw, wrp, waves_adj_bw->getLpml(), model->getL());
 
             /* Do Crosscorrelation */
-            T *wsp = waves_bw1->getP1();
-            T *wrp = waves_adj_fw->getP1();
+            wsp = waves_bw1->getP1();
+            wrp = waves_adj_fw->getP1();
             T* wrx = waves_adj_fw->getAx(); 
             T* wrz = waves_adj_fw->getAz(); 
             crossCorr(wsp, waves_bw1->getLpml(), wrp, wrx, wrz, waves_adj_fw->getLpml(), model->getVp(), model->getR());

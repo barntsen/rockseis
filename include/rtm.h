@@ -60,10 +60,12 @@ public:
     void setLogfile(std::string name) { logfile = name; } ///< Set name of logfile
     void setSnapmethod(rs_snapmethod val) { snapmethod = val; } ///< Sets choice of snapshot saving
     void setIncore(bool val) { incore = val; } ///< Sets optimal checkpoint incore flag
+    void setRunmva(bool val) { runmva = val; } ///< Sets runmva flag
     void setNcheck(int val) { ncheck = val; } ///< Sets optimal checkpointing number of snaps 
     void setSnapfile(std::string file) { snapfile = file; } ///< Sets checkpoint filename
     int getNcheck() { return ncheck; } ///< Gets the number of checkpoints for the optimal checkpointing scheme
     bool getIncore() { return incore; } ///< Gets the incore flag for the optimal checkpointing scheme
+    bool getRunmva() { return runmva; } ///< Gets the runmva flag 
     bool createLog(std::string name); ///< Set name of logfile and open for writing
     void writeLog(std::string text);  ///< Write string to log file
     void writeLog(const char * text); ///< Write c_string to log file
@@ -81,6 +83,7 @@ private:
 	Progress prog; ///< Progress counter
     rs_snapmethod snapmethod; ///< Choice of checkpointing method
     bool incore; ///< Incore flag for optimal checkpointing (No IO)
+    bool runmva; ///< Flag indicating that mva is running
     int ncheck; ///< Number of checkpoints in optimal checkpointing
     std::string snapfile;
 };
@@ -101,7 +104,6 @@ public:
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
     void setDataAz(std::shared_ptr<Data2D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
     bool checkStability(); ///< Check stability of finite difference modelling
-
     void crossCorr(T *ws, int pads, T* wr, int padr);
 
     ~RtmAcoustic2D();	///< Destructor

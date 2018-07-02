@@ -27,13 +27,17 @@
 
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
 #define km2D(i,j) ((j)*nx + (i))
+#define kw2D(i,j) ((j)*nxw + (i))
 #define ks2D(i,j) ((j)*nxs + (i))
 #define kr2D(i,j) ((j)*nxr + (i))
 
 #define ki3D(i,j,k,l,m,n) ((n)*nhy*nhx*nx*ny*nz + (m)*nhx*nx*ny*nz + (l)*nx*ny*nz + (k)*nx*ny + (j)*nx + (i))
 #define km3D(i,j,k) ((k)*nx*ny + (j)*nx + (i))
+#define kw3D(i,j,k) ((k)*nxw*nyw + (j)*nxw + (i))
 #define ks3D(i,j,k) ((k)*nxs*nys + (j)*nxs + (i))
 #define kr3D(i,j,k) ((k)*nxr*nyr + (j)*nxr + (i))
+  
+#define GAUSS(x,y) expf(-1.0*((x)*(x))/(2.0*(y)*(y)));
 
 namespace rockseis {
 
@@ -107,9 +111,8 @@ public:
     bool checkStability(); ///< Check stability of finite difference modelling
 
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho);
-    void computeMisfit();
-    void computeResiduals();
-
+    void modifyImage(); 
+    void insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>> waves_fw, T* wsp, int pads, std::shared_ptr<WavesAcoustic2D<T>> waves_bw, T* wrp, int padr, T *L);
     ~MvaAcoustic2D();	///< Destructor
 
 private:

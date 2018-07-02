@@ -215,6 +215,9 @@ public:
     // Regularisation computation
     void computeRegularisation(double *x);
 
+    // Compute Misfit
+    void computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pimage);
+
     // Combine gradients
     void combineGradients();
 

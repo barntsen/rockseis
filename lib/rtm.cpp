@@ -277,7 +277,11 @@ int RtmAcoustic2D<T>::run(){
     // Create image
     pimage->allocateImage();
 
-    Psnap->openSnap(this->getSnapfile(), 'r');
+    if(this->getRunmva()){
+        Psnap->openSnap(this->getSnapfile(), 'a');
+    }else{
+        Psnap->openSnap(this->getSnapfile(), 'r');
+    }
     Psnap->allocSnap(0);
 
      this->writeLog("\nDoing reverse-time Loop.");
@@ -290,6 +294,13 @@ int RtmAcoustic2D<T>::run(){
 
     	// Inserting source 
     	waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
+
+        
+        if(this->getRunmva()){
+            //Writting out backward modelled wavefield to snapshot file
+            Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+            Psnap->writeSnap(nt+it);
+        }
 
         //Read forward snapshot
         Psnap->readSnap(nt - 1 - it);
@@ -306,9 +317,11 @@ int RtmAcoustic2D<T>::run(){
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
     }
-    
-	//Remove snapshot file
-	Psnap->removeSnap();
+
+    if(!this->getRunmva()){
+        //Remove snapshot file
+        Psnap->removeSnap();
+    }
 
     result=RTM_OK;
     return result;

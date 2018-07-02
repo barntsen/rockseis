@@ -228,14 +228,6 @@ void WemvaAcoustic2D<T>::runGrad() {
         Sort->readSortmap();
         size_t ngathers =  Sort->getNensemb();
 
-        // Misfit file creation
-        Fmisfit->output(Misfitfile);
-        Fmisfit->setN(1,ngathers);
-        Fmisfit->setD(1,1.0);
-        Fmisfit->setData_format(sizeof(T));
-        Fmisfit->createEmpty();
-        Fmisfit->close();
-
         // Create a data class for the recorded data
         std::shared_ptr<rockseis::Data2D<T>> shot2D (new rockseis::Data2D<T>(Precordfile));
        
@@ -258,7 +250,8 @@ void WemvaAcoustic2D<T>::runGrad() {
             remove_file(Pimagefile + "-" + std::to_string(i));
         }
 
-        // Calculate misfit and residual image
+        //Calculate and output misfit
+        this->computeMisfit(pimage);
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -329,6 +322,9 @@ void WemvaAcoustic2D<T>::runGrad() {
 
                 // Setting Snapshot file 
                 rtm->setSnapfile(Fwsnapfile + "-" + std::to_string(work.id));
+
+                // Setting MVA flag
+                rtm ->setRunmva(true);
 
                 // Setting Snapshot parameters
                 rtm->setNcheck(this->getNsnaps());
@@ -412,8 +408,9 @@ void WemvaAcoustic2D<T>::runGrad() {
                 // Setting up gradient objects in fwi class
                 mva->setVpgrad(vpgrad);
 
-                // Setting Snapshot file 
+                // Setting Snapshot files
                 mva->setFwsnapfile(Fwsnapfile + "-" + std::to_string(work.id));
+                mva->setBwsnapfile(Bwsnapfile + "-" + std::to_string(work.id));
 
                 // Setting Snapshot parameters
                 mva->setNcheck(this->getNsnaps());
