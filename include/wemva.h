@@ -54,8 +54,6 @@
 #define VPREGGRADFILE "vp_reg_grad.rss"
 #define VSREGGRADFILE "vs_reg_grad.rss"
 
-#define SRCILUMFILE "src_ilum.rss"
-
 #define VPGRADCOMBFILE "vp_grad_comb.rss"
 #define VSGRADCOMBFILE "vs_grad_comb.rss"
 
