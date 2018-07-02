@@ -720,6 +720,48 @@ void WemvaAcoustic2D<T>::saveLinesearch(double *x)
     }
 }
 
+    template<typename T>
+void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pimage)
+{
+    double f=0;
+    if(!pimage->getAllocated()) pimage->allocateImage();
+    int ix, iz, ihx, ihz;
+    T *imagedata = pimage->getImagedata();
+    int nhx = pimage->getNhx();
+    int nhz = pimage->getNhz();
+    int nx = pimage->getNx();
+    int nz = pimage->getNz();
+    T *wrk = (T *) calloc(nz, sizeof(T));
+    int hx, hz;
+    T G1,G2;
+    for (ihx=0; ihx<nhx; ihx++){
+        hx= -(nhx-1)/2 + ihx;
+        G1 = GAUSS(hx, 0.25*nhx);
+        for (ihz=0; ihz<nhz; ihz++){
+            hz= -(nhz-1)/2 + ihz;
+            G2 = G1*GAUSS(hz, 0.25*nhz);
+            for (ix=0; ix<nx; ix++){
+                for (iz=0; iz<nz-1; iz++){
+                    wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                }
+                for (iz=0; iz<nz; iz++){
+                    f += 0.5*G2*wrk[iz]*wrk[iz];
+                }
+            }
+        }
+    }
+
+    // Free work array
+    free(wrk);
+
+    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
+    Fmisfit->output(MISFITFILE);
+    Fmisfit->setN(1,1);
+    Fmisfit->setD(1,1.0);
+    Fmisfit->setData_format(sizeof(T));
+    Fmisfit->write(&f, 1, 0);
+}
+
 template<typename T>
 void WemvaAcoustic2D<T>::readMisfit(double *f)
 {

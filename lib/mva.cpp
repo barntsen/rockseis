@@ -242,17 +242,17 @@ void MvaAcoustic2D<T>::modifyImage()
     T *wrk = (T *) calloc(nz, sizeof(T));
 	for (ihx=0; ihx<nhx; ihx++){
 		hx= -(nhx-1)/2 + ihx;
-        G1 = GAUSS(hx, 0.5*nhx);
+        G1 = GAUSS(hx, 0.25*nhx);
 		for (ihz=0; ihz<nhz; ihz++){
 			hz= -(nhz-1)/2 + ihz;
-            G2 = G1*GAUSS(hz, 0.5*nhz);
+            G2 = G1*GAUSS(hz, 0.25*nhz);
 			for (ix=0; ix<nx; ix++){
 				{
 					for (iz=1; iz<nz-1; iz++){
 						wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
 					}	
 					for (iz=0; iz<nz; iz++){
-						imagedata[ki2D(ix,iz,ihx,ihz)] = (G2*G2)*wrk[iz]; 
+						imagedata[ki2D(ix,iz,ihx,ihz)] = G2*wrk[iz]; 
 					}	
 				}
 			}
