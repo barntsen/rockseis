@@ -95,6 +95,9 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Data3D<float>> Vzdata3D;
     std::shared_ptr<rockseis::Data3D<float>> Vzdata3Di;
 
+    // Create a local model class pointer
+    std::shared_ptr<rockseis::ModelElastic3D<float>> lmodel;
+
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
     if(Inpar->parse(argv[1]) == INPARSE_ERR) 
@@ -158,8 +161,6 @@ int main(int argc, char** argv) {
 
     // Create a global model class
     std::shared_ptr<rockseis::ModelElastic3D<float>> gmodel (new rockseis::ModelElastic3D<float>(Vpfile, Vsfile, Rhofile, lpml ,fs));
-    // Create a local model class
-    std::shared_ptr<rockseis::ModelElastic3D<float>> lmodel (new rockseis::ModelElastic3D<float>(Vpfile, Vsfile, Rhofile, lpml ,fs));
 
     // Create a data class for the source wavelet
     std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(Waveletfile));

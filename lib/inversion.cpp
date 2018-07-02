@@ -224,6 +224,7 @@ void InversionAcoustic2D<T>::runGrad() {
     std::shared_ptr<rockseis::Image2D<T>> rhograd;
     std::shared_ptr<rockseis::Image2D<T>> srcilum;
     std::shared_ptr<rockseis::Data2D<T>> wavgrad;
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lmodel;
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
@@ -231,8 +232,6 @@ void InversionAcoustic2D<T>::runGrad() {
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
-    // Create a local model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<T>> lmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
 
     // Create a data class for the source wavelet
 	std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(Waveletfile));
@@ -1264,6 +1263,7 @@ void InversionAcoustic3D<T>::runGrad() {
     std::shared_ptr<rockseis::Image3D<T>> rhograd;
     std::shared_ptr<rockseis::Image3D<T>> srcilum;
     std::shared_ptr<rockseis::Data3D<T>> wavgrad;
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> lmodel;
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
@@ -1271,8 +1271,6 @@ void InversionAcoustic3D<T>::runGrad() {
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelAcoustic3D<T>> gmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
-    // Create a local model class
-	std::shared_ptr<rockseis::ModelAcoustic3D<T>> lmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
 
     // Create a data class for the source wavelet
 	std::shared_ptr<rockseis::Data3D<T>> source (new rockseis::Data3D<T>(Waveletfile));
@@ -2456,6 +2454,7 @@ void InversionElastic2D<T>::runGrad() {
     std::shared_ptr<rockseis::Image2D<T>> vsgrad;
     std::shared_ptr<rockseis::Image2D<T>> rhograd;
     std::shared_ptr<rockseis::Data2D<T>> wavgrad;
+    std::shared_ptr<rockseis::ModelElastic2D<T>> lmodel;
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
@@ -2463,8 +2462,6 @@ void InversionElastic2D<T>::runGrad() {
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelElastic2D<T>> gmodel (new rockseis::ModelElastic2D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
-    // Create a local model class
-	std::shared_ptr<rockseis::ModelElastic2D<T>> lmodel (new rockseis::ModelElastic2D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
 
     // Create a data class for the source wavelet
 	std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(Waveletfile));
@@ -4010,6 +4007,7 @@ void InversionElastic3D<T>::runGrad() {
     std::shared_ptr<rockseis::Image3D<T>> vsgrad;
     std::shared_ptr<rockseis::Image3D<T>> rhograd;
     std::shared_ptr<rockseis::Data3D<T>> wavgrad;
+    std::shared_ptr<rockseis::ModelElastic3D<T>> lmodel;
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
@@ -4017,8 +4015,6 @@ void InversionElastic3D<T>::runGrad() {
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelElastic3D<T>> gmodel (new rockseis::ModelElastic3D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
-    // Create a local model class
-	std::shared_ptr<rockseis::ModelElastic3D<T>> lmodel (new rockseis::ModelElastic3D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
 
     // Create a data class for the source wavelet
 	std::shared_ptr<rockseis::Data3D<T>> source (new rockseis::Data3D<T>(Waveletfile));

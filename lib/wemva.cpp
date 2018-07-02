@@ -200,7 +200,9 @@ void WemvaAcoustic2D<T>::runGrad() {
     std::shared_ptr<rockseis::Data2D<T>> shot2D;
     std::shared_ptr<rockseis::Data2D<T>> shot2Di;
     std::shared_ptr<rockseis::Image2D<T>> pimage;
+    std::shared_ptr<rockseis::Image2D<T>> lpimage;
     std::shared_ptr<rockseis::Image2D<T>> vpgrad;
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lmodel;
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
@@ -208,8 +210,6 @@ void WemvaAcoustic2D<T>::runGrad() {
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
-    // Create a local model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<T>> lmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
 
     // Create a data class for the source wavelet
 	std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(Waveletfile));
@@ -239,6 +239,7 @@ void WemvaAcoustic2D<T>::runGrad() {
         // Create a data class for the recorded data
         std::shared_ptr<rockseis::Data2D<T>> shot2D (new rockseis::Data2D<T>(Precordfile));
        
+        //Migration
 		// Create work queue
 		for(long int i=0; i<ngathers; i++) {
 			// Work struct
@@ -257,9 +258,34 @@ void WemvaAcoustic2D<T>::runGrad() {
             remove_file(Pimagefile + "-" + std::to_string(i));
         }
 
+        // Calculate misfit and residual image
+
 		//Clear work vector 
 		mpi->clearWork();
-	}
+
+        // Gradient computation
+		// Create work queue
+		for(long int i=0; i<ngathers; i++) {
+			// Work struct
+			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
+			mpi->addWork(work);
+		}
+
+		// Perform work in parallel
+		mpi->performWork();
+
+        vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
+        vpgrad->createEmpty();
+
+        for(long int i=0; i<ngathers; i++) {
+            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            remove_file(Vpgradfile + "-" + std::to_string(i));
+        }
+
+		//Clear work vector 
+		mpi->clearWork();
+
+    }
     else {
         /* Slave */
         std::shared_ptr<rockseis::RtmAcoustic2D<T>> rtm;
@@ -302,7 +328,7 @@ void WemvaAcoustic2D<T>::runGrad() {
                 pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile + "-" + std::to_string(work.id), lmodel, this->getNhx(), this->getNhz());
 
                 // Setting Snapshot file 
-                rtm->setSnapfile(Psnapfile + "-" + std::to_string(work.id));
+                rtm->setSnapfile(Fwsnapfile + "-" + std::to_string(work.id));
 
                 // Setting Snapshot parameters
                 rtm->setNcheck(this->getNsnaps());
@@ -329,11 +355,6 @@ void WemvaAcoustic2D<T>::runGrad() {
                 // Output image
                 pimage->write();
 
-                // Output misfit
-                Fmisfit->append(Misfitfile);
-                //T val = rtm->getMisfit();
-                //Fmisfit->write(&val, 1, work.id*sizeof(T));
-                Fmisfit->close();
                 
                 // Reset all classes
                 shot2D.reset();
@@ -346,6 +367,93 @@ void WemvaAcoustic2D<T>::runGrad() {
                 // Send result back
                 mpi->sendResult(work);		
             }
+        }
+
+        std::shared_ptr<rockseis::MvaAcoustic2D<T>> mva;
+        while(1) {
+            workModeling_t work = mpi->receiveWork();
+
+            if(work.MPItag == MPI_TAG_DIE) {
+                break;
+            }
+
+            if(work.MPItag == MPI_TAG_NO_WORK) {
+                mpi->sendNoWork(0);
+            }
+            else {
+                // Compute gradient
+                // Get the shot
+                Sort->setDatafile(Precordfile);
+                shot2D = Sort->get2DGather(work.id);
+                size_t ntr = shot2D->getNtrace();
+
+                lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
+
+                // Read wavelet data, set shot coordinates and make a map
+                source->read();
+                source->copyCoords(shot2D);
+                source->makeMap(lmodel->getGeom(), SMAP);
+
+                // Interpolate shot
+                shot2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(shot2D, shot2Di);
+                shot2Di->makeMap(lmodel->getGeom(), GMAP);
+
+                // Create image object
+                pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile, gmodel, this->getNhx(), this->getNhz());
+                lpimage = pimage->getLocal(shot2D, apertx, SMAP);
+
+                // Create mva object
+                mva = std::make_shared<rockseis::MvaAcoustic2D<T>>(lmodel, lpimage, source, shot2Di, this->getOrder(), this->getSnapinc());
+
+                // Creating gradient object
+                vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+
+                // Setting up gradient objects in fwi class
+                mva->setVpgrad(vpgrad);
+
+                // Setting Snapshot file 
+                mva->setFwsnapfile(Fwsnapfile + "-" + std::to_string(work.id));
+
+                // Setting Snapshot parameters
+                mva->setNcheck(this->getNsnaps());
+                mva->setIncore(this->getIncore());
+
+                // Set logfile
+                mva->setLogfile("log.txt-" + std::to_string(work.id));
+
+                // Stagger model
+                lmodel->staggerModels();
+
+                // Run simulation
+                switch(this->getSnapmethod()){
+                    case rockseis::FULL:
+                        mva->run();
+                        break;
+                    case rockseis::OPTIMAL:
+                        mva->run_optimal();
+                        break;
+                    default:
+                        rockseis::rs_error("Invalid option of snapshot saving."); 
+                }
+
+                // Output gradient
+                vpgrad->write();
+
+                // Reset all classes
+                shot2D.reset();
+                shot2Di.reset();
+                lmodel.reset();
+                pimage.reset();
+                lpimage.reset();
+                vpgrad.reset();
+                mva.reset();
+                work.status = WORK_FINISHED;
+
+                // Send result back
+                mpi->sendResult(work);
+            }
+
         }
     }
 }
@@ -934,8 +1042,6 @@ void WemvaAcoustic2D<T>::computeRegularisation(double *x)
 //	
 //    // Create a global model class
 //	std::shared_ptr<rockseis::ModelAcoustic3D<T>> gmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
-//    // Create a local model class
-//	std::shared_ptr<rockseis::ModelAcoustic3D<T>> lmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
 //
 //    // Create a data class for the source wavelet
 //	std::shared_ptr<rockseis::Data3D<T>> source (new rockseis::Data3D<T>(Waveletfile));
@@ -2126,8 +2232,6 @@ void WemvaAcoustic2D<T>::computeRegularisation(double *x)
 //	
 //    // Create a global model class
 //	std::shared_ptr<rockseis::ModelElastic2D<T>> gmodel (new rockseis::ModelElastic2D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
-//    // Create a local model class
-//	std::shared_ptr<rockseis::ModelElastic2D<T>> lmodel (new rockseis::ModelElastic2D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
 //
 //    // Create a data class for the source wavelet
 //	std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(Waveletfile));
@@ -3680,8 +3784,6 @@ void WemvaAcoustic2D<T>::computeRegularisation(double *x)
 //	
 //    // Create a global model class
 //	std::shared_ptr<rockseis::ModelElastic3D<T>> gmodel (new rockseis::ModelElastic3D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
-//    // Create a local model class
-//	std::shared_ptr<rockseis::ModelElastic3D<T>> lmodel (new rockseis::ModelElastic3D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
 //
 //    // Create a data class for the source wavelet
 //	std::shared_ptr<rockseis::Data3D<T>> source (new rockseis::Data3D<T>(Waveletfile));

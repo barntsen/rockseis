@@ -80,6 +80,9 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Data2D<float>> Azdata2D;
     std::shared_ptr<rockseis::Data2D<float>> Azdata2Di;
 
+    // Create a local model class pointer
+    std::shared_ptr<rockseis::ModelAcoustic2D<float>> lmodel;
+
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
     if(Inpar->parse(argv[1]) == INPARSE_ERR) 
@@ -132,8 +135,6 @@ int main(int argc, char** argv) {
 
     // Create a global model class
     std::shared_ptr<rockseis::ModelAcoustic2D<float>> gmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
-    // Create a local model class
-    std::shared_ptr<rockseis::ModelAcoustic2D<float>> lmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Rhofile, lpml ,fs));
 
     // Create a data class for the source wavelet
     std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Waveletfile));

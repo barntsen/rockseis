@@ -127,15 +127,3 @@ if(env['MPI']):
 
     mpiElasticrtm3d = mpi.Program(prefix + 'mpiElasticrtm3d','mpiElasticrtm3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image'],LIBPATH=['../build', '../config4cpp/lib'])
     mpi.Install('../bin/',mpiElasticrtm3d)
-
-    mpiAcousticfwigrad2d = mpi.Program(prefix + 'mpiAcousticfwigrad2d','mpiAcousticfwigrad2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image','rsfcpp','rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
-    mpi.Install('../bin/',mpiAcousticfwigrad2d)
-
-    mpiAcousticfwigrad3d = mpi.Program(prefix + 'mpiAcousticfwigrad3d','mpiAcousticfwigrad3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image','rsfcpp','rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
-    mpi.Install('../bin/',mpiAcousticfwigrad3d)
-
-    mpiElasticfwigrad2d = mpi.Program(prefix + 'mpiElasticfwigrad2d','mpiElasticfwigrad2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image','rsfcpp','rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
-    mpi.Install('../bin/',mpiElasticfwigrad2d)
-
-    mpiElasticfwigrad3d = mpi.Program(prefix + 'mpiElasticfwigrad3d','mpiElasticfwigrad3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image','rsfcpp','rsfc'],LIBPATH=['../build', '../config4cpp/lib', '../madagascar/build'])
-    mpi.Install('../bin/',mpiElasticfwigrad3d)

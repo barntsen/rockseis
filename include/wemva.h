@@ -20,6 +20,7 @@
 #include "interp.h"
 #include "parallel.h"
 #include "rtm.h"
+#include "mva.h"
 #include "sort.h"
 #include "bspl.h"
 
@@ -178,8 +179,11 @@ public:
     void setMisfitfile(std::string file) { Misfitfile = file; }
     std::string getMisfitfile() { return Misfitfile; }
 
-    void setPsnapfile(std::string file) { Psnapfile = file; }
-    std::string getPsnapfile() { return Psnapfile; }
+    void setFwsnapfile(std::string file) { Fwsnapfile = file; }
+    std::string getFwsnapfile() { return Fwsnapfile; }
+
+    void setBwsnapfile(std::string file) { Bwsnapfile = file; }
+    std::string getBwsnapfile() { return Bwsnapfile; }
 
     void setPrecordfile(std::string file) { Precordfile = file; }
     std::string getPrecordfile() { return Precordfile; }
@@ -237,7 +241,8 @@ private:
     std::string Vpgradfile;
     std::string Pimagefile;
     std::string Misfitfile;
-    std::string Psnapfile;
+    std::string Fwsnapfile;
+    std::string Bwsnapfile;
     std::string Precordfile;
     std::string Mutefile;
     T apertx;
