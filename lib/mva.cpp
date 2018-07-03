@@ -332,8 +332,8 @@ int MvaAcoustic2D<T>::run(){
     // Modify local image
     this->modifyImage();
 
-     this->writeLog("Running 2D Acoustic reverse-time migration with full checkpointing.");
-     this->writeLog("Doing forward Loop.");
+     this->writeLog("Running 2D Acoustic RTMVA gradient with full checkpointing.");
+     this->writeLog("Doing time loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
     {

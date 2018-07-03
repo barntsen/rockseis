@@ -201,6 +201,7 @@ int main(int argc, char** argv) {
     std::string Vpfile;
     std::string Rhofile;
     std::string Vpgradfile;
+    std::string Pimagefile;
     std::string Misfitfile;
     std::string Fwsnapfile;
     std::string Bwsnapfile;
@@ -281,6 +282,7 @@ int main(int argc, char** argv) {
     wva->setIncore(incore);
 
     wva->setVpgradfile(VPGRADFILE);
+    wva->setPimagefile(PIMAGEFILE);
     wva->setKvp(kvp);
     wva->setParamtype(paramtype);
     wva->setDtx(dtx);

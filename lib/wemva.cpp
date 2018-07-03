@@ -723,9 +723,11 @@ void WemvaAcoustic2D<T>::saveLinesearch(double *x)
     template<typename T>
 void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pimage)
 {
-    double f=0;
+    T f=0;
     if(!pimage->getAllocated()) pimage->allocateImage();
     int ix, iz, ihx, ihz;
+    // Read image data
+    pimage->read();
     T *imagedata = pimage->getImagedata();
     int nhx = pimage->getNhx();
     int nhz = pimage->getNhz();
