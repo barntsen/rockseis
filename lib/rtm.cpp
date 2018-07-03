@@ -238,10 +238,11 @@ int RtmAcoustic2D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      // Create snapshots
-     std::shared_ptr<Snapshot2D<T>> Psnap;
+     std::shared_ptr<Snapshot2D<T>> Psnap, Bwsnap;
      Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
      Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+     
 
      this->writeLog("Running 2D Acoustic reverse-time migration with full checkpointing.");
      this->writeLog("Doing forward Loop.");
@@ -277,12 +278,14 @@ int RtmAcoustic2D<T>::run(){
     // Create image
     pimage->allocateImage();
 
-    if(this->getRunmva()){
-        Psnap->openSnap(this->getSnapfile(), 'a');
-    }else{
-        Psnap->openSnap(this->getSnapfile(), 'r');
-    }
+    Psnap->openSnap(this->getSnapfile(), 'r');
     Psnap->allocSnap(0);
+
+    if(this->getRunmva()){
+        Bwsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Bwsnap->openSnap(this->getSnapfile() + "-bw", 'w'); // Create a new snapshot file
+        Bwsnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+    }
 
      this->writeLog("\nDoing reverse-time Loop.");
     // Loop over reverse time
@@ -298,8 +301,8 @@ int RtmAcoustic2D<T>::run(){
         
         if(this->getRunmva()){
             //Writting out backward modelled wavefield to snapshot file
-            Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
-            Psnap->writeSnap(nt+it);
+            Bwsnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+            Bwsnap->writeSnap(it);
         }
 
         //Read forward snapshot

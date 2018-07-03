@@ -56,16 +56,14 @@ public:
     int getOrder() { return order; } ///< Get order of FD stencil
     int getSnapinc() { return snapinc; } ///< Get snap increment
     std::string getLogfile() { return logfile; } ///< Get name of logfile
-    std::string getFwsnapfile() { return fwsnapfile; } ///< Sets checkpoint filename
-    std::string getBwsnapfile() { return bwsnapfile; } ///< Sets checkpoint filename
+    std::string getSnapfile() { return snapfile; } ///< Sets checkpoint filename
     void setOrder(int _order) { if(_order > 1 && _order < 9)  order = _order;} ///< Set order of FD stencil
     void setSnapinc(int _snapinc) {snapinc = _snapinc;} ///< Set snap increment for recording snapshots
     void setLogfile(std::string name) { logfile = name; } ///< Set name of logfile
     void setSnapmethod(rs_snapmethod val) { snapmethod = val; } ///< Sets choice of snapshot saving
     void setIncore(bool val) { incore = val; } ///< Sets optimal checkpoint incore flag
     void setNcheck(int val) { ncheck = val; } ///< Sets optimal checkpointing number of snaps 
-    void setFwsnapfile(std::string file) { fwsnapfile = file; } ///< Sets checkpoint filename
-    void setBwsnapfile(std::string file) { bwsnapfile = file; } ///< Sets checkpoint filename
+    void setSnapfile(std::string file) { snapfile = file; } ///< Sets checkpoint filename
     int getNcheck() { return ncheck; } ///< Gets the number of checkpoints for the optimal checkpointing scheme
     bool getIncore() { return incore; } ///< Gets the incore flag for the optimal checkpointing scheme
 
@@ -90,8 +88,7 @@ private:
     T misfit; ///< Misfit value
     bool incore; ///< Incore flag for optimal checkpointing (No IO)
     int ncheck; ///< Number of checkpoints in optimal checkpointing
-    std::string fwsnapfile;
-    std::string bwsnapfile;
+    std::string snapfile;
 };
 
 /** The 2D Acoustic Mva class
@@ -110,9 +107,10 @@ public:
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
     bool checkStability(); ///< Check stability of finite difference modelling
 
-    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho);
+    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho, T* adjsrc);
     void modifyImage(); 
-    void insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>> waves_fw, T* wsp, int pads, std::shared_ptr<WavesAcoustic2D<T>> waves_bw, T* wrp, int padr, T *L);
+    void calcAdjointsource(T *adjsrc_fw, T* wsp, int pads, T *adjsrc_bw, T* wrp, int padr);
+    void insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>> waves_fw, T* adjsrc_fw, std::shared_ptr<WavesAcoustic2D<T>> waves_bw, T* adjsrc_bw, T *L);
     ~MvaAcoustic2D();	///< Destructor
 
 private:

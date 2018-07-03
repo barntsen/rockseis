@@ -177,11 +177,8 @@ public:
     void setMisfitfile(std::string file) { Misfitfile = file; }
     std::string getMisfitfile() { return Misfitfile; }
 
-    void setFwsnapfile(std::string file) { Fwsnapfile = file; }
-    std::string getFwsnapfile() { return Fwsnapfile; }
-
-    void setBwsnapfile(std::string file) { Bwsnapfile = file; }
-    std::string getBwsnapfile() { return Bwsnapfile; }
+    void setSnapfile(std::string file) { Snapfile = file; }
+    std::string getSnapfile() { return Snapfile; }
 
     void setPrecordfile(std::string file) { Precordfile = file; }
     std::string getPrecordfile() { return Precordfile; }
@@ -242,8 +239,7 @@ private:
     std::string Vpgradfile;
     std::string Pimagefile;
     std::string Misfitfile;
-    std::string Fwsnapfile;
-    std::string Bwsnapfile;
+    std::string Snapfile;
     std::string Precordfile;
     std::string Mutefile;
     T apertx;

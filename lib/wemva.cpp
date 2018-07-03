@@ -321,7 +321,7 @@ void WemvaAcoustic2D<T>::runGrad() {
                 rtm = std::make_shared<rockseis::RtmAcoustic2D<T>>(lmodel, pimage, source, shot2Di, this->getOrder(), this->getSnapinc());
 
                 // Setting Snapshot file 
-                rtm->setSnapfile(Fwsnapfile + "-" + std::to_string(work.id));
+                rtm->setSnapfile(Snapfile + "-" + std::to_string(work.id));
 
                 // Setting MVA flag
                 rtm ->setRunmva(true);
@@ -409,8 +409,7 @@ void WemvaAcoustic2D<T>::runGrad() {
                 mva->setVpgrad(vpgrad);
 
                 // Setting Snapshot files
-                mva->setFwsnapfile(Fwsnapfile + "-" + std::to_string(work.id));
-                mva->setBwsnapfile(Bwsnapfile + "-" + std::to_string(work.id));
+                mva->setSnapfile(Snapfile + "-" + std::to_string(work.id));
 
                 // Setting Snapshot parameters
                 mva->setNcheck(this->getNsnaps());
@@ -747,7 +746,7 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                     wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
                 }
                 for (iz=0; iz<nz; iz++){
-                    f += 0.5*G2*wrk[iz]*wrk[iz];
+                    f -= 0.5*G2*wrk[iz]*wrk[iz];
                 }
             }
         }

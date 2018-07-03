@@ -170,8 +170,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(Rho = "Rho2d.rss";);
             PRINT_DOC(Wavelet = "Wav2d.rss";);
             PRINT_DOC(Precordfile = "Pshot.rss";);
-            PRINT_DOC(Fwsnapfile = "Local/Fwsnap.rss";);
-            PRINT_DOC(Bwsnapfile = "Local/Bwsnap.rss";);
+            PRINT_DOC(Psnapfile = "Local/Psnap.rss";);
         }
         exit(1);
     }
@@ -203,8 +202,7 @@ int main(int argc, char** argv) {
     std::string Vpgradfile;
     std::string Pimagefile;
     std::string Misfitfile;
-    std::string Fwsnapfile;
-    std::string Bwsnapfile;
+    std::string Psnapfile;
     std::string Precordfile;
     std::string Mutefile;
 
@@ -232,8 +230,7 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("dtz", &dtz) == INPARSE_ERR) status = true;
     }
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Fwsnapfile", &Fwsnapfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Bwsnapfile", &Bwsnapfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapmethod", &_snapmethod) == INPARSE_ERR) status = true;
     rockseis::rs_snapmethod snapmethod = static_cast<rockseis::rs_snapmethod>(_snapmethod);
     switch(snapmethod){
@@ -274,8 +271,7 @@ int main(int argc, char** argv) {
     wva->setRhofile(RHOLSFILE);
     wva->setWaveletfile(SOURCELSFILE);
     wva->setMisfitfile(MISFITFILE);
-    wva->setFwsnapfile(Fwsnapfile);
-    wva->setBwsnapfile(Bwsnapfile);
+    wva->setSnapfile(Psnapfile);
     wva->setApertx(apertx);
     wva->setSnapmethod(snapmethod);
     wva->setNsnaps(nsnaps);
