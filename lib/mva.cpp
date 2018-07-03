@@ -199,6 +199,14 @@ void MvaAcoustic2D<T>::calcAdjointsource(T *adjsrc_fw, T* wsp, int pads, T *adjs
 	int nxr = nx+2*padr;
 	int nz = pimage->getNz();
 	int hx, hz;
+    //Reset arrays
+    for (ix=0; ix<nx; ix++){
+        for (iz=0; iz<nz; iz++){
+            adjsrc_fw[km2D(ix,iz)] = 0.0;
+            adjsrc_bw[km2D(ix,iz)] = 0.0;
+        }
+    }
+    // Calculate integral
     for (ihx=0; ihx<nhx; ihx++){
         hx= -(nhx-1)/2 + ihx;
         for (ihz=0; ihz<nhz; ihz++){
@@ -209,8 +217,8 @@ void MvaAcoustic2D<T>::calcAdjointsource(T *adjsrc_fw, T* wsp, int pads, T *adjs
                     for (iz=0; iz<nz; iz++){
                         if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz))
                         {
-							adjsrc_fw[km2D(ix,iz)] -= imagedata[ki2D(ix-hx,iz,ihx,ihz)]*wsp[ks2D(ix-2*hx+pads, iz-2*hz+pads)];
-							adjsrc_bw[km2D(ix,iz)] -= imagedata[ki2D(ix+hx,iz,ihx,ihz)]*wrp[kr2D(ix+2*hx+padr, iz+2*hz+padr)];
+							adjsrc_fw[km2D(ix,iz)] += imagedata[ki2D(ix-hx,iz,ihx,ihz)]*wsp[ks2D(ix-2*hx+pads, iz-2*hz+pads)];
+							adjsrc_bw[km2D(ix,iz)] += imagedata[ki2D(ix+hx,iz,ihx,ihz)]*wrp[kr2D(ix+2*hx+padr, iz+2*hz+padr)];
 
                         }
 

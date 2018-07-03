@@ -858,7 +858,7 @@ void WemvaAcoustic2D<T>::combineGradients()
     }
     grad->setVpfile(VPGRADCOMBFILE);
     grad->setRfile(VPGRADCOMBFILE);
-    grad->writeModel();
+    grad->writeVp();
 }
 
 template<typename T>
@@ -887,7 +887,7 @@ void WemvaAcoustic2D<T>::applyMute()
         }
         model->setVpfile(VPGRADMUTEFILE);
         model->setRfile(VPGRADMUTEFILE);
-        model->writeModel();
+        model->writeVp();
     }
 }
 
@@ -1006,7 +1006,7 @@ void WemvaAcoustic2D<T>::computeRegularisation(double *x)
     Fmisfit->close();
 
     /* Write out gradient */
-    model->writeModel();
+    model->writeVp();
 
     // Free variables
     free(dvpdx);
