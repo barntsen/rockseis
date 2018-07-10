@@ -150,7 +150,9 @@ int main(int argc, char** argv) {
             PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
-
+            PRINT_DOC(#Migration parameters);
+            PRINT_DOC(nhx = "1"; # Subsurface offsets in x direction);
+            PRINT_DOC(nhz = "1"; # Subsurface offsets in z direction);
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
             PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
             PRINT_DOC();
@@ -191,6 +193,7 @@ int main(int argc, char** argv) {
     float apertx;
     float dtx=-1;
     float dtz=-1;
+    int nhx, nhz;
     float kvp;
     float vpregalpha;
     int max_linesearch, max_iterations;
@@ -229,6 +232,8 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("dtx", &dtx) == INPARSE_ERR) status = true;
         if(Inpar->getPar("dtz", &dtz) == INPARSE_ERR) status = true;
     }
+    if(Inpar->getPar("nhx", &nhx) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("nhz", &nhz) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapmethod", &_snapmethod) == INPARSE_ERR) status = true;
@@ -283,6 +288,9 @@ int main(int argc, char** argv) {
     wva->setParamtype(paramtype);
     wva->setDtx(dtx);
     wva->setDtz(dtz);
+
+    wva->setNhx(nhx);
+    wva->setNhz(nhz);
 
     wva->setVpregalpha(vpregalpha);
 

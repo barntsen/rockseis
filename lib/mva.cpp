@@ -217,8 +217,8 @@ void MvaAcoustic2D<T>::calcAdjointsource(T *adjsrc_fw, T* wsp, int pads, T *adjs
                     for (iz=0; iz<nz; iz++){
                         if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz))
                         {
-							adjsrc_fw[km2D(ix,iz)] += imagedata[ki2D(ix-hx,iz,ihx,ihz)]*wsp[ks2D(ix-2*hx+pads, iz-2*hz+pads)];
-							adjsrc_bw[km2D(ix,iz)] += imagedata[ki2D(ix+hx,iz,ihx,ihz)]*wrp[kr2D(ix+2*hx+padr, iz+2*hz+padr)];
+							adjsrc_fw[km2D(ix,iz)] += imagedata[ki2D(ix+hx,iz+hz,ihx,ihz)]*wsp[kr2D(ix+2*hx+padr, iz+2*hz+padr)];
+							adjsrc_bw[km2D(ix,iz)] += imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*wrp[ks2D(ix-2*hx+pads, iz-2*hz+pads)];
 
                         }
 
