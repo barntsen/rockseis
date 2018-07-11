@@ -286,11 +286,11 @@ bool Image2D<T>::stackImage(std::string infile)
 	}
 
     T *trcin;
-    trcin = (T *) calloc(nxl, sizeof(T));
+    trcin = (T *) calloc(nxl*nzl, sizeof(T));
     if(trcin == NULL) rs_error("Image2D::stackImage: Failed to allocate memory for input trace.");
 
     T *trcout;
-    trcout = (T *) calloc(nxg, sizeof(T));
+    trcout = (T *) calloc(nxg*nzg, sizeof(T));
     if(trcout == NULL) rs_error("Image2D::stackImage: Failed to allocate memory for input trace.");
 
 	// Stack data
@@ -302,24 +302,25 @@ bool Image2D<T>::stackImage(std::string infile)
 	Index Iout(nxg, nzg, nhxl, nhzl);
 	for(ihz=0; ihz<nhzl; ihz++) {
 		for(ihx=0; ihx<nhxl; ihx++) {
-			for(iz=0; iz<nzl; iz++) {
-				if((iz + iz_start) >= 0 && (iz + iz_start) < nzg){
 					// Read traces 
-					Fin->read(trcin, nxl, Iin(0,iz,ihx,ihz)*sizeof(T));
-					Fout->read(trcout, nxg, Iout(0,(iz+iz_start),ihx,ihz)*sizeof(T));
+					Fin->read(trcin, nxl*nzl, Iin(0,0,ihx,ihz)*sizeof(T));
+					Fout->read(trcout, nxg*nzg, Iout(0,0,ihx,ihz)*sizeof(T));
 					if(Fin->getFail()) rs_error("Image2D::stackImage: Failed to read data from file");
 					if(Fout->getFail()) rs_error("Image2D::stackImage: Failed to write data to file");
-					for(ix = 0; ix < nxl; ix++) {
-						if((ix + ix_start) >= 0 && (ix + ix_start) < nxg){
-							trcout[ix + ix_start] += trcin[ix];
-						}
-					}
-					// Write trc 
-					Fout->write(trcout, nxg, Iout(0, (iz+iz_start),ihx,ihz)*sizeof(T));
-					if(Fout->getFail()) rs_error("Image2D::stackImage: Failed to write data to file");
-				}
-			}
-		}
+                    // Stack
+                    for(iz=0; iz<nzl; iz++) {
+                        if((iz + iz_start) >= 0 && (iz + iz_start) < nzg){
+                            for(ix = 0; ix < nxl; ix++) {
+                                if((ix + ix_start) >= 0 && (ix + ix_start) < nxg){
+                                    trcout[(iz + iz_start)*nxg + (ix + ix_start)] += trcin[iz*nxl + ix];
+                                }
+                            }
+                        }
+                    }
+                    // Write traces
+                    Fout->write(trcout, nxg*nzg, Iout(0, 0, ihx, ihz)*sizeof(T));
+                    if(Fout->getFail()) rs_error("Image2D::stackImage: Failed to write data to file");
+        }
 	}
 	Fin->close();
 	Fout->close();

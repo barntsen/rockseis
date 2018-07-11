@@ -70,6 +70,9 @@
 #define VP_UP "vp_up.rss"
 #define VS_UP "vs_up.rss"
 
+#define PIMAGE_UP "pimage_up.rss"
+#define SIMAGE_UP "simage_up.rss"
+
 #define RESULTDIR "Results"
 
 

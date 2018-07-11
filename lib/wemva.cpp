@@ -622,6 +622,15 @@ void WemvaAcoustic2D<T>::saveResults(int iter)
     name = dir + "/" + VP_UP + "-" + std::to_string(iter);
     lsmodel->setVpfile(name);
     lsmodel->writeVp();
+
+    // Write out image
+    std::shared_ptr<rockseis::Image2D<T>> pimage;
+    pimage = std::make_shared<rockseis::Image2D<T>>(PIMAGEFILE);
+    if(!pimage->getAllocated()) pimage->allocateImage();
+    pimage->read();
+    name = dir + "/" + PIMAGE_UP + "-" + std::to_string(iter);
+    pimage->setImagefile(name);
+    pimage->write();
 }
 
 template<typename T>
