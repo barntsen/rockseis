@@ -15,6 +15,7 @@ Wemva<T>::Wemva() {
     nsnaps=0;
     snapmethod = OPTIMAL; 
     paramtype = PAR_GRID;
+    misfit_type = SI;
     dtx = -1;
     dty = -1;
     dtz = -1;
@@ -46,6 +47,7 @@ Wemva<T>::Wemva(MPImodeling *_mpi) {
     nsnaps=0;
     snapmethod = OPTIMAL; 
     paramtype = PAR_GRID;
+    misfit_type = SI;
     dtx = -1;
     dty = -1;
     dtz = -1;
@@ -396,16 +398,19 @@ void WemvaAcoustic2D<T>::runGrad() {
                 shot2Di->makeMap(lmodel->getGeom(), GMAP);
 
                 // Create image object
-                pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile, gmodel, this->getNhx(), this->getNhz());
+                pimage = std::make_shared<rockseis::Image2D<T>>(PIMAGERESFILE);
                 lpimage = pimage->getLocal(shot2D, apertx, SMAP);
 
                 // Create mva object
                 mva = std::make_shared<rockseis::MvaAcoustic2D<T>>(lmodel, lpimage, source, shot2Di, this->getOrder(), this->getSnapinc());
 
+                // Setting misfit type
+                mva->setMisfit_type(this->getMisfit_type());
+
                 // Creating gradient object
                 vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
 
-                // Setting up gradient objects in fwi class
+                // Setting up gradient objects in wemvafwi class
                 mva->setVpgrad(vpgrad);
 
                 // Setting Snapshot files
@@ -743,26 +748,119 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
     int nz = pimage->getNz();
     T *wrk = (T *) calloc(nz, sizeof(T));
     int hx, hz;
-    T G1,G2;
-    for (ihx=0; ihx<nhx; ihx++){
-        hx= -(nhx-1)/2 + ihx;
-        G1 = GAUSS(hx, 0.25*nhx);
-        for (ihz=0; ihz<nhz; ihz++){
-            hz= -(nhz-1)/2 + ihz;
-            G2 = G1*GAUSS(hz, 0.25*nhz);
-            for (ix=0; ix<nx; ix++){
-                for (iz=0; iz<nz-1; iz++){
-                    wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
-                }
-                for (iz=0; iz<nz; iz++){
-                    f -= 0.5*G2*wrk[iz]*wrk[iz];
+    T G1 = 0.;
+    T G2 = 0.;
+    T f1 = 0.;
+    T f2 = 0.;
+
+    switch(this->getMisfit_type()){
+        case SI:
+            for (ihx=0; ihx<nhx; ihx++){
+                hx= -(nhx-1)/2 + ihx;
+                G1 = GAUSS(hx, 0.25*nhx);
+                for (ihz=0; ihz<nhz; ihz++){
+                    hz= -(nhz-1)/2 + ihz;
+                    G2 = G1*GAUSS(hz, 0.25*nhz);
+                    for (ix=0; ix<nx; ix++){
+                        // Misfit
+                        for (iz=0; iz<nz-1; iz++){
+                            wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                        }
+                        for (iz=0; iz<nz; iz++){
+                            f -= 0.5*G2*wrk[iz]*wrk[iz];
+                        }
+                        // Residual
+                        for (iz=1; iz<nz-1; iz++){
+						    wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
+                        }
+                        for (iz=0; iz<nz-1; iz++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] = G2*wrk[iz];
+                        }
+                        imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
+                    }
                 }
             }
-        }
+            break;
+        case DS:
+            for (ihx=0; ihx<nhx; ihx++){
+                hx= -(nhx-1)/2 + ihx;
+                G1 = (hx*hx);
+                for (ihz=0; ihz<nhz; ihz++){
+                    hz= -(nhz-1)/2 + ihz;
+                    G2 = G1 + (hz*hz);
+                    for (ix=0; ix<nx; ix++){
+                        // Misfit
+                        for (iz=0; iz<nz-1; iz++){
+                            wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                        }
+                        for (iz=0; iz<nz; iz++){
+                            f += 0.5*G2*wrk[iz]*wrk[iz];
+                        }
+                        // Residual
+                        for (iz=1; iz<nz-1; iz++){
+						    wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
+                        }
+                        for (iz=0; iz<nz-1; iz++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] = -1.0*G2*wrk[iz];
+                        }
+                        imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
+                    }
+                }
+            }
+            break;
+        case DS_PLUS_SI:
+            // Misfit
+            for (ihx=0; ihx<nhx; ihx++){
+                hx= -(nhx-1)/2 + ihx;
+                G1 = GAUSS(hx, 0.25*nhx);
+                for (ihz=0; ihz<nhz; ihz++){
+                    hz= -(nhz-1)/2 + ihz;
+                    G2 = G1*GAUSS(hz, 0.25*nhz);
+                    for (ix=0; ix<nx; ix++){
+                        for (iz=0; iz<nz-1; iz++){
+                            wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                        }
+                        for (iz=0; iz<nz; iz++){
+                            f1 += 0.5*((hx*hx) +  (hz*hz))*wrk[iz]*wrk[iz];
+                            f2 += G2*wrk[iz]*wrk[iz];
+                        }
+                    }
+                }
+            }
+            if(f2 != 0) {
+                f = f1/f2;
+            }else {
+                f = f1;
+            }
+            //Residual
+            for (ihx=0; ihx<nhx; ihx++){
+                hx= -(nhx-1)/2 + ihx;
+                G1 = GAUSS(hx, 0.25*nhx);
+                for (ihz=0; ihz<nhz; ihz++){
+                    hz= -(nhz-1)/2 + ihz;
+                    G2 = G1*GAUSS(hz, 0.25*nhz);
+                    for (ix=0; ix<nx; ix++){
+                        for (iz=1; iz<nz-1; iz++){
+                            wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
+                        }	
+                        for (iz=0; iz<nz-1; iz++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] = (f1/(f2*f2))*G2*wrk[iz] - (((hx*hx) +  (hz*hz))*1.0/f2)*wrk[iz]; 
+                        }	
+                        imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
+                    }
+                }
+            }
+            break;
+        default:
+            f = 0;
+            break;
     }
 
     // Free work array
     free(wrk);
+
+    pimage->setImagefile(PIMAGERESFILE);
+    pimage->write();
 
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
     Fmisfit->output(MISFITFILE);

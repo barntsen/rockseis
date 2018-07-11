@@ -9,6 +9,7 @@ Mva<T>::Mva() {
 	order = 4;
     snapinc=1;
     snapmethod = FULL;
+    misfit_type = SI;
     ncheck = 0;
 	prog.previous = 0;
 	prog.current = 0;
@@ -31,6 +32,7 @@ Mva<T>::Mva(int _order, int _snapinc) {
     }
 
     snapmethod = FULL;
+    misfit_type = SI;
     ncheck = 0;
 
 	prog.previous = 0;
@@ -354,7 +356,7 @@ int MvaAcoustic2D<T>::run(){
     vpgrad->allocateImage();
 
     // Modify local image
-    this->modifyImage();
+    //this->modifyImage();
 
     // Allocate memory for adjoint sources 
     T* adjsrc_fw, *adjsrc_bw;

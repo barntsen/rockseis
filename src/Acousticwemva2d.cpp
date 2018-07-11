@@ -146,6 +146,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(incore = "true";);
             PRINT_DOC();
             PRINT_DOC(#Inversion parameters);
+            PRINT_DOC(misfit_type = "0";  # 0- SI; 1- DS; 2- DS_PLUS_SI;);
             PRINT_DOC(mute = "false";  # Mute gradient and updates);
             PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
@@ -190,6 +191,7 @@ int main(int argc, char** argv) {
 	int nsnaps = 0;
 	int _snapmethod;
     int _paramtype;
+	int misfit_type;
     float apertx;
     float dtx=-1;
     float dtz=-1;
@@ -248,6 +250,8 @@ int main(int argc, char** argv) {
         default:
             rockseis::rs_error("Invalid option of snapshot saving (snapmethod)."); 
     }
+    if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
+    rockseis::rs_wemvamisfit wemvamisfit = static_cast<rockseis::rs_wemvamisfit>(misfit_type);
     if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
     if(mute){
         if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
@@ -281,6 +285,7 @@ int main(int argc, char** argv) {
     wva->setSnapmethod(snapmethod);
     wva->setNsnaps(nsnaps);
     wva->setIncore(incore);
+    wva->setMisfit_type(wemvamisfit);
 
     wva->setVpgradfile(VPGRADFILE);
     wva->setPimagefile(PIMAGEFILE);

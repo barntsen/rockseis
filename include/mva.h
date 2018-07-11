@@ -69,6 +69,9 @@ public:
 
     void setMisfit(T val) { misfit = val; } ///< Sets data misfit value
     T getMisfit() { return misfit; }   ///< Gets misfit value
+
+    rs_wemvamisfit getMisfit_type() { return misfit_type; }  ///< Gets misfit type
+    void setMisfit_type(rs_wemvamisfit type) { misfit_type = type;} ///< Sets wemva misfit type
     bool createLog(std::string name); ///< Set name of logfile and open for writing
     void writeLog(std::string text);  ///< Write string to log file
     void writeLog(const char * text); ///< Write c_string to log file
@@ -84,6 +87,7 @@ private:
     std::string logfile; ///< Log file name
     std::ofstream Flog; ///< Logfile
 	Progress prog; ///< Progress counter
+    rs_wemvamisfit misfit_type; ///< Misfit type can be either difference semblance or stack-power or a combination of both
     rs_snapmethod snapmethod; ///< Choice of checkpointing method
     T misfit; ///< Misfit value
     bool incore; ///< Incore flag for optimal checkpointing (No IO)

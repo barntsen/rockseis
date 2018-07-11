@@ -48,6 +48,9 @@
 #define PIMAGEFILE "pimage.rss"
 #define SIMAGEFILE "simage.rss"
 
+#define PIMAGERESFILE "pimage_res.rss"
+#define SIMAGERESFILE "simage_res.rss"
+
 #define VPGRADFILE "vp_grad.rss"
 #define VSGRADFILE "vs_grad.rss"
 
@@ -112,6 +115,8 @@ public:
     void setSnapmethod(rs_snapmethod val) { snapmethod = val; }
     rs_paramtype getParamtype() { return paramtype; } 
     void setParamtype(rs_paramtype val) { paramtype = val; }
+    rs_wemvamisfit getMisfit_type() { return misfit_type; } 
+    void setMisfit_type(rs_wemvamisfit val) { misfit_type = val; }
     T getDtx() { return dtx; }
     T getDty() { return dty; }
     T getDtz() { return dtz; }
@@ -148,6 +153,7 @@ private:
     bool createProglog(); ///< Set name of progress logfile and open for writing
     rs_snapmethod snapmethod;
     rs_paramtype paramtype;
+    rs_wemvamisfit misfit_type;
     MPImodeling *mpi;
     T dtx, dty, dtz;
     int nhx,nhy,nhz;
