@@ -790,8 +790,13 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
             if(gcoords[i].x < min) min = gcoords[i].x;
             if(gcoords[i].x > max) max = gcoords[i].x;
         }
-        size = (size_t) (rintf((max-min + 2*std::abs(aperture))/dx) + 2);
-        start = (off_t) (rintf((min - ox)/dx) - rintf(std::abs(aperture/dx))) - 1; 
+        if(aperture < 0){
+            size = (size_t) (rintf((max-min + 2*std::abs(aperture))/dx) + 2);
+            start = (off_t) (rintf((min - ox)/dx) - rintf(std::abs(aperture/dx))) - 1; 
+        }else{
+            size = (size_t) (2*rintf((max-min)/dx) + 1);
+            start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
+        }
     }
 
     /* Create local model */
@@ -1202,9 +1207,13 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
             if(gcoords[i].x < min_x) min_x = gcoords[i].x;
             if(gcoords[i].x > max_x) max_x = gcoords[i].x;
         }
-
-        size_x = (size_t) (rintf((max_x-min_x + 2*std::abs(aperture_x))/dx) + 2);
-        start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(std::abs(aperture_x/dx))) - 1; 
+        if(aperture_x < 0){
+            size_x = (size_t) (rintf((max_x-min_x + 2*std::abs(aperture_x))/dx) + 2);
+            start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(std::abs(aperture_x/dx))) - 1; 
+        }else{
+            size_x = (size_t) (2*rintf((max_x-min_x)/dx) + 1);
+            start_x = (off_t) (rintf((min_x - ox)/dx) - (size_x - 1)/2); 
+        }
     }
     if(aperture_y > 0){
         if(map == SMAP){
@@ -1238,9 +1247,13 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
             if(gcoords[i].y < min_y) min_y = gcoords[i].y;
             if(gcoords[i].y > max_y) max_y = gcoords[i].y;
         }
-
-        size_y = (size_t) (rintf((max_y-min_y + 2*std::abs(aperture_y))/dy) + 2);
-        start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(std::abs(aperture_y/dy))) - 1; 
+        if(aperture_y < 0){
+            size_y = (size_t) (rintf((max_y-min_y + 2*std::abs(aperture_y))/dy) + 2);
+            start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(std::abs(aperture_y/dy))) - 1; 
+        }else{
+            size_y = (size_t) (2*rintf((max_y-min_y)/dy) + 1);
+            start_y = (off_t) (rintf((min_y - oy)/dy) - (size_y - 1)/2); 
+        }
     }
 
     double oxl, oyl; 
@@ -1709,8 +1722,13 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
             if(gcoords[i].x < min) min = gcoords[i].x;
             if(gcoords[i].x > max) max = gcoords[i].x;
         }
-        size = (size_t) (rintf((max-min + 2*std::abs(aperture))/dx) + 2);
-        start = (off_t) (rintf((min - ox)/dx) - rintf(std::abs(aperture/dx))) - 1; 
+        if(aperture < 0){
+            size = (size_t) (rintf((max-min + 2*std::abs(aperture))/dx) + 2);
+            start = (off_t) (rintf((min - ox)/dx) - rintf(std::abs(aperture/dx))) - 1; 
+        }else{
+            size = (size_t) (2*rintf((max-min)/dx) + 1);
+            start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
+        }
     }
 
     /* Create local model */
@@ -2236,9 +2254,13 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
             if(gcoords[i].x < min_x) min_x = gcoords[i].x;
             if(gcoords[i].x > max_x) max_x = gcoords[i].x;
         }
-
-        size_x = (size_t) (rintf((max_x-min_x + 2*std::abs(aperture_x))/dx) + 2);
-        start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(std::abs(aperture_x/dx))) - 1; 
+        if(aperture_x < 0){
+            size_x = (size_t) (rintf((max_x-min_x + 2*std::abs(aperture_x))/dx) + 2);
+            start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(std::abs(aperture_x/dx))) - 1; 
+        }else{
+            size_x = (size_t) (2*rintf((max_x-min_x)/dx) + 1);
+            start_x = (off_t) (rintf((min_x - ox)/dx) - (size_x - 1)/2); 
+        }
     }
     if(aperture_y > 0){
         if(map == SMAP){
@@ -2272,9 +2294,13 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
             if(gcoords[i].y < min_y) min_y = gcoords[i].y;
             if(gcoords[i].y > max_y) max_y = gcoords[i].y;
         }
-
-        size_y = (size_t) (rintf((max_y-min_y + 2*std::abs(aperture_y))/dy) + 2);
-        start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(std::abs(aperture_y/dy))) - 1; 
+        if(aperture_y < 0){
+            size_y = (size_t) (rintf((max_y-min_y + 2*std::abs(aperture_y))/dy) + 2);
+            start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(std::abs(aperture_y/dy))) - 1; 
+        }else{
+            size_y = (size_t) (2*rintf((max_y-min_y)/dy) + 1);
+            start_y = (off_t) (rintf((min_y - oy)/dy) - (size_y - 1)/2); 
+        }
     }
 
     /* Create local model */
