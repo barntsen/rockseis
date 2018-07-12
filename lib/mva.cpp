@@ -355,9 +355,6 @@ int MvaAcoustic2D<T>::run(){
     // Create gradient array
     vpgrad->allocateImage();
 
-    // Modify local image
-    //this->modifyImage();
-
     // Allocate memory for adjoint sources 
     T* adjsrc_fw, *adjsrc_bw;
     adjsrc_fw = (T *) calloc(waves_adj_fw->getNx()*waves_adj_fw->getNz(), sizeof(T));
@@ -460,9 +457,6 @@ int MvaAcoustic2D<T>::run_optimal(){
 
      // Create image
      vpgrad->allocateImage();
-
-    // Modify local image
-    this->modifyImage();
 
     // Allocate memory for adjoint sources 
     T* adjsrc_fw, *adjsrc_bw;
