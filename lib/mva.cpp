@@ -486,7 +486,7 @@ int MvaAcoustic2D<T>::run_optimal(){
 
                 // Inserting source 
                 waves_fw1->insertSource(model, source, SMAP, it);
-                waves_bw1->insertSource(model, source, GMAP, nt-1-it);
+                waves_bw1->insertSource(model, dataP, GMAP, nt-1-it);
 
                 // Roll the pointers P1 and P2
                 waves_fw1->roll();
@@ -524,9 +524,9 @@ int MvaAcoustic2D<T>::run_optimal(){
 
             // Inserting adjoint sources
             wsp = waves_fw2->getP1();
-	    wrp = waves_bw2->getP1();
-	    this->calcAdjointsource(adjsrc_fw, wrp, waves_adj_fw->getLpml(), adjsrc_bw, wsp, waves_adj_bw->getLpml());
-	    this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model->getL());
+            wrp = waves_bw2->getP1();
+            this->calcAdjointsource(adjsrc_fw, wrp, waves_adj_fw->getLpml(), adjsrc_bw, wsp, waves_adj_bw->getLpml());
+            this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model->getL());
 
             /* Do Crosscorrelation */
             wsp = waves_fw1->getP1();
@@ -582,8 +582,8 @@ int MvaAcoustic2D<T>::run_optimal(){
             // Inserting adjoint sources
             T *wsp = waves_fw2->getP1();
             T *wrp = waves_bw2->getP1();
-	    this->calcAdjointsource(adjsrc_fw, wrp, waves_adj_fw->getLpml(), adjsrc_bw, wsp, waves_adj_bw->getLpml());
-	    this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model->getL());
+            this->calcAdjointsource(adjsrc_fw, wrp, waves_adj_fw->getLpml(), adjsrc_bw, wsp, waves_adj_bw->getLpml());
+            this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model->getL());
 
             /* Do Crosscorrelation */
             wsp = waves_fw1->getP1();
