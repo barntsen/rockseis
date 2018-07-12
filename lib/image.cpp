@@ -402,6 +402,7 @@ std::shared_ptr<rockseis::Image2D<T>> Image2D<T>::getLocal(std::shared_ptr<rocks
     Point2D<T> *gcoords;
     size_t ntr = data->getNtrace();
     T min, max; 
+    T off;
     T dx = this->getDx();
     T ox = this->getOx();
     size_t nz = this->getNz();
@@ -413,27 +414,38 @@ std::shared_ptr<rockseis::Image2D<T>> Image2D<T>::getLocal(std::shared_ptr<rocks
     size_t nhz = this->getNhz();
 
    	/* Determine grid positions and sizes */
-    if(aperture > 0){
+    if(aperture >= 0){
         if(map == SMAP){
             scoords = (data->getGeom())->getScoords();
+            gcoords = (data->getGeom())->getGcoords();
             min = scoords[0].x;
             max = scoords[0].x;
+            off = std::abs(gcoords[0].x - scoords[0].x);
             for (long long i=1; i < ntr; i++){
                 if(scoords[i].x < min) min = scoords[i].x;
                 if(scoords[i].x > max) max = scoords[i].x;
+                if(std::abs(gcoords[i].x - scoords[i].x) > off) off = std::abs(gcoords[i].x - scoords[i].x);
             }
         }else{
+            scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
             min = gcoords[0].x;
             max = gcoords[0].x;
+            off = std::abs(gcoords[0].x - scoords[0].x);
             for (long long i=1; i < ntr; i++){
                 if(gcoords[i].x < min) min = gcoords[i].x;
                 if(gcoords[i].x > max) max = gcoords[i].x;
+                if(std::abs(gcoords[i].x - scoords[i].x) > off) off = std::abs(gcoords[i].x - scoords[i].x);
             }
         }
-        size = (size_t) (rintf((max-min + aperture)/dx) + 1);
-        if( size % 2 == 0 ) size++; // Get odd size due to symmetry
-        start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
+        if(aperture > 0){
+            size = (size_t) (rintf((max-min + aperture)/dx) + 1);
+            if( size % 2 == 0 ) size++; // Get odd size due to symmetry
+            start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
+        }else{
+            size = (size_t) (2*rintf(off/dx) + 1);
+            start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
+        }
     }else{
         scoords = (data->getGeom())->getScoords();
         gcoords = (data->getGeom())->getGcoords();
@@ -445,13 +457,8 @@ std::shared_ptr<rockseis::Image2D<T>> Image2D<T>::getLocal(std::shared_ptr<rocks
             if(gcoords[i].x < min) min = gcoords[i].x;
             if(gcoords[i].x > max) max = gcoords[i].x;
         }
-        if(aperture < 0){
-            size = (size_t) (rintf((max-min + 2*std::abs(aperture))/dx) + 2);
-            start = (off_t) (rintf((min - ox)/dx) - rintf(std::abs(aperture/dx))) - 1; 
-        }else{
-            size = (size_t) (2*rintf((max-min)/dx) + 1);
-            start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
-        }
+        size = (size_t) (rintf((max-min + 2*std::abs(aperture))/dx) + 2);
+        start = (off_t) (rintf((min - ox)/dx) - rintf(std::abs(aperture/dx))) - 1; 
     }
 
 
@@ -969,6 +976,7 @@ std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rocks
     size_t ntr = data->getNtrace();
     T min_x, max_x; 
     T min_y, max_y; 
+    T off_x, off_y;
     T dx = this->getDx();
     T dy = this->getDy();
     T ox = this->getOx();
@@ -987,88 +995,93 @@ std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rocks
     size_t nhz = this->getNhz();
 
     /* Determine grid positions and sizes */
-    if(aperture_x > 0){
+    if(aperture_x >= 0){
         if(map == SMAP){
             scoords = (data->getGeom())->getScoords();
+            gcoords = (data->getGeom())->getGcoords();
             min_x = scoords[0].x;
             max_x = scoords[0].x;
             for (int i=1; i < ntr; i++){
                 if(scoords[i].x < min_x) min_x = scoords[i].x;
                 if(scoords[i].x > max_x) max_x = scoords[i].x;
+                if(std::abs(gcoords[i].x - scoords[i].x) > off_x) off_x = std::abs(gcoords[i].x - scoords[i].x);
             }
         }else{
+            scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
             min_x = gcoords[0].x;
             max_x = gcoords[0].x;
             for (size_t i=1; i < ntr; i++){
                 if(gcoords[i].x < min_x) min_x = gcoords[i].x;
                 if(gcoords[i].x > max_x) max_x = gcoords[i].x;
+                if(std::abs(gcoords[i].x - scoords[i].x) > off_x) off_x = std::abs(gcoords[i].x - scoords[i].x);
             }
         }
-
-        size_x = (size_t) (rintf((max_x-min_x + aperture_x)/dx) + 1);
-        if( size_x % 2 == 0 ) size_x++; // Get odd size due to symmetry
+        if(aperture_x > 0){
+            size_x = (size_t) (rintf((max_x-min_x + aperture_x)/dx) + 1);
+            if( size_x % 2 == 0 ) size_x++; // Get odd size due to symmetry
+        }else{
+            size_x = (size_t) (2*rintf(off_x/dx) + 1);
+        }
         start_x = (off_t) (rintf((min_x - ox)/dx) - (size_x - 1)/2); 
     }else{
         scoords = (data->getGeom())->getScoords();
         gcoords = (data->getGeom())->getGcoords();
         min_x = scoords[0].x;
         max_x = scoords[0].x;
+        off_x = std::abs(gcoords[0].x - scoords[0].x);
         for (int i=0; i < ntr; i++){
             if(scoords[i].x < min_x) min_x = scoords[i].x;
             if(scoords[i].x > max_x) max_x = scoords[i].x;
             if(gcoords[i].x < min_x) min_x = gcoords[i].x;
             if(gcoords[i].x > max_x) max_x = gcoords[i].x;
         }
-        if(aperture_x < 0){
-            size_x = (size_t) (rintf((max_x-min_x + 2*std::abs(aperture_x))/dx) + 2);
-            start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(std::abs(aperture_x/dx))) - 1; 
-        }else{
-            size_x = (size_t) (2*rintf((max_x-min_x)/dx) + 1);
-            start_x = (off_t) (rintf((min_x - ox)/dx) - (size_x - 1)/2); 
-        }
-
+        size_x = (size_t) (rintf((max_x-min_x + 2*std::abs(aperture_x))/dx) + 2);
+        start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(std::abs(aperture_x/dx))) - 1; 
     }
-    if(aperture_y > 0){
+    if(aperture_y >= 0){
         if(map == SMAP){
             scoords = (data->getGeom())->getScoords();
+            gcoords = (data->getGeom())->getGcoords();
             min_y = scoords[0].y;
             max_y = scoords[0].y;
             for (int i=1; i < ntr; i++){
                 if(scoords[i].y < min_y) min_y = scoords[i].y;
                 if(scoords[i].y > max_y) max_y = scoords[i].y;
+                if(std::abs(gcoords[i].y - scoords[i].y) > off_y) off_y = std::abs(gcoords[i].y - scoords[i].y);
             }
         }else{
+            scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
             min_y = gcoords[0].y;
             max_y = gcoords[0].y;
             for (size_t i=1; i < ntr; i++){
                 if(gcoords[i].y < min_y) min_y = gcoords[i].y;
                 if(gcoords[i].y > max_y) max_y = gcoords[i].y;
+                if(std::abs(gcoords[i].y - scoords[i].y) > off_y) off_y = std::abs(gcoords[i].y - scoords[i].y);
             }
         }
-        size_y = (size_t) (rintf((max_y-min_y + aperture_y)/dy) + 1);
-        if( size_y % 2 == 0 ) size_y++; // Get odd size due to symmetry
+        if(aperture_y > 0){
+            size_y = (size_t) (rintf((max_y-min_y + aperture_y)/dy) + 1);
+            if( size_y % 2 == 0 ) size_y++; // Get odd size due to symmetry
+        }else{
+            size_y = (size_t) (2*rintf(off_y/dy) + 1);
+        }
         start_y = (off_t) (rintf((min_y - oy)/dy) - (size_y - 1)/2); 
     }else{
         scoords = (data->getGeom())->getScoords();
         gcoords = (data->getGeom())->getGcoords();
         min_y = scoords[0].y;
         max_y = scoords[0].y;
+        off_y = std::abs(gcoords[0].y - scoords[0].y);
         for (int i=0; i < ntr; i++){
             if(scoords[i].y < min_y) min_y = scoords[i].y;
             if(scoords[i].y > max_y) max_y = scoords[i].y;
             if(gcoords[i].y < min_y) min_y = gcoords[i].y;
             if(gcoords[i].y > max_y) max_y = gcoords[i].y;
         }
-        if(aperture_y < 0){
-            size_y = (size_t) (rintf((max_y-min_y + 2*std::abs(aperture_y))/dy) + 2);
-            start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(std::abs(aperture_y/dy))) - 1; 
-        }else{
-            size_y = (size_t) (2*rintf((max_y-min_y)/dy) + 1);
-            start_y = (off_t) (rintf((min_y - oy)/dy) - (size_y - 1)/2); 
-        }
-
+        size_y = (size_t) (rintf((max_y-min_y + 2*std::abs(aperture_y))/dy) + 2);
+        start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(std::abs(aperture_y/dy))) - 1; 
     }
 
     double oxl, oyl; 
