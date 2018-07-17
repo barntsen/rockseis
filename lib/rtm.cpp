@@ -1229,9 +1229,9 @@ int RtmElastic2D<T>::run_optimal(){
      // Create checkpoint file
      optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
 
-     // Create image
-     pimage->allocateImage();
-     simage->allocateImage();
+    // Create image
+    if(this->pimageset) pimage->allocateImage();
+    if(this->simageset) simage->allocateImage();
 
      // Get models for scaling
      T *Vp, *Vs, *Rho;
@@ -1734,9 +1734,10 @@ int RtmElastic3D<T>::run_optimal(){
      // Create checkpoint file
      optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
 
-     // Create image
-     pimage->allocateImage();
-     simage->allocateImage();
+
+    // Create image
+    if(this->pimageset) pimage->allocateImage();
+    if(this->simageset) simage->allocateImage();
 
      // Get models for scaling
      T *Vp, *Vs, *Rho;

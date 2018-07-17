@@ -1172,6 +1172,7 @@ void WemvaElastic2D<T>::runPPgrad() {
     std::shared_ptr<rockseis::Image2D<T>> pimage;
     std::shared_ptr<rockseis::Image2D<T>> lpimage;
     std::shared_ptr<rockseis::Image2D<T>> vpgrad;
+    std::shared_ptr<rockseis::Image2D<T>> vsgrad;
     std::shared_ptr<rockseis::ModelElastic2D<T>> lmodel;
 
     // Create a sort class
@@ -1238,10 +1239,11 @@ void WemvaElastic2D<T>::runPPgrad() {
 		mpi->performWork();
 
        // Images
-        if(update_vp){
-            vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
-            vpgrad->createEmpty();
-        }
+       vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
+       vpgrad->createEmpty();
+
+       vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile, gmodel, 1, 1);
+       vsgrad->createEmpty();
 
         for(long int i=0; i<ngathers; i++) {
             if(update_vp){

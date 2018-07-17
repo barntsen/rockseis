@@ -375,6 +375,7 @@ private:
     std::string Rhofile;
     std::string Vpgradfile;
     std::string Vsgradfile;
+    std::string Rhogradfile;
     std::string Misfitfile;
     std::string Uxrecordfile;
     std::string Uzrecordfile;
