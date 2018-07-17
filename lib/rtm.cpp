@@ -1071,12 +1071,12 @@ int RtmElastic2D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      // Create snapshots
-     std::shared_ptr<Snapshot2D<T>> Uxsnap;
+     std::shared_ptr<Snapshot2D<T>> Uxsnap, Bwuxsnap;
      Uxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
      Uxsnap->openSnap(this->getSnapfile() + "-ux", 'w'); // Create a new snapshot file
      Uxsnap->setData(waves->getUx1(), 0); //Set Ux as snap field
 
-     std::shared_ptr<Snapshot2D<T>> Uzsnap;
+     std::shared_ptr<Snapshot2D<T>> Uzsnap, Bwuzsnap;
      Uzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
      Uzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
      Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
@@ -1131,6 +1131,16 @@ int RtmElastic2D<T>::run(){
     Uzsnap->openSnap(this->getSnapfile() + "-uz", 'r');
     Uzsnap->allocSnap(0);
 
+    if(this->getRunmva()){
+        Bwuxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Bwuxsnap->openSnap(this->getSnapfile() + "-ux-bw", 'w'); // Create a new snapshot file
+        Bwuxsnap->setData(waves->getUx1(), 0); //Set Displacement field as snap field
+
+        Bwuzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Bwuzsnap->openSnap(this->getSnapfile() + "-uz-bw", 'w'); // Create a new snapshot file
+        Bwuzsnap->setData(waves->getUz1(), 0); //Set Displacement field as snap field
+    }
+
     // Get models for scaling
     T *Vp, *Vs, *Rho;
     Vp = model->getVp();
@@ -1151,6 +1161,15 @@ int RtmElastic2D<T>::run(){
     	waves->insertForcesource(model, dataUx, GMAP, (nt - 1 - it));
     	waves->insertForcesource(model, dataUz, GMAP, (nt - 1 - it));
 
+        if(this->getRunmva()){
+            //Writting out results to snapshot files
+            Bwuxsnap->setData(waves->getUx1(), 0); //Set Ux as snap field
+            Bwuxsnap->writeSnap(it);
+
+            Bwuzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
+            Bwuzsnap->writeSnap(it);
+        }
+
         //Read forward snapshot
         Uxsnap->readSnap(nt - 1 - it);
         Uzsnap->readSnap(nt - 1 - it);
@@ -1169,9 +1188,11 @@ int RtmElastic2D<T>::run(){
         this->writeProgress(it, nt-1, 20, 48);
     }
     
-	//Remove snapshot file
-	Uxsnap->removeSnap();
-	Uzsnap->removeSnap();
+    if(!this->getRunmva()){
+        //Remove snapshot file
+        Uxsnap->removeSnap();
+        Uzsnap->removeSnap();
+    }
 
     result=RTM_OK;
     return result;

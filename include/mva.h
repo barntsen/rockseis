@@ -112,7 +112,6 @@ public:
     bool checkStability(); ///< Check stability of finite difference modelling
 
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho, T* adjsrc);
-    void modifyImage(); 
     void calcAdjointsource(T *adjsrc_fw, T* wsp, int pads, T *adjsrc_bw, T* wrp, int padr);
     void insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>> waves_fw, T* adjsrc_fw, std::shared_ptr<WavesAcoustic2D<T>> waves_bw, T* adjsrc_bw, T *L);
     ~MvaAcoustic2D();	///< Destructor
@@ -130,6 +129,77 @@ private:
     bool dataPset;
 };
 
+/** The 2D Elastic PP Mva class
+ *
+ */
+template<typename T>
+class PPmvaElastic2D: public Mva<T> {
+public:
+    PPmvaElastic2D();					///< Constructor
+    PPmvaElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Image2D<T>> pimage, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataUx, std::shared_ptr<Data2D<T>> dataUz, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs rtm with full snapshoting
+    int run_optimal(); ///< Runs rtm with optimal checkpointing
+    void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
+    void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
+    void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
+    void setDataUz(std::shared_ptr<Data2D<T>> _dataUz) { dataUz = _dataUz; dataUzset = true; }
+    bool checkStability(); ///< Check stability of finite difference modelling
+
+    void crossCorr(T *wsx, T *wsz, int pads, std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, T *adjsrc);
+    void calcAdjointsource(T *adjsrc_fw, T *wsx, T *wsz, int pads, T *adjsrc_bw, T* wrx, T* wrz, int padr, std::shared_ptr<ModelElastic2D<T>> model);
+    void insertAdjointsource(std::shared_ptr<WavesElastic2D_DS<T>> waves_fw, T* adjsrc_fw, std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, T* adjsrc_bw, std::shared_ptr<ModelElastic2D<T>> model);
+    ~PPmvaElastic2D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelElastic2D<T>> model;
+    std::shared_ptr<Image2D<T>> vpgrad;
+    std::shared_ptr<Image2D<T>> pimage;
+    std::shared_ptr<Data2D<T>> source;
+    std::shared_ptr<Data2D<T>> dataUx;
+    std::shared_ptr<Data2D<T>> dataUz;
+    bool modelset;
+    bool pimageset;
+    bool vpgradset;
+    bool sourceset;
+    bool dataUxset, dataUzset;
+};
+
+/** The 2D Elastic PS Mva class
+ *
+ */
+//template<typename T>
+//class PSmvaElastic2D: public Mva<T> {
+//public:
+//    PSmvaElastic2D();					///< Constructor
+//    PSmvaElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Image2D<T>> simage, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataUx, std::shared_ptr<Data2D<T>> dataUz, int order, int snapinc);					///< Constructor 
+//    int run(); ///< Runs rtm with full snapshoting
+//    int run_optimal(); ///< Runs rtm with optimal checkpointing
+//    void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
+//    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
+//    void setVsgrad(std::shared_ptr<Image2D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
+//    void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
+//    void setDataUz(std::shared_ptr<Data2D<T>> _dataUz) { dataUz = _dataUz; dataUzset = true; }
+//    bool checkStability(); ///< Check stability of finite difference modelling
+//
+//    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho, T* adjsrc);
+//    void calcAdjointsource(T *adjsrc_fw, T* wsp, int pads, T *adjsrc_bw, T* wrp, int padr);
+//    void insertAdjointsource(std::shared_ptr<WavesElastic2D<T>> waves_fw, T* adjsrc_fw, std::shared_ptr<WavesElastic2D<T>> waves_bw, T* adjsrc_bw, T *L);
+//    ~PSmvaElastic2D();	///< Destructor
+//
+//private:
+//    std::shared_ptr<ModelElastic2D<T>> model;
+//    std::shared_ptr<Image2D<T>> vsgrad;
+//    std::shared_ptr<Image2D<T>> simage;
+//    std::shared_ptr<Data2D<T>> source;
+//    std::shared_ptr<Data2D<T>> dataUx;
+//    std::shared_ptr<Data2D<T>> dataUz;
+//    bool modelset;
+//    bool simageset;
+//    bool vsgradset;
+//    bool sourceset;
+//    bool dataUxset, dataUzset;
+//};
 
 }
 #endif //MVA_H

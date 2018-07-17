@@ -7,7 +7,7 @@
 using namespace rockseis;
 
 /* Global variables */
-std::shared_ptr<WemvaAcoustic2D<float>> wva;
+std::shared_ptr<WemvaElastic2D<float>> wva;
 
 /* Global functions */
 void evaluate(rockseis::OptInstancePtr instance)
@@ -26,7 +26,7 @@ void evaluate(rockseis::OptInstancePtr instance)
     int task;
     task = RUN_F_GRAD;
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    wva->runGrad();
+    wva->runPPgrad();
     wva->writeLog("Gradient computation finished");
 
     // Compute regularization
@@ -65,6 +65,7 @@ void evaluate(rockseis::OptInstancePtr instance)
     }
     wva->normalize(g, &instance->f, instance->n);
 
+    // Writing progress information to log file
     double xnorm, gnorm, step;
     gnorm = wva->vector_norm(instance->g, 2, instance->n);
     xnorm = wva->vector_norm(instance->x, 2, instance->n);
@@ -86,6 +87,7 @@ void evaluate(rockseis::OptInstancePtr instance)
 	strcat(buffer,ctime(&tempo));
     buffer[strlen(buffer)-1] ='\0';
 	wva->writeProgress(buffer);
+
 }
 
 void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
@@ -125,13 +127,14 @@ int main(int argc, char** argv) {
     MPImodeling mpi(&argc,&argv);
     int task; 
 
+
     if(mpi.getNrank() < 2){
         rs_error("This is a parallel program, it must run with at least 2 processors, use mpirun.");
     }
 
     if(argc < 2){
         if(mpi.getRank() == 0){
-            PRINT_DOC(# MPI 2d acoustic wave equation migration velocity analysis configuration file);
+            PRINT_DOC(# MPI 2d elastic wave equation migration velocity analysis configuration file);
             PRINT_DOC();
             PRINT_DOC(# Modelling parameters);
             PRINT_DOC(freesurface = "true"; # True if free surface should be on);
@@ -139,26 +142,28 @@ int main(int argc, char** argv) {
             PRINT_DOC(lpml = "8"; # Size of pml absorbing boundary (should be larger than order + 5 ));
             PRINT_DOC(snapinc = "1"; # Snap interval in multiples of modelling interval);
             PRINT_DOC(apertx = "900"; # Aperture for local model (source is in the middle));
+            PRINT_DOC(source_type = "3";);
             PRINT_DOC();
             PRINT_DOC(# Checkpointing parameters);
             PRINT_DOC(snapmethod = "1";  # 0- Full checkpointing; 1- Optimal checkpointing);
             PRINT_DOC(nsnaps = "11";);
             PRINT_DOC(incore = "true";);
             PRINT_DOC();
-            PRINT_DOC(#Inversion parameters);
-            PRINT_DOC(misfit_type = "0";  # 0- SI; 1- DS; 2- DS_PLUS_SI;);
+            PRINT_DOC(#Fwi parameters);
+            PRINT_DOC(misfit_type = "0";  # 0- Difference; 1- Correlation; 2- Adaptive with Gaussian; 3- Adaptive with linear);
             PRINT_DOC(mute = "false";  # Mute gradient and updates);
             PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
-            PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
+            PRINT_DOC(max_linesearch = "10"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
-            PRINT_DOC(#Migration parameters);
-            PRINT_DOC(nhx = "1"; # Subsurface offsets in x direction);
-            PRINT_DOC(nhz = "1"; # Subsurface offsets in z direction);
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
             PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
+            PRINT_DOC(update_vp = "true"; # Update vp);
+            PRINT_DOC(update_vs = "true"; # Update vs);
+            PRINT_DOC(reciprocity = "false"; # Use receiver gathers instead of source gathers);
             PRINT_DOC();
             PRINT_DOC(# Diagonal scaling parameters);
             PRINT_DOC(kvp = "100.0";);
+            PRINT_DOC(kvs = "100.0";);
             PRINT_DOC();
             PRINT_DOC(#Parameterisation);
             PRINT_DOC(paramtype = "1";  # 0- grid; 1- B-spline;);
@@ -166,49 +171,59 @@ int main(int argc, char** argv) {
             PRINT_DOC(dtz = "25.0"; # knot sampling in B-spline);
             PRINT_DOC();
             PRINT_DOC(#Regularisation);
-            PRINT_DOC(vpregalpha = "0.0";);
+            PRINT_DOC(vpregalpha = "1.0e-5";);
+            PRINT_DOC(vsregalpha = "1.0e-5";);
             PRINT_DOC();
             PRINT_DOC(# Files);
             PRINT_DOC(Vp = "Vp2d.rss";);
+            PRINT_DOC(Vs = "Vs2d.rss";);
             PRINT_DOC(Rho = "Rho2d.rss";);
             PRINT_DOC(Wavelet = "Wav2d.rss";);
-            PRINT_DOC(Precordfile = "Pshot.rss";);
-            PRINT_DOC(Psnapfile = "Local/Psnap.rss";);
+            PRINT_DOC(Uxrecordfile = "Vxshot.rss";);
+            PRINT_DOC(Uzrecordfile = "Vzshot.rss";);
+            PRINT_DOC(Snapfile = "Local/Snap.rss";);
         }
         exit(1);
     }
 
     // Initialize Wemva class
-    wva = std::make_shared<rockseis::WemvaAcoustic2D<float>>(&mpi);
+    wva = std::make_shared<rockseis::WemvaElastic2D<float>>(&mpi);
 	/* General input parameters */
     bool status;
 	int lpml;
 	bool fs;
     bool incore = false;
+    bool reciprocity;
     bool mute;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
 	int _snapmethod;
     int _paramtype;
+    int source_type;
 	int misfit_type;
     float apertx;
     float dtx=-1;
     float dtz=-1;
-    int nhx, nhz;
-    float kvp;
-    float vpregalpha;
+    float kvp, kvs;
+    float vpregalpha, vsregalpha;
     int max_linesearch, max_iterations;
+    bool update_vp, update_vs;
+    int wavemode;
+    int nhx,nhz;
+
     int linesearch;
     int optmethod; 
     std::string Waveletfile;
     std::string Vpfile;
+    std::string Vsfile;
     std::string Rhofile;
     std::string Vpgradfile;
-    std::string Pimagefile;
+    std::string Vsgradfile;
     std::string Misfitfile;
-    std::string Psnapfile;
-    std::string Precordfile;
+    std::string Snapfile;
+    std::string Uxrecordfile;
+    std::string Uzrecordfile;
     std::string Mutefile;
 
 
@@ -216,7 +231,7 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
     if(Inpar->parse(argv[1]) == INPARSE_ERR) 
     {
-        rs_error("Parse error on input config file", argv[1]);
+        rs_error("Parse error on input config file ", argv[1]);
     }
     status = false; 
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
@@ -224,11 +239,14 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vs", &Vsfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("kvp", &kvp) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("kvs", &kvs) == INPARSE_ERR) status = true;
     if(Inpar->getPar("paramtype", &_paramtype) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("source_type", &source_type) == INPARSE_ERR) status = true;
     rockseis::rs_paramtype paramtype = static_cast<rockseis::rs_paramtype>(_paramtype);
     if(paramtype == PAR_BSPLINE){
         if(Inpar->getPar("dtx", &dtx) == INPARSE_ERR) status = true;
@@ -236,8 +254,9 @@ int main(int argc, char** argv) {
     }
     if(Inpar->getPar("nhx", &nhx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("nhz", &nhz) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uxrecordfile", &Uxrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Uzrecordfile", &Uzrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Snapfile", &Snapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapmethod", &_snapmethod) == INPARSE_ERR) status = true;
     rockseis::rs_snapmethod snapmethod = static_cast<rockseis::rs_snapmethod>(_snapmethod);
     switch(snapmethod){
@@ -252,16 +271,31 @@ int main(int argc, char** argv) {
     }
     if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
     rockseis::rs_wemvamisfit wemvamisfit = static_cast<rockseis::rs_wemvamisfit>(misfit_type);
+
     if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
     if(mute){
         if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
     }
 
     if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("vsregalpha", &vsregalpha) == INPARSE_ERR) status = true;
     if(Inpar->getPar("max_linesearch", &max_linesearch) == INPARSE_ERR) status = true;
     if(Inpar->getPar("max_iterations", &max_iterations) == INPARSE_ERR) status = true;
+
+    if(Inpar->getPar("wavemode", &wavemode) == INPARSE_ERR) status = true;
+
     if(Inpar->getPar("linesearch", &linesearch) == INPARSE_ERR) status = true;
     if(Inpar->getPar("optmethod", &optmethod) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("reciprocity", &reciprocity) == INPARSE_ERR) status = true;
+
+    // Set updates according to wave mode
+    if(wavemode){
+        update_vp = false;
+        update_vs = true;
+    }else{
+        update_vp = true;
+        update_vs = false;
+    }
 
 	if(status == true){
 		rs_error("Program terminated due to input errors.");
@@ -272,15 +306,18 @@ int main(int argc, char** argv) {
     wva->setFs(fs);
     wva->setSnapinc(snapinc);
 
-    wva->setPrecordfile(Precordfile);
+    wva->setUxrecordfile(Uxrecordfile);
+    wva->setUzrecordfile(Uzrecordfile);
+
     if(mute){
         wva->setMutefile(Mutefile);
     }
     wva->setVpfile(VPLSFILE);
+    wva->setVsfile(VSLSFILE);
     wva->setRhofile(RHOLSFILE);
     wva->setWaveletfile(SOURCELSFILE);
     wva->setMisfitfile(MISFITFILE);
-    wva->setSnapfile(Psnapfile);
+    wva->setSnapfile(Snapfile);
     wva->setApertx(apertx);
     wva->setSnapmethod(snapmethod);
     wva->setNsnaps(nsnaps);
@@ -288,30 +325,40 @@ int main(int argc, char** argv) {
     wva->setMisfit_type(wemvamisfit);
 
     wva->setVpgradfile(VPGRADFILE);
+    wva->setVsgradfile(VSGRADFILE);
     wva->setPimagefile(PIMAGEFILE);
+    wva->setSimagefile(SIMAGEFILE);
+    wva->setNhx(nhx);
+    wva->setNhz(nhz);
     wva->setKvp(kvp);
+    wva->setKvs(kvs);
     wva->setParamtype(paramtype);
+    wva->setSourcetype(source_type);
     wva->setDtx(dtx);
     wva->setDtz(dtz);
 
-    wva->setNhx(nhx);
-    wva->setNhz(nhz);
-
     wva->setVpregalpha(vpregalpha);
+    wva->setVsregalpha(vsregalpha);
 
     //MASTER
     if(mpi.getRank() == 0){
         // Create a sort class and map over shots
         std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
-        Sort->setDatafile(Precordfile);
-        Sort->createShotmap(Precordfile); 
+        Sort->setDatafile(Uxrecordfile);
+        if(!reciprocity){
+            Sort->createShotmap(Uxrecordfile); 
+        }else{
+            Sort->createReceivermap(Uxrecordfile); 
+            Sort->setReciprocity(true);
+        }
+
         Sort->writeKeymap();
         Sort->writeSortmap();
 
         // L-BFGS configuration
         double *x = nullptr; 
         int N;
-        N = wva->setInitial(x, Vpfile, Rhofile, Waveletfile);
+        N = wva->setInitial(x, Vpfile, Vsfile, Rhofile, Waveletfile);
         x = (double *) calloc(N, sizeof(double));
         std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(N));
         opt->opt_set_initial_guess(x);
@@ -352,8 +399,6 @@ int main(int argc, char** argv) {
         wva->writeProgress("Maximum number of iterations: " + std::to_string(opt->getMax_iterations()));
         wva->writeProgress("Maximum number of linesearches: " + std::to_string(opt->getMax_linesearch()));
         wva->writeProgress("ITERATION\t   STEP LENGTH            MISFIT               GNORM             MNORM                TIME");
-
-
         switch(optmethod) {
             case 4:
                 opt->opt_conjugate_gradient_pr(evaluate,progress);
@@ -369,6 +414,8 @@ int main(int argc, char** argv) {
                 opt->opt_lbfgs(evaluate,progress);
                 break;
         }
+
+
 
         // Send message for slaves to quit
         wva->writeLog("Optimisation algorithm finished");
@@ -392,7 +439,7 @@ int main(int argc, char** argv) {
             switch(task)
             {
                 case RUN_F_GRAD:
-                    wva->runGrad();
+                    wva->runPPgrad();
                     break;
                 case RUN_BS_PROJ:
                     wva->runBsproj();

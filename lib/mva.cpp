@@ -148,6 +148,7 @@ MvaAcoustic2D<T>::MvaAcoustic2D(){
     dataPset = false;
     modelset = false;
     pimageset = false;
+    vpgradset = false;
 }
 
 template<typename T>
@@ -160,6 +161,7 @@ MvaAcoustic2D<T>::MvaAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std:
     dataPset = true;
     modelset = true;
     pimageset = true;
+    vpgradset = false;
 }
 
 template<typename T>
@@ -250,42 +252,6 @@ void MvaAcoustic2D<T>::insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>> w
         }
 
     }	
-}
-
-template<typename T>
-void MvaAcoustic2D<T>::modifyImage()
-{
-	if(!pimage->getAllocated()) rs_error("MvaAcoustic2D<T>::modifyImage(): pimage is not allocated.");
-	int ix, iz, ihx, ihz;
-	T *imagedata = pimage->getImagedata();
-	int nhx = pimage->getNhx();
-	int nhz = pimage->getNhz();
-	int nx = pimage->getNx();
-	int nz = pimage->getNz();
-	int hx, hz;
-    T G1,G2;
-    // Allocate work array
-    T *wrk = (T *) calloc(nz, sizeof(T));
-	for (ihx=0; ihx<nhx; ihx++){
-		hx= -(nhx-1)/2 + ihx;
-        G1 = GAUSS(hx, 0.25*nhx);
-		for (ihz=0; ihz<nhz; ihz++){
-			hz= -(nhz-1)/2 + ihz;
-            G2 = G1*GAUSS(hz, 0.25*nhz);
-			for (ix=0; ix<nx; ix++){
-				{
-					for (iz=1; iz<nz-1; iz++){
-						wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
-					}	
-					for (iz=0; iz<nz; iz++){
-						imagedata[ki2D(ix,iz,ihx,ihz)] = G2*wrk[iz]; 
-					}	
-				}
-			}
-		}
-	}
-    // Free work array
-    free(wrk);
 }
 
 template<typename T>
@@ -412,6 +378,10 @@ int MvaAcoustic2D<T>::run(){
 	//Remove snapshot file
 	Fwsnap->removeSnap();
 	Bwsnap->removeSnap();
+
+    // Free arrays
+    free(adjsrc_fw);
+    free(adjsrc_bw);
 
     result=MVA_OK;
     return result;
@@ -629,6 +599,10 @@ int MvaAcoustic2D<T>::run_optimal(){
 	optimal_fw->removeCheck();
 	optimal_bw->removeCheck();
 
+    // Free arrays
+    free(adjsrc_fw);
+    free(adjsrc_bw);
+
     result=MVA_OK;
     return result;
 }
@@ -639,6 +613,331 @@ MvaAcoustic2D<T>::~MvaAcoustic2D() {
 }
 
 
+// =============== ELASTIC 2D RTM CLASS =============== //
+
+template<typename T>
+PPmvaElastic2D<T>::PPmvaElastic2D(){
+    sourceset = false;
+    dataUxset = false;
+    dataUzset = false;
+    modelset = false;
+    pimageset = false;
+    vpgradset = false;
+}
+
+template<typename T>
+PPmvaElastic2D<T>::PPmvaElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::shared_ptr<Image2D<T>> pimage, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataUx, std::shared_ptr<Data2D<T>> _dataUz, int order, int snapinc):Mva<T>(order, snapinc){
+    source = _source;
+    dataUx = _dataUx;
+    dataUz = _dataUz;
+    model = _model;
+    sourceset = true;
+    modelset = true;
+    dataUxset = true;
+    dataUzset = true;
+    pimageset = false;
+    vpgradset = false;
+}
+
+template<typename T>
+bool PPmvaElastic2D<T>::checkStability(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+
+    T dx = model->getDx();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
+void PPmvaElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, T *adjsrc)
+{
+    if(!vpgradset) rs_error("PPmvaElastic2D<T>::crossCorr: No gradient set for computation.");
+	int ix, iz;
+    int padr = waves_bw->getLpml();
+    T* wrx = waves_bw->getUx1();
+    T* wrz = waves_bw->getUz1();
+
+	T *vpgraddata = NULL; 
+	T msxx=0, mszz=0, mrxx=0, mrzz=0;
+	int nx;
+	int nz;
+	T dx;
+	T dz;
+    T adj;
+
+    T* Vp = model->getVp();
+    T* Rho = model->getR();
+    T vpscale;
+
+    if(!vpgrad->getAllocated()){
+        vpgrad->allocateImage();
+    }
+    vpgraddata = vpgrad->getImagedata();
+
+    // Getting sizes
+    nx = waves_bw->getNx();
+    nz = waves_bw->getNz();
+    dx = waves_bw->getDx(); 
+    dz = waves_bw->getDz(); 
+
+	int nxs = nx+2*pads;
+    int nxr = nx+2*padr;
+
+    for (ix=1; ix<nx-1; ix++){
+        for (iz=1; iz<nz-1; iz++){
+            msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
+            mszz = (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads, iz+pads-1)])/dz;
+            mrxx = (wrx[kr2D(ix+padr, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr)])/dx;
+            mrzz = (wrz[kr2D(ix+padr, iz+padr)] - wrz[kr2D(ix+padr, iz+padr-1)])/dz;
+            adj  = adjsrc[km2D(ix,iz)];
+
+            vpscale = 2.0*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+            vpgraddata[km2D(ix,iz)] -= vpscale*(msxx + mszz) * (mrxx + mrzz + adj);
+
+        }
+    }	
+}
+
+template<typename T>
+void PPmvaElastic2D<T>::calcAdjointsource(T *adjsrc_fw, T *wsx, T *wsz, int pads, T *adjsrc_bw, T* wrx, T* wrz, int padr, std::shared_ptr<ModelElastic2D<T>> model)
+{
+	if(!pimage->getAllocated()) rs_error("PPmvaElastic2D<T>::calcAdjointsource: pimage is not allocated.");
+	int ix, iz, ihx, ihz;
+	T *imagedata = pimage->getImagedata();
+	T msxx, mszz, mrxx, mrzz;
+	T C33_minus, C33_plus;
+    T* Vp = model->getVp();
+    T* Rho = model->getR();
+	int nhx = pimage->getNhx();
+	int nhz = pimage->getNhz();
+	int nx = pimage->getNx();
+	int nxs = nx+2*pads;
+	int nxr = nx+2*padr;
+	int nz = pimage->getNz();
+    T dx = pimage->getDx(); 
+    T dz = pimage->getDz(); 
+	int hx, hz;
+
+
+    float C;
+    //Reset arrays
+    for (ix=0; ix<nx; ix++){
+        for (iz=0; iz<nz; iz++){
+            adjsrc_fw[km2D(ix,iz)] = 0.0;
+            adjsrc_bw[km2D(ix,iz)] = 0.0;
+        }
+    }
+    // Calculate integral
+    for (ihx=0; ihx<nhx; ihx++){
+        hx= -(nhx-1)/2 + ihx;
+        C = 1.0;
+        if(((ihx == 0) || (ihx == nhx-1)) && (nhx > 1)) C*=0.5;
+        for (ihz=0; ihz<nhz; ihz++){
+            hz= -(nhz-1)/2 + ihz;
+            if(((ihz == 0) || (ihz == nhz-1)) && (nhz > 1)) C*=0.5;
+            for (ix=1; ix<nx-1; ix++){
+                if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
+                {
+                    for (iz=1; iz<nz-1; iz++){
+                        if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz))
+                        {
+							C33_minus = Rho[km2D(ix-2*hx, iz-2*hz)]*Vp[km2D(ix-2*hx, iz-2*hz)]*Vp[km2D(ix-2*hx, iz-2*hz)];
+							C33_plus = Rho[km2D(ix+2*hx, iz+2*hz)]*Vp[km2D(ix+2*hx, iz+2*hz)]*Vp[km2D(ix+2*hx, iz+2*hz)];
+
+							msxx = (wsx[ks2D(ix-2*hx+pads, iz-2*hz+pads)] - wsx[ks2D(ix-2*hx+pads-1, iz-2*hz+pads)])/dx;
+							mszz = (wsz[ks2D(ix-2*hx+pads, iz-2*hz+pads)] - wsz[ks2D(ix-2*hx+pads, iz-2*hz+pads-1)])/dz;
+							mrxx = (wrx[kr2D(ix+2*hx+padr, iz+2*hz+padr)] - wrx[kr2D(ix+2*hx+padr-1, iz+2*hz+padr)])/dx;
+							mrzz = (wrz[kr2D(ix+2*hx+padr, iz+2*hz+padr)] - wrz[kr2D(ix+2*hx+padr, iz+2*hz+padr-1)])/dz;
+							adjsrc_fw[km2D(ix,iz)] += C*imagedata[ki2D(ix+hx,iz+hz,ihx,ihz)]*C33_plus*(mrxx + mrzz);
+							adjsrc_bw[km2D(ix,iz)] += C*imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*C33_minus*(msxx + mszz);
+                        }
+
+                    }	
+                }
+            }
+        }
+    }
+}
+
+template<typename T>
+void PPmvaElastic2D<T>::insertAdjointsource(std::shared_ptr<WavesElastic2D_DS<T>> waves_fw, T* adjsrc_fw, std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, T* adjsrc_bw, std::shared_ptr<ModelElastic2D<T>> model)
+{
+    int ix, iz;
+    int nx = pimage->getNx();
+    int nz = pimage->getNz();
+    int padw = waves_fw->getLpml();
+    int nxw = nx+2*padw;
+	T C33;
+    T* Vp = model->getVp();
+    T* Rho = model->getR();
+    T* wsx = waves_fw->getSxx();
+    T* wsz = waves_fw->getSzz();
+
+    T* wrx = waves_bw->getSxx();
+    T* wrz = waves_bw->getSzz();
+    for (ix=0; ix<nx; ix++){
+        for (iz=0; iz<nz; iz++){
+            C33 = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+            wsx[kw2D(ix+padw,iz+padw)] += C33*adjsrc_fw[km2D(ix, iz)];
+            wsz[kw2D(ix+padw,iz+padw)] += C33*adjsrc_fw[km2D(ix, iz)];
+            wrx[kw2D(ix+padw,iz+padw)] += C33*adjsrc_bw[km2D(ix, iz)];
+            wrz[kw2D(ix+padw,iz+padw)] += C33*adjsrc_bw[km2D(ix, iz)];
+        }
+    }	
+}
+
+template<typename T>
+int PPmvaElastic2D<T>::run(){
+	int result = RTM_ERR;
+	if(!vpgradset) {
+		rs_warning("PPmvaElastic2D::run: No gradient set");
+		return result;
+	}
+	int nt;
+	float dt;
+	float ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("PPmvaElastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+
+	// Create log file
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_adj_fw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_adj_bw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves_adj_fw->getNx_pml(), 1, waves_adj_fw->getNz_pml(), waves_adj_fw->getDx(), 1.0, waves_adj_fw->getDz(), this->getOrder()));
+
+     // Create snapshots
+     std::shared_ptr<Snapshot2D<T>> Fwuxsnap;
+     Fwuxsnap = std::make_shared<Snapshot2D<T>>(waves_adj_fw, this->getSnapinc());
+     Fwuxsnap->openSnap(this->getSnapfile() + "-ux", 'r');
+     Fwuxsnap->allocSnap(0);
+
+     std::shared_ptr<Snapshot2D<T>> Fwuzsnap;
+     Fwuzsnap = std::make_shared<Snapshot2D<T>>(waves_adj_fw, this->getSnapinc());
+     Fwuzsnap->openSnap(this->getSnapfile() + "-uz", 'r');
+     Fwuzsnap->allocSnap(0);
+
+     std::shared_ptr<Snapshot2D<T>> Bwuxsnap;
+     Bwuxsnap = std::make_shared<Snapshot2D<T>>(waves_adj_fw, this->getSnapinc());
+     Bwuxsnap->openSnap(this->getSnapfile() + "-ux-bw", 'r');
+     Bwuxsnap->allocSnap(0);
+
+     std::shared_ptr<Snapshot2D<T>> Bwuzsnap;
+     Bwuzsnap = std::make_shared<Snapshot2D<T>>(waves_adj_fw, this->getSnapinc());
+     Bwuzsnap->openSnap(this->getSnapfile() + "-uz-bw", 'r');
+     Bwuzsnap->allocSnap(0);
+
+    // Create gradient array
+    if(this->vpgradset) vpgrad->allocateImage();
+
+    // Allocate memory for adjoint sources 
+    T* adjsrc_fw, *adjsrc_bw;
+    adjsrc_fw = (T *) calloc(waves_adj_fw->getNx()*waves_adj_fw->getNz(), sizeof(T));
+    adjsrc_bw = (T *) calloc(waves_adj_bw->getNx()*waves_adj_bw->getNz(), sizeof(T));
+
+     this->writeLog("Running 2D Elastic PP RTMVA gradient with full checkpointing.");
+     this->writeLog("Doing time loop.");
+    // Loop over reverse time
+    int imageit=0;
+    for(int it=0; it < nt; it++)
+    {
+    	// Time stepping stress
+    	waves_adj_fw->forwardstepStress(model, der);
+    	waves_adj_bw->forwardstepStress(model, der);
+    
+        //Read snapshots (interpolation needed here if snapinc not 1!)
+        Fwuxsnap->setSnapit(imageit);
+        Fwuxsnap->readSnap(it);
+        Fwuzsnap->setSnapit(imageit);
+        Fwuzsnap->readSnap(it);
+
+        Bwuxsnap->setSnapit(imageit);
+        Bwuxsnap->readSnap(it);
+        Bwuzsnap->setSnapit(imageit);
+        Bwuzsnap->readSnap(it);
+
+        // Inserting adjoint sources
+    	this->calcAdjointsource(adjsrc_fw, Fwuxsnap->getData(0), Fwuzsnap->getData(0), 0, adjsrc_bw, Bwuxsnap->getData(0), Bwuzsnap->getData(0), 0, model);
+    	this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model);
+
+    	// Time stepping displacement
+    	waves_adj_fw->forwardstepDisplacement(model, der);
+    	waves_adj_bw->forwardstepDisplacement(model, der);
+
+        //Read forward snapshot
+        Fwuxsnap->setSnapit(Fwuxsnap->getSnapnt() - 1 - imageit);
+        Fwuxsnap->readSnap(it);
+        Fwuzsnap->setSnapit(Fwuzsnap->getSnapnt() - 1 - imageit);
+        Fwuzsnap->readSnap(it);
+
+        Bwuxsnap->setSnapit(Bwuxsnap->getSnapnt() - 1 - imageit);
+        Bwuxsnap->readSnap(it);
+        Bwuzsnap->setSnapit(Bwuzsnap->getSnapnt() - 1 - imageit);
+        Bwuzsnap->readSnap(it);
+
+        // Do Crosscorrelation
+        if((((nt - 1 - it)-Fwuxsnap->getEnddiff()) % Fwuxsnap->getSnapinc()) == 0){
+            crossCorr(Fwuxsnap->getData(0), Fwuzsnap->getData(0), 0, waves_adj_fw, model, adjsrc_fw);
+            crossCorr(Bwuxsnap->getData(0), Bwuzsnap->getData(0), 0, waves_adj_bw, model, adjsrc_bw);
+            imageit++;
+        }
+        
+        // Roll pointers
+    	waves_adj_fw->roll();
+    	waves_adj_bw->roll();
+
+        // Output progress to logfile
+        this->writeProgress(it, nt-1, 20, 48);
+    }
+    
+	//Remove snapshot file
+	Fwuxsnap->removeSnap();
+	Fwuzsnap->removeSnap();
+
+	Bwuxsnap->removeSnap();
+	Bwuzsnap->removeSnap();
+
+    // Free arrays
+    free(adjsrc_fw);
+    free(adjsrc_bw);
+
+    result=RTM_OK;
+    return result;
+}
+
+template<typename T>
+int PPmvaElastic2D<T>::run_optimal(){
+	int result = RTM_OK;
+    return result;
+}
+
+template<typename T>
+PPmvaElastic2D<T>::~PPmvaElastic2D() {
+    // Nothing here
+}
+
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Mva<float>;
@@ -646,5 +945,8 @@ template class Mva<double>;
 
 template class MvaAcoustic2D<float>;
 template class MvaAcoustic2D<double>;
+
+template class PPmvaElastic2D<float>;
+template class PPmvaElastic2D<double>;
 
 }
