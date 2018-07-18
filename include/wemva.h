@@ -328,8 +328,17 @@ public:
     void setSourcetype(int type) { sourcetype = type; }
     int getSourcetype() { return sourcetype; }
 
+    void setWavemode(int mode);
+    int getWavemode() { return wavemode; }
+
     // Run PP gradient
     void runPPgrad();
+
+    // Run PS gradient
+    void runPSgrad();
+
+    // Run gradient
+    void runGrad() { if(wavemode == 1) runPSgrad(); else runPPgrad(); } 
    
     // Run BSProjection
     void runBsproj();
@@ -388,6 +397,7 @@ private:
     T reg_eps[2];
     T reg_alpha[2];
     int sourcetype;
+    int wavemode;
 };
 
 }

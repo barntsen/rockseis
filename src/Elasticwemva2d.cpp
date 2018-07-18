@@ -26,7 +26,7 @@ void evaluate(rockseis::OptInstancePtr instance)
     int task;
     task = RUN_F_GRAD;
     MPI_Bcast(&task, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    wva->runPPgrad();
+    wva->runGrad();
     wva->writeLog("Gradient computation finished");
 
     // Compute regularization
@@ -157,8 +157,6 @@ int main(int argc, char** argv) {
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
             PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
-            PRINT_DOC(update_vp = "true"; # Update vp);
-            PRINT_DOC(update_vs = "true"; # Update vs);
             PRINT_DOC(reciprocity = "false"; # Use receiver gathers instead of source gathers);
             PRINT_DOC();
             PRINT_DOC(# Diagonal scaling parameters);
@@ -208,7 +206,6 @@ int main(int argc, char** argv) {
     float kvp, kvs;
     float vpregalpha, vsregalpha;
     int max_linesearch, max_iterations;
-    bool update_vp, update_vs;
     int wavemode;
     int nhx,nhz;
 
@@ -288,15 +285,6 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("optmethod", &optmethod) == INPARSE_ERR) status = true;
     if(Inpar->getPar("reciprocity", &reciprocity) == INPARSE_ERR) status = true;
 
-    // Set updates according to wave mode
-    if(wavemode){
-        update_vp = false;
-        update_vs = true;
-    }else{
-        update_vp = true;
-        update_vs = false;
-    }
-
 	if(status == true){
 		rs_error("Program terminated due to input errors.");
 	}
@@ -339,6 +327,8 @@ int main(int argc, char** argv) {
 
     wva->setVpregalpha(vpregalpha);
     wva->setVsregalpha(vsregalpha);
+
+    wva->setWavemode(wavemode);
 
     //MASTER
     if(mpi.getRank() == 0){
@@ -439,7 +429,7 @@ int main(int argc, char** argv) {
             switch(task)
             {
                 case RUN_F_GRAD:
-                    wva->runPPgrad();
+                    wva->runGrad();
                     break;
                 case RUN_BS_PROJ:
                     wva->runBsproj();
