@@ -2217,14 +2217,32 @@ void WemvaElastic2D<T>::saveResults(int iter)
     lsmodel->readModel();
     sourcels->read();
     if(update_vp){
+        // Write out model
         name = dir + "/" + VP_UP + "-" + std::to_string(iter);
         lsmodel->setVpfile(name);
         lsmodel->writeVp();
+        // Write out image
+        std::shared_ptr<rockseis::Image2D<T>> pimage;
+        pimage = std::make_shared<rockseis::Image2D<T>>(PIMAGEFILE);
+        if(!pimage->getAllocated()) pimage->allocateImage();
+        pimage->read();
+        name = dir + "/" + PIMAGE_UP + "-" + std::to_string(iter);
+        pimage->setImagefile(name);
+        pimage->write();
+
     }
     if(update_vs){
         name = dir + "/" + VS_UP + "-" + std::to_string(iter);
         lsmodel->setVsfile(name);
         lsmodel->writeVs();
+        // Write out image
+        std::shared_ptr<rockseis::Image2D<T>> simage;
+        simage = std::make_shared<rockseis::Image2D<T>>(SIMAGEFILE);
+        if(!simage->getAllocated()) simage->allocateImage();
+        simage->read();
+        name = dir + "/" + SIMAGE_UP + "-" + std::to_string(iter);
+        simage->setImagefile(name);
+        simage->write();
     }
 }
 
@@ -2791,18 +2809,18 @@ void WemvaElastic2D<T>::computeRegularisation(double *x)
 }
 
 template<typename T>
-void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pimage, std::string imageresfile)
+void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> image, std::string imageresfile)
 {
     T f=0;
-    if(!pimage->getAllocated()) pimage->allocateImage();
+    if(!image->getAllocated()) image->allocateImage();
     int ix, iz, ihx, ihz;
     // Read image data
-    pimage->read();
-    T *imagedata = pimage->getImagedata();
-    int nhx = pimage->getNhx();
-    int nhz = pimage->getNhz();
-    int nx = pimage->getNx();
-    int nz = pimage->getNz();
+    image->read();
+    T *imagedata = image->getImagedata();
+    int nhx = image->getNhx();
+    int nhz = image->getNhz();
+    int nx = image->getNx();
+    int nz = image->getNz();
     T *wrk = (T *) calloc(nz, sizeof(T));
     int hx, hz;
     T G1 = 0.;
@@ -2916,8 +2934,8 @@ void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pima
     // Free work array
     free(wrk);
 
-    pimage->setImagefile(imageresfile);
-    pimage->write();
+    image->setImagefile(imageresfile);
+    image->write();
 
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
     Fmisfit->output(MISFITFILE);

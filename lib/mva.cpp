@@ -1290,7 +1290,9 @@ void PSmvaElastic2D<T>::calcAdjointsource(T *adjsrcxx_bw, T *adjsrczz_bw, T *adj
 	int ix, iz, ihx, ihz;
 	T *imagedata = simage->getImagedata();
 	T msxx, mszz, msxz;
+    T imagexz;
 	T C44_minus;
+	T C44_minus_xz;
     T* Vs = model->getVs();
     T* Rho = model->getR();
 	int nhx = simage->getNhx();
@@ -1321,23 +1323,24 @@ void PSmvaElastic2D<T>::calcAdjointsource(T *adjsrcxx_bw, T *adjsrczz_bw, T *adj
             hz= -(nhz-1)/2 + ihz;
             if(((ihz == 0) || (ihz == nhz-1)) && (nhz > 1)) C*=0.5;
             for (ix=1; ix<nx-1; ix++){
-                if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
+                if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) )
                 {
                     for (iz=1; iz<nz-1; iz++){
-                        if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz))
+                        if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) )
                         {
 							C44_minus = Rho[km2D(ix-2*hx, iz-2*hz)]*Vs[km2D(ix-2*hx, iz-2*hz)]*Vs[km2D(ix-2*hx, iz-2*hz)];
+							C44_minus_xz = 0.5*Rho[km2D(ix-2*hx, iz-2*hz)]*Vs[km2D(ix-2*hx, iz-2*hz)]*Vs[km2D(ix-2*hx, iz-2*hz)];
+							C44_minus_xz += 0.5*Rho[km2D(ix-2*hx+1, iz-2*hz+1)]*Vs[km2D(ix-2*hx+1, iz-2*hz+1)]*Vs[km2D(ix-2*hx+1, iz-2*hz+1)];
 							msxx = (wsx[ks2D(ix-2*hx+pads, iz-2*hz+pads)] - wsx[ks2D(ix-2*hx+pads-1, iz-2*hz+pads)])/dx;
 							mszz = (wsz[ks2D(ix-2*hx+pads, iz-2*hz+pads)] - wsz[ks2D(ix-2*hx+pads, iz-2*hz+pads-1)])/dz;
 
-							msxz = 0.5*(wsx[ks2D(ix-2*hx+pads, iz-2*hz+pads+1)] - wsx[ks2D(ix-2*hx+pads, iz-2*hz+pads)])/dz;
-							msxz += 0.5*(wsx[ks2D(ix-2*hx+pads-1, iz-2*hz+pads)] - wsx[ks2D(ix-2*hx+pads-1, iz-2*hz+pads-1)])/dz;
-							msxz += 0.5*(wsz[ks2D(ix-2*hx+pads+1, iz-2*hz+pads)] - wsz[ks2D(ix-2*hx+pads, iz-2*hz+pads)])/dx;
-							msxz += 0.5*(wsz[ks2D(ix-2*hx+pads, iz-2*hz+pads-1)] - wsz[ks2D(ix-2*hx+pads-1, iz-2*hz+pads-1)])/dx;
+							msxz  = (wsx[ks2D(ix-2*hx+pads, iz-2*hz+pads+1)] - wsx[ks2D(ix-2*hx+pads, iz-2*hz+pads)])/dz;
+							msxz += (wsz[ks2D(ix-2*hx+pads+1, iz-2*hz+pads)] - wsz[ks2D(ix-2*hx+pads, iz-2*hz+pads)])/dx;
+                            imagexz = 0.5*(imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)] + imagedata[ki2D(ix-hx+1,iz-hz+1,ihx,ihz)]);
 
 							adjsrcxx_bw[km2D(ix,iz)] -= 2.0*C*imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*C44_minus*mszz;
 							adjsrczz_bw[km2D(ix,iz)] -= 2.0*C*imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*C44_minus*msxx;
-							adjsrcxz_bw[km2D(ix,iz)] += C*imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*C44_minus*msxz;
+							adjsrcxz_bw[km2D(ix,iz)] += C*imagexz*C44_minus_xz*msxz;
                         }
 
                     }	
