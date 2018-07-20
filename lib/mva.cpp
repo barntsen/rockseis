@@ -1171,7 +1171,7 @@ PPmvaElastic2D<T>::~PPmvaElastic2D() {
     // Nothing here
 }
 
-// =============== ELASTIC 2D PPmva CLASS =============== //
+// =============== ELASTIC 2D PSmva CLASS =============== //
 
 template<typename T>
 PSmvaElastic2D<T>::PSmvaElastic2D(){
@@ -1322,11 +1322,11 @@ void PSmvaElastic2D<T>::calcAdjointsource(T *adjsrcxx_bw, T *adjsrczz_bw, T *adj
         for (ihz=0; ihz<nhz; ihz++){
             hz= -(nhz-1)/2 + ihz;
             if(((ihz == 0) || (ihz == nhz-1)) && (nhz > 1)) C*=0.5;
-            for (ix=1; ix<nx-1; ix++){
-                if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) )
+            for (ix=0; ix<nx; ix++){
+                if( ((ix-2*hx) >= 1) && ((ix-2*hx) < nx-1) )
                 {
-                    for (iz=1; iz<nz-1; iz++){
-                        if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) )
+                    for (iz=0; iz<nz; iz++){
+                        if( ((iz-2*hz) >= 1) && ((iz-2*hz) < nz-1) )
                         {
 							C44_minus = Rho[km2D(ix-2*hx, iz-2*hz)]*Vs[km2D(ix-2*hx, iz-2*hz)]*Vs[km2D(ix-2*hx, iz-2*hz)];
 							C44_minus_xz = 0.5*Rho[km2D(ix-2*hx, iz-2*hz)]*Vs[km2D(ix-2*hx, iz-2*hz)]*Vs[km2D(ix-2*hx, iz-2*hz)];
@@ -1490,238 +1490,208 @@ int PSmvaElastic2D<T>::run(){
 template<typename T>
 int PSmvaElastic2D<T>::run_optimal(){
      int result = MVA_ERR;
-//     int nt;
-//     float dt;
-//	 float ot;
-//     T *wsx;
-//     T *wrx;
-//     T *wsz;
-//     T *wrz;
-//
-//     nt = source->getNt();
-//     dt = source->getDt();
-//     ot = source->getOt();
-//
-//     if(!this->checkStability()) rs_error("PSmvaElastic2D::run_optimal: Wavelet sampling interval (dt) does not match the stability criteria.");
-//
-//     this->createLog(this->getLogfile());
-//
-//     // Create the classes 
-//     std::shared_ptr<WavesElastic2D_DS<T>> waves_fw1 (new WavesElastic2D_DS<T>(model, nt, dt, ot));
-//     std::shared_ptr<WavesElastic2D_DS<T>> waves_fw2 (new WavesElastic2D_DS<T>(model, nt, dt, ot));
-//     std::shared_ptr<WavesElastic2D_DS<T>> waves_bw1 (new WavesElastic2D_DS<T>(model, nt, dt, ot));
-//     std::shared_ptr<WavesElastic2D_DS<T>> waves_bw2 (new WavesElastic2D_DS<T>(model, nt, dt, ot));
-//
-//
-//     std::shared_ptr<WavesElastic2D_DS<T>> waves_adj_fw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
-//     std::shared_ptr<WavesElastic2D_DS<T>> waves_adj_bw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
-//     std::shared_ptr<Der<T>> der (new Der<T>(waves_fw1->getNx_pml(), 1, waves_fw1->getNz_pml(), waves_fw1->getDx(), 1.0, waves_fw1->getDz(), this->getOrder()));
-//     std::shared_ptr<Revolve<T>> optimal_fw (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
-//     std::shared_ptr<Revolve<T>> optimal_bw (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
-//     revolve_action whatodo;
-//     int oldcapo,capo;
-//     capo = 0;
-//
-//     // Create checkpoint files
-//     optimal_fw->openCheck(this->getSnapfile() + "-fw", waves_fw1, 'w');
-//     optimal_bw->openCheck(this->getSnapfile() + "-bw", waves_bw1, 'w');
-//
-//     // Create image
-//     vpgrad->allocateImage();
-//
-//    // Allocate memory for adjoint sources 
-//    T* adjsrc_fw, *adjsrc_bw;
-//    adjsrc_fw = (T *) calloc(waves_adj_fw->getNx()*waves_adj_fw->getNz(), sizeof(T));
-//    adjsrc_bw = (T *) calloc(waves_adj_bw->getNx()*waves_adj_bw->getNz(), sizeof(T));
-//
-//     this->writeLog("Running 2D Elastic PP RTMVA gradient with optimal checkpointing.");
-//     this->writeLog("Doing forward Loop.");
-//     bool reverse = false;
-//    // Loop over forward time
-//    do
-//    {
-//        oldcapo=optimal_fw->getCapo();
-//        whatodo = optimal_fw->revolve();
-//        whatodo = optimal_bw->revolve();
-//        capo = optimal_fw->getCapo();
-//        if (whatodo == advance)
-//        {
-//            for(int it=oldcapo; it < capo; it++)
-//            {
-//                // Time stepping
-//                waves_fw1->forwardstepStress(model, der);
-//                waves_bw1->forwardstepStress(model, der);
-//
-//                // Inserting pressure source 
-//                waves_fw1->insertPressuresource(model, source, SMAP, it);
-//
-//                // Time stepping displacement
-//                waves_fw1->forwardstepDisplacement(model, der);
-//                waves_bw1->forwardstepDisplacement(model, der);
-//
-//                // Inserting source 
-//                waves_fw1->insertForcesource(model, source, SMAP, it);
-//
-//                // Inserting data
-//                waves_bw1->insertForcesource(model, dataUx, GMAP, nt-1-it);
-//                waves_bw1->insertForcesource(model, dataUz, GMAP, nt-1-it);
-//
-//                // Roll the pointers P1 and P2
-//                waves_fw1->roll();
-//                waves_bw1->roll();
-//
-//                if(!reverse){
-//                    // Output progress to logfile
-//                    this->writeProgress(it, nt-1, 20, 48);
-//                }
-//            }
-//        }
-//        if (whatodo == firsturn)
-//        {
-//            // Time stepping
-//            waves_fw1->forwardstepStress(model, der);
-//            waves_bw1->forwardstepStress(model, der);
-//
-//            waves_fw2->forwardstepStress(model, der);
-//            waves_bw2->forwardstepStress(model, der);
-//
-//            waves_adj_fw->forwardstepStress(model, der);
-//            waves_adj_bw->forwardstepStress(model, der);
-//
-//            // Inserting pressure source 
-//            waves_fw1->insertPressuresource(model, source, SMAP, capo);
-//            waves_fw2->insertPressuresource(model, source, SMAP, nt-1-capo);
-//
-//            // Inserting adjoint sources
-//            wsx = waves_fw2->getUx1();
-//            wsz = waves_fw2->getUz1();
-//            wrx = waves_bw2->getUx1();
-//            wrz = waves_bw2->getUz1();
-//            this->calcAdjointsource(adjsrc_fw, wsx, wsz, waves_fw2->getLpml(), adjsrc_bw, wrx, wrz, waves_bw2->getLpml(), model);
-//            this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model);
-//
-//            // Time stepping displacement
-//            waves_fw1->forwardstepDisplacement(model, der);
-//            waves_bw1->forwardstepDisplacement(model, der);
-//            waves_fw2->forwardstepDisplacement(model, der);
-//            waves_bw2->forwardstepDisplacement(model, der);
-//            waves_adj_fw->forwardstepDisplacement(model, der);
-//            waves_adj_bw->forwardstepDisplacement(model, der);
-//
-//            // Inserting source 
-//            waves_fw1->insertForcesource(model, source, SMAP, capo);
-//            waves_fw2->insertForcesource(model, source, SMAP, nt-1-capo);
-//
-//            // Inserting data
-//            waves_bw1->insertForcesource(model, dataUx, GMAP, nt-1-capo);
-//            waves_bw2->insertForcesource(model, dataUz, GMAP, capo);
-//
-//
-//            /* Do Crosscorrelation */
-//            wsx = waves_fw1->getUx1();
-//            wsz = waves_fw1->getUz1();
-//            crossCorr(wsx, wsz, waves_fw1->getLpml(), waves_adj_fw, model, adjsrc_fw);
-//            wrx = waves_bw1->getUx1();
-//            wrz = waves_bw1->getUz1();
-//            crossCorr(wrx, wrz, waves_bw1->getLpml(), waves_adj_bw, model, adjsrc_bw);
-//
-//            // Roll the pointers P1 and P2
-//            waves_fw1->roll();
-//            waves_bw1->roll();
-//            waves_fw2->roll();
-//            waves_bw2->roll();
-//            waves_adj_fw->roll();
-//            waves_adj_bw->roll();
-//
-//            // Output progress to logfile
-//            this->writeProgress(capo, nt-1, 20, 48);
-//
-//            //Close checkpoint file for w and reopen for rw
-//            optimal_fw->closeCheck();
-//            optimal_fw->openCheck(this->getSnapfile() + "-fw", waves_fw1, 'a');
-//
-//            optimal_bw->closeCheck();
-//            optimal_bw->openCheck(this->getSnapfile() + "-bw", waves_bw1, 'a');
-//            reverse = true;
-//            // Output progress to logfile
-//            this->writeLog("\nDoing reverse-time Loop.");
-//            this->writeProgress(0, nt-1, 20, 48);
-//        }
-//        if (whatodo == youturn)
-//        {
-//            // Time stepping
-//            waves_fw2->forwardstepStress(model, der);
-//            waves_bw2->forwardstepStress(model, der);
-//
-//            waves_adj_fw->forwardstepStress(model, der);
-//            waves_adj_bw->forwardstepStress(model, der);
-//
-//            // Inserting pressure source 
-//            waves_fw2->insertPressuresource(model, source, SMAP, nt-1-capo);
-//
-//            // Inserting adjoint sources
-//            wsx = waves_fw2->getUx1();
-//            wsz = waves_fw2->getUz1();
-//            wrx = waves_bw2->getUx1();
-//            wrz = waves_bw2->getUz1();
-//            this->calcAdjointsource(adjsrc_fw, wsx, wsz, waves_fw2->getLpml(), adjsrc_bw, wrx, wrz, waves_bw2->getLpml(), model);
-//            this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model);
-//
-//            // Time stepping displacement
-//            waves_fw2->forwardstepDisplacement(model, der);
-//            waves_bw2->forwardstepDisplacement(model, der);
-//            waves_adj_fw->forwardstepDisplacement(model, der);
-//            waves_adj_bw->forwardstepDisplacement(model, der);
-//
-//            // Inserting source 
-//            waves_fw2->insertForcesource(model, source, SMAP, nt-1-capo);
-//
-//            // Inserting data
-//            waves_bw2->insertForcesource(model, dataUz, GMAP, capo);
-//
-//            /* Do Crosscorrelation */
-//            wsx = waves_fw1->getUx1();
-//            wsz = waves_fw1->getUz1();
-//            crossCorr(wsx, wsz, waves_fw1->getLpml(), waves_adj_fw, model, adjsrc_fw);
-//            wrx = waves_bw1->getUx1();
-//            wrz = waves_bw1->getUz1();
-//            crossCorr(wrx, wrz, waves_bw1->getLpml(), waves_adj_bw, model, adjsrc_bw);
-//
-//            // Roll the pointers P1 and P2
-//            waves_fw2->roll();
-//            waves_bw2->roll();
-//            waves_adj_fw->roll();
-//            waves_adj_bw->roll();
-//
-//            // Output progress to logfile
-//            this->writeProgress(nt-1-capo, nt-1, 20, 48);
-//        }
-//        if (whatodo == takeshot)
-//        {
-//            optimal_fw->writeCheck(waves_fw1);
-//            optimal_bw->writeCheck(waves_bw1);
-//        }
-//        if (whatodo == restore)
-//        {
-//            optimal_fw->readCheck(waves_fw1);
-//            optimal_bw->readCheck(waves_bw1);
-//        }
-//
-//        if(whatodo == error){
-//            std::cerr << "Error!" << std::endl;
-//        }
-//
-//    } while((whatodo != terminate) && (whatodo != error));
-//
-//
-//	//Remove snapshot file
-//	optimal_fw->removeCheck();
-//	optimal_bw->removeCheck();
-//
-//    // Free arrays
-//    free(adjsrc_fw);
-//    free(adjsrc_bw);
-//
+     int nt;
+     float dt;
+	 float ot;
+     T *wsx;
+     T *wrx;
+     T *wsz;
+     T *wrz;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("PSmvaElastic2D::run_optimal: Wavelet sampling interval (dt) does not match the stability criteria.");
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_fw1 (new WavesElastic2D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_fw2 (new WavesElastic2D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_bw1 (new WavesElastic2D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D_DS<T>> waves_adj_bw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves_fw1->getNx_pml(), 1, waves_fw1->getNz_pml(), waves_fw1->getDx(), 1.0, waves_fw1->getDz(), this->getOrder()));
+     std::shared_ptr<Revolve<T>> optimal_fw (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
+     std::shared_ptr<Revolve<T>> optimal_bw (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
+     revolve_action whatodo;
+     int oldcapo,capo;
+     capo = 0;
+
+     // Create checkpoint files
+     optimal_fw->openCheck(this->getSnapfile() + "-fw", waves_fw1, 'w');
+     optimal_bw->openCheck(this->getSnapfile() + "-bw", waves_bw1, 'w');
+
+     // Create image
+    if(this->vsgradset) vsgrad->allocateImage();
+
+    // Allocate memory for adjoint sources 
+    T *adjsrcxx;
+    T *adjsrczz;
+    T *adjsrcxz;
+    adjsrcxx = (T *) calloc(waves_adj_bw->getNx()*waves_adj_bw->getNz(), sizeof(T));
+    adjsrczz = (T *) calloc(waves_adj_bw->getNx()*waves_adj_bw->getNz(), sizeof(T));
+    adjsrcxz = (T *) calloc(waves_adj_bw->getNx()*waves_adj_bw->getNz(), sizeof(T));
+
+     this->writeLog("Running 2D Elastic PS RTMVA gradient with optimal checkpointing.");
+     this->writeLog("Doing forward Loop.");
+     bool reverse = false;
+    // Loop over forward time
+    do
+    {
+        oldcapo=optimal_fw->getCapo();
+        whatodo = optimal_fw->revolve();
+        whatodo = optimal_bw->revolve();
+        capo = optimal_fw->getCapo();
+        if (whatodo == advance)
+        {
+            for(int it=oldcapo; it < capo; it++)
+            {
+                // Time stepping
+                waves_fw1->forwardstepStress(model, der);
+                waves_bw1->forwardstepStress(model, der);
+
+                // Inserting pressure source 
+                waves_fw1->insertPressuresource(model, source, SMAP, it);
+
+                // Time stepping displacement
+                waves_fw1->forwardstepDisplacement(model, der);
+                waves_bw1->forwardstepDisplacement(model, der);
+
+                // Inserting source 
+                waves_fw1->insertForcesource(model, source, SMAP, it);
+
+                // Inserting data
+                waves_bw1->insertForcesource(model, dataUx, GMAP, nt-1-it);
+                waves_bw1->insertForcesource(model, dataUz, GMAP, nt-1-it);
+
+                // Roll the pointers P1 and P2
+                waves_fw1->roll();
+                waves_bw1->roll();
+
+                if(!reverse){
+                    // Output progress to logfile
+                    this->writeProgress(it, nt-1, 20, 48);
+                }
+            }
+        }
+        if (whatodo == firsturn)
+        {
+            // Time stepping
+            waves_fw1->forwardstepStress(model, der);
+            waves_bw1->forwardstepStress(model, der);
+
+            waves_fw2->forwardstepStress(model, der);
+            waves_adj_bw->forwardstepStress(model, der);
+
+            // Inserting pressure source 
+            waves_fw1->insertPressuresource(model, source, SMAP, capo);
+            waves_fw2->insertPressuresource(model, source, SMAP, nt-1-capo);
+
+            // Inserting adjoint sources
+            wsx = waves_fw2->getUx1();
+            wsz = waves_fw2->getUz1();
+            this->calcAdjointsource(adjsrcxx, adjsrczz, adjsrcxz, wsx, wsz, waves_fw2->getLpml(), model);
+            this->insertAdjointsource(waves_adj_bw, adjsrcxx, adjsrczz, adjsrcxz, model);
+            // Time stepping displacement
+            waves_fw1->forwardstepDisplacement(model, der);
+            waves_bw1->forwardstepDisplacement(model, der);
+            waves_fw2->forwardstepDisplacement(model, der);
+            waves_adj_bw->forwardstepDisplacement(model, der);
+
+            // Inserting source 
+            waves_fw1->insertForcesource(model, source, SMAP, capo);
+            waves_fw2->insertForcesource(model, source, SMAP, nt-1-capo);
+
+            // Inserting data
+            waves_bw1->insertForcesource(model, dataUx, GMAP, nt-1-capo);
+
+            /* Do Crosscorrelation */
+            wrx = waves_bw1->getUx1();
+            wrz = waves_bw1->getUz1();
+            crossCorr(wrx, wrz, waves_bw1->getLpml(), waves_adj_bw, model, adjsrcxx, adjsrczz, adjsrcxz);
+
+            // Roll the pointers P1 and P2
+            waves_fw1->roll();
+            waves_bw1->roll();
+            waves_fw2->roll();
+            waves_adj_bw->roll();
+
+            // Output progress to logfile
+            this->writeProgress(capo, nt-1, 20, 48);
+
+            //Close checkpoint file for w and reopen for rw
+            optimal_fw->closeCheck();
+            optimal_fw->openCheck(this->getSnapfile() + "-fw", waves_fw1, 'a');
+
+            optimal_bw->closeCheck();
+            optimal_bw->openCheck(this->getSnapfile() + "-bw", waves_bw1, 'a');
+            reverse = true;
+            // Output progress to logfile
+            this->writeLog("\nDoing reverse-time Loop.");
+            this->writeProgress(0, nt-1, 20, 48);
+        }
+        if (whatodo == youturn)
+        {
+            // Time stepping
+            waves_fw2->forwardstepStress(model, der);
+            waves_adj_bw->forwardstepStress(model, der);
+
+            // Inserting pressure source 
+            waves_fw2->insertPressuresource(model, source, SMAP, nt-1-capo);
+
+            // Inserting adjoint sources
+            wsx = waves_fw2->getUx1();
+            wsz = waves_fw2->getUz1();
+            this->calcAdjointsource(adjsrcxx, adjsrczz, adjsrcxz, wsx, wsz, waves_fw2->getLpml(), model);
+            this->insertAdjointsource(waves_adj_bw, adjsrcxx, adjsrczz, adjsrcxz, model);
+
+            // Time stepping displacement
+            waves_fw2->forwardstepDisplacement(model, der);
+            waves_adj_bw->forwardstepDisplacement(model, der);
+
+            // Inserting source 
+            waves_fw2->insertForcesource(model, source, SMAP, nt-1-capo);
+
+            /* Do Crosscorrelation */
+            wrx = waves_bw1->getUx1();
+            wrz = waves_bw1->getUz1();
+            crossCorr(wrx, wrz, waves_bw1->getLpml(), waves_adj_bw, model, adjsrcxx, adjsrczz, adjsrcxz);
+
+            // Roll the pointers P1 and P2
+            waves_fw2->roll();
+            waves_adj_bw->roll();
+
+            // Output progress to logfile
+            this->writeProgress(nt-1-capo, nt-1, 20, 48);
+        }
+        if (whatodo == takeshot)
+        {
+            optimal_fw->writeCheck(waves_fw1);
+            optimal_bw->writeCheck(waves_bw1);
+        }
+        if (whatodo == restore)
+        {
+            optimal_fw->readCheck(waves_fw1);
+            optimal_bw->readCheck(waves_bw1);
+        }
+
+        if(whatodo == error){
+            std::cerr << "Error!" << std::endl;
+        }
+
+    } while((whatodo != terminate) && (whatodo != error));
+
+
+	//Remove snapshot file
+	optimal_fw->removeCheck();
+	optimal_bw->removeCheck();
+
+    // Free arrays
+    free(adjsrcxx);
+    free(adjsrczz);
+    free(adjsrcxz);
+
     return result;
 }
 
