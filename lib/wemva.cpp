@@ -1305,7 +1305,6 @@ void WemvaElastic2D<T>::runPPgrad() {
                 Sort->setDatafile(Uzrecordfile);
                 Uzdata2D = Sort->get2DGather(gatherid);
 
-
                 // Creating local model
                 lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
 
@@ -1713,7 +1712,6 @@ void WemvaElastic2D<T>::runPSgrad() {
 
                 Sort->setDatafile(Uzrecordfile);
                 Uzdata2D = Sort->get2DGather(gatherid);
-
 
                 // Creating local model
                 lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);

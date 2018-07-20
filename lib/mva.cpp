@@ -953,7 +953,6 @@ int PPmvaElastic2D<T>::run_optimal(){
      std::shared_ptr<WavesElastic2D_DS<T>> waves_bw1 (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<WavesElastic2D_DS<T>> waves_bw2 (new WavesElastic2D_DS<T>(model, nt, dt, ot));
 
-
      std::shared_ptr<WavesElastic2D_DS<T>> waves_adj_fw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<WavesElastic2D_DS<T>> waves_adj_bw (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves_fw1->getNx_pml(), 1, waves_fw1->getNz_pml(), waves_fw1->getDx(), 1.0, waves_fw1->getDz(), this->getOrder()));
@@ -1007,7 +1006,7 @@ int PPmvaElastic2D<T>::run_optimal(){
                 waves_bw1->insertForcesource(model, dataUx, GMAP, nt-1-it);
                 waves_bw1->insertForcesource(model, dataUz, GMAP, nt-1-it);
 
-                // Roll the pointers P1 and P2
+                // Roll the pointers
                 waves_fw1->roll();
                 waves_bw1->roll();
 
@@ -1055,8 +1054,9 @@ int PPmvaElastic2D<T>::run_optimal(){
 
             // Inserting data
             waves_bw1->insertForcesource(model, dataUx, GMAP, nt-1-capo);
+            waves_bw1->insertForcesource(model, dataUz, GMAP, nt-1-capo);
+            waves_bw2->insertForcesource(model, dataUx, GMAP, capo);
             waves_bw2->insertForcesource(model, dataUz, GMAP, capo);
-
 
             /* Do Crosscorrelation */
             wsx = waves_fw1->getUx1();
@@ -1066,7 +1066,7 @@ int PPmvaElastic2D<T>::run_optimal(){
             wrz = waves_bw1->getUz1();
             crossCorr(wrx, wrz, waves_bw1->getLpml(), waves_adj_bw, model, adjsrc_bw);
 
-            // Roll the pointers P1 and P2
+            // Roll the pointers
             waves_fw1->roll();
             waves_bw1->roll();
             waves_fw2->roll();
@@ -1118,6 +1118,7 @@ int PPmvaElastic2D<T>::run_optimal(){
             waves_fw2->insertForcesource(model, source, SMAP, nt-1-capo);
 
             // Inserting data
+            waves_bw2->insertForcesource(model, dataUx, GMAP, capo);
             waves_bw2->insertForcesource(model, dataUz, GMAP, capo);
 
             /* Do Crosscorrelation */
@@ -1593,6 +1594,7 @@ int PSmvaElastic2D<T>::run_optimal(){
             wsz = waves_fw2->getUz1();
             this->calcAdjointsource(adjsrcxx, adjsrczz, adjsrcxz, wsx, wsz, waves_fw2->getLpml(), model);
             this->insertAdjointsource(waves_adj_bw, adjsrcxx, adjsrczz, adjsrcxz, model);
+
             // Time stepping displacement
             waves_fw1->forwardstepDisplacement(model, der);
             waves_bw1->forwardstepDisplacement(model, der);
@@ -1605,6 +1607,7 @@ int PSmvaElastic2D<T>::run_optimal(){
 
             // Inserting data
             waves_bw1->insertForcesource(model, dataUx, GMAP, nt-1-capo);
+            waves_bw1->insertForcesource(model, dataUz, GMAP, nt-1-capo);
 
             /* Do Crosscorrelation */
             wrx = waves_bw1->getUx1();
