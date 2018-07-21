@@ -749,8 +749,10 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
     Point2D<T> *scoords;
     Point2D<T> *gcoords;
     size_t ntr = data->getNtrace();
-    T min, max; 
-    T off;
+    double min, max; 
+    double off;
+    double sx, gx;
+    double daperture = aperture;
     T dx = this->getDx();
     T ox = this->getOx();
     size_t nz = this->getNz();
@@ -763,24 +765,32 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
         if(map == SMAP){
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min = scoords[0].x;
-            max = scoords[0].x;
-            off = std::abs(gcoords[0].x - scoords[0].x);
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min = sx;
+            max = sx;
+            off = fabs(gx - sx);
             for (long long i=1; i < ntr; i++){
-                if(scoords[i].x < min) min = scoords[i].x;
-                if(scoords[i].x > max) max = scoords[i].x;
-                if(std::abs(gcoords[i].x - scoords[i].x) > off) off = std::abs(gcoords[i].x - scoords[i].x);
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(sx < min) min = sx;
+                if(sx > max) max = sx;
+                if(fabs(gx - sx) > off) off = fabs(gx - sx);
             }
         }else{
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min = gcoords[0].x;
-            max = gcoords[0].x;
-            off = std::abs(gcoords[0].x - scoords[0].x);
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min = gx;
+            max = gx;
+            off = fabs(gx - sx);
             for (long long i=1; i < ntr; i++){
-                if(gcoords[i].x < min) min = gcoords[i].x;
-                if(gcoords[i].x > max) max = gcoords[i].x;
-                if(std::abs(gcoords[i].x - scoords[i].x) > off) off = std::abs(gcoords[i].x - scoords[i].x);
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(gx < min) min = gx;
+                if(gx > max) max = gx;
+                if(fabs(gx - sx) > off) off = fabs(gx - sx);
             }
         }
         if(aperture > 0){
@@ -793,16 +803,20 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
     }else{
         scoords = (data->getGeom())->getScoords();
         gcoords = (data->getGeom())->getGcoords();
-        min = scoords[0].x;
-        max = scoords[0].x;
+        sx = scoords[0].x;
+        gx = gcoords[0].x;
+        min = sx;
+        max = sx;
         for (long long i=0; i < ntr; i++){
-            if(scoords[i].x < min) min = scoords[i].x;
-            if(scoords[i].x > max) max = scoords[i].x;
-            if(gcoords[i].x < min) min = gcoords[i].x;
-            if(gcoords[i].x > max) max = gcoords[i].x;
+            sx = scoords[i].x;
+            gx = gcoords[i].x;
+            if(sx < min) min = sx;
+            if(sx > max) max = sx;
+            if(gx < min) min = gx;
+            if(gx > max) max = gx;
         }
-        size = (size_t) (rintf((max-min + 2*std::abs(aperture))/dx) + 2);
-        start = (off_t) (rintf((min - ox)/dx) - rintf(std::abs(aperture/dx))) - 1; 
+        size = (size_t) (rintf((max-min + 2*fabs(daperture))/dx) + 2);
+        start = (off_t) (rintf((min - ox)/dx) - rintf(fabs(daperture/dx))) - 1; 
     }
 
     /* Create local model */
@@ -1165,9 +1179,12 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
     Point3D<T> *scoords;
     Point3D<T> *gcoords;
     size_t ntr = data->getNtrace();
-    T min_x, max_x; 
-    T min_y, max_y; 
-    T off_x, off_y;
+    double sx, gx, sy, gy;
+    double min_x, max_x; 
+    double min_y, max_y; 
+    double off_x, off_y;
+    double daperture_x = aperture_x;
+    double daperture_y = aperture_y;
     T dx = this->getDx();
     T dy = this->getDy();
     T ox = this->getOx();
@@ -1185,22 +1202,30 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
         if(map == SMAP){
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min_x = scoords[0].x;
-            max_x = scoords[0].x;
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min_x = sx;
+            max_x = sx;
             for (int i=1; i < ntr; i++){
-                if(scoords[i].x < min_x) min_x = scoords[i].x;
-                if(scoords[i].x > max_x) max_x = scoords[i].x;
-                if(std::abs(gcoords[i].x - scoords[i].x) > off_x) off_x = std::abs(gcoords[i].x - scoords[i].x);
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(sx < min_x) min_x = sx;
+                if(sx > max_x) max_x = sx;
+                if(fabs(gx - sx) > off_x) off_x = fabs(gx - sx);
             }
         }else{
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min_x = gcoords[0].x;
-            max_x = gcoords[0].x;
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min_x = gx;
+            max_x = gx;
             for (size_t i=1; i < ntr; i++){
-                if(gcoords[i].x < min_x) min_x = gcoords[i].x;
-                if(gcoords[i].x > max_x) max_x = gcoords[i].x;
-                if(std::abs(gcoords[i].x - scoords[i].x) > off_x) off_x = std::abs(gcoords[i].x - scoords[i].x);
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(gx < min_x) min_x = gx;
+                if(gx > max_x) max_x = gx;
+                if(fabs(gx - sx) > off_x) off_x = fabs(gx - sx);
             }
         }
         if(aperture_x > 0){
@@ -1213,38 +1238,50 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
     }else{
         scoords = (data->getGeom())->getScoords();
         gcoords = (data->getGeom())->getGcoords();
-        min_x = scoords[0].x;
-        max_x = scoords[0].x;
-        off_x = std::abs(gcoords[0].x - scoords[0].x);
+        sx = scoords[0].x;
+        gx = gcoords[0].x;
+        min_x = sx;
+        max_x = sx;
+        off_x = fabs(gcoords[0].x - scoords[0].x);
         for (int i=0; i < ntr; i++){
+            sx = scoords[i].x;
+            gx = gcoords[i].x;
             if(scoords[i].x < min_x) min_x = scoords[i].x;
             if(scoords[i].x > max_x) max_x = scoords[i].x;
             if(gcoords[i].x < min_x) min_x = gcoords[i].x;
             if(gcoords[i].x > max_x) max_x = gcoords[i].x;
         }
-        size_x = (size_t) (rintf((max_x-min_x + 2*std::abs(aperture_x))/dx) + 2);
-        start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(std::abs(aperture_x/dx))) - 1; 
+        size_x = (size_t) (rintf((max_x-min_x + 2*fabs(daperture_x))/dx) + 2);
+        start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(fabs(daperture_x/dx))) - 1; 
     }
     if(aperture_y >= 0){
         if(map == SMAP){
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min_y = scoords[0].y;
-            max_y = scoords[0].y;
+            sy = scoords[0].y;
+            gy = gcoords[0].y;
+            min_y = sy;
+            max_y = sy;
             for (int i=1; i < ntr; i++){
-                if(scoords[i].y < min_y) min_y = scoords[i].y;
-                if(scoords[i].y > max_y) max_y = scoords[i].y;
-                if(std::abs(gcoords[i].y - scoords[i].y) > off_y) off_y = std::abs(gcoords[i].y - scoords[i].y);
+                sy = scoords[i].y;
+                gy = gcoords[i].y;
+                if(sy < min_y) min_y = sy;
+                if(sy > max_y) max_y = sy;
+                if(fabs(gy - sy) > off_y) off_y = fabs(gy - sy);
             }
         }else{
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min_y = gcoords[0].y;
-            max_y = gcoords[0].y;
+            sy = scoords[0].y;
+            gy = gcoords[0].y;
+            min_y = gy;
+            max_y = gy;
             for (size_t i=1; i < ntr; i++){
-                if(gcoords[i].y < min_y) min_y = gcoords[i].y;
-                if(gcoords[i].y > max_y) max_y = gcoords[i].y;
-                if(std::abs(gcoords[i].y - scoords[i].y) > off_y) off_y = std::abs(gcoords[i].y - scoords[i].y);
+                sy = scoords[i].y;
+                gy = gcoords[i].y;
+                if(gy < min_y) min_y = gy;
+                if(gy > max_y) max_y = gy;
+                if(fabs(gy - sy) > off_y) off_y = fabs(gy - sy);
             }
         }
         if(aperture_y > 0){
@@ -1257,17 +1294,21 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
     }else{
         scoords = (data->getGeom())->getScoords();
         gcoords = (data->getGeom())->getGcoords();
-        min_y = scoords[0].y;
-        max_y = scoords[0].y;
-        off_y = std::abs(gcoords[0].y - scoords[0].y);
+            sy = scoords[0].y;
+            gy = gcoords[0].y;
+            min_y = sy;
+            max_y = sy;
+            off_y = fabs(gy - sy);
         for (int i=0; i < ntr; i++){
-            if(scoords[i].y < min_y) min_y = scoords[i].y;
-            if(scoords[i].y > max_y) max_y = scoords[i].y;
-            if(gcoords[i].y < min_y) min_y = gcoords[i].y;
-            if(gcoords[i].y > max_y) max_y = gcoords[i].y;
+            sy = scoords[i].y;
+            gy = gcoords[i].y;
+            if(sy < min_y) min_y = sy;
+            if(sy > max_y) max_y = sy;
+            if(gy < min_y) min_y = gy;
+            if(gy > max_y) max_y = gy;
         }
-        size_y = (size_t) (rintf((max_y-min_y + 2*std::abs(aperture_y))/dy) + 2);
-        start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(std::abs(aperture_y/dy))) - 1; 
+        size_y = (size_t) (rintf((max_y-min_y + 2*fabs(daperture_y))/dy) + 2);
+        start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(fabs(daperture_y/dy))) - 1; 
     }
 
     double oxl, oyl; 
@@ -1695,8 +1736,10 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
     Point2D<T> *scoords;
     Point2D<T> *gcoords;
     size_t ntr = data->getNtrace();
-    T min, max; 
-    T off;
+    double min, max; 
+    double off;
+    double sx, gx;
+    double daperture = aperture;
     T dx = this->getDx();
     T ox = this->getOx();
     size_t nz = this->getNz();
@@ -1709,24 +1752,32 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
         if(map == SMAP){
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min = scoords[0].x;
-            max = scoords[0].x;
-            off = std::abs(gcoords[0].x - scoords[0].x);
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min = sx;
+            max = sx;
+            off = fabs(gx - sx);
             for (long long i=1; i < ntr; i++){
-                if(scoords[i].x < min) min = scoords[i].x;
-                if(scoords[i].x > max) max = scoords[i].x;
-                if(std::abs(gcoords[i].x - scoords[i].x) > off) off = std::abs(gcoords[i].x - scoords[i].x);
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(sx < min) min = sx;
+                if(sx > max) max = sx;
+                if(fabs(gx - sx) > off) off = fabs(gx - sx);
             }
         }else{
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min = gcoords[0].x;
-            max = gcoords[0].x;
-            off = std::abs(gcoords[0].x - scoords[0].x);
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min = gx;
+            max = gx;
+            off = fabs(gx - sx);
             for (long long i=1; i < ntr; i++){
-                if(gcoords[i].x < min) min = gcoords[i].x;
-                if(gcoords[i].x > max) max = gcoords[i].x;
-                if(std::abs(gcoords[i].x - scoords[i].x) > off) off = std::abs(gcoords[i].x - scoords[i].x);
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(gx < min) min = gx;
+                if(gx > max) max = gx;
+                if(fabs(gx - sx) > off) off = fabs(gx - sx);
             }
         }
         if(aperture > 0){
@@ -1739,16 +1790,20 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
     }else{
         scoords = (data->getGeom())->getScoords();
         gcoords = (data->getGeom())->getGcoords();
-        min = scoords[0].x;
-        max = scoords[0].x;
+        sx = scoords[0].x;
+        gx = gcoords[0].x;
+        min = sx;
+        max = sx;
         for (long long i=0; i < ntr; i++){
-            if(scoords[i].x < min) min = scoords[i].x;
-            if(scoords[i].x > max) max = scoords[i].x;
-            if(gcoords[i].x < min) min = gcoords[i].x;
-            if(gcoords[i].x > max) max = gcoords[i].x;
+            sx = scoords[i].x;
+            gx = gcoords[i].x;
+            if(sx < min) min = sx;
+            if(sx > max) max = sx;
+            if(gx < min) min = gx;
+            if(gx > max) max = gx;
         }
-        size = (size_t) (rintf((max-min + 2*std::abs(aperture))/dx) + 2);
-        start = (off_t) (rintf((min - ox)/dx) - rintf(std::abs(aperture/dx))) - 1; 
+        size = (size_t) (rintf((max-min + 2*fabs(daperture))/dx) + 2);
+        start = (off_t) (rintf((min - ox)/dx) - rintf(fabs(daperture/dx))) - 1; 
     }
 
     /* Create local model */
@@ -2226,9 +2281,12 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
     Point3D<T> *scoords;
     Point3D<T> *gcoords;
     size_t ntr = data->getNtrace();
-    T min_x, max_x; 
-    T min_y, max_y; 
-    T off_x, off_y;
+    double sx, gx, sy, gy;
+    double min_x, max_x; 
+    double min_y, max_y; 
+    double off_x, off_y;
+    double daperture_x = aperture_x;
+    double daperture_y = aperture_y;
     T dx = this->getDx();
     T dy = this->getDy();
     T ox = this->getOx();
@@ -2246,22 +2304,30 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
         if(map == SMAP){
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min_x = scoords[0].x;
-            max_x = scoords[0].x;
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min_x = sx;
+            max_x = sx;
             for (int i=1; i < ntr; i++){
-                if(scoords[i].x < min_x) min_x = scoords[i].x;
-                if(scoords[i].x > max_x) max_x = scoords[i].x;
-                if(std::abs(gcoords[i].x - scoords[i].x) > off_x) off_x = std::abs(gcoords[i].x - scoords[i].x);
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(sx < min_x) min_x = sx;
+                if(sx > max_x) max_x = sx;
+                if(fabs(gx - sx) > off_x) off_x = fabs(gx - sx);
             }
         }else{
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min_x = gcoords[0].x;
-            max_x = gcoords[0].x;
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min_x = gx;
+            max_x = gx;
             for (size_t i=1; i < ntr; i++){
-                if(gcoords[i].x < min_x) min_x = gcoords[i].x;
-                if(gcoords[i].x > max_x) max_x = gcoords[i].x;
-                if(std::abs(gcoords[i].x - scoords[i].x) > off_x) off_x = std::abs(gcoords[i].x - scoords[i].x);
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(gx < min_x) min_x = gx;
+                if(gx > max_x) max_x = gx;
+                if(fabs(gx - sx) > off_x) off_x = fabs(gx - sx);
             }
         }
         if(aperture_x > 0){
@@ -2274,38 +2340,50 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
     }else{
         scoords = (data->getGeom())->getScoords();
         gcoords = (data->getGeom())->getGcoords();
-        min_x = scoords[0].x;
-        max_x = scoords[0].x;
-        off_x = std::abs(gcoords[0].x - scoords[0].x);
+        sx = scoords[0].x;
+        gx = gcoords[0].x;
+        min_x = sx;
+        max_x = sx;
+        off_x = fabs(gcoords[0].x - scoords[0].x);
         for (int i=0; i < ntr; i++){
+            sx = scoords[i].x;
+            gx = gcoords[i].x;
             if(scoords[i].x < min_x) min_x = scoords[i].x;
             if(scoords[i].x > max_x) max_x = scoords[i].x;
             if(gcoords[i].x < min_x) min_x = gcoords[i].x;
             if(gcoords[i].x > max_x) max_x = gcoords[i].x;
         }
-        size_x = (size_t) (rintf((max_x-min_x + 2*std::abs(aperture_x))/dx) + 2);
-        start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(std::abs(aperture_x/dx))) - 1; 
+        size_x = (size_t) (rintf((max_x-min_x + 2*fabs(daperture_x))/dx) + 2);
+        start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(fabs(daperture_x/dx))) - 1; 
     }
     if(aperture_y >= 0){
         if(map == SMAP){
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min_y = scoords[0].y;
-            max_y = scoords[0].y;
+            sy = scoords[0].y;
+            gy = gcoords[0].y;
+            min_y = sy;
+            max_y = sy;
             for (int i=1; i < ntr; i++){
-                if(scoords[i].y < min_y) min_y = scoords[i].y;
-                if(scoords[i].y > max_y) max_y = scoords[i].y;
-                if(std::abs(gcoords[i].y - scoords[i].y) > off_y) off_y = std::abs(gcoords[i].y - scoords[i].y);
+                sy = scoords[i].y;
+                gy = gcoords[i].y;
+                if(sy < min_y) min_y = sy;
+                if(sy > max_y) max_y = sy;
+                if(fabs(gy - sy) > off_y) off_y = fabs(gy - sy);
             }
         }else{
             scoords = (data->getGeom())->getScoords();
             gcoords = (data->getGeom())->getGcoords();
-            min_y = gcoords[0].y;
-            max_y = gcoords[0].y;
+            sy = scoords[0].y;
+            gy = gcoords[0].y;
+            min_y = gy;
+            max_y = gy;
             for (size_t i=1; i < ntr; i++){
-                if(gcoords[i].y < min_y) min_y = gcoords[i].y;
-                if(gcoords[i].y > max_y) max_y = gcoords[i].y;
-                if(std::abs(gcoords[i].y - scoords[i].y) > off_y) off_y = std::abs(gcoords[i].y - scoords[i].y);
+                sy = scoords[i].y;
+                gy = gcoords[i].y;
+                if(gy < min_y) min_y = gy;
+                if(gy > max_y) max_y = gy;
+                if(fabs(gy - sy) > off_y) off_y = fabs(gy - sy);
             }
         }
         if(aperture_y > 0){
@@ -2318,17 +2396,21 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
     }else{
         scoords = (data->getGeom())->getScoords();
         gcoords = (data->getGeom())->getGcoords();
-        min_y = scoords[0].y;
-        max_y = scoords[0].y;
-        off_y = std::abs(gcoords[0].y - scoords[0].y);
+            sy = scoords[0].y;
+            gy = gcoords[0].y;
+            min_y = sy;
+            max_y = sy;
+            off_y = fabs(gy - sy);
         for (int i=0; i < ntr; i++){
-            if(scoords[i].y < min_y) min_y = scoords[i].y;
-            if(scoords[i].y > max_y) max_y = scoords[i].y;
-            if(gcoords[i].y < min_y) min_y = gcoords[i].y;
-            if(gcoords[i].y > max_y) max_y = gcoords[i].y;
+            sy = scoords[i].y;
+            gy = gcoords[i].y;
+            if(sy < min_y) min_y = sy;
+            if(sy > max_y) max_y = sy;
+            if(gy < min_y) min_y = gy;
+            if(gy > max_y) max_y = gy;
         }
-        size_y = (size_t) (rintf((max_y-min_y + 2*std::abs(aperture_y))/dy) + 2);
-        start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(std::abs(aperture_y/dy))) - 1; 
+        size_y = (size_t) (rintf((max_y-min_y + 2*fabs(daperture_y))/dy) + 2);
+        start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(fabs(daperture_y/dy))) - 1; 
     }
 
     double oxl, oyl; 
