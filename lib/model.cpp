@@ -2418,7 +2418,7 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
     oyl = (oy + start_y*dy);
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelElastic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), (ox + start_x*dx), (oy + start_y*dy), this->getOz(), this->getFs());
+    local = std::make_shared<rockseis::ModelElastic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getFs());
 
     /*Realizing local model */
     local->createModel();
