@@ -723,6 +723,9 @@ void FwiAcoustic2D<T>::computeResiduals(){
     T *autocorr;
     T *crosscorr;
     T *modwei, *recwei;
+    T *fres;
+    T pclip; 
+    int pos;
     T norm; 
     T misfit;
     T H;
@@ -769,6 +772,25 @@ void FwiAcoustic2D<T>::computeResiduals(){
                    }
                 }
             }
+            // Thresholding
+            fres = (T *) calloc(nt*ntr, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    fres[I(it, itr)] = ABS(res[I(it, itr)]);
+                }
+            }
+            std::sort(fres, fres+nt*ntr); 
+            pos = (int) (PCLIP*nt*ntr/100);
+            pclip = fres[pos];
+
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    if(ABS(res[I(it, itr)]) >= pclip){
+                        res[I(it, itr)] = 0.0;
+                    }
+                }
+            }
+            free(fres);
 
             break;
         case ADAPTIVE_GAUSS:
@@ -825,6 +847,25 @@ void FwiAcoustic2D<T>::computeResiduals(){
                     }
                 }
             }
+            // Thresholding
+            fres = (T *) calloc(nt*ntr, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    fres[I(it, itr)] = ABS(res[I(it, itr)]);
+                }
+            }
+            std::sort(fres, fres+nt*ntr); 
+            pos = (int) (PCLIP*nt*ntr/100);
+            pclip = fres[pos];
+
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    if(ABS(res[I(it, itr)]) >= pclip){
+                        res[I(it, itr)] = 0.0;
+                    }
+                }
+            }
+            free(fres);
             free(modwei);
             free(recwei);
             free(shaper);
@@ -886,6 +927,25 @@ void FwiAcoustic2D<T>::computeResiduals(){
                     }
                 }
             }
+            // Thresholding
+            fres = (T *) calloc(nt*ntr, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    fres[I(it, itr)] = ABS(res[I(it, itr)]);
+                }
+            }
+            std::sort(fres, fres+nt*ntr); 
+            pos = (int) (PCLIP*nt*ntr/100);
+            pclip = fres[pos];
+
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    if(ABS(res[I(it, itr)]) >= pclip){
+                        res[I(it, itr)] = 0.0;
+                    }
+                }
+            }
+            free(fres);
             free(modwei);
             free(recwei);
             free(shaper);
@@ -2278,7 +2338,6 @@ void FwiElastic2D<T>::computeMisfit(){
                    {
                        resz *= weiz[I(it, itr)];
                    }
-
                    misfit += (resx + resz);
                 }
             }
@@ -2536,6 +2595,9 @@ void FwiElastic2D<T>::computeResiduals(){
     T *crosscorrx, *crosscorrz;
     T *modweix, *modweiz;
     T *recweix, *recweiz;
+    T *fres;
+    T pclip; 
+    int pos;
     T xnorm,znorm; 
     T misfitx, misfitz;
     T H;
@@ -2582,14 +2644,15 @@ void FwiElastic2D<T>::computeResiduals(){
 
                 xnorm1 = sqrt(xnorm1);
                 xnorm2 = sqrt(xnorm2);
-                if(xnorm1 ==0 ) xnorm1= 1.0;
-                if(xnorm2 ==0 ) xnorm2= 1.0;
+                if(xnorm1 == 0 ) xnorm1= 1.0;
+                if(xnorm2 == 0 ) xnorm2= 1.0;
                 xnorm3 /= (xnorm1*xnorm2);
 
                 znorm1 = sqrt(znorm1);
                 znorm2 = sqrt(znorm2);
-                if(znorm1 ==0 ) znorm1= 1.0;
-                if(znorm2 ==0 ) znorm2= 1.0;
+
+                if(znorm1 == 0 ) znorm1= 1.0;
+                if(znorm2 == 0 ) znorm2= 1.0;
                 znorm3 /= (znorm1*znorm2);
 
                 for(it=0; it<nt; it++){
@@ -2605,6 +2668,35 @@ void FwiElastic2D<T>::computeResiduals(){
                    }
                 }
             }
+            // Thresholding
+            fres = (T *) calloc(nt*ntr, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    fres[I(it, itr)] = ABS(resx[I(it, itr)]);
+                }
+            }
+            std::sort(fres, fres+nt*ntr); 
+            pos = (int) (PCLIP*nt*ntr/100);
+            pclip = fres[pos];
+
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    fres[I(it, itr)] = ABS(resz[I(it, itr)]);
+                }
+            }
+            std::sort(fres, fres+nt*ntr); 
+            if(fres[pos] > pclip) pclip = fres[pos];
+
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    if(ABS(resx[I(it, itr)]) >= pclip){
+                        resx[I(it, itr)] = 0.0;
+                        resz[I(it, itr)] = 0.0;
+                    }
+                }
+            }
+
+            free(fres);
             break;
         case ADAPTIVE_GAUSS:
             stdev = STDEV*nt;
@@ -2687,6 +2779,36 @@ void FwiElastic2D<T>::computeResiduals(){
                     }
                 }
             }
+
+            // Thresholding
+            fres = (T *) calloc(nt*ntr, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    fres[I(it, itr)] = ABS(resx[I(it, itr)]);
+                }
+            }
+            std::sort(fres, fres+nt*ntr); 
+            pos = (int) (PCLIP*nt*ntr/100);
+            pclip = fres[pos];
+
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    fres[I(it, itr)] = ABS(resz[I(it, itr)]);
+                }
+            }
+            std::sort(fres, fres+nt*ntr); 
+            if(fres[pos] > pclip) pclip = fres[pos];
+
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    if(ABS(resx[I(it, itr)]) >= pclip){
+                        resx[I(it, itr)] = 0.0;
+                        resz[I(it, itr)] = 0.0;
+                    }
+                }
+            }
+
+            free(fres);
             free(modweix);
             free(modweiz);
             free(recweix);
@@ -2781,6 +2903,35 @@ void FwiElastic2D<T>::computeResiduals(){
                     }
                 }
             }
+            // Thresholding
+            fres = (T *) calloc(nt*ntr, sizeof(T));
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    fres[I(it, itr)] = ABS(resx[I(it, itr)]);
+                }
+            }
+            std::sort(fres, fres+nt*ntr); 
+            pos = (int) (PCLIP*nt*ntr/100);
+            pclip = fres[pos];
+
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    fres[I(it, itr)] = ABS(resz[I(it, itr)]);
+                }
+            }
+            std::sort(fres, fres+nt*ntr); 
+            if(fres[pos] > pclip) pclip = fres[pos];
+
+            for(itr=0; itr<ntr; itr++){
+                for(it=0; it<nt; it++){
+                    if(ABS(resx[I(it, itr)]) >= pclip){
+                        resx[I(it, itr)] = 0.0;
+                        resz[I(it, itr)] = 0.0;
+                    }
+                }
+            }
+
+            free(fres);
             free(modweix);
             free(modweiz);
             free(recweix);

@@ -29,6 +29,10 @@
 #define PNOISE_ELASTIC 0.01
 #define STDEV 0.01
 #define HMAX 500
+#define PCLIP 97
+
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+#define CLOSETO(x, y) ((ABS((x) - (y)) <= FLT_EPSILON*ABS(y)) ? 1 : 0)
 
 #define ki2D(i,j) ((j)*nx +(i))
 #define km2D(i,j) ((j)*nx + (i))
