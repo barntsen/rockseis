@@ -1018,6 +1018,7 @@ std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rocks
             gx = gcoords[0].x;
             min_x = sx;
             max_x = sx;
+            off_x = fabs(gx - sx);
             for (int i=1; i < ntr; i++){
                 sx = scoords[i].x;
                 gx = gcoords[i].x;
@@ -1032,6 +1033,7 @@ std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rocks
             gx = gcoords[0].x;
             min_x = gx;
             max_x = gx;
+            off_x = fabs(gx - sx);
             for (size_t i=1; i < ntr; i++){
                 sx = scoords[i].x;
                 gx = gcoords[i].x;
@@ -1054,7 +1056,6 @@ std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rocks
         gx = gcoords[0].x;
         min_x = sx;
         max_x = sx;
-        off_x = fabs(gcoords[0].x - scoords[0].x);
         for (int i=0; i < ntr; i++){
             sx = scoords[i].x;
             gx = gcoords[i].x;
@@ -1073,7 +1074,8 @@ std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rocks
             sy = scoords[0].y;
             gy = gcoords[0].y;
             min_y = sy;
-            max_y = sy;
+            max_y = sy; 
+            off_y = fabs(gy - sy);
             for (int i=1; i < ntr; i++){
                 sy = scoords[i].y;
                 gy = gcoords[i].y;
@@ -1088,6 +1090,7 @@ std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rocks
             gy = gcoords[0].y;
             min_y = gy;
             max_y = gy;
+            off_y = fabs(gy - sy);
             for (size_t i=1; i < ntr; i++){
                 sy = scoords[i].y;
                 gy = gcoords[i].y;
@@ -1110,7 +1113,6 @@ std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rocks
             gy = gcoords[0].y;
             min_y = sy;
             max_y = sy;
-            off_y = fabs(gy - sy);
         for (int i=0; i < ntr; i++){
             sy = scoords[i].y;
             gy = gcoords[i].y;
