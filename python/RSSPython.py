@@ -83,7 +83,7 @@ class RSSdata:
                 self.data[i] = st.unpack('f', f.read(4))[0];
 
         # Reshape data to correct dimensions
-        self.data=self.data.reshape(resize)
+        self.data=self.data.reshape(resize, order='F')
 
     def write(self,filename):
         f = open(filename, 'wb')
@@ -111,7 +111,7 @@ class RSSdata:
                 self.Ndims = self.Ndims + 1
 
         #Writting Coordinates and data
-        dataout=self.data.reshape([self.fullsize,1])
+        dataout=self.data.reshape([self.fullsize,1], order='F')
         if(self.Nheader):
             for i in range(0,self.geomN[1]):
                 if(self.Nheader == 4):
