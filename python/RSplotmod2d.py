@@ -11,6 +11,7 @@ parser.add_argument("--interp", dest="interp", required=False, help="interpolati
 parser.add_argument("--showclip", dest="showclip", required=False, help="show current limits of the color scale.", default=False)
 parser.add_argument("--vmin", dest="minclip", type=float, required=False, help="set minimum clip value for the color scale.", default=argparse.SUPPRESS)
 parser.add_argument("--vmax", dest="maxclip", type=float, required=False, help="set maximum clip value for the color scale.", default=argparse.SUPPRESS)
+parser.add_argument("--aspect", dest="aspect", type=float, required=False, help="set aspect ratio (default = 1).", default=1)
 
 args = parser.parse_args()
 model = rs.RSSdata()
@@ -40,6 +41,8 @@ fig.set_clim(vmin,vmax)
 
 if(args.showclip):
     print "--vmin",vmin," --vmax",vmax
+
+plt.axes().set_aspect(args.aspect)
 
 if(args.cbar == True and not vmin == vmax):
     plt.colorbar(orientation='horizontal')
