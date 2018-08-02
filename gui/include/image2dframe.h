@@ -27,6 +27,7 @@
 #include <wx/image.h>
 #include <wx/artprov.h>
 #include "zoom.h"
+#include <algorithm>
 
 #define FONTSIZE1 6 
 #define FONTSIZE2 9 
