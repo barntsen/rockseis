@@ -23,7 +23,7 @@ env['program_prefix'] = "rs" # Prefix for all programs
 
 # Configure (checking libraries for environment)
 ## Build GUI programs 
-env['WX'] = False;
+env['WX'] = True;
 ## Include FFTW programs
 env['FFTW'] = False;
 ## Build test codes

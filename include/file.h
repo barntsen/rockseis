@@ -83,18 +83,18 @@ public:
 	size_t getN(int dim) { return geometry->getN(dim); }  ///< Get dimension size
 	double getD(int dim) { return geometry->getD(dim); }	///< Get sampling interval
 	double getO(int dim) { return geometry->getO(dim); }	///< Get origin
-
     bool getHeaderstat() { return headerstat; } ///< Check if we need to write out header
 
 	// Other geometry functions
 	void printGeometry() { geometry->print(); }
 	void clearGeometry() { geometry->clear(); }
 	bool compareGeometry(std::shared_ptr<File> other) {return geometry->compare(other->getGeom()); }
+    size_t getNtot() { return geometry->getNtot(); }
 
 	// Set geometry
-        void setN(int dim, size_t val) { geometry->setN(dim, val); headerstat = true;}	///< Set dimension size
-        void setD(int dim, double val) { geometry->setD(dim, val); headerstat = true;}	///< Set sampling interval
-        void setO(int dim, double val) { geometry->setO(dim, val); headerstat = true;}	///< Set origin
+    void setN(int dim, size_t val) { geometry->setN(dim, val); headerstat = true;}	///< Set dimension size
+    void setD(int dim, double val) { geometry->setD(dim, val); headerstat = true;}	///< Set sampling interval
+    void setO(int dim, double val) { geometry->setO(dim, val); headerstat = true;}	///< Set origin
 
 	// Set functions
 	void setNheader(size_t val) { Nheader = val; } ///< set number of header values

@@ -9,16 +9,19 @@ gui = env.Clone()
 prefix = env['program_prefix']
 srcdir = './src/'
 libdir = './lib/'
-bindir = './bin/'
-
+mainlibdir = '../lib/'
+bindir = '../bin/'
 
 if(env['WX']):
 	# Getting platform dependent flags using wx-config
-	gui.ParseConfig('/usr/local/bin/wx-config --cxxflags --libs')
+    gui.ParseConfig('/usr/local/bin/wx-config --cxxflags --libs')
 
 	# Where are the files 
-	gui.Append(CPPPATH=['./lib', './include'])
+    gui.Append(CPPPATH=['./lib', './include'])
 
-	guiprg = gui.Program(prefix + 'gui',[srcdir + 'gui.cpp',libdir + 'mainframe.cpp'])
-	gui.Install(bindir,guiprg)
+    hello_gui = gui.Program(srcdir + prefix + 'hello_gui',[srcdir + 'hello_gui.cpp',libdir + 'mainframe.cpp'])
+    gui.Install(bindir,hello_gui)
 
+    gui.Append(LIBS=['file', 'utils', 'geometry', 'data'])
+    image = gui.Program(srcdir + prefix + 'image',[srcdir + 'image.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp'])
+    gui.Install(bindir,image)
