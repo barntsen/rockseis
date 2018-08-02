@@ -325,7 +325,7 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
     val = imagedata[iy*n1 + ix];
 
     char label[48];
-    snprintf(label, 48, "X: %.2f, Z: %.2f, Val: %.2f", x, y, val);
+    snprintf(label, 48, "X: %.2f, Z: %.2f, Val: %f", x, y, val);
     StatusBar1->SetStatusText(_(label));
 
     if(event.LeftIsDown()){
