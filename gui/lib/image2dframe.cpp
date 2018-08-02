@@ -78,7 +78,7 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
     // Compute Maxmimum and minimum values
     this->ComputeClip();
 
-    zoom = new Zoom(o1, (n1-1)*d1, o2, (n2-1)*d2, 0, n1, 0, n2);
+    zoom = new Zoom(o1, (n1-1)*d1 + o1, o2, (n2-1)*d2 + o2, 0, n1, 0, n2);
 
     // Create image 
     this->LoadImage(zoom->Getix0(), zoom->Getnx(), zoom->Getiy0(), zoom->Getny());
@@ -320,8 +320,8 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
     // Get current value
     int ix,iy;
     float val;
-    ix = (int) x/d1;
-    iy = (int) y/d2;
+    ix = (int) (x-x0)/d1;
+    iy = (int) (y-y0)/d2;
     val = imagedata[iy*n1 + ix];
 
     char label[48];
@@ -406,9 +406,9 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
         zoom->Setx1(x1);
     }else{
         zoom->Sety0(0.0);
-        zoom->Sety1((n2-1)*d2);
+        zoom->Sety1((n2-1)*d2 + o2);
         zoom->Setx0(o1);
-        zoom->Setx1((n1-1)*d1);
+        zoom->Setx1((n1-1)*d1 + o1);
         zoom->Setiy0(0);
         zoom->Setny(n2);
         zoom->Setix0(0);
