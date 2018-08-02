@@ -12,6 +12,9 @@ if(env['TEST']):
     hello_cxxopts = env.Program(prefix + 'hello_cxxopts','hello_cxxopts.cpp')
     env.Install('../bin/',hello_cxxopts)
 
+    hello_argparse = env.Program(prefix + 'hello_argparse','hello_argparse.cpp')
+    env.Install('../bin/',hello_argparse)
+
     hello_models = env.Program(prefix + 'hello_models','hello_models.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling'],LIBPATH=['../build'])
     env.Install('../bin/',hello_models)
 
