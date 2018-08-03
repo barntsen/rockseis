@@ -17,11 +17,11 @@ if(env['WX']):
     gui.ParseConfig('/usr/local/bin/wx-config --cxxflags --libs')
 
 	# Where are the files 
-    gui.Append(CPPPATH=['./lib', './include'])
+    gui.Append(CPPPATH=['./lib', './include', './shared'])
 
     hello_gui = gui.Program(srcdir + prefix + 'hello_gui',[srcdir + 'hello_gui.cpp',libdir + 'mainframe.cpp'])
     gui.Install(bindir,hello_gui)
 
     gui.Append(LIBS=['file', 'utils', 'geometry', 'data'])
-    image = gui.Program(srcdir + prefix + 'image',[srcdir + 'image.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp'])
+    image = gui.Program(srcdir + prefix + 'image',[srcdir + 'image.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
     gui.Install(bindir,image)

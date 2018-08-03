@@ -1,8 +1,6 @@
 #ifndef IMAGE2DFRAME_H
 #define IMAGE2DFRAME_H
 
-
-
 //(*Headers(Image2dframe)
 #include <wx/wxprec.h>
 #include <wx/app.h>
@@ -31,6 +29,7 @@
 
 #define FONTSIZE1 6 
 #define FONTSIZE2 9 
+#define NCOLORS 5
 
 class Image2dframe: public wxFrame
 {
@@ -76,7 +75,7 @@ class Image2dframe: public wxFrame
         void LoadImage(int zi1, int zn1, int zi2, int zn2);
         bool getImage2dAlloc() { return image2d_allocated; }
         void setImage2dAlloc(bool val) { image2d_allocated = val; }
-        void getRgb(int val, unsigned char *RGB);
+        void getRgb(int color);
 
         //Variables
         size_t n1;
@@ -88,9 +87,11 @@ class Image2dframe: public wxFrame
         float *imagedata;
         bool image2d_allocated;
         float pclip[100];
+        unsigned char RGB[768]; 
         int iminclip, imaxclip;
         wxImage *image2d;
         Zoom *zoom;
+        int color; 
 
 		//*)
 

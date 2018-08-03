@@ -3,11 +3,12 @@
 int main(int argc, char **argv)
 {
     args::ArgumentParser parser("This is a test program.", "This goes after the options.");
-    args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-    args::ValueFlag<int> integer(parser, "integer", "The integer flag", {'i'});
-    args::ValueFlagList<char> characters(parser, "characters", "The character flag", {'c'});
-    args::ValueFlag<std::string> foo(parser, "string", "The foo position", {'f'});
-    args::PositionalList<double> numbers(parser, "numbers", "The numbers position list");
+    parser.LongPrefix("-");
+    parser.LongSeparator("=");
+    args::HelpFlag help(parser, "help", "Display this help menu", {"h", "help"});
+    args::ValueFlag<int> integer(parser, "integer", "The integer flag", {"i"});
+    args::ValueFlag<std::string> input(parser, "BLOCK SIZE", "Block size", {"if"});
+    args::ValueFlag<std::string> output(parser, "BLOCK SIZE", "Block size", {"of"});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -30,10 +31,9 @@ int main(int argc, char **argv)
         return 1;
     }
     if (integer) { std::cout << "i: " << args::get(integer) << std::endl; }
+    if (input) { std::cout << "if = " << args::get(input) << std::endl; }
+    if (output) { std::cout << "of = " << args::get(output) << std::endl; }
     float i = args::get(integer);
     std::cerr << "i: " << i << std::endl;
-    if (characters) { for (const auto ch: args::get(characters)) { std::cout << "c: " << ch << std::endl; } }
-    if (foo) { std::cout << "f: " << args::get(foo) << std::endl; }
-    if (numbers) { for (const auto nm: args::get(numbers)) { std::cout << "n: " << nm << std::endl; } }
     return 0;
 }

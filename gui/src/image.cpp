@@ -2,6 +2,7 @@
 #include "file.h"
 #include "utils.h"
 #include "geometry.h"
+#include <args.hxx>
 
 // Class declaration of the app
 class MyApp: public wxApp
