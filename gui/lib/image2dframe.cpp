@@ -310,9 +310,9 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
     // Get current value
     size_t ix,iy;
     float val;
-    ix = (size_t) (x-x0)/d1;
-    iy = (size_t) (y-y0)/d2;
-    if(ix >= 0 && ix < n1 && iy >=0 && iy < n2){
+    ix = (size_t) ((x-o1)/d1);
+    iy = (size_t) ((y-o2)/d2);
+    if(ix < n1 && iy < n2){
 	    val = imagedata[iy*n1 + ix];
     }else{
 	    val = 0.0;
@@ -428,7 +428,6 @@ void Image2dframe::OnImagewindowLeftDown(wxMouseEvent& event)
 void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
 {
 
-	std::cerr << event.GetKeyCode() << std::endl;
     if(event.GetKeyCode() == 88){
         // Increase clip
         iminclip++;
