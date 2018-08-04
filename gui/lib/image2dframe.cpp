@@ -308,11 +308,15 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
     y=ay*pos.y + y0;
 
     // Get current value
-    int ix,iy;
+    size_t ix,iy;
     float val;
-    ix = (int) (x-x0)/d1;
-    iy = (int) (y-y0)/d2;
-    val = imagedata[iy*n1 + ix];
+    ix = (size_t) (x-x0)/d1;
+    iy = (size_t) (y-y0)/d2;
+    if(ix >= 0 && ix < n1 && iy >=0 && iy < n2){
+	    val = imagedata[iy*n1 + ix];
+    }else{
+	    val = 0.0;
+    }
 
     char label[48];
     snprintf(label, 48, "X: %.2f, Z: %.2f, Val: %f", x, y, val);
@@ -336,7 +340,7 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
         zoom->Setbox(box[4], 4);
         Refresh();
     }
-    event.Skip();
+    event.Skip(true);
 }
 
 void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
@@ -404,8 +408,8 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
         zoom->Setix0(0);
         zoom->Setnx(n1);
     }
-    this->LoadImage(zoom->Getix0(), zoom->Getnx(), zoom->Getiy0(), zoom->Getny());
     zoom->Setzooming(false);
+    this->LoadImage(zoom->Getix0(), zoom->Getnx(), zoom->Getiy0(), zoom->Getny());
     Refresh();
 }
 
@@ -423,6 +427,8 @@ void Image2dframe::OnImagewindowLeftDown(wxMouseEvent& event)
 
 void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
 {
+
+	std::cerr << event.GetKeyCode() << std::endl;
     if(event.GetKeyCode() == 88){
         // Increase clip
         iminclip++;
@@ -461,11 +467,12 @@ void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
         Close();
     }
 
+    event.Skip(true);
 }
 
 void Image2dframe::OnClose(wxCloseEvent& event)
 {
-    event.Skip();
+    event.Skip(true);
     Destroy();
 }
 
