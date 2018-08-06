@@ -14,6 +14,7 @@ public:
 // Main implementation of app
 wxIMPLEMENT_APP(MyApp);
 
+wxDEFINE_EVENT(SelectCmp, wxCommandEvent);
 
 // Class implementation of the app
 bool MyApp::OnInit()

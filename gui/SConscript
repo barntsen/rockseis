@@ -25,3 +25,6 @@ if(env['WX']):
     gui.Append(LIBS=['file', 'utils', 'geometry', 'data'])
     image = gui.Program(srcdir + prefix + 'image',[srcdir + 'image.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
     gui.Install(bindir,image)
+
+    cipmute = gui.Program(srcdir + prefix + 'cipmute',[srcdir + 'cipmute.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
+    gui.Install(bindir,cipmute)

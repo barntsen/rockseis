@@ -9,6 +9,14 @@ const long Image2dframe::ID_PANEL3 = wxNewId();
 const long Image2dframe::ID_PANEL4 = wxNewId();
 const long Image2dframe::ID_SCROLLEDWINDOW1 = wxNewId();
 const long Image2dframe::ID_STATUSBAR1 = wxNewId();
+const long Image2dframe::idToolNext = wxNewId();
+const long Image2dframe::idToolcmpint = wxNewId();
+const long Image2dframe::idToolPrev = wxNewId();
+const long Image2dframe::idToolpick = wxNewId();
+const long Image2dframe::idToolzoom = wxNewId();
+const long Image2dframe::idToolSave = wxNewId();
+const long Image2dframe::idToolLoad = wxNewId();
+const long Image2dframe::ID_TOOLBAR1 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(Image2dframe,wxFrame)
@@ -29,6 +37,11 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 
     imagedata = _imagedata;
     image2d_allocated = false;
+    toolbarset = false;
+
+    cmpnumber = 0;
+    dcmp = 1;
+    maxcmp = 1;
 
 	//(*Initialize(Image2dframe)
 	wxFlexGridSizer* FlexGridSizer1;
@@ -202,7 +215,6 @@ void Image2dframe::OnZaxisPaint(wxPaintEvent& event)
         dc.SetPen(wxPen(*wxBLACK, 1, wxSOLID));
         dc.DrawLine(w-4, tl, w-1, tl);
     }
-
     
     n=11;
     d=(t1-t0)/(n-1);
@@ -258,7 +270,6 @@ void Image2dframe::OnXaxisPaint(wxPaintEvent& event)
     wxCoord ht,wt;
 
     //Big ticks and text
-
     n=4;
     d=(t1-t0)/(n-1);
     for(i=1; i<4; i++){
@@ -319,7 +330,11 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
     }
 
     char label[48];
-    snprintf(label, 48, "X: %.2f, Z: %.2f, Val: %f", x, y, val);
+    if(getToolbarset()){
+        snprintf(label, 48, "CMP: %d, X: %.2f, Z: %.2f, Val: %f", this->getCmpnumber(), x, y, val);
+    }else{
+        snprintf(label, 48, "CMP: %zu, X: %.2f, Z: %.2f, Val: %f", ix, x, y, val);
+    }
     StatusBar1->SetStatusText(_(label));
 
     if(event.LeftIsDown()){
@@ -356,7 +371,6 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
     x1=zoom->Getx1();
     y0=zoom->Gety0();
     y1=zoom->Gety1();
-
     
     float ax, ay;
     ay=(y1 - y0)/(h-1);
@@ -465,8 +479,38 @@ void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
     if(event.GetKeyCode() == 81){
         Close();
     }
+}
 
-    event.Skip(true);
+void Image2dframe::createToolbar()
+{
+    if(!this->getToolbarset()){
+        ToolBar1 = new wxToolBar(this, ID_TOOLBAR1, wxDefaultPosition, wxDefaultSize, wxTB_VERTICAL|wxTB_HORIZONTAL|wxNO_BORDER, _T("ID_TOOLBAR1"));
+        ToolBarItem1 = ToolBar1->AddTool(idToolNext, _("Next"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_GO_FORWARD")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Jump to next CMP position"), wxEmptyString);
+        ToolBarItem7 = ToolBar1->AddTool(idToolcmpint, _("CMP interval"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_REDO")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Change CMP interval"), wxEmptyString);
+        ToolBarItem2 = ToolBar1->AddTool(idToolPrev, _("Previous"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_GO_BACK")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Jump to previous CMP position "), wxEmptyString);
+        ToolBarItem3 = ToolBar1->AddTool(idToolpick, _("Pick"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_ADD_BOOKMARK")),wxART_TOOLBAR), wxNullBitmap, wxITEM_CHECK, _("Pick velocities"), wxEmptyString);
+        ToolBarItem4 = ToolBar1->AddTool(idToolzoom, _("Zoom"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FIND")),wxART_TOOLBAR), wxNullBitmap, wxITEM_CHECK, wxEmptyString, wxEmptyString);
+        ToolBarItem5 = ToolBar1->AddTool(idToolSave, _("Save picks"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FILE_SAVE")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Save picks"), wxEmptyString);
+        ToolBarItem6 = ToolBar1->AddTool(idToolLoad, _("Load picks"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FILE_OPEN")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Load picks"), wxEmptyString);
+        SetToolBar(ToolBar1);
+        ToolBar1->Realize();
+        this->setToolbarset(true);
+        Layout();
+
+        Connect(idToolNext,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnNextClicked);
+        Connect(idToolPrev,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnPreviousClicked);
+        Connect(idToolcmpint,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnCMPinterval);
+    }
+}
+
+void Image2dframe::destroyToolbar()
+{
+    if(this->getToolbarset()){
+        delete GetToolBar();
+        SetToolBar(0);
+        this->setToolbarset(false);
+        Layout();
+    }
 }
 
 void Image2dframe::OnClose(wxCloseEvent& event)
@@ -2842,3 +2886,42 @@ void Image2dframe::getRgb(int which)
     }
 }
 
+void Image2dframe::OnNextClicked(wxCommandEvent& event)
+{
+   cmpnumber = cmpnumber + dcmp; 
+   if(cmpnumber > maxcmp) cmpnumber = maxcmp;
+   wxCommandEvent parevent(SelectCmp, GetId());
+   parevent.SetEventObject(this);
+   parevent.SetInt(cmpnumber);
+   // Send event to App
+   ProcessWindowEvent(parevent);
+}
+
+void Image2dframe::OnCMPinterval(wxCommandEvent& event)
+{
+    long val;
+
+    val  = wxGetNumberFromUser(	_("Changes the increment of the next and previous tools"), _("Enter a value"), _("Change gather interval"), this->getDcmp(), 1, this->getMaxcmp(), this, wxDefaultPosition);
+    if(val != -1){
+        this->setDcmp(val);
+    }
+}
+
+void Image2dframe::OnPreviousClicked(wxCommandEvent& event)
+{
+   cmpnumber = cmpnumber - dcmp; 
+   if(cmpnumber < 0) cmpnumber = 0;
+   wxCommandEvent parevent(SelectCmp, GetId());
+   parevent.SetEventObject(this);
+   parevent.SetInt(cmpnumber);
+   // Send event to App
+   ProcessWindowEvent(parevent);
+}
+
+
+void Image2dframe::setStatusbar(int cmp, float x, float y, float val)
+{
+    char label[48];
+    snprintf(label, 48, "CMP: %d, X: %.2f, Z: %.2f, Val: %f", cmp, x, y, val);
+    StatusBar1->SetStatusText(_(label));
+}
