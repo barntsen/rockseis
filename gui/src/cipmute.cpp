@@ -9,7 +9,9 @@ class MyApp: public wxApp
 {
 public:
 	virtual bool OnInit();
-    void readCIP(wxCommandEvent& event);
+	void readCIP(wxCommandEvent& event);
+	int FilterEvent(wxEvent& event);
+
 
 private:
     std::string infile, outfile;
@@ -166,20 +168,25 @@ bool MyApp::OnInit()
     }
     in->close();
 
-    
-	cipframe = new Image2dframe(n4, d1, o1, n3, d3, o3, cipdata, 0);
-    cipframe->createToolbar();
-    cipframe->SetLabel (wxT("Picking window"));
-    cipframe->setMaxcmp(n1-1);
-	cipframe->Show( true );
+    //(*AppInitialize
+    bool wxsOK = true;
+    wxInitAllImageHandlers();
+    if ( wxsOK ){
 
-    Bind(SelectCmp, &MyApp::readCIP, this, cipframe->GetId());
+	    cipframe = new Image2dframe(n4, d1, o1, n3, d3, o3, cipdata, 0);
+	    cipframe->createToolbar();
+	    cipframe->SetLabel (wxT("Picking window"));
+	    cipframe->setMaxcmp(n1-1);
+	    cipframe->Show( true );
 
-	zoframe = new Image2dframe(n1, d1, o1, n3, d3, o3, zodata, 0);
-    zoframe->SetLabel (wxT("Zero offset image window"));
-	zoframe->Show( true );
+	    Bind(SelectCmp, &MyApp::readCIP, this, cipframe->GetId());
 
-	return true;
+	    zoframe = new Image2dframe(n1, d1, o1, n3, d3, o3, zodata, 0);
+	    zoframe->SetLabel (wxT("Zero offset image window"));
+	    zoframe->Show( true );
+    }
+
+    return wxsOK;
 }
 
 void MyApp::readCIP(wxCommandEvent& event)
@@ -235,3 +242,15 @@ void MyApp::readCIP(wxCommandEvent& event)
 
     in->close();
 }
+
+int MyApp::FilterEvent(wxEvent& event)
+{
+	if (event.GetEventType() == wxEVT_KEY_UP)
+
+	{
+		event.Skip(true);
+	}
+
+	return -1;
+}
+

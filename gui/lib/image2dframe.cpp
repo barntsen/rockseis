@@ -1,13 +1,38 @@
 #include "image2dframe.h"
 #define MAXPOS 1024
 
+//helper functions
+enum wxbuildinfoformat {
+    short_f, long_f };
+
+wxString wxbuildinfo(wxbuildinfoformat format)
+{
+    wxString wxbuild(wxVERSION_STRING);
+
+    if (format == long_f )
+    {
+#if defined(__WXMSW__)
+        wxbuild << _T("-Windows");
+#elif defined(__UNIX__)
+        wxbuild << _T("-Linux");
+#endif
+
+#if wxUSE_UNICODE
+        wxbuild << _T("-Unicode build");
+#else
+        wxbuild << _T("-ANSI build");
+#endif // wxUSE_UNICODE
+    }
+
+    return wxbuild;
+}
 
 //(*IdInit(Image2dframe)
 const long Image2dframe::ID_PANEL1 = wxNewId();
 const long Image2dframe::ID_PANEL2 = wxNewId();
 const long Image2dframe::ID_PANEL3 = wxNewId();
 const long Image2dframe::ID_PANEL4 = wxNewId();
-const long Image2dframe::ID_SCROLLEDWINDOW1 = wxNewId();
+const long Image2dframe::ID_IMAGEWINDOW1 = wxNewId();
 const long Image2dframe::ID_STATUSBAR1 = wxNewId();
 const long Image2dframe::idToolNext = wxNewId();
 const long Image2dframe::idToolcmpint = wxNewId();
@@ -62,7 +87,7 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 	FlexGridSizer1->Add(RightCorner, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
 	Zaxis = new wxPanel(this, ID_PANEL4, wxDefaultPosition, wxSize(50,600), wxTAB_TRAVERSAL, _T("ID_PANEL4"));
 	FlexGridSizer1->Add(Zaxis, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
-	Imagewindow = new wxScrolledWindow(this, ID_SCROLLEDWINDOW1, wxDefaultPosition, wxSize(600,600), wxVSCROLL|wxHSCROLL|wxFULL_REPAINT_ON_RESIZE, _T("ID_SCROLLEDWINDOW1"));
+	Imagewindow = new wxPanel(this, ID_IMAGEWINDOW1, wxDefaultPosition, wxSize(600,600), wxWANTS_CHARS, _T("ID_IMAGEWINDOW1"));
 	FlexGridSizer1->Add(Imagewindow, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
 	BoxSizer1->Add(FlexGridSizer1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
 	SetSizer(BoxSizer1);
@@ -300,6 +325,7 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
     wxPoint box[5];
     wxPoint zpos1=zoom->Getzpos1();
     pos=event.GetLogicalPosition(dc);
+    Imagewindow->SetFocus();
 
 
     float x0, x1, y0, y1;

@@ -54,7 +54,7 @@ class Image2dframe: public wxFrame
         void ComputeClip();
 
 		//(*Declarations(Image2dframe)
-		wxScrolledWindow* Imagewindow;
+		wxPanel* Imagewindow;
 		wxStatusBar* StatusBar1;
 		wxPanel* LeftCorner;
 		wxPanel* Zaxis;
@@ -78,7 +78,7 @@ class Image2dframe: public wxFrame
 		static const long ID_PANEL2;
 		static const long ID_PANEL3;
 		static const long ID_PANEL4;
-		static const long ID_SCROLLEDWINDOW1;
+		static const long ID_IMAGEWINDOW1;
 		static const long ID_STATUSBAR1;
 		static const long idToolNext;
 		static const long idToolcmpint;

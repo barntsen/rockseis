@@ -9,6 +9,7 @@ class MyApp: public wxApp
 {
 public:
 	virtual bool OnInit();
+	int FilterEvent(wxEvent& event);
 };
 
 // Main implementation of app
@@ -99,3 +100,13 @@ bool MyApp::OnInit()
 	return true;
 }
 
+int MyApp::FilterEvent(wxEvent& event)
+{
+	if (event.GetEventType() == wxEVT_KEY_UP)
+
+	{
+		event.Skip(true);
+	}
+
+	return -1;
+}
