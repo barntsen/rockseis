@@ -228,6 +228,7 @@ void MyApp::readCIP(wxCommandEvent& event)
             rockseis::rs_error("Unsupported esize.");
             break;
     }
+    cipframe->ComputeClip();
     cipframe->LoadImage(0, n4, 0, n3);
     cipframe->setStatusbar(ix, 0., 0., 0.); 
     cipframe->Refresh();

@@ -51,6 +51,7 @@ class Image2dframe: public wxFrame
         void setMaxcmp(int val) { maxcmp = val; }
         int getMaxcmp() { return maxcmp; }
         void setStatusbar(int cmp, float x, float y, float val);
+        void ComputeClip();
 
 		//(*Declarations(Image2dframe)
 		wxScrolledWindow* Imagewindow;
@@ -104,7 +105,6 @@ class Image2dframe: public wxFrame
 		void OnCMPinterval(wxCommandEvent& event);
 		void OnClose(wxCloseEvent& event);
 		void OnImagewindowEraseBackground(wxEraseEvent& event);
-        void ComputeClip();
         bool getImage2dAlloc() { return image2d_allocated; }
         void setImage2dAlloc(bool val) { image2d_allocated = val; }
         void getRgb(int color);

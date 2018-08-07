@@ -90,6 +90,7 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
     
     // Compute Maxmimum and minimum values
     this->ComputeClip();
+
     // Setup color pallete
     color = 0;
     this->getRgb(color);
