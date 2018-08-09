@@ -16,8 +16,8 @@ public:
 private:
     std::string infile, outfile;
     size_t n1,n3,n4,n6,ntot;
-    float d1,d3;
-    float o1,o3;
+    float d1,d3,d4,d6;
+    float o1,o3,o4,o6;
     float *cipdata=NULL;
     float *zodata=NULL;
     double *ddata=NULL;
@@ -95,9 +95,13 @@ bool MyApp::OnInit()
 
     d1 = (float) in->getD(1);
     d3 = (float) in->getD(3);
+    d4 = (float) in->getD(4);
+    d6 = (float) in->getD(6);
 
     o1 = (float) in->getO(1);
     o3 = (float) in->getO(3);
+    o4 = (float) in->getO(4);
+    o6 = (float) in->getO(6);
 
     if(n3 == 0 || n4 == 0){
         rockseis::rs_error("Image is not the correct format, or is not 2D");
@@ -173,7 +177,7 @@ bool MyApp::OnInit()
     wxInitAllImageHandlers();
     if ( wxsOK ){
 
-	    cipframe = new Image2dframe(n4, d1, o1, n3, d3, o3, cipdata, 0);
+	    cipframe = new Image2dframe(n4, d4, o4, n3, d3, o3, cipdata, 0);
 	    cipframe->createToolbar();
 	    cipframe->SetLabel (wxT("Picking window"));
 	    cipframe->setMaxcmp(n1-1);

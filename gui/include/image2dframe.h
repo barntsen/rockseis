@@ -88,6 +88,7 @@ class Image2dframe: public wxFrame
 		static const long idToolSave;
 		static const long idToolLoad;
 		static const long ID_TOOLBAR1;
+		static const long ID_LISTBOX1;
 		//*)
 
 	private:

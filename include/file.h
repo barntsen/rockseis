@@ -48,6 +48,10 @@ public:
 	void seekg(off_t pos) { fstream.seekg(pos); }
 	void seekp(off_t pos, std::ios_base::seekdir way) { fstream.seekp(pos, way); }
 	void seekg(off_t pos, std::ios_base::seekdir way) { fstream.seekg(pos, way); }
+
+    // Tell functions
+    off_t tellg() { return fstream.tellg(); }
+    off_t tellp() { return fstream.tellp(); }
 	
 	// Write functions
 	void writeHeader(); ///< Output header to file

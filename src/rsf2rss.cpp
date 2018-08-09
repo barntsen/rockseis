@@ -7,11 +7,11 @@
 int main(int argc, char* argv[])
 {
     sf_init(argc,argv);
+	std::shared_ptr<rockseis::File> out (new rockseis::File());
+    out->output();
 
     madagascar::iRSF par(0);
     madagascar::iRSF in;
-	std::shared_ptr<rockseis::File> out (new rockseis::File());
-    out->output();
 
     int n[MAXDIM];
     float d[MAXDIM];

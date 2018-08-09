@@ -42,12 +42,11 @@ bool File::input()
         status = FILE_ERR; 
     }else{
         //Read header and check if file is of Rockseis format
-        fstream.seekg(0);
+        fstream.seekg(0, std::ios::beg);
         fstream.read(&buffer[0], MAGIC_NUMBER_LENGTH*sizeof(char));
         if(strcmp(buffer, MAGIC_NUMBER))
         {
             // Fail 
-            std::cerr << buffer << std::endl;
             rs_error("File::input(): File is not a RSS file.");
             status = FILE_ERR;
         }else{

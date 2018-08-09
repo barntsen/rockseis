@@ -42,6 +42,7 @@ const long Image2dframe::idToolzoom = wxNewId();
 const long Image2dframe::idToolSave = wxNewId();
 const long Image2dframe::idToolLoad = wxNewId();
 const long Image2dframe::ID_TOOLBAR1 = wxNewId();
+const long Image2dframe::ID_LISTBOX1 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(Image2dframe,wxFrame)
@@ -469,7 +470,7 @@ void Image2dframe::OnImagewindowLeftDown(wxMouseEvent& event)
 void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
 {
 
-    if(event.GetKeyCode() == 88){
+    if(event.GetKeyCode() == wxKeyCode('X')){
         // Increase clip
         iminclip++;
         imaxclip--;
@@ -480,7 +481,7 @@ void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
         this->LoadImage(zoom->Getix0(), zoom->Getnx(), zoom->Getiy0(), zoom->Getny());
         Refresh();
     }
-    if(event.GetKeyCode() == 90){
+    if(event.GetKeyCode() == wxKeyCode('Z')){
         // Decrease clip
         iminclip--;
         imaxclip++;
@@ -495,7 +496,16 @@ void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
         Refresh();
     }
 
-    if(event.GetKeyCode() == 82){
+    if(event.GetKeyCode() == wxKeyCode('E')){
+        color--; 
+        color = color%NCOLORS;
+        if(color < 0) color+=NCOLORS;
+        this->getRgb(color);
+        this->LoadImage(zoom->Getix0(), zoom->Getnx(), zoom->Getiy0(), zoom->Getny());
+        Refresh();
+    }
+
+    if(event.GetKeyCode() == wxKeyCode('R')){
         color++; 
         color = color%NCOLORS;
         this->getRgb(color);
@@ -503,7 +513,7 @@ void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
         Refresh();
     }
 
-    if(event.GetKeyCode() == 81){
+    if(event.GetKeyCode() == wxKeyCode('Q')){
         Close();
     }
 }
