@@ -77,7 +77,7 @@ class RSSdata:
                     self.GroupZ[i] = st.unpack('f', f.read(4))[0];
                             
                 for j in range(0,self.geomN[0]):
-                    self.data[j*self.geomN[1] + i] = st.unpack('f', f.read(4))[0];
+                    self.data[i*self.geomN[0] + j] = st.unpack('f', f.read(4))[0];
         else:
             for i in range(0,self.fullsize):
                 self.data[i] = st.unpack('f', f.read(4))[0];
