@@ -13,6 +13,7 @@ parser.add_argument("--showclip", dest="showclip", required=False, help="show cu
 parser.add_argument("--vmin", dest="minclip", type=float, required=False, help="set minimum clip value for the color scale.", default=argparse.SUPPRESS)
 parser.add_argument("--vmax", dest="maxclip", type=float, required=False, help="set maximum clip value for the color scale.", default=argparse.SUPPRESS)
 parser.add_argument("--aspect", dest="aspect", type=float, required=False, help="set aspect ratio (default = 1).", default=1)
+parser.add_argument("--cmap", dest="cmap", required=False, help="set colormap (default = 'gray').", default='jet')
 
 args = parser.parse_args()
 model = rs.RSSdata()
@@ -33,6 +34,8 @@ max_z = float(min_z + (nz-1.)*dz)
 
 fig = plt.imshow((model.data.squeeze()).transpose(),interpolation=args.interp, extent=[min_x,max_x,max_z,min_z])
 vmin, vmax = fig.get_clim()
+
+fig.set_cmap(args.cmap)
 
 if(hasattr(args, 'minclip')):
     vmin = args.minclip
