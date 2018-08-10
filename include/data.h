@@ -8,6 +8,7 @@
 #include "geometry.h"
 #include "file.h"
 #include "utils.h"
+#include <rsf.hh>
 
 
 namespace rockseis {
@@ -94,6 +95,9 @@ public:
     void createEmpty(size_t ntr); ///< Create empty dataset with ntr traces
     void putTrace(std::string filename, size_t number); ///< Writes a trace with a specific number to a file
     void putImage(std::string imagefile); ///< Output an image to the end of the datafile
+    
+    //Filter
+    void apply_filter(T *freqs); ///< Apply a 4 point filter to the data
 
 private:
     std::shared_ptr<Geometry2D<T>> geometry; // Data geometry 

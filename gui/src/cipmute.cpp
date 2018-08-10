@@ -242,8 +242,9 @@ void MyApp::readCIP(wxCommandEvent& event)
     cipframe->ComputeClip();
     cipframe->LoadImage(0, n4, 0, n3);
     cipframe->setStatusbar(ix, 0., 0., 0.); 
+    zoframe->setCmpnumber(ix);
     cipframe->Refresh();
-
+    zoframe->Refresh();
     in->close();
 }
 

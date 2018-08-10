@@ -170,6 +170,13 @@ int main(int argc, char** argv) {
             PRINT_DOC(krho = "100.0";);
             PRINT_DOC(ksource = "1.0";);
             PRINT_DOC();
+            PRINT_DOC(#Filter parameters);
+            PRINT_DOC(filter = "false"; # Apply 4 point filter to wavelet gradient and residuals);
+            PRINT_DOC(f0 = "0"; # First point);
+            PRINT_DOC(f1 = "2"; # Second point);
+            PRINT_DOC(f2 = "10"; # Third point);
+            PRINT_DOC(f3 = "12.5"; # Fourth point);
+            PRINT_DOC();
             PRINT_DOC(#Parameterisation);
             PRINT_DOC(paramtype = "1";  # 0- grid; 1- B-spline;);
             PRINT_DOC(dtx = "25.0"; # knot sampling in B-spline);
@@ -296,13 +303,13 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("linesearch", &linesearch) == INPARSE_ERR) status = true;
     if(Inpar->getPar("optmethod", &optmethod) == INPARSE_ERR) status = true;
 
-    /*
     if(Inpar->getPar("filter", &filter) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("f0", &freqs[0]) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("f1", &freqs[1]) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("f2", &freqs[2]) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("f3", &freqs[3]) == INPARSE_ERR) status = true;
-    */
+    if(filter){
+        if(Inpar->getPar("f0", &freqs[0]) == INPARSE_ERR) status = true;
+        if(Inpar->getPar("f1", &freqs[1]) == INPARSE_ERR) status = true;
+        if(Inpar->getPar("f2", &freqs[2]) == INPARSE_ERR) status = true;
+        if(Inpar->getPar("f3", &freqs[3]) == INPARSE_ERR) status = true;
+    }
 
     // Set scaling according to updates
     if(!update_vp) kvp = 0.0;
@@ -353,8 +360,6 @@ int main(int argc, char** argv) {
     inv->setUpdates(update_vp, update_rho, update_source);
     inv->setSrcilum(srcilum);
     inv->setSrcilumfile(SRCILUMFILE);
-    // Filter to be removed
-    filter = false;
     inv->setFilter(filter);
     inv->setFreqs(&freqs[0]);
 

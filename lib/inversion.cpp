@@ -29,6 +29,7 @@ Inversion<T>::Inversion() {
         rs_error("Inversion<T>::Inversion(): Error creating progress logfile for writting.");
     }
     noreverse = false;
+    filter = false;
 }
 
 template<typename T>
@@ -58,6 +59,7 @@ Inversion<T>::Inversion(MPImodeling *_mpi) {
         rs_error("Inversion<T>::Inversion(): Error creating progress logfile for writting.");
     }
     noreverse = false;
+    filter = false;
 }
 
 template<typename T>
@@ -426,6 +428,9 @@ void InversionAcoustic2D<T>::runGrad() {
                 // Output gradients
                 vpgrad->write();
                 rhograd->write();
+                if(this->getFilter()){
+                    wavgrad->apply_filter(this->getFreqs());
+                }
                 wavgrad->putTrace(Wavgradfile, work.id);
 
                 // Output ilumination

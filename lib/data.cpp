@@ -542,6 +542,33 @@ void Data2D<T>::putTrace(std::string filename, size_t number)
     if(Fdata->getFail()) rs_error("Data2D::PutTrace: Error writting gather to output file");
 }
 
+template<typename T>
+void Data2D<T>::apply_filter (T *freqs)
+{
+    int i,j;
+    float dt = this->getDt();
+    int nt = this->getNt();
+    int ntr = this->getNtrace();
+	Index Idata(nt,ntr);
+    double d_dt = dt;
+    float f[4];
+    T *data = this->getData();
+    f[0] = freqs[0];
+    f[1] = freqs[1];
+    f[2] = freqs[2];
+    f[3] = freqs[3];
+	float *wrk = (float *) calloc(nt, sizeof(float));
+	float *flt = (float *) calloc(nt, sizeof(float));
+    for(i=0; i< ntr; i++){
+        for(j=0; j< nt; j++) flt[j] = data[Idata(j,i)];
+        sig_filt(flt, f[0], f[1], f[2], f[3], d_dt, nt); 
+        for(j=0; j< nt; j++) data[Idata(j,i)] = flt[j];
+    }
+
+    free(wrk);
+    free(flt);
+}
+
 // destructor
 template<typename T>
 Data2D<T>::~Data2D() {

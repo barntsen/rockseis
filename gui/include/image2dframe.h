@@ -52,6 +52,7 @@ class Image2dframe: public wxFrame
         int getMaxcmp() { return maxcmp; }
         void setStatusbar(int cmp, float x, float y, float val);
         void ComputeClip();
+        void setDisplaypicks(int val) { displaypicks = val; }
 
 		//(*Declarations(Image2dframe)
 		wxPanel* Imagewindow;
@@ -127,6 +128,7 @@ class Image2dframe: public wxFrame
         int color; 
         bool toolbarset;
         int cmpnumber, dcmp, maxcmp;
+        bool displaypicks;
 
 		//*)
 
