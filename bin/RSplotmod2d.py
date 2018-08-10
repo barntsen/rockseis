@@ -55,5 +55,6 @@ plt.ylabel('z (m)')
 plt.rc('font', size=15)
 if(args.figfile is not None):
     plt.savefig(args.figfile,bbox_inches='tight', format=args.format)
-plt.show()
+else:
+    plt.show()
 

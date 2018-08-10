@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import RSSPython as rs
 import argparse
+import numpy as np
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='Plot a 2d rss model file .')
@@ -12,6 +13,7 @@ parser.add_argument("--interp", dest="interp", required=False, help="interpolati
 parser.add_argument("--showclip", dest="showclip", required=False, help="show current limits of the color scale.", default=False)
 parser.add_argument("--vmin", dest="minclip", type=float, required=False, help="set minimum clip value for the color scale.", default=argparse.SUPPRESS)
 parser.add_argument("--vmax", dest="maxclip", type=float, required=False, help="set maximum clip value for the color scale.", default=argparse.SUPPRESS)
+parser.add_argument("--pclip", dest="pclip", type=float, required=False, help="set maximum percentage clip value.", default=argparse.SUPPRESS)
 parser.add_argument("--aspect", dest="aspect", type=float, required=False, help="set aspect ratio (default = 1).", default=1)
 parser.add_argument("--cmap", dest="cmap", required=False, help="set colormap (default = 'gray').", default='gray')
 
@@ -31,6 +33,23 @@ min_x = float(ox)
 max_x = float(min_x + (nx-1.)*dx)
 min_t = float(ot)
 max_t = float(min_t + (nt-1.)*dt)
+
+if(hasattr(args, 'pclip')):
+        pamps = np.sort(abs((model.data).flatten()))
+        if (args.pclip > 1.0):
+            pclip = 1.0
+        else:
+            pclip = args.pclip
+        maxindex = int(pclip*(nx*nt-1))
+        minindex = int((1-pclip)*(nx*nt-1))
+        for i in range(0,nx):
+            for j in range(0,nt):
+                if(abs(model.data[j,i]) > pamps[maxindex]):
+                    model.data[j,i] = np.sign(model.data[j,i])*pamps[maxindex]
+                if(abs(model.data[j,i]) < pamps[minindex]):
+                    model.data[j,i] = 0.0
+
+
 
 fig = plt.imshow((model.data),interpolation=args.interp, extent=[min_x,max_x,max_t,min_t])
 vmin, vmax = fig.get_clim()
@@ -61,5 +80,6 @@ plt.ylabel('Time (s)')
 plt.rc('font', size=15)
 if(args.figfile is not None):
     plt.savefig(args.figfile,bbox_inches='tight', format=args.format)
-plt.show()
+else:
+    plt.show()
 
