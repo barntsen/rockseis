@@ -57,7 +57,7 @@ plt.axes().set_aspect(disp_r/data_r)
 if(args.cbar == True and not vmin == vmax):
     plt.colorbar(orientation='horizontal')
 plt.xlabel('Trace')
-plt.ylabel('t (s)')
+plt.ylabel('Time (s)')
 plt.rc('font', size=15)
 if(args.figfile is not None):
     plt.savefig(args.figfile,bbox_inches='tight', format=args.format)
