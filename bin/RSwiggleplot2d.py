@@ -29,13 +29,13 @@ max_x = float(min_x + (nx-1.)*dx)
 min_t = float(ot)
 max_t = float(min_t + (nt-1.)*dt)
 t = np.linspace(min_t, max_t, nt)
-fig,ax = plt.subplots()
+fig =  plt.figure() 
+ax = fig.add_subplot(111)
 
 # Normalize data
 maxval = np.amax(abs(model.data))
 if(not maxval == 0):
     model.data = model.data/maxval
-
 for i in range(0,nx):
     trace = i + model.data[:,i]
     ax.plot(trace,t,'k-')
