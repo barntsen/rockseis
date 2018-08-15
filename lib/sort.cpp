@@ -411,7 +411,7 @@ void Sort<T>::put2DGather(std::shared_ptr<Data2D<T>> data, size_t number)
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
     status = Fdata->append(data->getFile());
-    if(status == FILE_ERR) rs_error("Sort::put2DGather: Error reading input data file.");
+    if(status == FILE_ERR) rs_error("Sort::put2DGather: Error opening data file for appending: ", data->getFile());
     rs_datatype datatype = Fdata->getType(); 
     if(datatype != DATA2D) rs_error("Sort::put2DGather: Datafile must be of type Data2D.");
     //Get gather size information

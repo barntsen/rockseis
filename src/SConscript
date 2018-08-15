@@ -97,7 +97,6 @@ if(env['MPI']):
         Acousticfwi3d = mpi.Program(prefix + 'Acousticfwi3d','Acousticfwi3d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'])
         mpi.Install('../bin/',Acousticfwi3d)
 
-
         Elasticfwi2d = mpi.Program(prefix + 'Elasticfwi2d','Elasticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'])
         mpi.Install('../bin/',Elasticfwi2d)
 
@@ -112,6 +111,9 @@ if(env['MPI']):
 
         hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl','rsfcpp','rsfc'])
         mpi.Install('../bin/',hello_fdgrad)
+
+    mpiAcousticfat2d = mpi.Program(prefix + 'mpiAcousticfat2d','mpiAcousticfat2d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'rsfcpp', 'rsfc'])
+    mpi.Install('../bin/',mpiAcousticfat2d)
 
     mpiAcousticmod2d = mpi.Program(prefix + 'mpiAcousticmod2d','mpiAcousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'rsfcpp', 'rsfc'])
     mpi.Install('../bin/',mpiAcousticmod2d)
