@@ -221,9 +221,7 @@ void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
             /* calculate solution */
             if(fabs(a-b)>=(S(I2D(k,h))*dh)){
                 Tt = fminf(a,b) + S(I2D(k,h))*dh;
-            }
-
-            if(fabs(a-b)<(S(I2D(k,h))*dh)){
+            }else{
                 Tt = (a + b + sqrt((2.0*pow(S(I2D(k,h)),2.0)*pow(dh,2.0)) - pow((a-b),2.0)))/2.0;
             }
 

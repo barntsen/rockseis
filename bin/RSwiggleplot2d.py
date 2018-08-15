@@ -10,6 +10,7 @@ parser.add_argument("-o", dest="figfile", required=False, help="output image fil
 parser.add_argument("--format", dest="format", required=False, help="output image file format: pdf (default), png, eps.", default="pdf")
 parser.add_argument("--showclip", dest="showclip", required=False, help="show current limits of the color scale.", default=False)
 parser.add_argument("--pclip", dest="pclip", type=float, required=False, help="set maximum percentage clip value.", default=argparse.SUPPRESS)
+parser.add_argument("--fill", dest="fill", type=int, required=False, help="Fill positive wiggles.", default=True)
 
 args = parser.parse_args()
 model = rs.RSSdata()
@@ -54,7 +55,8 @@ if(not maxval == 0):
 for i in range(0,nx):
     trace = i + model.data[:,i]
     ax.plot(trace,t,'k-')
-    ax.fill_betweenx(t,i,trace,where=(trace>i),color='k')
+    if(args.fill):
+        ax.fill_betweenx(t,i,trace,where=(trace>i),color='k')
 
 ax.set_xlim(-1.1,nx+0.1)
 ax.set_ylim(min_t,max_t)
