@@ -38,3 +38,4 @@ if(env['MPI']):
     parallel = mpi.Library(builddir + 'parallel',['parallel.cpp'])
     inversion = mpi.Library(builddir + 'inversion',['inversion.cpp'])
     wemva = mpi.Library(builddir + 'wemva',['wemva.cpp'])
+    fatt = mpi.Library(builddir + 'fatt',['fatt.cpp'])

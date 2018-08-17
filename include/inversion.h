@@ -300,12 +300,12 @@ private:
     std::string Vpgradfile;
     std::string Rhogradfile;
     std::string Wavgradfile;
-    std::string Dataweightfile;
     std::string Misfitfile;
     std::string Psnapfile;
     std::string Precordfile;
     std::string Pmodelledfile;
     std::string Presidualfile;
+    std::string Dataweightfile;
     std::string Mutefile;
     std::string Srcilumfile;
     T apertx;

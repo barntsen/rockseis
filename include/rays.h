@@ -20,7 +20,7 @@
 #define LANC_SIZE 3
 #define LANC(x,a) (this->sinc(x)*this->sinc((x)/a))
 #define TTNORM 1e-13
-#define EPS_ADJ 0.0
+#define EPS_ADJ 1.0e-12
 
 namespace rockseis {
 
@@ -89,6 +89,7 @@ public:
     void sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy); ///< Compute first arrival traveltimes
     void sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy);  ///< Compute adjoint eikonal equation
     void solve();
+    void solve_adj();
 
     // Get functions
     T *getTT() { return TT; } 
@@ -97,6 +98,8 @@ public:
 
     // Insert source functions
     void insertSource(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Insert source position
+    void insertResiduals(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Insert source position
+    void createRecmask(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Create a mask for adjoint eikonal computation
 
     // Record data at receivers functions
     void recordData(std::shared_ptr<Data2D<T>> data, bool maptype); ///< Record traveltime at receivers 

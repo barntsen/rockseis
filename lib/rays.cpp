@@ -62,7 +62,13 @@ RaysAcoustic2D<T>::RaysAcoustic2D(){
     /* Initialize arrays */
     for (int i=0; i < nx*nz; i++){
         TT[i] = 2.0*this->getTmax();
-        lam[i] = 10.0*this->getTmax();
+    }
+
+    Index Ilam(nx,nz);
+    for (int i=1; i < nx-1; i++){
+        for (int j=1; j < nz-1; j++){
+            lam[Ilam(i,j)] = 10.0*this->getTmax();
+        }
     }
 }
 
@@ -77,7 +83,12 @@ RaysAcoustic2D<T>::RaysAcoustic2D(const int _nx, const int _nz, const T _dx, con
     /* Initialize TT */
     for (int i=0; i < _nx*_nz; i++){
         TT[i] = 2.0*this->getTmax();
-        lam[i] = 10.0*this->getTmax();
+    }
+    Index Ilam(_nx,_nz);
+    for (int i=1; i < _nx-1; i++){
+        for (int j=1; j < _nz-1; j++){
+            lam[Ilam(i,j)] = 10.0*this->getTmax();
+        }
     }
 }
 
@@ -124,8 +135,14 @@ RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> 
     /* Initialize TT */
     for (int i=0; i < _nx*_nz; i++){
         TT[i] = 2.0*_tmax;
-        lam[i] = 10.0*_tmax;
     }
+    Index Ilam(_nx,_nz);
+    for (int i=1; i < _nx-1; i++){
+        for (int j=1; j < _nz-1; j++){
+            lam[Ilam(i,j)] = 10.0*this->getTmax();
+        }
+    }
+
 }
 
 template<typename T>
@@ -381,6 +398,64 @@ T RaysAcoustic2D<T>::norm1(T *TT, T *TTold)
     return norml1;
 }
 
+template<typename T>
+void RaysAcoustic2D<T>::createRecmask(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype){
+    Point2D<int> *map;
+    int ntrace = source->getNtrace();
+    int nx, nz;
+    nx = this->getNx();
+    nz = this->getNz();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+    }else{
+        map = (source->getGeom())->getGmap();
+    }
+
+    int i;
+    //Indexes 
+    Index I(nx, nz); //Model and Field indexes
+    Index Idat(1, ntrace); // Data indexes
+    for (i=0; i < ntrace; i++) 
+    {
+        if(map[i].x >= 0 && map[i].y >=0)
+        { 
+            recmask[I(map[i].x, map[i].y)] = true;
+        }
+    }
+}
+
+template<typename T>
+void RaysAcoustic2D<T>::insertResiduals(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype){
+    Point2D<int> *map;
+    int ntrace = source->getNtrace();
+    int nx, nz;
+    nx = this->getNx();
+    nz = this->getNz();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+    }else{
+        map = (source->getGeom())->getGmap();
+    }
+
+    T *res;
+    res = source->getData();
+
+    int i;
+    //Indexes 
+    Index I(nx, nz); //Model and Field indexes
+    Index Idat(1, ntrace); // Data indexes
+    for (i=0; i < ntrace; i++) 
+    {
+        if(map[i].x >= 0 && map[i].y >=0)
+        { 
+            lam[I(map[i].x, map[i].y)] = res[Idat(1,i)];
+        }
+    }
+}
 
 template<typename T>
 void RaysAcoustic2D<T>::solve()
@@ -412,6 +487,44 @@ void RaysAcoustic2D<T>::solve()
         lnorm1 = norm1(TT,TTold);
     }
     free(TTold);
+}
+
+template<typename T>
+void RaysAcoustic2D<T>::solve_adj()
+{
+    int nx = this->getNx();
+    int nz = this->getNz();
+    T tmax = this->getTmax();
+    T *lamold = (T *) calloc(nx*nz, sizeof(T));
+    int i;
+
+    /* initialize l1 norm of lam - lamold */
+    T lnorm1 = 10.0 * tmax;
+
+    /* apply fast sweeping method to solve the eikonal equation */
+    while(lnorm1>=TTNORM){
+
+        /* save old lam values */
+        for (i=0; i<nx*nz; i++){
+            lamold[i] = lam[i];
+        }
+
+        /* sweep with order according to Daniel !? */
+		//sweep_adj(1,nx-2,1,1,nz-2,1);
+		//sweep_adj(1,nx-2,1,nz-2,1,-1);
+		//sweep_adj(nx-2,1,-1,1,nz-2,1);
+		//sweep_adj(nx-2,1,-1,nz-2,1,-1);
+
+        /* sweep with order according to Zhao (2004) */
+		sweep_adj(1,nx-2,1,1,nz-2,1);
+		sweep_adj(nx-2,1,-1,nz-2,1,-1);
+		sweep_adj(nx-2,1,-1,1,nz-2,1);
+		sweep_adj(1,nx-2,1,nz-2,1,-1);
+
+		/* calculate l1 norm of lam - lamold */
+        lnorm1 = norm1(lam,lamold);
+    }
+    free(lamold);
 }
 
 
