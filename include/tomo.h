@@ -1,5 +1,5 @@
-#ifndef FATT_H
-#define FATT_H
+#ifndef TOMO_H
+#define TOMO_H
 
 // Include statements
 #include <iostream>
@@ -20,8 +20,7 @@
 #include "snap.h"
 #include "interp.h"
 #include "parallel.h"
-#include "rtm.h"
-#include "mva.h"
+#include "fat.h"
 #include "sort.h"
 #include "bspl.h"
 
@@ -29,10 +28,10 @@
 #define RUN_BS_PROJ 1
 #define BREAK_LOOP 2
 
-#define FAT_ERR 0
-#define FAT_OK 1
+#define TOM_ERR 0
+#define TOM_OK 1
 
-#define LOGFILE "fatt.log"
+#define LOGFILE "tomo.log"
 
 #define PROGLOGFILE "progress.log"
 
@@ -62,7 +61,6 @@
 #define RESULTDIR "Results"
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
-#define CUB(x) ((x)*(x)*(x) + 1e-2)
 
 
 namespace rockseis {
@@ -70,13 +68,13 @@ namespace rockseis {
 // =============== ENUMS =============== //
 typedef enum {PAR_GRID, PAR_BSPLINE, PAR_1D} rs_paramtype; ///< Type of parameterisation
 
-// ##### FATT CLASS
+// ##### TOMO CLASS
 template<typename T>
-class Fatt {
+class Tomo {
 public:
-    Fatt(); ///<Constructor
-    Fatt(MPImodeling *_mpi); ///<Constructor
-    ~Fatt(); ///<Destructor
+    Tomo(); ///<Constructor
+    Tomo(MPImodeling *_mpi); ///<Constructor
+    ~Tomo(); ///<Destructor
     void createResult();
     double vector_norm(double *v, const int type, const int n);
     void setMpi(MPImodeling *_mpi) { mpi = _mpi; }
@@ -94,8 +92,6 @@ public:
     void setSnapinc(int val) { snapinc = val; }
     int getNsnaps() { return nsnaps; }
     void setNsnaps(int val) { nsnaps = val; }
-    rs_snapmethod getSnapmethod() { return snapmethod; } 
-    void setSnapmethod(rs_snapmethod val) { snapmethod = val; }
     rs_paramtype getParamtype() { return paramtype; } 
     void setParamtype(rs_paramtype val) { paramtype = val; }
     void setMisfit(T val) { misfit = val; } ///< Sets data misfit value
@@ -130,7 +126,6 @@ private:
     std::ofstream Flog; ///< Log stream
     bool createLog(); ///< Set name of logfile and open for writing
     bool createProglog(); ///< Set name of progress logfile and open for writing
-    rs_snapmethod snapmethod;
     rs_paramtype paramtype;
     MPImodeling *mpi;
     T dtx, dty, dtz;
@@ -139,13 +134,13 @@ private:
     T tmax; ///< Maximum traveltime in domain
 };
 
-// ##### ACOUSTIC 2D FATT CLASS
+// ##### ACOUSTIC 2D TOMO CLASS
 template<typename T>
-class FattAcoustic2D: public Fatt<T> {
+class TomoAcoustic2D: public Tomo<T> {
 public:
-    FattAcoustic2D(); ///<Constructor
-    FattAcoustic2D(MPImodeling *_mpi); ///<Constructor
-    ~FattAcoustic2D(); ///<Destructor
+    TomoAcoustic2D(); ///<Constructor
+    TomoAcoustic2D(MPImodeling *_mpi); ///<Constructor
+    ~TomoAcoustic2D(); ///<Destructor
 
     void setWaveletfile(std::string file) { Waveletfile = file; }
     std::string getWaveletfile() { return Waveletfile; }
@@ -186,15 +181,13 @@ public:
     void setVpregeps(T val) { reg_eps[0] = val; }
     T getVpregeps() { return reg_eps[0]; }
 
-    void setDataweight(bool val) {dataweightset = val; }
+    void setDataweight(bool val) {dataweight = val; }
 
     void setDataweightfile(std::string file) {Dataweightfile = file; }
 
     // Run gradient
     void runGrad();
 
-    // Scale gradient
-    void scaleGrad(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, T *lam, T *grad);
     void clipGrad(std::shared_ptr<rockseis::Image2D<T>> grad);
    
     // Run BSProjection
@@ -205,9 +198,6 @@ public:
 
     // Regularisation computation
     void computeRegularisation(double *x);
-
-    // Compute Misfit
-    void computeMisfit(std::shared_ptr<rockseis::Data2D<T>> dataT, std::shared_ptr<rockseis::Data2D<T>> datamodT, std::shared_ptr<rockseis::Data2D<T>> dataresT, std::shared_ptr<rockseis::Data2D<T>> dataweight);
 
     // Combine gradients
     void combineGradients();
@@ -238,7 +228,7 @@ private:
     std::string Tmodelledfile;
     std::string Tresidualfile;
     std::string Dataweightfile;
-    bool dataweightset;
+    bool dataweight;
     std::string Mutefile;
     T apertx;
     T kvp;
@@ -247,4 +237,4 @@ private:
 };
 
 }
-#endif //FATT_H
+#endif //TOMO_H

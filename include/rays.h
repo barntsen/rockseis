@@ -22,6 +22,8 @@
 #define TTNORM 1e-13
 #define EPS_ADJ 1.0e-12
 
+#define TMAX 99.0
+
 namespace rockseis {
 
 /** The abstract waves class
@@ -31,7 +33,7 @@ template<typename T>
 class Rays {
 public:
     Rays();		///< Constructor
-    Rays(const int _dim, const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const T _tmax);	///< Constructor
+    Rays(const int _dim, const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz);	///< Constructor
     virtual ~Rays();	///< Destructor
     
     // Get functions
@@ -45,7 +47,6 @@ public:
     T getOx() { return geometry->getO(1); }	///< Get Ox
     T getOy() { return geometry->getO(2); }	///< Get Oy
     T getOz() { return geometry->getO(3); }	///< Get Oz
-    T getTmax() { return tmax; }	///< Get Tmax
     int getLpml() { return lpml; }		///< Get lpml
 
     //Interpolation function
@@ -61,14 +62,12 @@ public:
     void setOx(const T _ox) { geometry->setO(1, _ox); }	///< Set Ox
     void setOy(const T _oy) { geometry->setO(2, _oy); }	///< Set Oy
     void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
-    void setTmax(const T val) { tmax = val; }	///< Set Tmax
     void setDim(const int _dim) { dim = _dim; }		///< Set the dimension
     void setLpml(const int _lpml) { lpml = _lpml; }	///< Set lpml
 
 private:
     int dim;
     std::shared_ptr<Geometry<T>> geometry; // regular geometry
-    T tmax;
     int lpml;
 
 };
@@ -80,8 +79,8 @@ template<typename T>
 class RaysAcoustic2D: public Rays<T> {
 public:
     RaysAcoustic2D();					///< Constructor
-    RaysAcoustic2D(const int _nx, const int _nz, const T _dx, const T _dz, const T _ox, const T _oz, const T _tmax);	///< Constructor
-    RaysAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model, T _tmax);	///< Constructor
+    RaysAcoustic2D(const int _nx, const int _nz, const T _dx, const T _dz, const T _ox, const T _oz);	///< Constructor
+    RaysAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model);	///< Constructor
     ~RaysAcoustic2D();					///< Destructor
     
     // Eikonal solver

@@ -1,13 +1,13 @@
 #include <iostream>
 #include <mpi.h>
 #include "opt.h"
-#include "fatt.h"
+#include "tomo.h"
 #include "inparse.h"
 
 using namespace rockseis;
 
 /* Global variables */
-std::shared_ptr<FattAcoustic2D<float>> fatt;
+std::shared_ptr<TomoAcoustic2D<float>> fatt;
 
 /* Global functions */
 void evaluate(rockseis::OptInstancePtr instance)
@@ -133,9 +133,6 @@ int main(int argc, char** argv) {
         if(mpi.getRank() == 0){
             PRINT_DOC(# MPI 2d acoustic full-waveform inversion configuration file);
             PRINT_DOC();
-            PRINT_DOC(# Parameters);
-            PRINT_DOC(        tmax  = "1.0"; # Maximum time in seconds);
-            PRINT_DOC();
             PRINT_DOC(#Fatt parameters);
             PRINT_DOC(dataweight = "false";);
             PRINT_DOC(Dataweightfile = "weights.rss";);
@@ -167,10 +164,9 @@ int main(int argc, char** argv) {
     }
 
     // Initialize Inversion class
-    fatt = std::make_shared<rockseis::FattAcoustic2D<float>>(&mpi);
+    fatt = std::make_shared<rockseis::TomoAcoustic2D<float>>(&mpi);
 	/* General input parameters */
     bool status;
-	float tmax;
     bool dataweight;
     bool mute;
     int _paramtype;
@@ -198,7 +194,6 @@ int main(int argc, char** argv) {
         rs_error("Parse error on input config file", argv[1]);
     }
     status = false; 
-    if(Inpar->getPar("tmax", &tmax) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("kvp", &kvp) == INPARSE_ERR) status = true;
     if(Inpar->getPar("paramtype", &_paramtype) == INPARSE_ERR) status = true;
@@ -248,8 +243,6 @@ int main(int argc, char** argv) {
     fatt->setDtz(dtz);
 
     fatt->setVpregalpha(vpregalpha);
-
-    fatt->setTmax(tmax);
 
     //MASTER
     if(mpi.getRank() == 0){

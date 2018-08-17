@@ -20,7 +20,6 @@ Rays<T>::Rays() {
     geometry->setO(2, 0.);
     geometry->setO(3, 0.);
     dim=0;
-    tmax = 0.;
     lpml=3;
 }
 
@@ -30,7 +29,7 @@ Rays<T>::~Rays() {
 }
 
 template<typename T>
-Rays<T>::Rays(const int _dim, const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const T _tmax) {
+Rays<T>::Rays(const int _dim, const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz) {
     geometry = std::make_shared<Geometry<T>>(); 
     geometry->setN(1, _nx);
     geometry->setN(2, _ny);
@@ -42,7 +41,6 @@ Rays<T>::Rays(const int _dim, const int _nx, const int _ny, const int _nz, const
     geometry->setO(2, _oy);
     geometry->setO(3, _oz);
     dim = _dim;
-    tmax = _tmax;
     lpml = 3;
 
 }
@@ -61,19 +59,19 @@ RaysAcoustic2D<T>::RaysAcoustic2D(){
 
     /* Initialize arrays */
     for (int i=0; i < nx*nz; i++){
-        TT[i] = 2.0*this->getTmax();
+        TT[i] = 2.0*TMAX;
     }
 
     Index Ilam(nx,nz);
     for (int i=1; i < nx-1; i++){
         for (int j=1; j < nz-1; j++){
-            lam[Ilam(i,j)] = 10.0*this->getTmax();
+            lam[Ilam(i,j)] = 10.0*TMAX;
         }
     }
 }
 
 template<typename T>
-RaysAcoustic2D<T>::RaysAcoustic2D(const int _nx, const int _nz, const T _dx, const T _dz, const T _ox, const T _oz, const T _tmax): Rays<T>(2, _nx, 1, _nz, _dx, 1.0, _dz, _ox, 0.0, _oz, _tmax) {
+RaysAcoustic2D<T>::RaysAcoustic2D(const int _nx, const int _nz, const T _dx, const T _dz, const T _ox, const T _oz): Rays<T>(2, _nx, 1, _nz, _dx, 1.0, _dz, _ox, 0.0, _oz) {
 
     /* Allocate memory variables */
     TT = (T *) calloc(_nx*_nz, sizeof(T));
@@ -82,19 +80,19 @@ RaysAcoustic2D<T>::RaysAcoustic2D(const int _nx, const int _nz, const T _dx, con
 
     /* Initialize TT */
     for (int i=0; i < _nx*_nz; i++){
-        TT[i] = 2.0*this->getTmax();
+        TT[i] = 2.0*TMAX;
     }
     Index Ilam(_nx,_nz);
     for (int i=1; i < _nx-1; i++){
         for (int j=1; j < _nz-1; j++){
-            lam[Ilam(i,j)] = 10.0*this->getTmax();
+            lam[Ilam(i,j)] = 10.0*TMAX;
         }
     }
 }
 
 
 template<typename T>
-RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> _model, T _tmax): Rays<T>(){
+RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> _model): Rays<T>(){
 
     int _nx, _ny, _nz;
     T _dx, _dy, _dz; 
@@ -122,7 +120,6 @@ RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> 
     this->setOy(_oy);
     this->setOz(_oz);
     this->setDim(_dim);
-    this->setTmax(_tmax);
 
     // Setting model pointer
     model = _model;
@@ -134,12 +131,12 @@ RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> 
 
     /* Initialize TT */
     for (int i=0; i < _nx*_nz; i++){
-        TT[i] = 2.0*_tmax;
+        TT[i] = 2.0*TMAX;
     }
     Index Ilam(_nx,_nz);
     for (int i=1; i < _nx-1; i++){
         for (int j=1; j < _nz-1; j++){
-            lam[Ilam(i,j)] = 10.0*this->getTmax();
+            lam[Ilam(i,j)] = 10.0*TMAX;
         }
     }
 
@@ -462,7 +459,7 @@ void RaysAcoustic2D<T>::solve()
 {
     int nx = this->getNx();
     int nz = this->getNz();
-    T tmax = this->getTmax();
+    T tmax = TMAX;
     T *TTold = (T *) calloc(nx*nz, sizeof(T));
     int i;
 
@@ -494,7 +491,7 @@ void RaysAcoustic2D<T>::solve_adj()
 {
     int nx = this->getNx();
     int nz = this->getNz();
-    T tmax = this->getTmax();
+    T tmax = TMAX;
     T *lamold = (T *) calloc(nx*nz, sizeof(T));
     int i;
 

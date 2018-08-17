@@ -109,8 +109,8 @@ if(env['MPI']):
         Elasticwemva2d = mpi.Program(prefix + 'Elasticwemva2d','Elasticwemva2d.cpp',LIBS=['wemva', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'mva', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'])
         mpi.Install('../bin/',Elasticwemva2d)
 
-        #Acousticfatt2d = mpi.Program(prefix + 'Acousticfatt2d','Acousticfatt2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'rays', 'utils', 'der', 'geometry', 'sort', 'data', 'fatt', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'])
-        #mpi.Install('../bin/',Acousticfatt2d)
+        Acoustictomo2d = mpi.Program(prefix + 'Acoustictomo2d','Acoustictomo2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'rays', 'utils', 'der', 'geometry', 'sort', 'data', 'tomo', 'fat', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'])
+        mpi.Install('../bin/',Acoustictomo2d)
 
         hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl','rsfcpp','rsfc'])
         mpi.Install('../bin/',hello_fdgrad)

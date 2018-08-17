@@ -1,36 +1,35 @@
-#include "fatt.h"
+#include "tomo.h"
 
 
 namespace rockseis {
 
-// =============== ABSTRACT FATT CLASS =============== //
+// =============== ABSTRACT TOMO CLASS =============== //
 template<typename T>
-Fatt<T>::Fatt() {
+Tomo<T>::Tomo() {
     //Set default parameters
     lpml = 10;
     incore = true;
     order = 4;
     snapinc=4;
     nsnaps=0;
-    snapmethod = OPTIMAL; 
     paramtype = PAR_GRID;
     dtx = -1;
     dty = -1;
     dtz = -1;
     fnorm = 0.0;
-    if(createLog() == FAT_ERR)
+    if(createLog() == TOM_ERR)
     {
-        rs_error("Fatt<T>::Fatt(): Error creating logfile for writting.");
+        rs_error("Tomo<T>::Tomo(): Error creating logfile for writting.");
     }
-    if(createProglog() == FAT_ERR)
+    if(createProglog() == TOM_ERR)
     {
-        rs_error("Fatt<T>::Fatt(): Error creating progress logfile for writting.");
+        rs_error("Tomo<T>::Tomo(): Error creating progress logfile for writting.");
     }
     noreverse = false;
 }
 
 template<typename T>
-Fatt<T>::Fatt(MPImodeling *_mpi) {
+Tomo<T>::Tomo(MPImodeling *_mpi) {
     mpi = _mpi;
 
     //Set default parameters
@@ -39,25 +38,24 @@ Fatt<T>::Fatt(MPImodeling *_mpi) {
     order = 4;
     snapinc=4;
     nsnaps=0;
-    snapmethod = OPTIMAL; 
     paramtype = PAR_GRID;
     dtx = -1;
     dty = -1;
     dtz = -1;
     fnorm = 0.0;
-    if(createLog() == FAT_ERR)
+    if(createLog() == TOM_ERR)
     {
-        rs_error("Fatt<T>::Fatt(): Error creating logfile for writting.");
+        rs_error("Tomo<T>::Tomo(): Error creating logfile for writting.");
     }
-    if(createProglog() == FAT_ERR)
+    if(createProglog() == TOM_ERR)
     {
-        rs_error("Fatt<T>::Fatt(): Error creating progress logfile for writting.");
+        rs_error("Tomo<T>::Tomo(): Error creating progress logfile for writting.");
     }
     noreverse = false;
 }
 
 template<typename T>
-void Fatt<T>::normalize(double *v, double *f, int n){
+void Tomo<T>::normalize(double *v, double *f, int n){
 	int i;
     if(fnorm == 0.0) {
         fnorm = 1.0;
@@ -69,7 +67,7 @@ void Fatt<T>::normalize(double *v, double *f, int n){
 }
 
 template<typename T>
-double Fatt<T>::vector_norm(double *v, const int type, const int n){
+double Tomo<T>::vector_norm(double *v, const int type, const int n){
 	// Variables
 	int i;
 	double norm;
@@ -93,33 +91,33 @@ double Fatt<T>::vector_norm(double *v, const int type, const int n){
 }
 
 template<typename T>
-bool Fatt<T>::createLog(){
+bool Tomo<T>::createLog(){
 	logfile = LOGFILE;
 	Flog.open(logfile.c_str());
 	if(Flog.fail()){
 		Flog.close();
-		return FAT_ERR;
+		return TOM_ERR;
 	}else{
 		Flog.close();
-		return FAT_OK;
+		return TOM_OK;
 	}
 }
 
 template<typename T>
-bool Fatt<T>::createProglog(){
+bool Tomo<T>::createProglog(){
 	progresslogfile = PROGLOGFILE;
 	Flog.open(progresslogfile.c_str());
 	if(Flog.fail()){
 		Flog.close();
-		return FAT_ERR;
+		return TOM_ERR;
 	}else{
 		Flog.close();
-		return FAT_OK;
+		return TOM_OK;
 	}
 }
 
 template<typename T>
-void Fatt<T>::writeLog(std::string text){
+void Tomo<T>::writeLog(std::string text){
     char tempo[256];
 	time_t now;
     now = time(NULL);
@@ -134,7 +132,7 @@ void Fatt<T>::writeLog(std::string text){
 }
 
 template<typename T>
-void Fatt<T>::writeProgress(std::string text){
+void Tomo<T>::writeProgress(std::string text){
     if(!progresslogfile.empty()){
         Flog.open(progresslogfile.c_str(), std::ios::app);
         if(!Flog.fail())
@@ -144,7 +142,7 @@ void Fatt<T>::writeProgress(std::string text){
 }
 
 template<typename T>
-void Fatt<T>::createResult(){
+void Tomo<T>::createResult(){
     struct stat s;
     // Checking if result folder is present, and creates it if not
     if(stat(RESULTDIR,&s) != 0) {
@@ -154,14 +152,14 @@ void Fatt<T>::createResult(){
 }
 
 template<typename T>
-Fatt<T>::~Fatt() {
+Tomo<T>::~Tomo() {
     //Do nothing
 }
 
-// =============== 2D ACOUSTIC FATT CLASS =============== //
+// =============== 2D ACOUSTIC TOMO CLASS =============== //
 //
 template<typename T>
-FattAcoustic2D<T>::FattAcoustic2D() {
+TomoAcoustic2D<T>::TomoAcoustic2D() {
     // Set default parameters
     apertx = -1;
 
@@ -172,7 +170,7 @@ FattAcoustic2D<T>::FattAcoustic2D() {
 }
 
 template<typename T>
-FattAcoustic2D<T>::FattAcoustic2D(MPImodeling *mpi): Fatt<T>(mpi) {
+TomoAcoustic2D<T>::TomoAcoustic2D(MPImodeling *mpi): Tomo<T>(mpi) {
     // Set default parameters
     apertx = -1;
 
@@ -182,13 +180,13 @@ FattAcoustic2D<T>::FattAcoustic2D(MPImodeling *mpi): Fatt<T>(mpi) {
 }
 
 template<typename T>
-FattAcoustic2D<T>::~FattAcoustic2D() {
+TomoAcoustic2D<T>::~TomoAcoustic2D() {
     //Do nothing
 }
 
 
 template<typename T>
-void FattAcoustic2D<T>::clipGrad(std::shared_ptr<rockseis::Image2D<T>> grad)
+void TomoAcoustic2D<T>::clipGrad(std::shared_ptr<rockseis::Image2D<T>> grad)
 {
     int nx, nz;
     nx = grad->getNx();
@@ -201,7 +199,7 @@ void FattAcoustic2D<T>::clipGrad(std::shared_ptr<rockseis::Image2D<T>> grad)
         thres[i] = ABS(data[i]);
     }
     std::sort(thres, thres+(nx*nz)); 
-    int pos = (int) (99.0*(nx*nz)/100.0);
+    int pos = (int) (97.0*(nx*nz)/100.0);
     T pclip = thres[pos];
 
     for (int i=0; i<nx*nz; i++){
@@ -213,19 +211,9 @@ void FattAcoustic2D<T>::clipGrad(std::shared_ptr<rockseis::Image2D<T>> grad)
     free(thres);
 }
 
-template<typename T>
-void FattAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, T *lam, T *grad) {
-    int nx, nz;
-    nx = model->getNx();
-    nz = model->getNz();
-    T * vp = model->getVp();
-    for (int i=0; i<nx*nz; i++){
-        grad[i] = -1.0*lam[i]/CUB(vp[i]);
-    }
-}
 
 template<typename T>
-void FattAcoustic2D<T>::runGrad() {
+void TomoAcoustic2D<T>::runGrad() {
     MPImodeling *mpi = this->getMpi();
     std::shared_ptr<rockseis::Data2D<T>> Tobs2D;
     std::shared_ptr<rockseis::Data2D<T>> Tmod2D;
@@ -300,7 +288,7 @@ void FattAcoustic2D<T>::runGrad() {
     }
     else {
         /* Slave */
-        std::shared_ptr<rockseis::RaysAcoustic2D<T>> rays;
+        std::shared_ptr<rockseis::FatAcoustic2D<T>> fat;
         while(1) {
             workModeling_t work = mpi->receiveWork();
 
@@ -321,12 +309,6 @@ void FattAcoustic2D<T>::runGrad() {
                 Tobs2D = Sort->get2DGather(work.id);
                 size_t ntr = Tobs2D->getNtrace();
 
-                // Get the weight
-                if(dataweightset){
-                    Sort->setDatafile(Dataweightfile);
-                    weight2D = Sort->get2DGather(work.id);
-                }
-
                 lmodel = gmodel->getLocal(Tobs2D, -3.0*gmodel->getDx(), SMAP);
 
                 //Create source 
@@ -335,68 +317,61 @@ void FattAcoustic2D<T>::runGrad() {
                 source->makeMap(lmodel->getGeom(), SMAP);
 
 
-                // Creating gradient objects
-                vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
-
-                //////// Run forward modelling 
-                 rays = std::make_shared<rockseis::RaysAcoustic2D<T>>(lmodel, this->getTmax());
-
-                /* initialize traveltime field at source positions */
-                rays->insertSource(source, SMAP);
-                rays->solve();
-
-
-                // Output forward modelled data
+                // Create first arrival tomography object
+                 fat = std::make_shared<rockseis::FatAcoustic2D<T>>(lmodel, source, Tobs2D);
+                // Create modelled and residual data objects 
                 Tmod2D = std::make_shared<rockseis::Data2D<T>>(ntr, Tobs2D->getNt(), Tobs2D->getDt(), 0.0);
-                // Copy geometry to Data
                 Tmod2D->copyCoords(Tobs2D);
                 Tmod2D->makeMap(lmodel->getGeom());
-                rays->recordData(Tmod2D, GMAP);
-
-                Tmod2D->setFile(Tmodelledfile);
-                Sort->put2DGather(Tmod2D, work.id);
-
-                // Compute misfit and residuals
+                fat->setTmod(Tmod2D);
                 Tres2D = std::make_shared<rockseis::Data2D<T>>(ntr, Tobs2D->getNt(), Tobs2D->getDt(), 0.0);
-                this->computeMisfit(Tobs2D, Tmod2D, Tres2D, weight2D);
-
-
-                // Output residuals
                 Tres2D->copyCoords(Tobs2D);
                 Tres2D->makeMap(lmodel->getGeom());
-                Tres2D->setFile(Tresidualfile);
-                Sort->put2DGather(Tres2D, work.id);
+                fat->setTres(Tres2D);
 
-                /////// Run adjoint modelling
-                rays->createRecmask(Tres2D, GMAP);
-                rays->insertResiduals(Tres2D, GMAP);
-                rays->solve_adj();
+                if(dataweight){
+                    Sort->setDatafile(Dataweightfile);
+                    weight2D = Sort->get2DGather(work.id);
+                    fat->setTweight(weight2D);
+                }
 
-                // Calculate gradient
-	            if(!vpgrad->getAllocated()) vpgrad->allocateImage();
-                this->scaleGrad(lmodel, rays->getLam(), vpgrad->getImagedata());
+                // Creating gradient objects
+                vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                fat->setVpgrad(vpgrad);
+
+                // Set logfile
+                fat->setLogfile("log.txt-" + std::to_string(work.id));
+
+                /////// Run eikonal solver
+                fat->run();
 
                 // Output gradient
                 vpgrad->write();
 
                 // Output misfit
                 Fmisfit->append(Misfitfile);
-                T val = this->getMisfit();
+                T val = fat->getMisfit();
                 Fmisfit->write(&val, 1, work.id*sizeof(T));
                 Fmisfit->close();
+
+                // Output modelled and residual data
+                Tmod2D->setFile(Tmodelledfile);
+                Sort->put2DGather(Tmod2D, work.id);
+                Tres2D->setFile(Tresidualfile);
+                Sort->put2DGather(Tres2D, work.id);
 
                 
                 // Reset all classes
                 Tobs2D.reset();
                 Tmod2D.reset();
                 Tres2D.reset();
-                if(dataweightset){
+                if(dataweight){
                     weight2D.reset();
                 }
-                rays.reset();
                 source.reset();
                 lmodel.reset();
                 vpgrad.reset();
+                fat.reset();
                 work.status = WORK_FINISHED;
 
                 // Send result back
@@ -407,7 +382,7 @@ void FattAcoustic2D<T>::runGrad() {
 }
 
 template<typename T>
-void FattAcoustic2D<T>::runBsproj() {
+void TomoAcoustic2D<T>::runBsproj() {
     MPImodeling *mpi = this->getMpi();
 	T vpsum = 0.0; // Sum over splines
 	float *global_stack;
@@ -438,7 +413,7 @@ void FattAcoustic2D<T>::runBsproj() {
 	/* Allocating projection arrays */
 	float *vpproj= (float *) calloc(nc, sizeof(float));
 	if(vpproj==NULL){
-		rs_error("FattAcoustic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
+		rs_error("TomoAcoustic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
 	}
 
     if(mpi->getRank() == 0) {
@@ -460,7 +435,7 @@ void FattAcoustic2D<T>::runBsproj() {
 
 		global_stack= (float *) calloc(nc, sizeof(float));
 		if(global_stack==NULL){
-			rs_error("FattAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
+			rs_error("TomoAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
 		}
 
 		/* Starting reduce operation */
@@ -510,7 +485,7 @@ void FattAcoustic2D<T>::runBsproj() {
 
 		global_stack= (float *) calloc(nc, sizeof(float));
 		if(global_stack==NULL){
-			rs_error("FattAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
+			rs_error("TomoAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
 		}
 
 		/* Starting reduce operation */
@@ -523,7 +498,7 @@ void FattAcoustic2D<T>::runBsproj() {
 }
 
 template<typename T>
-int FattAcoustic2D<T>::setInitial(double *x, std::string vpfile)
+int TomoAcoustic2D<T>::setInitial(double *x, std::string vpfile)
 {
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> model_in (new rockseis::ModelAcoustic2D<T>(vpfile, vpfile, 1 ,0));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
@@ -544,7 +519,7 @@ int FattAcoustic2D<T>::setInitial(double *x, std::string vpfile)
             N=spline->getNc();
             break;
         default:
-            rs_error("FattAcoustic2D<T>::setInitial(): Unknown parameterisation."); 
+            rs_error("TomoAcoustic2D<T>::setInitial(): Unknown parameterisation."); 
             break;
     }
 
@@ -552,7 +527,7 @@ int FattAcoustic2D<T>::setInitial(double *x, std::string vpfile)
 }
 
 template<typename T>
-void FattAcoustic2D<T>::saveResults(int iter)
+void TomoAcoustic2D<T>::saveResults(int iter)
 {
     std::string name;
     std::string dir;
@@ -566,7 +541,7 @@ void FattAcoustic2D<T>::saveResults(int iter)
 }
 
 template<typename T>
-void FattAcoustic2D<T>::saveLinesearch(double *x)
+void TomoAcoustic2D<T>::saveLinesearch(double *x)
 {
     // Models
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> model0 (new rockseis::ModelAcoustic2D<T>(VP0FILE, VP0FILE, 1 ,0));
@@ -590,7 +565,7 @@ void FattAcoustic2D<T>::saveLinesearch(double *x)
         mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Mutefile, Mutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
-        if(N != Nmute) rs_error("FattAcoustic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
+        if(N != Nmute) rs_error("TomoAcoustic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         N = (lsmodel->getGeom())->getNtot();
@@ -630,7 +605,7 @@ void FattAcoustic2D<T>::saveLinesearch(double *x)
             lsmodel->writeVp();
             break;
         default:
-            rs_error("FattAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
+            rs_error("TomoAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
             break;
     }
     if(Mutefile.empty()){
@@ -639,49 +614,7 @@ void FattAcoustic2D<T>::saveLinesearch(double *x)
 }
 
 template<typename T>
-void FattAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Data2D<T>> dataT, std::shared_ptr<rockseis::Data2D<T>> datamodT, std::shared_ptr<rockseis::Data2D<T>> dataresT, std::shared_ptr<rockseis::Data2D<T>> dataweight)
-{
-    size_t ntr = datamodT->getNtrace();
-    if(dataT->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
-    size_t nt = datamodT->getNt();
-    if(dataT->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
-
-    
-    T* mod = datamodT->getData();
-    T* obs = dataT->getData();
-    T* res = dataresT->getData();
-    T* wei = NULL;
-    if(dataweightset) 
-    {
-        wei = dataweight->getData();
-    }
-    size_t itr;
-    T deltaT = 0.0;
-    T misfit = 0.0;
-
-    Index I(1, ntr);
-    for(itr=0; itr<ntr; itr++){
-        deltaT = mod[I(1, itr)] - obs[I(1, itr)];
-        if(dataweightset)
-        {
-            deltaT *= wei[I(1, itr)];
-        }
-        misfit += 0.5*deltaT*deltaT;
-        res[I(1, itr)] = deltaT;
-
-        if(dataweightset)
-        {
-            res[I(1, itr)] *= wei[I(1, itr)];
-        }
-    }
-
-
-    // Set the final misfit value
-    this->setMisfit(misfit);
-}
-
-template<typename T>
-void FattAcoustic2D<T>::readMisfit(double *f)
+void TomoAcoustic2D<T>::readMisfit(double *f)
 {
     // Data misfit
     *f = 0.0;
@@ -702,7 +635,7 @@ void FattAcoustic2D<T>::readMisfit(double *f)
 }
 
 template<typename T>
-void FattAcoustic2D<T>::readGrad(double *g)
+void TomoAcoustic2D<T>::readGrad(double *g)
 {
     int i;
     int N;
@@ -744,13 +677,13 @@ void FattAcoustic2D<T>::readGrad(double *g)
             free(g_in);
             break;
         default:
-            rs_error("FattAcoustic2D<T>::readGrad(): Unknown parameterisation."); 
+            rs_error("TomoAcoustic2D<T>::readGrad(): Unknown parameterisation."); 
             break;
     }
 }
 
 template<typename T>
-void FattAcoustic2D<T>::combineGradients()
+void TomoAcoustic2D<T>::combineGradients()
 {
     // Gradients
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> grad;
@@ -779,7 +712,7 @@ void FattAcoustic2D<T>::combineGradients()
 }
 
 template<typename T>
-void FattAcoustic2D<T>::applyMute()
+void TomoAcoustic2D<T>::applyMute()
 {
     if(!Mutefile.empty()){
         // Models
@@ -809,7 +742,7 @@ void FattAcoustic2D<T>::applyMute()
 }
 
 template<typename T>
-void FattAcoustic2D<T>::computeRegularisation(double *x)
+void TomoAcoustic2D<T>::computeRegularisation(double *x)
 {
     // Models
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> model (new rockseis::ModelAcoustic2D<T>(VPLSFILE, VPLSFILE, 1 ,0));
@@ -873,7 +806,7 @@ void FattAcoustic2D<T>::computeRegularisation(double *x)
 
             break;
         default:
-            rs_error("FattAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
+            rs_error("TomoAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
             break;
     }
     // Computing misfit
@@ -936,10 +869,10 @@ void FattAcoustic2D<T>::computeRegularisation(double *x)
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
-template class Fatt<float>;
-template class Fatt<double>;
+template class Tomo<float>;
+template class Tomo<double>;
 
-template class FattAcoustic2D<float>;
-template class FattAcoustic2D<double>;
+template class TomoAcoustic2D<float>;
+template class TomoAcoustic2D<double>;
 
 }

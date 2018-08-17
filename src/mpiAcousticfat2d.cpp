@@ -26,9 +26,6 @@ int main(int argc, char** argv) {
         if(mpi.getRank() == 0){
             PRINT_DOC(# MPI 2d acoustic modelling default configuration file);
             PRINT_DOC();
-            PRINT_DOC(# Parameters);
-            PRINT_DOC(        tmax  = "1.0"; # Maximum time in seconds);
-            PRINT_DOC();
             PRINT_DOC(# Booleans);
             PRINT_DOC(        TTrecord = "true";  # Set these to true if recording or snapshoting is to be made.);
             PRINT_DOC(        TTsnap = "false";);
@@ -45,7 +42,6 @@ int main(int argc, char** argv) {
     }
     bool status;
 	/* General input parameters */
-	float tmax;
     std::string Surveyfile;
     std::string Vpfile;
 
@@ -64,7 +60,6 @@ int main(int argc, char** argv) {
         rs_error("Parse error on input config file", argv[1]);
     }
     status = false; 
-    if(Inpar->getPar("tmax", &tmax) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Survey", &Surveyfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("TTrecord", &TTrecord) == INPARSE_ERR) status = true;
@@ -148,7 +143,7 @@ int main(int argc, char** argv) {
                 source->makeMap(lmodel->getGeom(), SMAP);
 
                                 // Run modelling 
-                std::shared_ptr<rockseis::RaysAcoustic2D<float>> rays (new rockseis::RaysAcoustic2D<float>(lmodel, tmax));
+                std::shared_ptr<rockseis::RaysAcoustic2D<float>> rays (new rockseis::RaysAcoustic2D<float>(lmodel));
 
                 /* initialize traveltime field at source positions */
                 rays->insertSource(source, SMAP);
