@@ -509,17 +509,11 @@ void RaysAcoustic2D<T>::solve_adj()
             lamold[i] = lam[i];
         }
 
-        /* sweep with order according to Daniel !? */
-		//sweep_adj(1,nx-2,1,1,nz-2,1);
-		//sweep_adj(1,nx-2,1,nz-2,1,-1);
-		//sweep_adj(nx-2,1,-1,1,nz-2,1);
-		//sweep_adj(nx-2,1,-1,nz-2,1,-1);
-
         /* sweep with order according to Zhao (2004) */
 		sweep_adj(1,nx-2,1,1,nz-2,1);
-		sweep_adj(nx-2,1,-1,nz-2,1,-1);
-		sweep_adj(nx-2,1,-1,1,nz-2,1);
 		sweep_adj(1,nx-2,1,nz-2,1,-1);
+		sweep_adj(nx-2,1,-1,1,nz-2,1);
+		sweep_adj(nx-2,1,-1,nz-2,1,-1);
 
 		/* calculate l1 norm of lam - lamold */
         lnorm1 = norm1(lam,lamold);
