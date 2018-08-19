@@ -466,6 +466,7 @@ void RaysAcoustic2D<T>::solve()
     T tmax = TMAX;
     T *TTold = (T *) calloc(nx*nz, sizeof(T));
     int i;
+    int iter=0;
 
     /* initialize l1 norm of TT - TTold */
     T lnorm1 = 10.0 * tmax;
@@ -486,6 +487,8 @@ void RaysAcoustic2D<T>::solve()
 
         /* calculate l1 norm of TT - TTold */
         lnorm1 = norm1(TT,TTold);
+        iter++;
+        if(iter > MAXITER) rs_error("RaysAcoustic2D<T>::solve(): Number of iterations exceeded limit. Eikonal solver is not converging. Try increasing the smoothening of the model."); 
     }
     free(TTold);
 }
@@ -498,6 +501,7 @@ void RaysAcoustic2D<T>::solve_adj()
     T tmax = TMAX;
     T *lamold = (T *) calloc(nx*nz, sizeof(T));
     int i;
+    int iter=0;
 
     /* initialize l1 norm of lam - lamold */
     T lnorm1 = 10.0 * tmax;
@@ -518,6 +522,9 @@ void RaysAcoustic2D<T>::solve_adj()
 
 		/* calculate l1 norm of lam - lamold */
         lnorm1 = norm1(lam,lamold);
+
+        iter++;
+        if(iter > MAXITER) rs_error("RaysAcoustic2D<T>::solve_adj(): Number of iterations exceeded limit. Eikonal solver is not converging. Try increasing the smoothening of the model."); 
     }
     free(lamold);
 }
@@ -888,6 +895,7 @@ void RaysAcoustic3D<T>::solve()
     T tmax = TMAX;
     T *TTold = (T *) calloc(nx*ny*nz, sizeof(T));
     int i;
+    int iter=0;
 
     /* initialize l1 norm of TT - TTold */
     T lnorm1 = 10.0 * tmax;
@@ -911,6 +919,8 @@ void RaysAcoustic3D<T>::solve()
 
         /* calculate l1 norm of TT - TTold */
         lnorm1 = norm1(TT,TTold);
+        iter++;
+        if(iter > MAXITER) rs_error("RaysAcoustic3D<T>::solve(): Number of iterations exceeded limit. Eikonal solver is not converging. Try increasing the smoothening of the model."); 
     }
     free(TTold);
 }
@@ -924,6 +934,7 @@ void RaysAcoustic3D<T>::solve_adj()
     T tmax = TMAX;
     T *lamold = (T *) calloc(nx*ny*nz, sizeof(T));
     int i;
+    int iter=0;
 
     /* initialize l1 norm of lam - lamold */
     T lnorm1 = 10.0 * tmax;
@@ -948,6 +959,9 @@ void RaysAcoustic3D<T>::solve_adj()
 
 		/* calculate l1 norm of lam - lamold */
         lnorm1 = norm1(lam,lamold);
+
+        iter++;
+        if(iter > MAXITER) rs_error("RaysAcoustic3D<T>::solve_adj(): Number of iterations exceeded limit. Eikonal solver is not converging. Try increasing the smoothening of the model."); 
     }
     free(lamold);
 }

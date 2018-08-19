@@ -25,6 +25,7 @@
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
 #define TMAX 99.0
+#define MAXITER 20
 
 namespace rockseis {
 

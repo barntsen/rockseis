@@ -229,6 +229,11 @@ void TomoAcoustic2D<T>::runGrad() {
     // Create a global model class
 	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Vpfile, 0 ,false));
 
+     // Test for problematic model sampling
+    if(gmodel->getDx() != gmodel->getDz()){
+        rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dz).");
+    }
+
     // Create a file to output data misfit values
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
 
@@ -937,6 +942,11 @@ void TomoAcoustic3D<T>::runGrad() {
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelAcoustic3D<T>> gmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Vpfile, 0 ,false));
+
+     // Test for problematic model sampling
+    if(gmodel->getDx() != gmodel->getDy() || gmodel->getDx() != gmodel->getDz()){
+        rs_error("Input model has different dx, dy and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dy = dz).");
+    }
 
     // Create a file to output data misfit values
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());

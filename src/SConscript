@@ -112,6 +112,9 @@ if(env['MPI']):
         Acoustictomo2d = mpi.Program(prefix + 'Acoustictomo2d','Acoustictomo2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'rays', 'utils', 'der', 'geometry', 'sort', 'data', 'tomo', 'fat', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'])
         mpi.Install('../bin/',Acoustictomo2d)
 
+        Acoustictomo3d = mpi.Program(prefix + 'Acoustictomo3d','Acoustictomo3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'rays', 'utils', 'der', 'geometry', 'sort', 'data', 'tomo', 'fat', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','rsfcpp','rsfc'])
+        mpi.Install('../bin/',Acoustictomo3d)
+
         hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl','rsfcpp','rsfc'])
         mpi.Install('../bin/',hello_fdgrad)
 
