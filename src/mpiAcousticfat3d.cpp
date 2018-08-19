@@ -24,15 +24,15 @@ int main(int argc, char** argv) {
 
     if(argc < 2){
         if(mpi.getRank() == 0){
-            PRINT_DOC(# MPI 2d acoustic modelling default configuration file);
+            PRINT_DOC(# MPI 3d acoustic modelling default configuration file);
             PRINT_DOC();
             PRINT_DOC(# Booleans);
             PRINT_DOC(        TTrecord = "true";  # Set these to true if recording or snapshoting is to be made.);
             PRINT_DOC(        TTsnap = "false";);
             PRINT_DOC();
             PRINT_DOC(# Input files);
-            PRINT_DOC(        Vp = "Vp2d.rss";);
-            PRINT_DOC(        Survey = "2DSurvey.rss";);
+            PRINT_DOC(        Vp = "Vp3d.rss";);
+            PRINT_DOC(        Survey = "3DSurvey.rss";);
             PRINT_DOC();
             PRINT_DOC(# Output files);
             PRINT_DOC(        TTrecordfile = "TTrecord.rss";);
@@ -48,10 +48,10 @@ int main(int argc, char** argv) {
     bool TTsnap=0, TTrecord=0;
     std::string TTsnapfile;
     std::string TTrecordfile;
-    std::shared_ptr<rockseis::Data2D<float>> TTdata2D;
+    std::shared_ptr<rockseis::Data3D<float>> TTdata3D;
 
     // Create a local model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> lmodel;
+	std::shared_ptr<rockseis::ModelAcoustic3D<float>> lmodel;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     Sort->setDatafile(Surveyfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> gmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Vpfile, 0 ,false));
+	std::shared_ptr<rockseis::ModelAcoustic3D<float>> gmodel (new rockseis::ModelAcoustic3D<float>(Vpfile, Vpfile, 0 ,false));
 
     // Test for problematic model sampling
     if(gmodel->getDx() != gmodel->getDz()){
@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
     }
     else {
         /* Slave */
-        std::shared_ptr<rockseis::Data2D<float>> Shotgeom;
+        std::shared_ptr<rockseis::Data3D<float>> Shotgeom;
         while(1) {
             workModeling_t work = mpi.receiveWork();
 
@@ -133,17 +133,17 @@ int main(int argc, char** argv) {
                 Sort->readKeymap();
                 Sort->readSortmap();
 
-                Shotgeom = Sort->get2DGather(work.id);
+                Shotgeom = Sort->get3DGather(work.id);
                 size_t ntr = Shotgeom->getNtrace();
-                lmodel = gmodel->getLocal(Shotgeom, -3.0*gmodel->getDx(), SMAP);
+                lmodel = gmodel->getLocal(Shotgeom, -3.0*gmodel->getDx(),-3.0*gmodel->getDx(), SMAP);
 
                 // Set shot coordinates and make a map
-	            std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(ntr, 1, 1.0, 0.0));
+	            std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(ntr, 1, 1.0, 0.0));
                 source->copyCoords(Shotgeom);
                 source->makeMap(lmodel->getGeom(), SMAP);
 
                                 // Run modelling 
-                std::shared_ptr<rockseis::RaysAcoustic2D<float>> rays (new rockseis::RaysAcoustic2D<float>(lmodel));
+                std::shared_ptr<rockseis::RaysAcoustic3D<float>> rays (new rockseis::RaysAcoustic3D<float>(lmodel));
 
                 /* initialize traveltime field at source positions */
                 rays->insertSource(source, SMAP);
@@ -152,21 +152,21 @@ int main(int argc, char** argv) {
 
                 // Output record
                 if(TTrecord){
-                    TTdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    TTdata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
                     // Copy geometry to Data
-                    TTdata2D->copyCoords(Shotgeom);
-                    TTdata2D->makeMap(lmodel->getGeom());
-                    rays->recordData(TTdata2D, GMAP);
+                    TTdata3D->copyCoords(Shotgeom);
+                    TTdata3D->makeMap(lmodel->getGeom());
+                    rays->recordData(TTdata3D, GMAP);
 
-                    TTdata2D->setFile(TTrecordfile);
-                    Sort->put2DGather(TTdata2D, work.id);
+                    TTdata3D->setFile(TTrecordfile);
+                    Sort->put3DGather(TTdata3D, work.id);
                 }
 
                 // Create snapshots
                 if(TTsnap){ 
-                    std::shared_ptr<WavesAcoustic2D<float>> waves (new WavesAcoustic2D<float>(lmodel, 1, 1.0, 0.0));
-                    std::shared_ptr<rockseis::Snapshot2D<float>> Ttimes;
-                    Ttimes = std::make_shared<rockseis::Snapshot2D<float>>(waves, 1);
+                    std::shared_ptr<WavesAcoustic3D<float>> waves (new WavesAcoustic3D<float>(lmodel, 1, 1.0, 0.0));
+                    std::shared_ptr<rockseis::Snapshot3D<float>> Ttimes;
+                    Ttimes = std::make_shared<rockseis::Snapshot3D<float>>(waves, 1);
                     Ttimes->openSnap(TTsnapfile + "-" + std::to_string(work.id), 'w'); // Create a new snapshot file
                     Ttimes->setData(rays->getTT(), 0); //Set field to snap
                     Ttimes->writeSnap(0);
@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
                 // Reset all classes
                 Shotgeom.reset();
                 lmodel.reset();
-                TTdata2D.reset();
+                TTdata3D.reset();
                 work.status = WORK_FINISHED;
 
                 // Send result back

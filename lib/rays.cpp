@@ -2,6 +2,7 @@
 #include "rays.h"
 
 #define I2D(i,j) ((i)*nx + (j)) 
+#define I3D(i,j,k) ((k)*nx*ny+(j)*nx + (i)) 
 #define S(i) (1.0/Vp[i]) 
 
 namespace rockseis {
@@ -146,6 +147,8 @@ template<typename T>
 RaysAcoustic2D<T>::~RaysAcoustic2D() {
     /* Free allocated variables */
     free(TT);
+    free(lam);
+    free(recmask);
 }
 
 template<typename T>
@@ -391,6 +394,7 @@ T RaysAcoustic2D<T>::norm1(T *TT, T *TTold)
     }
 
     norml1 = sum/(NX*NY);
+    norml1 = ABS(norml1);
 
     return norml1;
 }
@@ -518,11 +522,432 @@ void RaysAcoustic2D<T>::solve_adj()
     free(lamold);
 }
 
+// =============== 3D ACOUSTIC RAYS CLASS =============== //
+template<typename T>
+RaysAcoustic3D<T>::RaysAcoustic3D(){
+    int nx, ny, nz;
+    nx = this->getNx();
+    ny = this->getNy();
+    nz = this->getNz();
+
+    /* Allocate memory variables */
+    TT = (T *) calloc(nx*ny*nz, sizeof(T));
+    lam = (T *) calloc(nx*ny*nz, sizeof(T));
+    recmask = (bool *) calloc(nx*ny*nz, sizeof(bool));
+
+    /* Initialize arrays */
+    for (int i=0; i < nx*ny*nz; i++){
+        TT[i] = 2.0*TMAX;
+    }
+
+    Index Ilam(nx,ny,nz);
+    for (int i=1; i < nx-1; i++){
+        for (int j=1; j < ny-1; j++){
+            for (int k=1; k < nz-1; k++){
+                lam[Ilam(i,j,k)] = 10.0*TMAX;
+            }
+        }
+    }
+}
+
+template<typename T>
+RaysAcoustic3D<T>::RaysAcoustic3D(const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz): Rays<T>(3, _nx, _ny, _nz, _dx, _dy, _dz, _ox, _oy, _oz) {
+
+    /* Allocate memory variables */
+    TT = (T *) calloc(_nx*_ny*_nz, sizeof(T));
+    lam = (T *) calloc(_nx*_ny*_nz, sizeof(T));
+    recmask = (bool *) calloc(_nx*_ny*_nz, sizeof(bool));
+
+    /* Initialize TT */
+    for (int i=0; i < _nx*_ny*_nz; i++){
+        TT[i] = 2.0*TMAX;
+    }
+    Index Ilam(_nx,_ny,_nz);
+    for (int i=1; i < _nx-1; i++){
+        for (int j=1; j < _ny-1; j++){
+            for (int k=1; k < _nz-1; k++){
+                lam[Ilam(i,j,k)] = 10.0*TMAX;
+            }
+        }
+    }
+}
+
+
+template<typename T>
+RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> _model): Rays<T>(){
+
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _dim;
+
+    /* Get necessary parameters from model class */
+    _nx=_model->getNx();
+    _ny=_model->getNy();
+    _nz=_model->getNz();
+    _dx=_model->getDx();
+    _dy=_model->getDy();
+    _dz=_model->getDz();
+    _ox=_model->getOx();
+    _oy=_model->getOy();
+    _oz=_model->getOz();
+    _dim = _model->getDim();
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setDim(_dim);
+
+    // Setting model pointer
+    model = _model;
+
+    /* Allocate memory variables */
+    TT = (T *) calloc(_nx*_ny*_nz, sizeof(T));
+    lam = (T *) calloc(_nx*_ny*_nz, sizeof(T));
+    recmask = (bool *) calloc(_nx*_ny*_nz, sizeof(bool));
+
+    /* Initialize TT */
+    for (int i=0; i < _nx*_ny*_nz; i++){
+        TT[i] = 2.0*TMAX;
+    }
+    Index Ilam(_nx,_ny,_nz);
+    for (int i=1; i < _nx-1; i++){
+        for (int j=1; j < _ny-1; j++){
+            for (int k=1; k < _nz-1; k++){
+                lam[Ilam(i,j,k)] = 10.0*TMAX;
+            }
+        }
+    }
+}
+
+template<typename T>
+RaysAcoustic3D<T>::~RaysAcoustic3D() {
+    /* Free allocated variables */
+    free(TT);
+    free(lam);
+    free(recmask);
+}
+
+template<typename T>
+void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy, int nz1, int nz2, int ndz)
+{ 
+/*------------------------------------------------------------------------
+ *  Solve eikonal equation by fast sweeping method according to Zhao (2004)
+ *
+ *  D. Koehn
+ *  Kiel, 09/12/2015
+ *  ----------------------------------------------------------------------*/
+
+    int nx = model->getNx();
+    int ny = model->getNy();
+    int nz = model->getNz();
+    T dh = model->getDx();
+    T *TT = this->getTT();
+    T *Vp = model->getVp();
+
+    /* local variables */
+    int i, j, k, m, n, l;
+    T a[3];
+    a[0] = 0.0;
+    a[1] = 0.0;
+    a[2] = 0.0;
+    T Tt;
+
+    T aa, bb, cc;
+
+    /* sweep over FD-grid */
+    m = nx1;
+    for (i=0;i<nx;i++){
+        n = ny1;
+        for (j=0;j<ny;j++){	
+            l = nz1;
+            for (k=0;k<nz;k++){	
+
+                /* model interior */
+                if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* model borders */
+                /* left */
+                if((m==0)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* right */
+                if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* top */
+                if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l==0)){
+                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* bottom */
+                if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
+                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+
+                /* front */
+                if((m>0)&&(m<nx-1)&&(n==0)&&(l>0)&&(l<nz-1)){
+                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* back */
+                if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+
+                /* model corners */
+                /* upper-left-front */
+                if((m==0)&&(n==0)&&(l==0)){
+                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-left-back */
+                if((m==0)&&(n==ny-1)&&(l==0)){
+                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-right-front */
+                if((m==nx-1)&&(n==0)&&(l==0)){
+                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-right-back */
+                if((m==nx-1)&&(n==ny-1)&&(l==0)){
+                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* lower-left-front */
+                if((m==0)&&(n==0)&&(l==nz-1)){
+                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* lower-left-back */
+                if((m==0)&&(n==ny-1)&&(l==nz-1)){
+                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* lower-right-front */
+                if((m==nx-1)&&(n==0)&&(l==nz-1)){
+                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* lower-right-back */
+                if((m==nx-1)&&(n==ny-1)&&(l==nz-1)){
+                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* calculate solution */
+                std::sort(a,a+3);
+                while(1){
+                    Tt = a[0] + S(I3D(m,n,l))*dh;
+                    if(Tt <= a[1]) break;
+
+                    aa = 2.0;
+                    bb = -2.*a[0] - 2.*a[1];
+                    cc = SQ(a[0]) + SQ(a[1]) - SQ(S(I3D(m,n,l))*dh);
+                    Tt = (- bb + sqrt(SQ(bb) - 4.*aa*cc))/(2.0*aa);
+                    if(Tt <= a[2]) break;
+
+                    aa = 3.0;
+                    bb = -2.*a[0] - 2.*a[1] - 2.*a[2];
+                    cc = SQ(a[0]) + SQ(a[1]) + SQ(a[2]) - SQ(S(I3D(m,n,l))*dh);
+                    Tt = (- bb + sqrt(SQ(bb) - 4.*aa*cc))/(2.0*aa);
+                    break;
+                }
+
+
+                TT[I3D(m,n,l)] = fminf(TT[I3D(m,n,l)],Tt);
+                l += ndz;
+            }
+            n += ndy;
+        }
+        m += ndx;
+    }
+}
+
+template<typename T>
+void RaysAcoustic3D<T>::solve()
+{
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+    T tmax = TMAX;
+    T *TTold = (T *) calloc(nx*ny*nz, sizeof(T));
+    int i;
+
+    /* initialize l1 norm of TT - TTold */
+    T lnorm1 = 10.0 * tmax;
+
+    /* apply fast sweeping method to solve the eikonal equation */
+    while(lnorm1>=TTNORM){
+
+        /* save old TT values */
+        for (i=0; i<nx*ny*nz; i++){
+            TTold[i] = TT[i];
+        }
+
+        /* sweep with order according to Zhao (2004) */
+        //sweep(nx-1, 0, -1,  ny-1, 0, -1,  0, nz-1, 1);
+        //sweep(nx-1, 0, -1,  0, ny-1, 1,  0, nz-1, 1);
+        //sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
+        //sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
+        //sweep(0, nx-1, 1,  0, ny-1, 1,  0, nz-1, 1);
+        //sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
+        //sweep(0, nx-1, 1,  ny-1, 0, -1,  nz-1, 0, -1);
+        //sweep(nx-1, 0, -1,  ny-1, 0, -1,  nz-1, 0, -1);
+
+        sweep(0, nx-1, 1,  0, ny-1, 1,  0, nz-1, 1);
+        sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
+        sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
+        sweep(0, nx-1, 1,  ny-1, 0, -1,  nz-1, 0, -1);
+        sweep(nx-1, 0, -1,  0, ny-1, 1,  0, nz-1, 1);
+        sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
+        sweep(nx-1, 0, -1,  ny-1, 0, -1,  0, nz-1, 1);
+        sweep(nx-1, 0, -1,  ny-1, 0, -1,  nz-1, 0, -1);
+
+        /* calculate l1 norm of TT - TTold */
+        lnorm1 = norm1(TT,TTold);
+    }
+    free(TTold);
+}
+
+template<typename T>
+T RaysAcoustic3D<T>::norm1(T *TT, T *TTold)
+{
+    /* local variables */
+    int NX = this->getNx();
+    int NY = this->getNy();
+    int NZ = this->getNz();
+
+    int i;
+    T sum, norml1;
+
+    /* estimate L1 norm */
+    sum = 0.0;
+    for (i=0;i<NX*NY*NZ;i++){
+        sum += (TT[i]-TTold[i]);
+    }
+
+    norml1 = sum/(NX*NY*NZ);
+    norml1 = ABS(norml1);
+
+    return (norml1);
+}
+
+template<typename T>
+void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
+    Point3D<int> *map;
+    int ntrace = source->getNtrace();
+    int nx, ny, nz;
+    nx = this->getNx();
+    ny = this->getNy();
+    nz = this->getNz();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+    }else{
+        map = (source->getGeom())->getGmap();
+    }
+
+    int i;
+    //Indexes 
+    Index I(nx, ny, nz); //Model and Field indexes
+    Index Idat(1, ntrace); // Data indexes
+    for (i=0; i < ntrace; i++) 
+    {
+        if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+        { 
+            TT[I(map[i].x, map[i].y, map[i].z)] = 0.0;
+        }
+    }
+}
+
+
+template<typename T>
+void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype){
+    Point3D<int> *map;
+    Point3D<T> *shift;
+    T *dataarray; 
+    T *Fielddata;
+    int ntrace = data->getNtrace();
+    int nt = data->getNt();
+    int nx, ny, nz;
+    nx = this->getNx();
+    ny = this->getNy();
+    nz = this->getNz();
+
+    // Get correct map (data or receiver mapping)
+    if(maptype == SMAP) {
+        map = (data->getGeom())->getSmap();
+        shift = (data->getGeom())->getSshift();
+    }else{
+        map = (data->getGeom())->getGmap();
+        shift = (data->getGeom())->getGshift();
+    }
+
+    dataarray = data->getData();
+    int i;
+    Index I(nx, ny, nz);
+    Index Idat(nt, ntrace);
+    Fielddata = this->getTT();
+    for (i=0; i < ntrace; i++) 
+    { 
+        if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+        {
+            dataarray[Idat(0,i)] = Fielddata[I(map[i].x, map[i].y, map[i].z)];
+        }
+    }
+
+}
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class RaysAcoustic2D<float>;
 template class RaysAcoustic2D<double>;
+template class RaysAcoustic3D<float>;
+template class RaysAcoustic3D<double>;
 
 }
 

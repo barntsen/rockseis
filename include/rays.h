@@ -19,8 +19,10 @@
 
 #define LANC_SIZE 3
 #define LANC(x,a) (this->sinc(x)*this->sinc((x)/a))
-#define TTNORM 1e-13
+#define TTNORM 1e-10
 #define EPS_ADJ 1.0e-12
+#define SQ(x) ((x)*(x))
+#define ABS(x) ((x) < 0 ? -(x) : (x))
 
 #define TMAX 99.0
 
@@ -109,6 +111,45 @@ private:
     T *lam; // Adjoint state traveltime
     bool *recmask; // Boolean array indicating where there are receivers
 };
+
+/** The 3D Acoustic RAYS class
+ *
+ */
+template<typename T>
+class RaysAcoustic3D: public Rays<T> {
+public:
+    RaysAcoustic3D();					///< Constructor
+    RaysAcoustic3D(const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz);	///< Constructor
+    RaysAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model);	///< Constructor
+    ~RaysAcoustic3D();					///< Destructor
+    
+    // Eikonal solver
+    T norm1(T *TT, T *TTold);
+    void sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy, int nz1, int nz2, int ndz); ///< Compute first arrival traveltimes
+    void sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy, int nz1, int nz2, int ndz); ///< Compute first arrival traveltimes
+    void solve();
+    void solve_adj();
+
+    // Get functions
+    T *getTT() { return TT; } 
+    T *getLam() { return lam; } 
+    bool *getRecmask() { return recmask; } 
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
+    void insertResiduals(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
+    void createRecmask(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Create a mask for adjoint eikonal computation
+
+    // Record data at receivers functions
+    void recordData(std::shared_ptr<Data3D<T>> data, bool maptype); ///< Record traveltime at receivers 
+
+private:
+    std::shared_ptr<ModelAcoustic3D<T>> model;
+    T *TT; // Traveltime
+    T *lam; // Adjoint state traveltime
+    bool *recmask; // Boolean array indicating where there are receivers
+};
+
 
 }
 #endif //RAYS_H
