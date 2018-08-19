@@ -106,6 +106,46 @@ private:
     bool Tweightset;
 };
 
+/** The 3D Acoustic Fat class
+ *
+ */
+template<typename T>
+class FatAcoustic3D: public Fat<T> {
+public:
+    FatAcoustic3D();					///< Constructor
+    FatAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> Tdata);					///< Constructor 
+    int solve(); ///< Runs forward eikonal solver
+    int solve_adj(); ///< Runs adjoint eikonal solver
+    void setModel(std::shared_ptr<ModelAcoustic3D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
+    void setVpgrad(std::shared_ptr<Image3D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
+    void setTdata(std::shared_ptr<Data3D<T>> _Tdata) { Tdata = _Tdata; Tdataset = true; }
+    void setTmod(std::shared_ptr<Data3D<T>> _Tmod) { Tmod = _Tmod; Tmodset = true; }
+    void setTres(std::shared_ptr<Data3D<T>> _Tres) { Tres = _Tres; Tresset = true; }
+    void setTweight(std::shared_ptr<Data3D<T>> _Tweight) { Tweight = _Tweight; Tweightset = true; }
+    void scaleGrad(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, T *lam, T *grad);
+    void computeMisfit();
+    int run();
+
+    ~FatAcoustic3D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelAcoustic3D<T>> model;
+    std::shared_ptr<Image3D<T>> vpgrad;
+    std::shared_ptr<Data3D<T>> source;
+    std::shared_ptr<Data3D<T>> Tdata;
+    std::shared_ptr<Data3D<T>> Tmod;
+    std::shared_ptr<Data3D<T>> Tres;
+    std::shared_ptr<Data3D<T>> Tweight;
+    bool modelset;
+    bool vpgradset;
+    bool sourceset;
+    bool Tdataset;
+    bool Tmodset;
+    bool Tresset;
+    bool Tweightset;
+};
+
 
 }
 #endif //FAT_H

@@ -807,6 +807,79 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 }
 
 template<typename T>
+void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy, int nz1, int nz2, int ndz)
+{
+    int nx = model->getNx();
+    int ny = model->getNy();
+    int nz = model->getNz();
+    T dh = model->getDx();
+    T *TT = this->getTT();
+    T *lam = this->getLam();
+    bool *recmask = this->getRecmask();
+
+    /* local variables */
+    int i, j, k, m, n, l;
+    float app, amp, apm, amm;
+    float bpp, bmp, bpm, bmm;
+    float cpp, cmp, cpm, cmm;
+    float ap, am , bp, bm, cp, cm;
+    float lhs, rhs, lamt;
+
+    /* sweep over FD-grid */
+    m = nx1;
+    for (i=1;i<nx-1;i++){
+        n = ny1;
+        for (j=1;j<ny-1;j++){
+            l = nz1;
+            for (k=1;k<nz-1;k++){
+                if(recmask[I3D(m,n,l)]==0){
+                    /* assemble equation (3.6) in Leung & Qian (2006) */
+                    ap = -(TT[I3D(m+1,n,l)]-TT[I3D(m,n,l)])/dh;
+                    am = -(TT[I3D(m,n,l)]-TT[I3D(m-1,n,l)])/dh;
+
+                    bp = -(TT[I3D(m,n+1,l)]-TT[I3D(m,n,l)])/dh;
+                    bm = -(TT[I3D(m,n,l)]-TT[I3D(m,n-1,l)])/dh;
+
+                    cp = -(TT[I3D(m,n,l+1)]-TT[I3D(m,n,l)])/dh;
+                    cm = -(TT[I3D(m,n,l)]-TT[I3D(m,n,l-1)])/dh;
+
+                    app = (ap + fabs(ap))/2.0;
+                    apm = (ap - fabs(ap))/2.0;
+
+                    amp = (am + fabs(am))/2.0;
+                    amm = (am - fabs(am))/2.0;
+
+                    bpp = (bp + fabs(bp))/2.0;
+                    bpm = (bp - fabs(bp))/2.0;
+
+                    bmp = (bm + fabs(bm))/2.0;
+                    bmm = (bm - fabs(bm))/2.0;
+
+                    cpp = (cp + fabs(cp))/2.0;
+                    cpm = (cp - fabs(cp))/2.0;
+
+                    cmp = (cm + fabs(cm))/2.0;
+                    cmm = (cm - fabs(cm))/2.0;
+
+
+                    /* Leung & Qian (2006) */
+                    lhs = (app-amm)/dh + (bpp-bmm)/dh + (cpp-cmm)/dh;
+                    rhs = (amp*lam[I3D(m-1,n,l)]-apm*lam[I3D(m+1,n,l)])/dh + (cmp*lam[I3D(m,n-1,l)]-cpm*lam[I3D(m,n+1,l)])/dh + (cmp*lam[I3D(m,n,l-1)]-cpm*lam[I3D(m,n,l+1)])/dh;
+
+                    lamt = rhs/(lhs+EPS_ADJ);
+                    lam[I3D(m,n,l)] = fminf(lam[I3D(m,n,l)],lamt);
+                }
+                k += ndz;
+            }
+
+            n += ndy;
+        }
+        m += ndx;
+    }
+}
+
+
+template<typename T>
 void RaysAcoustic3D<T>::solve()
 {
     int nx = this->getNx();
@@ -827,16 +900,6 @@ void RaysAcoustic3D<T>::solve()
             TTold[i] = TT[i];
         }
 
-        /* sweep with order according to Zhao (2004) */
-        //sweep(nx-1, 0, -1,  ny-1, 0, -1,  0, nz-1, 1);
-        //sweep(nx-1, 0, -1,  0, ny-1, 1,  0, nz-1, 1);
-        //sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
-        //sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
-        //sweep(0, nx-1, 1,  0, ny-1, 1,  0, nz-1, 1);
-        //sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
-        //sweep(0, nx-1, 1,  ny-1, 0, -1,  nz-1, 0, -1);
-        //sweep(nx-1, 0, -1,  ny-1, 0, -1,  nz-1, 0, -1);
-
         sweep(0, nx-1, 1,  0, ny-1, 1,  0, nz-1, 1);
         sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
         sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
@@ -850,6 +913,43 @@ void RaysAcoustic3D<T>::solve()
         lnorm1 = norm1(TT,TTold);
     }
     free(TTold);
+}
+
+template<typename T>
+void RaysAcoustic3D<T>::solve_adj()
+{
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+    T tmax = TMAX;
+    T *lamold = (T *) calloc(nx*ny*nz, sizeof(T));
+    int i;
+
+    /* initialize l1 norm of lam - lamold */
+    T lnorm1 = 10.0 * tmax;
+
+    /* apply fast sweeping method to solve the eikonal equation */
+    while(lnorm1>=TTNORM){
+
+        /* save old lam values */
+        for (i=0; i<nx*ny*nz; i++){
+            lamold[i] = lam[i];
+        }
+
+        /* sweep with order according to Zhao (2004) */
+        sweep_adj(1, nx-2, 1,  1, ny-2, 1,  1, nz-2, 1);
+        sweep_adj(1, nx-2, 1,  1, ny-2, 1,  nz-2, 1, -1);
+        sweep_adj(1, nx-2, 1,  ny-2, 1, -1,  1, nz-2, 1);
+        sweep_adj(1, nx-2, 1,  ny-2, 1, -1,  nz-2, 1, -1);
+        sweep_adj(nx-2, 1, -1,  1, ny-2, 1,  1, nz-2, 1);
+        sweep_adj(nx-2, 1, -1,  1, ny-2, 1,  nz-2, 1, -1);
+        sweep_adj(nx-2, 1, -1,  ny-2, 1, -1,  1, nz-2, 1);
+        sweep_adj(nx-2, 1, -1,  ny-2, 1, -1,  nz-2, 1, -1);
+
+		/* calculate l1 norm of lam - lamold */
+        lnorm1 = norm1(lam,lamold);
+    }
+    free(lamold);
 }
 
 template<typename T>
@@ -941,6 +1041,69 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
     }
 
 }
+
+template<typename T>
+void RaysAcoustic3D<T>::createRecmask(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
+    Point3D<int> *map;
+    int ntrace = source->getNtrace();
+    int nx, ny, nz;
+    nx = this->getNx();
+    ny = this->getNy();
+    nz = this->getNz();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+    }else{
+        map = (source->getGeom())->getGmap();
+    }
+
+    int i;
+    //Indexes 
+    Index I(nx, ny, nz); //Model and Field indexes
+    Index Idat(1, ntrace); // Data indexes
+    for (i=0; i < ntrace; i++) 
+    {
+        if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+        { 
+            recmask[I(map[i].x, map[i].y, map[i].z)] = true;
+        }
+    }
+}
+
+template<typename T>
+void RaysAcoustic3D<T>::insertResiduals(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
+    Point3D<int> *map;
+    int ntrace = source->getNtrace();
+    int nx, ny, nz;
+    nx = this->getNx();
+    ny = this->getNy();
+    nz = this->getNz();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+    }else{
+        map = (source->getGeom())->getGmap();
+    }
+
+    T *res;
+    res = source->getData();
+
+    int i;
+    //Indexes 
+    Index I(nx, ny, nz); //Model and Field indexes
+    Index Idat(1, ntrace); // Data indexes
+    for (i=0; i < ntrace; i++) 
+    {
+        if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+        { 
+            lam[I(map[i].x, map[i].y, map[i].z)] = res[Idat(1,i)];
+        }
+    }
+}
+
+
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //

@@ -248,6 +248,143 @@ FatAcoustic2D<T>::~FatAcoustic2D() {
     // Nothing here
 }
 
+// =============== ACOUSTIC 3D FAT CLASS =============== //
+
+template<typename T>
+FatAcoustic3D<T>::FatAcoustic3D(){
+    sourceset = false;
+    Tdataset = false;
+    modelset = false;
+    vpgradset = false;
+    Tmodset = false;
+    Tresset = false;
+    Tweightset = false;
+}
+
+template<typename T>
+FatAcoustic3D<T>::FatAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> _model, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _Tdata):Fat<T>(){
+    source = _source;
+    Tdata = _Tdata;
+    model = _model;
+    sourceset = true;
+    Tdataset = true;
+    modelset = true;
+    vpgradset = false;
+    Tmodset = false;
+    Tresset = false;
+    Tweightset = false;
+}
+
+template<typename T>
+int FatAcoustic3D<T>::run()
+{
+     int result = FAT_ERR;
+     int nt;
+     float dt;
+	 float ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+     if(!this->Tmodset || !this->Tresset) rs_error("FatAcoustic3D::run: Tmod and Tres must be set before running the simulation.");
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<RaysAcoustic3D<T>> rays (new RaysAcoustic3D<T>(model));
+
+     this->writeLog("Running 3D Acoustic first arrival tomography gradient with fast sweeping method.");
+
+     this->writeLog("Doing forward Loop.");
+     // Inserting source 
+     rays->insertSource(source, SMAP);
+
+     // Running sweeping method
+     rays->solve();
+
+     // Recording data 
+     if(this->Tmodset){
+         rays->recordData(Tmod, GMAP);
+     }
+
+     // Compute misfit
+     computeMisfit();
+
+     /////// Run adjoint modelling
+     this->writeLog("Doing adjoint Loop.");
+     rays->createRecmask(Tres, GMAP);
+     rays->insertResiduals(Tres, GMAP);
+     rays->solve_adj();
+
+     // Calculate gradient
+     vpgrad->allocateImage();
+     this->scaleGrad(model, rays->getLam(), vpgrad->getImagedata());
+   
+    result=FAT_OK;
+    return result;
+
+}
+
+template<typename T>
+void FatAcoustic3D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, T *lam, T *grad) {
+    int nx, ny, nz;
+    nx = model->getNx();
+    ny = model->getNy();
+    nz = model->getNz();
+    T * vp = model->getVp();
+    for (int i=0; i<nx*ny*nz; i++){
+        grad[i] = -1.0*lam[i]/CUB(vp[i]);
+    }
+}
+
+template<typename T>
+void FatAcoustic3D<T>::computeMisfit()
+{
+    size_t ntr = Tmod->getNtrace();
+    if(Tdata->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+    size_t nt = Tmod->getNt();
+    if(Tdata->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+
+    
+    T* mod = Tmod->getData();
+    T* res = Tres->getData();
+    T* obs = Tdata->getData();
+    T* wei = NULL;
+    if(Tweightset) 
+    {
+        wei = Tweight->getData();
+    }
+    size_t itr;
+    T deltaT = 0.0;
+    T misfit = 0.0;
+
+    Index I(1, ntr);
+    for(itr=0; itr<ntr; itr++){
+        deltaT = mod[I(1, itr)] - obs[I(1, itr)];
+        if(Tweightset)
+        {
+            deltaT *= wei[I(1, itr)];
+        }
+        misfit += 0.5*deltaT*deltaT;
+        res[I(1, itr)] = deltaT;
+
+        if(Tweightset)
+        {
+            res[I(1, itr)] *= wei[I(1, itr)];
+        }
+    }
+
+    // Set the final misfit value
+    this->setMisfit(misfit);
+}
+
+
+template<typename T>
+FatAcoustic3D<T>::~FatAcoustic3D() {
+    // Nothing here
+}
+
+
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
@@ -255,4 +392,6 @@ template class Fat<float>;
 template class Fat<double>;
 template class FatAcoustic2D<float>;
 template class FatAcoustic2D<double>;
+template class FatAcoustic3D<float>;
+template class FatAcoustic3D<double>;
 }

@@ -236,5 +236,109 @@ private:
     T reg_alpha[2];
 };
 
+// ##### ACOUSTIC 3D TOMO CLASS
+template<typename T>
+class TomoAcoustic3D: public Tomo<T> {
+public:
+    TomoAcoustic3D(); ///<Constructor
+    TomoAcoustic3D(MPImodeling *_mpi); ///<Constructor
+    ~TomoAcoustic3D(); ///<Destructor
+
+    void setWaveletfile(std::string file) { Waveletfile = file; }
+    std::string getWaveletfile() { return Waveletfile; }
+
+    void setVpfile(std::string file) { Vpfile = file; }
+    std::string getVpfile() { return Vpfile; }
+
+    void setVpgradfile(std::string file) { Vpgradfile = file; }
+    std::string getVpgradfile() { return Vpgradfile; }
+
+    void setMisfitfile(std::string file) { Misfitfile = file; }
+    std::string getMisfitfile() { return Misfitfile; }
+
+    void setSnapfile(std::string file) { Snapfile = file; }
+    std::string getSnapfile() { return Snapfile; }
+
+    void setTrecordfile(std::string file) { Trecordfile = file; }
+    std::string getTrecordfile() { return Trecordfile; }
+
+    void setTmodelledfile(std::string file) { Tmodelledfile = file; }
+    std::string getTmodelledfile() { return Tmodelledfile; }
+
+    void setTresidualfile(std::string file) { Tresidualfile = file; }
+    std::string getTresidualfile() { return Tresidualfile; }
+
+    void setMutefile(std::string file) { Mutefile = file; }
+    std::string getMutefile() { return Mutefile; }
+
+    void setApertx(T val) { apertx = val; }
+    T getApertx() { return apertx; }
+
+    void setKvp(T val) { kvp = val; }
+    T getKvp() { return kvp; }
+
+    void setVpregalpha(T val) { reg_alpha[0] = val; }
+    T getVpregalpha() { return reg_alpha[0]; }
+
+    void setVpregeps(T val) { reg_eps[0] = val; }
+    T getVpregeps() { return reg_eps[0]; }
+
+    void setDataweight(bool val) {dataweight = val; }
+
+    void setDataweightfile(std::string file) {Dataweightfile = file; }
+
+    // Run gradient
+    void runGrad();
+
+    void clipGrad(std::shared_ptr<rockseis::Image3D<T>> grad);
+   
+    // Run BSProjection
+    void runBsproj();
+
+    // Mute gradient
+    void applyMute();
+
+    // Regularisation computation
+    void computeRegularisation(double *x);
+
+    // Combine gradients
+    void combineGradients();
+
+    // Set initial
+    int setInitial(double *x, std::string vpfile);
+
+    // Save line search models
+    void saveLinesearch(double *x);
+
+    // Save Results
+    void saveResults(int i);
+
+    // Read gradient
+    void readGrad(double *g);
+
+    // Read misfit
+    void readMisfit(double *f);
+
+
+private:
+    std::string Waveletfile;
+    std::string Vpfile;
+    std::string Vpgradfile;
+    std::string Misfitfile;
+    std::string Snapfile;
+    std::string Trecordfile;
+    std::string Tmodelledfile;
+    std::string Tresidualfile;
+    std::string Dataweightfile;
+    bool dataweight;
+    std::string Mutefile;
+    T apertx;
+    T aperty;
+    T kvp;
+    T reg_eps[2];
+    T reg_alpha[2];
+};
+
+
 }
 #endif //TOMO_H
