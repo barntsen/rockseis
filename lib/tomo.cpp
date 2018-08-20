@@ -227,7 +227,7 @@ void TomoAcoustic2D<T>::runGrad() {
     Sort->setDatafile(Trecordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Vpfile, 0 ,false));
+	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Vpfile, this->getLpml() ,false));
 
      // Test for problematic model sampling
     if(gmodel->getDx() != gmodel->getDz()){
@@ -314,7 +314,8 @@ void TomoAcoustic2D<T>::runGrad() {
                 Tobs2D = Sort->get2DGather(work.id);
                 size_t ntr = Tobs2D->getNtrace();
 
-                lmodel = gmodel->getLocal(Tobs2D, -3.0*gmodel->getDx(), SMAP);
+                lmodel = gmodel->getLocal(Tobs2D, -1.0*gmodel->getDx(), SMAP);
+                lmodel->staggerModels_Eikonal();
 
                 //Create source 
                 std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(ntr, 1, 1.0, 0.0));
@@ -941,7 +942,7 @@ void TomoAcoustic3D<T>::runGrad() {
     Sort->setDatafile(Trecordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic3D<T>> gmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Vpfile, 0 ,false));
+	std::shared_ptr<rockseis::ModelAcoustic3D<T>> gmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Vpfile, this->getLpml(), false));
 
      // Test for problematic model sampling
     if(gmodel->getDx() != gmodel->getDy() || gmodel->getDx() != gmodel->getDz()){
@@ -1028,7 +1029,8 @@ void TomoAcoustic3D<T>::runGrad() {
                 Tobs3D = Sort->get3DGather(work.id);
                 size_t ntr = Tobs3D->getNtrace();
 
-                lmodel = gmodel->getLocal(Tobs3D, -3.0*gmodel->getDx(), -3.0*gmodel->getDx(), SMAP);
+                lmodel = gmodel->getLocal(Tobs3D, -1.0*gmodel->getDx(), -1.0*gmodel->getDx(), SMAP);
+                lmodel->staggerModels_Eikonal();
 
                 //Create source 
                 std::shared_ptr<rockseis::Data3D<T>> source (new rockseis::Data3D<T>(ntr, 1, 1.0, 0.0));

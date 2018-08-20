@@ -36,14 +36,17 @@ template<typename T>
 class Rays {
 public:
     Rays();		///< Constructor
-    Rays(const int _dim, const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz);	///< Constructor
+    Rays(const int _dim, const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz);	///< Constructor
     virtual ~Rays();	///< Destructor
     
     // Get functions
     int getDim() { return dim; }		///< Get dimension
     int getNx() { return geometry->getN(1); }	///< Get Nx
+    int getNx_pml() { return geometry->getN(1) + 2*lpml ; }	///< Get Nx padded
     int getNy() { return geometry->getN(2); }	///< Get Ny
+    int getNy_pml() { return geometry->getN(2) + 2*lpml ; }	///< Get Ny padded
     int getNz() { return geometry->getN(3); }	///< Get Nz
+    int getNz_pml() { return geometry->getN(3) + 2*lpml ; }	///< Get Nz padded
     T getDx() { return geometry->getD(1); }	///< Get Dx
     T getDy() { return geometry->getD(2); }	///< Get Dy
     T getDz() { return geometry->getD(3); }	///< Get Dz
@@ -82,7 +85,7 @@ template<typename T>
 class RaysAcoustic2D: public Rays<T> {
 public:
     RaysAcoustic2D();					///< Constructor
-    RaysAcoustic2D(const int _nx, const int _nz, const T _dx, const T _dz, const T _ox, const T _oz);	///< Constructor
+    RaysAcoustic2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz);	///< Constructor
     RaysAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> model);	///< Constructor
     ~RaysAcoustic2D();					///< Destructor
     
@@ -120,7 +123,7 @@ template<typename T>
 class RaysAcoustic3D: public Rays<T> {
 public:
     RaysAcoustic3D();					///< Constructor
-    RaysAcoustic3D(const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz);	///< Constructor
+    RaysAcoustic3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz);	///< Constructor
     RaysAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> model);	///< Constructor
     ~RaysAcoustic3D();					///< Destructor
     

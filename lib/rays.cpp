@@ -21,7 +21,7 @@ Rays<T>::Rays() {
     geometry->setO(2, 0.);
     geometry->setO(3, 0.);
     dim=0;
-    lpml=3;
+    lpml=10;
 }
 
 template<typename T>
@@ -30,7 +30,7 @@ Rays<T>::~Rays() {
 }
 
 template<typename T>
-Rays<T>::Rays(const int _dim, const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz) {
+Rays<T>::Rays(const int _dim, const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz) {
     geometry = std::make_shared<Geometry<T>>(); 
     geometry->setN(1, _nx);
     geometry->setN(2, _ny);
@@ -42,7 +42,7 @@ Rays<T>::Rays(const int _dim, const int _nx, const int _ny, const int _nz, const
     geometry->setO(2, _oy);
     geometry->setO(3, _oz);
     dim = _dim;
-    lpml = 3;
+    lpml = _lpml;
 
 }
 
@@ -50,8 +50,8 @@ Rays<T>::Rays(const int _dim, const int _nx, const int _ny, const int _nz, const
 template<typename T>
 RaysAcoustic2D<T>::RaysAcoustic2D(){
     int nx, nz;
-    nx = this->getNx();
-    nz = this->getNz();
+    nx = this->getNx_pml();
+    nz = this->getNz_pml();
 
     /* Allocate memory variables */
     TT = (T *) calloc(nx*nz, sizeof(T));
@@ -72,20 +72,23 @@ RaysAcoustic2D<T>::RaysAcoustic2D(){
 }
 
 template<typename T>
-RaysAcoustic2D<T>::RaysAcoustic2D(const int _nx, const int _nz, const T _dx, const T _dz, const T _ox, const T _oz): Rays<T>(2, _nx, 1, _nz, _dx, 1.0, _dz, _ox, 0.0, _oz) {
+RaysAcoustic2D<T>::RaysAcoustic2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz): Rays<T>(2, _nx, 1, _nz, _lpml, _dx, 1.0, _dz, _ox, 0.0, _oz) {
 
+    int nx, nz;
+    nx = _nx + 2*_lpml;
+    nz = _nz + 2*_lpml;
     /* Allocate memory variables */
-    TT = (T *) calloc(_nx*_nz, sizeof(T));
-    lam = (T *) calloc(_nx*_nz, sizeof(T));
-    recmask = (bool *) calloc(_nx*_nz, sizeof(bool));
+    TT = (T *) calloc(nx*nz, sizeof(T));
+    lam = (T *) calloc(nx*nz, sizeof(T));
+    recmask = (bool *) calloc(nx*nz, sizeof(bool));
 
     /* Initialize TT */
-    for (int i=0; i < _nx*_nz; i++){
+    for (int i=0; i < nx*nz; i++){
         TT[i] = 2.0*TMAX;
     }
-    Index Ilam(_nx,_nz);
-    for (int i=1; i < _nx-1; i++){
-        for (int j=1; j < _nz-1; j++){
+    Index Ilam(nx,nz);
+    for (int i=1; i < nx-1; i++){
+        for (int j=1; j < nz-1; j++){
             lam[Ilam(i,j)] = 10.0*TMAX;
         }
     }
@@ -95,7 +98,8 @@ RaysAcoustic2D<T>::RaysAcoustic2D(const int _nx, const int _nz, const T _dx, con
 template<typename T>
 RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> _model): Rays<T>(){
 
-    int _nx, _ny, _nz;
+    int _nx, _ny, _nz, _lpml;
+    int nx_pml, nz_pml;
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
     int _dim;
@@ -111,6 +115,7 @@ RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> 
     _oy=_model->getOy();
     _oz=_model->getOz();
     _dim = _model->getDim();
+    _lpml = _model->getLpml();
     this->setNx(_nx);
     this->setNy(_ny);
     this->setNz(_nz);
@@ -121,22 +126,25 @@ RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> 
     this->setOy(_oy);
     this->setOz(_oz);
     this->setDim(_dim);
+    this->setLpml(_lpml);
 
     // Setting model pointer
     model = _model;
 
+    nx_pml= _nx + 2*_lpml;
+    nz_pml= _nz + 2*_lpml;
     /* Allocate memory variables */
-    TT = (T *) calloc(_nx*_nz, sizeof(T));
-    lam = (T *) calloc(_nx*_nz, sizeof(T));
-    recmask = (bool *) calloc(_nx*_nz, sizeof(bool));
+    TT = (T *) calloc(nx_pml*nz_pml, sizeof(T));
+    lam = (T *) calloc(nx_pml*nz_pml, sizeof(T));
+    recmask = (bool *) calloc(nx_pml*nz_pml, sizeof(bool));
 
     /* Initialize TT */
-    for (int i=0; i < _nx*_nz; i++){
+    for (int i=0; i < nx_pml*nz_pml; i++){
         TT[i] = 2.0*TMAX;
     }
-    Index Ilam(_nx,_nz);
-    for (int i=1; i < _nx-1; i++){
-        for (int j=1; j < _nz-1; j++){
+    Index Ilam(nx_pml,nz_pml);
+    for (int i=1; i < nx_pml-1; i++){
+        for (int j=1; j < nz_pml-1; j++){
             lam[Ilam(i,j)] = 10.0*TMAX;
         }
     }
@@ -161,11 +169,11 @@ void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
  *  Kiel, 09/12/2015
  *  ----------------------------------------------------------------------*/
 
-    int nx = model->getNx();
-    int ny = model->getNz();
+    int nx = model->getNx_pml();
+    int ny = model->getNz_pml();
     T dh = model->getDx();
     T *TT = this->getTT();
-    T *Vp = model->getVp();
+    T *Vp = model->getL();
 
     /* local variables */
     int i, j, h, k;
@@ -253,8 +261,8 @@ void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 template<typename T>
 void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy)
 {
-    int nx = model->getNx();
-    int ny = model->getNz();
+    int nx = model->getNx_pml();
+    int ny = model->getNz_pml();
     T dh = model->getDx();
     T *TT = this->getTT();
     T *lam = this->getLam();
@@ -317,8 +325,10 @@ void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source
     Point2D<int> *map;
     int ntrace = source->getNtrace();
     int nx, nz;
-    nx = this->getNx();
-    nz = this->getNz();
+    int lpml;
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    nz = this->getNz_pml();
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
@@ -335,7 +345,7 @@ void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source
     {
         if(map[i].x >= 0 && map[i].y >=0)
         { 
-            TT[I(map[i].x, map[i].y)] = 0.0;
+            TT[I(lpml+map[i].x, lpml+map[i].y)] = 0.0;
         }
     }
 }
@@ -350,8 +360,10 @@ void RaysAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bo
     int ntrace = data->getNtrace();
     int nt = data->getNt();
     int nx, nz;
-    nx = this->getNx();
-    nz = this->getNz();
+    int lpml;
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    nz = this->getNz_pml();
 
     // Get correct map (data or receiver mapping)
     if(maptype == SMAP) {
@@ -371,7 +383,7 @@ void RaysAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bo
     { 
         if(map[i].x >= 0 && map[i].y >=0)
         {
-            dataarray[Idat(0,i)] = Fielddata[I(map[i].x, map[i].y)];
+            dataarray[Idat(0,i)] = Fielddata[I(lpml+map[i].x, lpml+map[i].y)];
         }
     }
 
@@ -381,8 +393,8 @@ template<typename T>
 T RaysAcoustic2D<T>::norm1(T *TT, T *TTold)
 {
     /* local variables */
-    int NX = this->getNx();
-    int NY = this->getNz();
+    int NX = this->getNx_pml();
+    int NY = this->getNz_pml();
 
     int i;
     T sum, norml1;
@@ -404,8 +416,10 @@ void RaysAcoustic2D<T>::createRecmask(std::shared_ptr<rockseis::Data2D<T>> sourc
     Point2D<int> *map;
     int ntrace = source->getNtrace();
     int nx, nz;
-    nx = this->getNx();
-    nz = this->getNz();
+    int lpml;
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    nz = this->getNz_pml();
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
@@ -422,7 +436,7 @@ void RaysAcoustic2D<T>::createRecmask(std::shared_ptr<rockseis::Data2D<T>> sourc
     {
         if(map[i].x >= 0 && map[i].y >=0)
         { 
-            recmask[I(map[i].x, map[i].y)] = true;
+            recmask[I(lpml+map[i].x, lpml+map[i].y)] = true;
         }
     }
 }
@@ -432,8 +446,10 @@ void RaysAcoustic2D<T>::insertResiduals(std::shared_ptr<rockseis::Data2D<T>> sou
     Point2D<int> *map;
     int ntrace = source->getNtrace();
     int nx, nz;
-    nx = this->getNx();
-    nz = this->getNz();
+    int lpml;
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    nz = this->getNz_pml();
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
@@ -453,7 +469,7 @@ void RaysAcoustic2D<T>::insertResiduals(std::shared_ptr<rockseis::Data2D<T>> sou
     {
         if(map[i].x >= 0 && map[i].y >=0)
         { 
-            lam[I(map[i].x, map[i].y)] = res[Idat(1,i)];
+            lam[I(lpml+map[i].x, lpml+map[i].y)] = res[Idat(1,i)];
         }
     }
 }
@@ -461,8 +477,8 @@ void RaysAcoustic2D<T>::insertResiduals(std::shared_ptr<rockseis::Data2D<T>> sou
 template<typename T>
 void RaysAcoustic2D<T>::solve()
 {
-    int nx = this->getNx();
-    int nz = this->getNz();
+    int nx = this->getNx_pml();
+    int nz = this->getNz_pml();
     T tmax = TMAX;
     T *TTold = (T *) calloc(nx*nz, sizeof(T));
     int i;
@@ -496,8 +512,8 @@ void RaysAcoustic2D<T>::solve()
 template<typename T>
 void RaysAcoustic2D<T>::solve_adj()
 {
-    int nx = this->getNx();
-    int nz = this->getNz();
+    int nx = this->getNx_pml();
+    int nz = this->getNz_pml();
     T tmax = TMAX;
     T *lamold = (T *) calloc(nx*nz, sizeof(T));
     int i;
@@ -533,9 +549,9 @@ void RaysAcoustic2D<T>::solve_adj()
 template<typename T>
 RaysAcoustic3D<T>::RaysAcoustic3D(){
     int nx, ny, nz;
-    nx = this->getNx();
-    ny = this->getNy();
-    nz = this->getNz();
+    nx = this->getNx_pml();
+    ny = this->getNy_pml();
+    nz = this->getNz_pml();
 
     /* Allocate memory variables */
     TT = (T *) calloc(nx*ny*nz, sizeof(T));
@@ -558,21 +574,25 @@ RaysAcoustic3D<T>::RaysAcoustic3D(){
 }
 
 template<typename T>
-RaysAcoustic3D<T>::RaysAcoustic3D(const int _nx, const int _ny, const int _nz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz): Rays<T>(3, _nx, _ny, _nz, _dx, _dy, _dz, _ox, _oy, _oz) {
+RaysAcoustic3D<T>::RaysAcoustic3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz): Rays<T>(3, _nx, _ny, _nz, _lpml, _dx, _dy, _dz, _ox, _oy, _oz) {
 
+    int nx, ny, nz;
+    nx = _nx + 2*_lpml;
+    ny = _ny + 2*_lpml;
+    nz = _nz + 2*_lpml;
     /* Allocate memory variables */
-    TT = (T *) calloc(_nx*_ny*_nz, sizeof(T));
-    lam = (T *) calloc(_nx*_ny*_nz, sizeof(T));
-    recmask = (bool *) calloc(_nx*_ny*_nz, sizeof(bool));
+    TT = (T *) calloc(nx*ny*nz, sizeof(T));
+    lam = (T *) calloc(nx*ny*nz, sizeof(T));
+    recmask = (bool *) calloc(nx*ny*nz, sizeof(bool));
 
     /* Initialize TT */
-    for (int i=0; i < _nx*_ny*_nz; i++){
+    for (int i=0; i < nx*ny*nz; i++){
         TT[i] = 2.0*TMAX;
     }
-    Index Ilam(_nx,_ny,_nz);
-    for (int i=1; i < _nx-1; i++){
-        for (int j=1; j < _ny-1; j++){
-            for (int k=1; k < _nz-1; k++){
+    Index Ilam(nx,ny,nz);
+    for (int i=1; i < nx-1; i++){
+        for (int j=1; j < ny-1; j++){
+            for (int k=1; k < nz-1; k++){
                 lam[Ilam(i,j,k)] = 10.0*TMAX;
             }
         }
@@ -587,6 +607,7 @@ RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> 
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
     int _dim;
+    int _lpml;
 
     /* Get necessary parameters from model class */
     _nx=_model->getNx();
@@ -599,6 +620,7 @@ RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> 
     _oy=_model->getOy();
     _oz=_model->getOz();
     _dim = _model->getDim();
+    _lpml = _model->getLpml();
     this->setNx(_nx);
     this->setNy(_ny);
     this->setNz(_nz);
@@ -609,23 +631,28 @@ RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> 
     this->setOy(_oy);
     this->setOz(_oz);
     this->setDim(_dim);
+    this->setLpml(_lpml);
 
     // Setting model pointer
     model = _model;
 
+    int nx, ny, nz;
+    nx = _nx + 2*_lpml;
+    ny = _ny + 2*_lpml;
+    nz = _nz + 2*_lpml;
     /* Allocate memory variables */
-    TT = (T *) calloc(_nx*_ny*_nz, sizeof(T));
-    lam = (T *) calloc(_nx*_ny*_nz, sizeof(T));
-    recmask = (bool *) calloc(_nx*_ny*_nz, sizeof(bool));
+    TT = (T *) calloc(nx*ny*nz, sizeof(T));
+    lam = (T *) calloc(nx*ny*nz, sizeof(T));
+    recmask = (bool *) calloc(nx*ny*nz, sizeof(bool));
 
     /* Initialize TT */
-    for (int i=0; i < _nx*_ny*_nz; i++){
+    for (int i=0; i < nx*ny*nz; i++){
         TT[i] = 2.0*TMAX;
     }
-    Index Ilam(_nx,_ny,_nz);
-    for (int i=1; i < _nx-1; i++){
-        for (int j=1; j < _ny-1; j++){
-            for (int k=1; k < _nz-1; k++){
+    Index Ilam(nx,ny,nz);
+    for (int i=1; i < nx-1; i++){
+        for (int j=1; j < ny-1; j++){
+            for (int k=1; k < nz-1; k++){
                 lam[Ilam(i,j,k)] = 10.0*TMAX;
             }
         }
@@ -650,12 +677,12 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
  *  Kiel, 09/12/2015
  *  ----------------------------------------------------------------------*/
 
-    int nx = model->getNx();
-    int ny = model->getNy();
-    int nz = model->getNz();
+    int nx = model->getNx_pml();
+    int ny = model->getNy_pml();
+    int nz = model->getNz_pml();
     T dh = model->getDx();
     T *TT = this->getTT();
-    T *Vp = model->getVp();
+    T *Vp = model->getL();
 
     /* local variables */
     int i, j, k, m, n, l;
@@ -816,9 +843,9 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 template<typename T>
 void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy, int nz1, int nz2, int ndz)
 {
-    int nx = model->getNx();
-    int ny = model->getNy();
-    int nz = model->getNz();
+    int nx = model->getNx_pml();
+    int ny = model->getNy_pml();
+    int nz = model->getNz_pml();
     T dh = model->getDx();
     T *TT = this->getTT();
     T *lam = this->getLam();
@@ -889,9 +916,9 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
 template<typename T>
 void RaysAcoustic3D<T>::solve()
 {
-    int nx = this->getNx();
-    int ny = this->getNy();
-    int nz = this->getNz();
+    int nx = this->getNx_pml();
+    int ny = this->getNy_pml();
+    int nz = this->getNz_pml();
     T tmax = TMAX;
     T *TTold = (T *) calloc(nx*ny*nz, sizeof(T));
     int i;
@@ -910,12 +937,12 @@ void RaysAcoustic3D<T>::solve()
 
         sweep(0, nx-1, 1,  0, ny-1, 1,  0, nz-1, 1);
         sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
-        sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
-        sweep(0, nx-1, 1,  ny-1, 0, -1,  nz-1, 0, -1);
         sweep(nx-1, 0, -1,  0, ny-1, 1,  0, nz-1, 1);
         sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
         sweep(nx-1, 0, -1,  ny-1, 0, -1,  0, nz-1, 1);
         sweep(nx-1, 0, -1,  ny-1, 0, -1,  nz-1, 0, -1);
+        sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
+        sweep(0, nx-1, 1,  ny-1, 0, -1,  nz-1, 0, -1);
 
         /* calculate l1 norm of TT - TTold */
         lnorm1 = norm1(TT,TTold);
@@ -928,9 +955,9 @@ void RaysAcoustic3D<T>::solve()
 template<typename T>
 void RaysAcoustic3D<T>::solve_adj()
 {
-    int nx = this->getNx();
-    int ny = this->getNy();
-    int nz = this->getNz();
+    int nx = this->getNx_pml();
+    int ny = this->getNy_pml();
+    int nz = this->getNz_pml();
     T tmax = TMAX;
     T *lamold = (T *) calloc(nx*ny*nz, sizeof(T));
     int i;
@@ -970,9 +997,9 @@ template<typename T>
 T RaysAcoustic3D<T>::norm1(T *TT, T *TTold)
 {
     /* local variables */
-    int NX = this->getNx();
-    int NY = this->getNy();
-    int NZ = this->getNz();
+    int NX = this->getNx_pml();
+    int NY = this->getNy_pml();
+    int NZ = this->getNz_pml();
 
     int i;
     T sum, norml1;
@@ -994,9 +1021,12 @@ void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source
     Point3D<int> *map;
     int ntrace = source->getNtrace();
     int nx, ny, nz;
-    nx = this->getNx();
-    ny = this->getNy();
-    nz = this->getNz();
+    int lpml;
+
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    ny = this->getNy_pml();
+    nz = this->getNz_pml();
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
@@ -1013,7 +1043,7 @@ void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source
     {
         if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
         { 
-            TT[I(map[i].x, map[i].y, map[i].z)] = 0.0;
+            TT[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = 0.0;
         }
     }
 }
@@ -1028,9 +1058,11 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
     int ntrace = data->getNtrace();
     int nt = data->getNt();
     int nx, ny, nz;
-    nx = this->getNx();
-    ny = this->getNy();
-    nz = this->getNz();
+    int lpml;
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    ny = this->getNy_pml();
+    nz = this->getNz_pml();
 
     // Get correct map (data or receiver mapping)
     if(maptype == SMAP) {
@@ -1050,7 +1082,7 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
     { 
         if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
         {
-            dataarray[Idat(0,i)] = Fielddata[I(map[i].x, map[i].y, map[i].z)];
+            dataarray[Idat(0,i)] = Fielddata[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)];
         }
     }
 
@@ -1061,9 +1093,11 @@ void RaysAcoustic3D<T>::createRecmask(std::shared_ptr<rockseis::Data3D<T>> sourc
     Point3D<int> *map;
     int ntrace = source->getNtrace();
     int nx, ny, nz;
-    nx = this->getNx();
-    ny = this->getNy();
-    nz = this->getNz();
+    int lpml;
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    ny = this->getNy_pml();
+    nz = this->getNz_pml();
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
@@ -1080,7 +1114,7 @@ void RaysAcoustic3D<T>::createRecmask(std::shared_ptr<rockseis::Data3D<T>> sourc
     {
         if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
         { 
-            recmask[I(map[i].x, map[i].y, map[i].z)] = true;
+            recmask[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = true;
         }
     }
 }
@@ -1090,9 +1124,11 @@ void RaysAcoustic3D<T>::insertResiduals(std::shared_ptr<rockseis::Data3D<T>> sou
     Point3D<int> *map;
     int ntrace = source->getNtrace();
     int nx, ny, nz;
-    nx = this->getNx();
-    ny = this->getNy();
-    nz = this->getNz();
+    int lpml;
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    ny = this->getNy_pml();
+    nz = this->getNz_pml();
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
@@ -1112,7 +1148,7 @@ void RaysAcoustic3D<T>::insertResiduals(std::shared_ptr<rockseis::Data3D<T>> sou
     {
         if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
         { 
-            lam[I(map[i].x, map[i].y, map[i].z)] = res[Idat(1,i)];
+            lam[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = res[Idat(1,i)];
         }
     }
 }
@@ -1127,5 +1163,4 @@ template class RaysAcoustic3D<float>;
 template class RaysAcoustic3D<double>;
 
 }
-
 

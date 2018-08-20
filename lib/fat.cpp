@@ -193,11 +193,19 @@ int FatAcoustic2D<T>::run()
 template<typename T>
 void FatAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, T *lam, T *grad) {
     int nx, nz;
+    int nx_pml, nz_pml;
+    int lpml = model->getLpml();
     nx = model->getNx();
     nz = model->getNz();
+    nx_pml = model->getNx_pml();
+    nz_pml = model->getNz_pml();
     T * vp = model->getVp();
-    for (int i=0; i<nx*nz; i++){
-        grad[i] = -1.0*lam[i]/CUB(vp[i]);
+    Index Ilam(nx_pml, nz_pml);
+    Index Igrad(nx, nz);
+    for (int i=0; i<nx; i++){
+        for (int j=0; j<nz; j++){
+            grad[Igrad(i,j)] = -1.0*lam[Ilam(i+lpml,j+lpml)]/CUB(vp[Igrad(i,j)]);
+        }
     }
 }
 
@@ -328,12 +336,25 @@ int FatAcoustic3D<T>::run()
 template<typename T>
 void FatAcoustic3D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, T *lam, T *grad) {
     int nx, ny, nz;
+    int nx_pml, ny_pml, nz_pml;
+    int lpml = model->getLpml();
     nx = model->getNx();
     ny = model->getNy();
     nz = model->getNz();
+
+    nx_pml = model->getNx_pml();
+    ny_pml = model->getNy_pml();
+    nz_pml = model->getNz_pml();
+
     T * vp = model->getVp();
-    for (int i=0; i<nx*ny*nz; i++){
-        grad[i] = -1.0*lam[i]/CUB(vp[i]);
+    Index Ilam(nx_pml, ny_pml, nz_pml);
+    Index Igrad(nx, ny, nz);
+    for (int i=0; i<nx; i++){
+        for (int j=0; j<ny; j++){
+            for (int k=0; k<nz; k++){
+                grad[Igrad(i,j,k)] = -1.0*lam[Ilam(i+lpml, j+lpml, k+lpml)]/CUB(vp[Igrad(i,j,k)]);
+            }
+        }
     }
 }
 

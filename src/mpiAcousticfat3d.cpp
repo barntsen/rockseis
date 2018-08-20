@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     Sort->setDatafile(Surveyfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic3D<float>> gmodel (new rockseis::ModelAcoustic3D<float>(Vpfile, Vpfile, 0 ,false));
+	std::shared_ptr<rockseis::ModelAcoustic3D<float>> gmodel (new rockseis::ModelAcoustic3D<float>(Vpfile, Vpfile, 10 ,false));
 
     // Test for problematic model sampling
     if(gmodel->getDx() != gmodel->getDz()){
@@ -135,7 +135,8 @@ int main(int argc, char** argv) {
 
                 Shotgeom = Sort->get3DGather(work.id);
                 size_t ntr = Shotgeom->getNtrace();
-                lmodel = gmodel->getLocal(Shotgeom, -3.0*gmodel->getDx(),-3.0*gmodel->getDx(), SMAP);
+                lmodel = gmodel->getLocal(Shotgeom, -1.0*gmodel->getDx(),-1.0*gmodel->getDx(), SMAP);
+                lmodel->staggerModels_Eikonal();
 
                 // Set shot coordinates and make a map
 	            std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(ntr, 1, 1.0, 0.0));

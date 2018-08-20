@@ -192,6 +192,7 @@ public:
     It creates the padded Rx, Rz and L from the non-padded models R and Vp. 
     */
     void staggerModels(); 
+    void staggerModels_Eikonal(); 
 
     /** Create model
     It creates an empty model of Vp and R
@@ -248,6 +249,7 @@ public:
     It creates the padded Rx, Ry, Rz and L from the non-padded models R and Vp. 
     */
     void staggerModels();
+    void staggerModels_Eikonal(); 
 
     /** Create model
     It creates an empty model of Vp and R
