@@ -898,12 +898,12 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
 
                     /* Leung & Qian (2006) */
                     lhs = (app-amm)/dh + (bpp-bmm)/dh + (cpp-cmm)/dh;
-                    rhs = (amp*lam[I3D(m-1,n,l)]-apm*lam[I3D(m+1,n,l)])/dh + (cmp*lam[I3D(m,n-1,l)]-cpm*lam[I3D(m,n+1,l)])/dh + (cmp*lam[I3D(m,n,l-1)]-cpm*lam[I3D(m,n,l+1)])/dh;
+                    rhs = (amp*lam[I3D(m-1,n,l)]-apm*lam[I3D(m+1,n,l)])/dh + (bmp*lam[I3D(m,n-1,l)]-bpm*lam[I3D(m,n+1,l)])/dh + (cmp*lam[I3D(m,n,l-1)]-cpm*lam[I3D(m,n,l+1)])/dh;
 
                     lamt = rhs/(lhs+EPS_ADJ);
                     lam[I3D(m,n,l)] = fminf(lam[I3D(m,n,l)],lamt);
                 }
-                k += ndz;
+                l += ndz;
             }
 
             n += ndy;

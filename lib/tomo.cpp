@@ -876,6 +876,7 @@ template<typename T>
 TomoAcoustic3D<T>::TomoAcoustic3D() {
     // Set default parameters
     apertx = -1;
+    aperty = -1;
 
     kvp = 1.0;
 
@@ -887,6 +888,7 @@ template<typename T>
 TomoAcoustic3D<T>::TomoAcoustic3D(MPImodeling *mpi): Tomo<T>(mpi) {
     // Set default parameters
     apertx = -1;
+    aperty = -1;
 
     kvp = 1.0;
     reg_alpha[0]=0.0;
@@ -1467,7 +1469,7 @@ void TomoAcoustic3D<T>::computeRegularisation(double *x)
 {
     // Models
     std::shared_ptr<rockseis::ModelAcoustic3D<T>> model (new rockseis::ModelAcoustic3D<T>(VPLSFILE, VPLSFILE, 1 ,0));
-    std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
+    std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), model->getNy(), model->getNz(), model->getDx(), model->getDy(), model->getDz(), 8));
     std::shared_ptr<rockseis::Bspl3D<double>> spline;
 
     // Write linesearch model
