@@ -278,6 +278,73 @@ void Picks::Interp(int cmp_number)
     }
 }
 
+
+void Picks::Project()
+{
+    float d;
+    // Find out if there are picks
+    float *cmp = (float*) calloc(ncmp, sizeof(float));
+    int ngath = 0;
+    for(int i=0; i < ncmp; i++){
+        if(npicks[i]){
+            cmp[ngath] = (float) i;
+            ngath++;
+        }
+    }
+    float *wrk0  = (float *) calloc(nt, sizeof(float));
+    float *wrk1  = (float *) calloc(nt, sizeof(float));
+
+    int j = 0;
+    if(ngath){
+        for(int i=0; i < ncmp; i++){
+            if(npicks[i] == 0){
+                npicks[i] = nt;
+                // Deal with sides 
+                if(i < cmp[0] || i > cmp[ngath-1]){
+                    if(i<cmp[0]){
+                        Interp(cmp[0]);
+                        for(int k=0; k < nt; k++){
+                            picks[maxpicks*i + k].y = vrms[k];
+                            picks[maxpicks*i + k].x = k;
+                        }
+                    }
+                    if(i>cmp[ngath-1]){
+                        Interp(cmp[ngath-1]);
+                        for(int k=0; k < nt; k++){
+                            picks[maxpicks*i + k].y = vrms[k];
+                            picks[maxpicks*i + k].x = k;
+                        }
+                    }
+                }else{
+                    // Find index
+                    j = 0;
+                    while( i < cmp[j] ){
+                        j++;
+                    }
+                    // i is between cmp[j] and cmp[j+1]
+                    Interp(cmp[j]);
+                    for(int k=0; k < nt; k++){
+                        wrk0[k] = vrms[k];
+                    }
+                    Interp(cmp[j+1]);
+                    for(int k=0; k < nt; k++){
+                        wrk1[k] = vrms[k];
+                    }
+                    d=(i-cmp[j])/(cmp[j+1]-cmp[j]);
+                    for(int k=0; k < nt; k++){
+                        picks[maxpicks*i + k].y = wrk0[k]*(1.0-d) + wrk1[k]*d;
+                        picks[maxpicks*i + k].x = k;
+                    }
+                }
+            }
+        }
+    }
+    free(cmp);
+    free(wrk0);
+    free(wrk1);
+
+}
+
 void Picks::Savepicks()
 {
     // No need to save

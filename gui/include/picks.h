@@ -47,6 +47,7 @@ class Picks
 	    void Addpick(int n, float x, float y);
 	    void Removepick(int n, float x, float y);
 	    void Interp(int cmp_number);
+	    void Project();
 	    void Savepicks();
 	    void Loadpicks();
 	    void Importpicks(char *filename);

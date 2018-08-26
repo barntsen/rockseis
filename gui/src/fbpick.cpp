@@ -177,12 +177,13 @@ void MyApp::Save(wxCommandEvent& event)
         for(int i=0; i< Sort->getNensemb(); i++)
         {
             if(npicks[i] > 0){
-                std::cerr << "Starting to save picks" << std::endl;
                 //Get gather
                 wrkgather.reset();
                 wrkgather = Sort->get2DGather(i);
                 outgather.reset();
                 outgather = std::make_shared<rockseis::Data2D<float>>(wrkgather->getNtrace(), 1, 1.0, 0.0);
+                outgather->copyCoords(wrkgather);
+
                 data = outgather->getData();
                 //Compute interpolated picks
                 (*picks)[0]->Interp(i);

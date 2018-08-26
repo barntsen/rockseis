@@ -431,7 +431,6 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
     if(toolbarset){
         if(ToolBarItem3->IsToggled()){
             picks[layer]->Addpick(this->getCmpnumber(), x, y);
-            picks[layer]->Interp(this->getCmpnumber());
             Refresh();
         }
     }
@@ -525,7 +524,6 @@ void Image2dframe::OnImagewindowRightUp(wxMouseEvent& event)
             y=ay*pos.y + y0;
 
             picks[layer]->Removepick(this->getCmpnumber(), x, y);
-            picks[layer]->Interp(this->getCmpnumber());
             Refresh();
         }
     }
@@ -3042,10 +3040,9 @@ void Image2dframe::OnPreviousClicked(wxCommandEvent& event)
 
 void Image2dframe::OnSavepicks(wxCommandEvent& event)
 {
-   int i = 0; 
    wxCommandEvent parevent(SaveEvent, GetId());
    parevent.SetEventObject(this);
-   parevent.SetInt(i);
+   parevent.SetInt(0);
    // Send event to App
    ProcessWindowEvent(parevent);
 }
@@ -3109,7 +3106,7 @@ void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
 
         next=current_cmp;
         nump=0;
-        while(next<this->getMaxcmp()-1){
+        while(next<this->getMaxcmp()){
             next++;
             nump=np[next];
             if(nump) break;
