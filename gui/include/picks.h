@@ -17,22 +17,28 @@
 #include <wx/filefn.h>
 #include "utils.h"
 
+#define PICK_HORIZONTAL 0
+#define PICK_VERTICAL 1
+
 class Picks
 {
 	private:
-	    float dt;
 	    int nt;
+	    float dt;
+	    float ot;
 		int ncmp;
 		int maxpicks;
         rockseis::Point2D<float> *picks;
 		int *npicks;
 		float *vrms;
 		bool changed;
+        std::string filename;
+        int type;
 
 
 	public:
 	    Picks() { /* Do nothing */ }
-	    Picks(int maxp, int nc, int n, float d);
+	    Picks(int maxp, int nc, int n, float d, float o, int type);
 	    rockseis::Point2D<float> *Getpicks() { return picks; }
 	    int *Getnpicks() { return npicks; }
 	    int Getmaxpicks() { return maxpicks; }
@@ -41,8 +47,8 @@ class Picks
 	    void Addpick(int n, float x, float y);
 	    void Removepick(int n, float x, float y);
 	    void Interp(int cmp_number);
-	    void Savepicks(char *folder);
-	    void Loadpicks(char *folder);
+	    void Savepicks();
+	    void Loadpicks();
 	    void Importpicks(char *filename);
 	    bool Getchanged() { return changed; }
 	    void Setchanged(bool update) { changed = update; }

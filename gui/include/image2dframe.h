@@ -26,17 +26,19 @@
 #include <wx/image.h>
 #include <wx/artprov.h>
 #include "zoom.h"
+#include "picks.h"
 #include <algorithm>
+#include <vector>
 
 #define FONTSIZE1 6 
 #define FONTSIZE2 9 
 #define NCOLORS 5
+#define MAXPOS 9999
 
 
 class Image2dframe: public wxFrame
 {
 	public:
-
 		Image2dframe(size_t n1, float d1, float o1, size_t n2, float d2, float o2, float *imagedata, wxWindow* parent,wxWindowID id=wxID_ANY,const wxPoint& pos=wxDefaultPosition,const wxSize& size=wxDefaultSize);
 		virtual ~Image2dframe();
         void setToolbarset(bool val) { toolbarset = val; } 
@@ -53,6 +55,25 @@ class Image2dframe: public wxFrame
         void setStatusbar(int cmp, float x, float y, float val);
         void ComputeClip();
         void setDisplaypicks(int val) { displaypicks = val; }
+        void setN1(size_t val) { n1 = val; }
+        void setD1(float val) { d1 = val; }
+        void setO1(float val) { o1 = val; }
+
+        void setN2(size_t val) { n2 = val; }
+        void setD2(float val) { d2 = val; }
+        void setO2(float val) { o2 = val; }
+
+        size_t getN1() { return n1; }
+        float getD1() { return d1; }
+        float getO1() { return o1; }
+
+        size_t getN2() { return n2; }
+        float getD2() { return d2; }
+        float getO2() { return o2; }
+        void setImagedata (float *data) { imagedata = data; }
+        void setZoom(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny);
+
+        void createPicks();
 
 		//(*Declarations(Image2dframe)
 		wxPanel* Imagewindow;
@@ -110,6 +131,9 @@ class Image2dframe: public wxFrame
         bool getImage2dAlloc() { return image2d_allocated; }
         void setImage2dAlloc(bool val) { image2d_allocated = val; }
         void getRgb(int color);
+        void Plotpicks(wxDC &dc, int w, int h);
+        void OnPick(wxCommandEvent& event);
+        void OnZoom(wxCommandEvent& event);
 
         //Variables
         size_t n1;
@@ -129,6 +153,12 @@ class Image2dframe: public wxFrame
         bool toolbarset;
         int cmpnumber, dcmp, maxcmp;
         bool displaypicks;
+
+        // Picking variables
+        std::vector<Picks*> picks;
+        int nlayers;
+        int layer;
+        wxPoint pos[MAXPOS];
 
 		//*)
 

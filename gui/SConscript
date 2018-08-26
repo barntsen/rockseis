@@ -22,9 +22,12 @@ if(env['WX']):
     hello_gui = gui.Program(srcdir + prefix + 'hello_gui',[srcdir + 'hello_gui.cpp',libdir + 'mainframe.cpp'])
     gui.Install(bindir,hello_gui)
 
-    gui.Append(LIBS=['file', 'utils', 'geometry', 'data'])
+    gui.Append(LIBS=['file', 'utils', 'geometry', 'data', 'sort', 'rsfcpp', 'rsfc'])
     image = gui.Program(srcdir + prefix + 'image',[srcdir + 'image.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
     gui.Install(bindir,image)
 
     cipmute = gui.Program(srcdir + prefix + 'cipmute',[srcdir + 'cipmute.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
     gui.Install(bindir,cipmute)
+
+    fbpick = gui.Program(srcdir + prefix + 'fbpick',[srcdir + 'fbpick.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
+    gui.Install(bindir,fbpick)

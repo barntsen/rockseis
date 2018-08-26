@@ -1,5 +1,4 @@
 #include "image2dframe.h"
-#define MAXPOS 1024
 
 //helper functions
 enum wxbuildinfoformat {
@@ -69,6 +68,9 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
     dcmp = 1;
     maxcmp = 1;
 
+    nlayers=0;
+    layer=0;
+
 	//(*Initialize(Image2dframe)
 	wxFlexGridSizer* FlexGridSizer1;
 	wxBoxSizer* BoxSizer1;
@@ -112,6 +114,8 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 	Imagewindow->Connect(wxEVT_RIGHT_UP,(wxObjectEventFunction)&Image2dframe::OnImagewindowRightUp,0,this);
 	Imagewindow->Connect(wxEVT_MOTION,(wxObjectEventFunction)&Image2dframe::OnImagewindowMouseMove,0,this);
 	Connect(wxID_ANY,wxEVT_CLOSE_WINDOW,(wxObjectEventFunction)&Image2dframe::OnClose);
+	Connect(idToolpick,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnPick);
+	Connect(idToolzoom,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnZoom);
 	//*)
     
     // Compute Maxmimum and minimum values
@@ -203,6 +207,11 @@ void Image2dframe::OnImagewindowPaint(wxPaintEvent& event)
     wxImage image_scaled=this->image2d->Scale(w,h);
     wxBitmap bitmap(image_scaled);
     dc.DrawBitmap(bitmap, 0, 0, false);
+
+    if(nlayers>0){
+        //Plot picks
+        Plotpicks(dc, w, h);
+    }
 
     //Plot Zoom box
     if(zoom->Getzooming()){
@@ -328,6 +337,15 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
     pos=event.GetLogicalPosition(dc);
     Imagewindow->SetFocus();
 
+    bool dozoom = false;
+    if(!toolbarset){
+        dozoom = true;
+    }
+    if(toolbarset){
+        if(ToolBarItem4->IsToggled()){
+            dozoom = true;
+        }
+    }
 
     float x0, x1, y0, y1;
     x0=zoom->Getx0();
@@ -365,7 +383,7 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
     }
     StatusBar1->SetStatusText(_(label));
 
-    if(event.LeftIsDown()){
+    if(event.LeftIsDown() && dozoom){
         box[0].x=zpos1.x;
         box[0].y=zpos1.y;
         zoom->Setbox(box[0], 0);
@@ -393,6 +411,8 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
     pos=event.GetLogicalPosition(dc);
     int w,h;
     Imagewindow->GetSize(&w,&h);
+    bool dozoom = false;
+
 
     float x0, x1, y0, y1;
     x0=zoom->Getx0();
@@ -404,67 +424,130 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
     ay=(y1 - y0)/(h-1);
     ax=(x1 - x0)/(w-1);
 
-    wxPoint zpos1=zoom->Getzpos1();
-    wxPoint temp;
-    if(zpos1.y > pos.y){
-        temp.y=zpos1.y;
-        zpos1.y=pos.y;
-        pos.y=temp.y;
+    float x,y;
+    x=ax*pos.x + x0;
+    y=ay*pos.y + y0;
+
+    if(toolbarset){
+        if(ToolBarItem3->IsToggled()){
+            picks[layer]->Addpick(this->getCmpnumber(), x, y);
+            picks[layer]->Interp(this->getCmpnumber());
+            Refresh();
+        }
     }
-    if(zpos1.x > pos.x){
-        temp.x=zpos1.x;
-        zpos1.x=pos.x;
-        pos.x=temp.x;
+    if(!toolbarset){
+        dozoom = true;
     }
-    if(zpos1.x<0) zpos1.x=0;
-    if(zpos1.y<0) zpos1.y=0;
-    if(zpos1.x>w-1) zpos1.x=w-1;
-    if(zpos1.y>h-1) zpos1.y=h-1;
-    if(pos.x<0) pos.x=0;
-    if(pos.y<0) pos.y=0;
-    if(pos.x>w-1) pos.x=w-1;
-    if(pos.y>h-1) pos.y=h-1;
-    zoom->Setzpos1(zpos1);
-    zoom->Setzpos2(pos);
-    if(zpos1.x != pos.x && zpos1.y != pos.y){
-        //Compute limits
-        y1=ay*pos.y + y0;
-        y0=ay*zpos1.y + y0;
-        x1=ax*pos.x + x0;
-        x0=ax*zpos1.x + x0;
-        zoom->Sety0(y0);
-        zoom->Setiy0(int ((y0-o2)/d2));
-        zoom->Setny(int ((y1-y0)/d2 + 1 ));
-        zoom->Sety1(y1);
-        zoom->Setx0(x0);
-        zoom->Setix0(int ((x0-o1)/d1));
-        zoom->Setnx(int ((x1-x0)/d1 + 1 ));
-        zoom->Setx1(x1);
-    }else{
-        zoom->Sety0(0.0);
-        zoom->Sety1((n2-1)*d2 + o2);
-        zoom->Setx0(o1);
-        zoom->Setx1((n1-1)*d1 + o1);
-        zoom->Setiy0(0);
-        zoom->Setny(n2);
-        zoom->Setix0(0);
-        zoom->Setnx(n1);
+    if(toolbarset){
+        if(ToolBarItem4->IsToggled()){
+            dozoom = true;
+        }
     }
-    zoom->Setzooming(false);
-    this->LoadImage(zoom->Getix0(), zoom->Getnx(), zoom->Getiy0(), zoom->Getny());
-    Refresh();
+
+
+    if(dozoom){
+        wxPoint zpos1=zoom->Getzpos1();
+        wxPoint temp;
+        if(zpos1.y > pos.y){
+            temp.y=zpos1.y;
+            zpos1.y=pos.y;
+            pos.y=temp.y;
+        }
+        if(zpos1.x > pos.x){
+            temp.x=zpos1.x;
+            zpos1.x=pos.x;
+            pos.x=temp.x;
+        }
+        if(zpos1.x<0) zpos1.x=0;
+        if(zpos1.y<0) zpos1.y=0;
+        if(zpos1.x>w-1) zpos1.x=w-1;
+        if(zpos1.y>h-1) zpos1.y=h-1;
+        if(pos.x<0) pos.x=0;
+        if(pos.y<0) pos.y=0;
+        if(pos.x>w-1) pos.x=w-1;
+        if(pos.y>h-1) pos.y=h-1;
+        zoom->Setzpos1(zpos1);
+        zoom->Setzpos2(pos);
+        if(zpos1.x != pos.x && zpos1.y != pos.y){
+            //Compute limits
+            y1=ay*pos.y + y0;
+            y0=ay*zpos1.y + y0;
+            x1=ax*pos.x + x0;
+            x0=ax*zpos1.x + x0;
+            zoom->Sety0(y0);
+            zoom->Setiy0(int ((y0-o2)/d2));
+            zoom->Setny(int ((y1-y0)/d2 + 1 ));
+            zoom->Sety1(y1);
+            zoom->Setx0(x0);
+            zoom->Setix0(int ((x0-o1)/d1));
+            zoom->Setnx(int ((x1-x0)/d1 + 1 ));
+            zoom->Setx1(x1);
+        }else{
+            zoom->Sety0(0.0);
+            zoom->Sety1((n2-1)*d2 + o2);
+            zoom->Setx0(o1);
+            zoom->Setx1((n1-1)*d1 + o1);
+            zoom->Setiy0(0);
+            zoom->Setny(n2);
+            zoom->Setix0(0);
+            zoom->Setnx(n1);
+        }
+        zoom->Setzooming(false);
+        this->LoadImage(zoom->Getix0(), zoom->Getnx(), zoom->Getiy0(), zoom->Getny());
+        Refresh();
+    }
 }
 
 void Image2dframe::OnImagewindowRightUp(wxMouseEvent& event)
 {
+    if(toolbarset){
+        if(ToolBarItem3->IsToggled()){
+            int w,h;
+            float x0, x1, y0, y1;
+            float ax;
+            float ay;
+            float x,y;
+
+            wxPaintDC dc( Imagewindow );
+            wxPoint pos;
+            pos=event.GetLogicalPosition(dc);
+            Imagewindow->GetSize(&w,&h);
+
+            x0=zoom->Getx0();
+            x1=zoom->Getx1();
+            y0=zoom->Gety0();
+            y1=zoom->Gety1();
+
+            ay=(y1 - y0)/(h-1);
+            ax=(x1 - x0)/(w-1);
+
+            x=ax*pos.x + x0;
+            y=ay*pos.y + y0;
+
+            picks[layer]->Removepick(this->getCmpnumber(), x, y);
+            picks[layer]->Interp(this->getCmpnumber());
+            Refresh();
+        }
+    }
 }
 
 void Image2dframe::OnImagewindowLeftDown(wxMouseEvent& event)
 {
     wxPaintDC dc( Imagewindow );
     wxPoint zpos1=event.GetLogicalPosition(dc);
-    zoom->Setzpos1(zpos1);
-    zoom->Setzooming(true);
+    bool dozoom = false;
+    if(!toolbarset){
+        dozoom = true;
+    }
+    if(toolbarset){
+        if(ToolBarItem4->IsToggled()){
+            dozoom = true;
+        }
+    }
+    if(dozoom){
+        zoom->Setzpos1(zpos1);
+        zoom->Setzooming(true);
+    }
 }
 
 void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
@@ -2955,10 +3038,128 @@ void Image2dframe::OnPreviousClicked(wxCommandEvent& event)
    ProcessWindowEvent(parevent);
 }
 
-
 void Image2dframe::setStatusbar(int cmp, float x, float y, float val)
 {
     char label[48];
     snprintf(label, 48, "CMP: %d, X: %.2f, Z: %.2f, Val: %f", cmp, x, y, val);
     StatusBar1->SetStatusText(_(label));
+}
+
+void Image2dframe::createPicks()
+{
+   Picks *newpicks ; 
+   newpicks = new Picks(MAXPOS, this->getMaxcmp(), this->getN1(), this->getD1(), this->getO1(), PICK_HORIZONTAL);
+   picks.push_back(newpicks);
+   nlayers++;
+}
+
+void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
+{
+        int current_cmp=this->getCmpnumber();
+        int *np;
+        int nump;
+        np=picks[layer]->Getnpicks();
+        rockseis::Point2D<float> *points;
+        points=picks[layer]->Getpicks();
+        int maxpicks=picks[layer]->Getmaxpicks();
+        float v0,v1, t0, t1;
+        v0=zoom->Getx0();
+        v1=zoom->Getx1();
+        t0=zoom->Gety0();
+        t1=zoom->Gety1();
+        float ax;
+        float ay;
+        ay=(t1 - t0)/(h-1);
+        ax=(v1 - v0)/(w-1);
+
+        int i;
+        //Find previous and next picks
+        int previous,next;
+        previous=current_cmp;
+        nump=0;
+        while(previous>0){
+            previous--;
+            nump=np[previous];
+            if(nump) break;
+        }
+        if(nump){
+            for(i=0; i<nump; i++)
+            {
+                pos[i].x=(int) ((points[previous*maxpicks + i].x - v0)/ax);
+                pos[i].y=(int) ((points[previous*maxpicks + i].y - t0)/ay);
+            }
+                // Create a red pen 2 pixels wide drawing a dotted line
+                wxPen myPen(*wxRED,2,wxDOT_DASH);
+                // Tell dc to start using this pen to draw.
+                dc.SetPen( myPen );
+                dc.DrawLines(nump, pos);
+        }
+
+        next=current_cmp;
+        nump=0;
+        while(next<this->getMaxcmp()-1){
+            next++;
+            nump=np[next];
+            if(nump) break;
+        }
+        if(nump){
+            for(i=0; i<nump; i++)
+            {
+                pos[i].x=(int) ((points[next*maxpicks + i].x - v0)/ax);
+                pos[i].y=(int) ((points[next*maxpicks + i].y - t0)/ay);
+            }
+                // Create a red pen 2 pixels wide drawing a dotted line
+                wxPen myPen(*wxGREEN,2,wxDOT_DASH);
+                // Tell dc to start using this pen to draw.
+                dc.SetPen( myPen );
+                dc.DrawLines(nump, pos);
+        }
+
+        nump=np[current_cmp];
+        for(i=0; i<nump; i++)
+        {
+            pos[i].x=(int) ((points[current_cmp*maxpicks + i].x - v0)/ax);
+            pos[i].y=(int) ((points[current_cmp*maxpicks + i].y - t0)/ay);
+        }
+        if(nump){
+        // Create a green pen 3 pixels wide drawing a solid line
+            wxPen myWhitePen(*wxWHITE,2,wxSOLID);
+        // Tell dc to start using this pen to draw.
+            dc.SetPen( myWhitePen );
+            for(i=0; i<nump; i++){
+                // Draw a Point
+                dc.DrawCircle(pos[i].x, pos[i].y, 3);
+            }
+            dc.DrawLines(nump, pos);
+        }
+}
+
+void Image2dframe::setZoom(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny)
+{
+            zoom->Setx0(o1);
+            zoom->Setix0(ix0);
+            zoom->Setnx(nx);
+            zoom->Setx1(max1);
+            zoom->Sety0(o2);
+            zoom->Setiy0(iy0);
+            zoom->Setny(ny);
+            zoom->Sety1(max2);
+}
+
+void Image2dframe::OnPick(wxCommandEvent& event)
+{
+    if(ToolBarItem4->IsToggled()){
+        ToolBar1->ToggleTool(idToolzoom, false);
+        ToolBar1->Refresh();
+        ToolBar1->Update();
+    }
+}
+
+void Image2dframe::OnZoom(wxCommandEvent& event)
+{
+    if(ToolBarItem3->IsToggled()){
+        ToolBar1->ToggleTool(idToolpick, false);
+        ToolBar1->Refresh();
+        ToolBar1->Update();
+    }
 }

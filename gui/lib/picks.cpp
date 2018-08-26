@@ -11,12 +11,14 @@
 #define SQ(x) ((x) * (x))
 
 // Member function implementations
-Picks::Picks(int maxp, int nc, int n, float d)
+Picks::Picks(int maxp, int nc, int n, float d, float o, int tp)
 {
     dt=d;
+    ot=o;
     nt=n;
     ncmp=nc;
     maxpicks=maxp;
+    type = tp;
 
     //Allocating picks array
     picks = (rockseis::Point2D<float> *) calloc(ncmp*maxpicks, sizeof(rockseis::Point2D<float>));
@@ -37,40 +39,79 @@ void Picks::Addpick(int n, float x, float y)
     float dy, dist, mindist;
     int i, minindex;
 
-    if(npicks[n]==0){
-        picks[n*maxpicks].x=evpos.x;
-        picks[n*maxpicks].y=evpos.y;
-        npicks[n]++;
+    if(type == PICK_VERTICAL){
+        if(npicks[n]==0){
+            picks[n*maxpicks].x=evpos.x;
+            picks[n*maxpicks].y=evpos.y;
+            npicks[n]++;
+        }else{
+            for(i=0; i<npicks[n]; i++){
+                dy=picks[n*maxpicks + i].y - evpos.y;
+                dist=sqrtf(dy*dy);
+                if(i==0){
+                    mindist=dist;
+                    minindex=0;
+                }
+                if(dist<mindist){
+                    mindist=dist;
+                    minindex=i;
+                }
+            }
+            if(evpos.y < picks[n*maxpicks + minindex].y){
+                npicks[n]++;
+                for(i=npicks[n]-1; i>minindex; i--){
+                    picks[n*maxpicks + i].x=picks[n*maxpicks + i-1].x;
+                    picks[n*maxpicks + i].y=picks[n*maxpicks + i-1].y;
+                }
+                picks[n*maxpicks + minindex].x=evpos.x;
+                picks[n*maxpicks + minindex].y=evpos.y;
+            }
+            if(evpos.y > picks[n*maxpicks + minindex].y){
+                npicks[n]++;
+                for(i=npicks[n]-1; i>minindex+1; i--){
+                    picks[n*maxpicks + i].x=picks[n*maxpicks + i-1].x;
+                    picks[n*maxpicks + i].y=picks[n*maxpicks + i-1].y;
+                }
+                picks[n*maxpicks + minindex+1].x=evpos.x;
+                picks[n*maxpicks + minindex+1].y=evpos.y;
+            }
+        }
     }else{
-        for(i=0; i<npicks[n]; i++){
-            dy=picks[n*maxpicks + i].y - evpos.y;
-            dist=sqrtf(dy*dy);
-            if(i==0){
-              mindist=dist;
-              minindex=0;
+        if(npicks[n]==0){
+            picks[n*maxpicks].x=evpos.x;
+            picks[n*maxpicks].y=evpos.y;
+            npicks[n]++;
+        }else{
+            for(i=0; i<npicks[n]; i++){
+                dy=picks[n*maxpicks + i].x - evpos.x;
+                dist=sqrtf(dy*dy);
+                if(i==0){
+                    mindist=dist;
+                    minindex=0;
+                }
+                if(dist<mindist){
+                    mindist=dist;
+                    minindex=i;
+                }
             }
-            if(dist<mindist){
-                mindist=dist;
-                minindex=i;
-            }
-        }
-        if(evpos.y < picks[n*maxpicks + minindex].y){
+            if(evpos.x < picks[n*maxpicks + minindex].x){
                 npicks[n]++;
-            for(i=npicks[n]-1; i>minindex; i--){
-                picks[n*maxpicks + i].x=picks[n*maxpicks + i-1].x;
-                picks[n*maxpicks + i].y=picks[n*maxpicks + i-1].y;
+                for(i=npicks[n]-1; i>minindex; i--){
+                    picks[n*maxpicks + i].x=picks[n*maxpicks + i-1].x;
+                    picks[n*maxpicks + i].y=picks[n*maxpicks + i-1].y;
+                }
+                picks[n*maxpicks + minindex].x=evpos.x;
+                picks[n*maxpicks + minindex].y=evpos.y;
             }
-            picks[n*maxpicks + minindex].x=evpos.x;
-            picks[n*maxpicks + minindex].y=evpos.y;
-        }
-        if(evpos.y > picks[n*maxpicks + minindex].y){
+            if(evpos.x > picks[n*maxpicks + minindex].x){
                 npicks[n]++;
-            for(i=npicks[n]-1; i>minindex+1; i--){
-                picks[n*maxpicks + i].x=picks[n*maxpicks + i-1].x;
-                picks[n*maxpicks + i].y=picks[n*maxpicks + i-1].y;
+                for(i=npicks[n]-1; i>minindex+1; i--){
+                    picks[n*maxpicks + i].x=picks[n*maxpicks + i-1].x;
+                    picks[n*maxpicks + i].y=picks[n*maxpicks + i-1].y;
+                }
+                picks[n*maxpicks + minindex+1].x=evpos.x;
+                picks[n*maxpicks + minindex+1].y=evpos.y;
             }
-            picks[n*maxpicks + minindex+1].x=evpos.x;
-            picks[n*maxpicks + minindex+1].y=evpos.y;
         }
     }
     changed=1;
@@ -88,15 +129,28 @@ void Picks::Removepick(int n, float x, float y)
     mindist=0;
 
     if(npicks[n]>0){
-        for(i=0; i<npicks[n]; i++){
-            dy=picks[n*maxpicks + i].y - evpos.y;
-            dist=sqrt(dy*dy);
-            if(i==0) mindist=dist;
-            if(dist<mindist){
-                mindist=dist;
-                minindex=i;
+        if(type == PICK_VERTICAL){
+            for(i=0; i<npicks[n]; i++){
+                dy=picks[n*maxpicks + i].y - evpos.y;
+                dist=sqrt(dy*dy);
+                if(i==0) mindist=dist;
+                if(dist<mindist){
+                    mindist=dist;
+                    minindex=i;
+                }
+            }
+        }else{
+            for(i=0; i<npicks[n]; i++){
+                dy=picks[n*maxpicks + i].x - evpos.x;
+                dist=sqrt(dy*dy);
+                if(i==0) mindist=dist;
+                if(dist<mindist){
+                    mindist=dist;
+                    minindex=i;
+                }
             }
         }
+
         npicks[n]--;
         for(i=minindex; i<npicks[n]; i++){
             picks[n*maxpicks + i].x=picks[n*maxpicks + i+1].x;
@@ -154,7 +208,7 @@ void Picks::Interp(int cmp_number)
         }
         for(i=0; i<nt; i++)
         {
-            ti=i*dt;
+            ti=i*dt + ot;
             if(ti <= t[0] || ti > t[n-1])
             {
                 if(ti <= t[0]) vrms[i]=picks[maxpicks*cmp_number].x;
@@ -174,62 +228,18 @@ void Picks::Interp(int cmp_number)
     }
 }
 
-void Picks::Savepicks(char *folder)
+void Picks::Savepicks()
 {
     // No need to save
     changed=0;
 }
 
-void Picks::Loadpicks(char *folder)
+void Picks::Loadpicks()
 {
-    FILE *fp;
-
-    char filename[256];
-    int i,j;
-
-    // Get Semblance data
-    snprintf(filename, 256, "%s/Picks/picksdata.bin", folder);
-    if(wxFileExists(filename)){
-        fp=fopen(filename, "rb");
-        int nump;
-        float x,y;
-        for (i=0; i < ncmp; i++){
-            fread(&nump, sizeof(int), 1, fp);
-            npicks[i]=nump;
-            for(j=0; j<nump; j++){
-                fread(&x, sizeof(float), 1, fp);
-                fread(&y, sizeof(float), 1, fp);
-                picks[i*maxpicks +j].x = x;
-                picks[i*maxpicks +j].y = y;
-            }
-        }
-        fclose(fp);
-    }
 }
 
 void Picks::Importpicks(char *filename)
 {
-    FILE *fp;
-
-    int i,j;
-
-    // Get Picks data
-    if(wxFileExists(filename)){
-        fp=fopen(filename, "rb");
-        int nump;
-        float x,y;
-        for (i=0; i < ncmp; i++){
-            fread(&nump, sizeof(int), 1, fp);
-            npicks[i]=nump;
-            for(j=0; j<nump; j++){
-                fread(&x, sizeof(float), 1, fp);
-                fread(&y, sizeof(float), 1, fp);
-                picks[i*maxpicks +j].x = x;
-                picks[i*maxpicks +j].y = y;
-            }
-        }
-        fclose(fp);
-    }
 }
 
 void Picks::Clearpicks()
