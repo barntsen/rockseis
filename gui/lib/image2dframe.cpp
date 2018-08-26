@@ -3151,7 +3151,6 @@ void Image2dframe::OnPick(wxCommandEvent& event)
     if(ToolBarItem4->IsToggled()){
         ToolBar1->ToggleTool(idToolzoom, false);
         ToolBar1->Refresh();
-        ToolBar1->Update();
     }
 }
 
@@ -3160,6 +3159,5 @@ void Image2dframe::OnZoom(wxCommandEvent& event)
     if(ToolBarItem3->IsToggled()){
         ToolBar1->ToggleTool(idToolpick, false);
         ToolBar1->Refresh();
-        ToolBar1->Update();
     }
 }
