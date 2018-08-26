@@ -72,6 +72,8 @@ class Image2dframe: public wxFrame
         float getO2() { return o2; }
         void setImagedata (float *data) { imagedata = data; }
         void setZoom(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny);
+        std::vector<Picks*> *getPicks() { return &picks; }
+
 
         void createPicks();
 
@@ -125,6 +127,7 @@ class Image2dframe: public wxFrame
 		void OnImagewindowKeyUp(wxKeyEvent& event);
 		void OnNextClicked(wxCommandEvent& event);
 		void OnPreviousClicked(wxCommandEvent& event);
+		void OnSavepicks(wxCommandEvent& event);
 		void OnCMPinterval(wxCommandEvent& event);
 		void OnClose(wxCloseEvent& event);
 		void OnImagewindowEraseBackground(wxEraseEvent& event);
@@ -166,5 +169,7 @@ class Image2dframe: public wxFrame
 };
 
 wxDECLARE_EVENT(SelectCmp, wxCommandEvent);
+wxDECLARE_EVENT(SaveEvent, wxCommandEvent);
+wxDECLARE_EVENT(LoadEvent, wxCommandEvent);
 
 #endif

@@ -11,6 +11,7 @@ class MyApp: public wxApp
 public:
 	virtual bool OnInit();
 	void readGath(wxCommandEvent& event);
+	void Save(wxCommandEvent& event);
 	int FilterEvent(wxEvent& event);
     void transposeData();
 
@@ -18,14 +19,17 @@ private:
     Image2dframe *frame;
     std::shared_ptr<rockseis::Sort<float>> Sort;
     std::shared_ptr<rockseis::Data2D<float>> gather;
+    std::string infile;
+    std::string picksfile;
 
 };
-
 
 // Main implementation of app
 wxIMPLEMENT_APP(MyApp);
 
 wxDEFINE_EVENT(SelectCmp, wxCommandEvent);
+wxDEFINE_EVENT(SaveEvent, wxCommandEvent);
+wxDEFINE_EVENT(LoadEvent, wxCommandEvent);
 
 // Class implementation of the app
 bool MyApp::OnInit()
@@ -34,8 +38,8 @@ bool MyApp::OnInit()
     parser.LongPrefix("-");
     parser.LongSeparator("=");
     args::HelpFlag help(parser, "help", "Display this help menu", {"h", "help"});
-    args::ValueFlag<std::string> input(parser, "FILENAME", "Input file", {"if"});
-    //args::ValueFlag<std::string> output(parser, "FILENAME", "Output file", {"of"});
+    args::ValueFlag<std::string> input(parser, "FILENAME", "Input file", {"i"});
+    args::ValueFlag<std::string> output(parser, "FILENAME", "Output picks file", {"o"});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -57,13 +61,19 @@ bool MyApp::OnInit()
         std::cerr << parser;
         return false;
     }
-    std::string infile;
     if (input){
          infile = args::get(input);
-         std::cerr << "-if = " << infile << std::endl;
+         std::cerr << "-i  " << infile << std::endl;
     }else{
         std::cerr << parser;
-        rockseis::rs_error("Missing input file -if");
+        rockseis::rs_error("Missing input file -i");
+    }
+    if (output){
+         picksfile = args::get(output);
+         std::cerr << "-o  " << picksfile << std::endl;
+    }else{
+        std::cerr << parser;
+        rockseis::rs_error("Missing input file -o");
     }
 
 
@@ -84,6 +94,7 @@ bool MyApp::OnInit()
     frame->Show( true );
 
 	Bind(SelectCmp, &MyApp::readGath, this, frame->GetId());
+	Bind(SaveEvent, &MyApp::Save, this, frame->GetId());
 	return true;
 }
 
@@ -138,4 +149,52 @@ int MyApp::FilterEvent(wxEvent& event)
 	}
 
 	return -1;
+}
+
+void MyApp::Save(wxCommandEvent& event)
+{
+    std::shared_ptr<rockseis::Data2D<float>> wrkgather;
+    std::shared_ptr<rockseis::Data2D<float>> outgather;
+    std::vector<Picks*> *picks;
+    picks = frame->getPicks();
+    int *npicks; 
+    npicks = (*picks)[0]->Getnpicks();
+    float *vrms;
+    float *data;
+    bool haspicks=false;
+    for(int i=0; i< Sort->getNensemb(); i++)
+    {
+        if(npicks[i] > 0){
+            haspicks=true;
+        }
+    }
+    if(haspicks){
+        wrkgather = Sort->get2DGather(0);
+        outgather = std::make_shared<rockseis::Data2D<float>>(wrkgather->getNtrace(), 1, 1.0, 0.0);
+        outgather->setFile(picksfile);
+        outgather->open("o");
+        outgather->close();
+        for(int i=0; i< Sort->getNensemb(); i++)
+        {
+            if(npicks[i] > 0){
+                std::cerr << "Starting to save picks" << std::endl;
+                //Get gather
+                wrkgather.reset();
+                wrkgather = Sort->get2DGather(i);
+                outgather.reset();
+                outgather = std::make_shared<rockseis::Data2D<float>>(wrkgather->getNtrace(), 1, 1.0, 0.0);
+                data = outgather->getData();
+                //Compute interpolated picks
+                (*picks)[0]->Interp(i);
+                vrms  = (*picks)[0]->Getvrms();
+                for(int j=0; j<gather->getNtrace(); j++){
+                    data[j] = vrms[j];
+                }
+                outgather->setFile(picksfile);
+                outgather->open("a");
+                outgather->writeTraces();
+            }
+        }
+        wrkgather->close();
+    }
 }

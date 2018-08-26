@@ -620,6 +620,7 @@ void Image2dframe::createToolbar()
         Connect(idToolNext,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnNextClicked);
         Connect(idToolPrev,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnPreviousClicked);
         Connect(idToolcmpint,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnCMPinterval);
+	    Connect(idToolSave,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnSavepicks);
     }
 }
 
@@ -3034,6 +3035,17 @@ void Image2dframe::OnPreviousClicked(wxCommandEvent& event)
    wxCommandEvent parevent(SelectCmp, GetId());
    parevent.SetEventObject(this);
    parevent.SetInt(cmpnumber);
+   // Send event to App
+   ProcessWindowEvent(parevent);
+}
+
+
+void Image2dframe::OnSavepicks(wxCommandEvent& event)
+{
+   int i = 0; 
+   wxCommandEvent parevent(SaveEvent, GetId());
+   parevent.SetEventObject(this);
+   parevent.SetInt(i);
    // Send event to App
    ProcessWindowEvent(parevent);
 }
