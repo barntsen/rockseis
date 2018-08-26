@@ -3048,7 +3048,7 @@ void Image2dframe::setStatusbar(int cmp, float x, float y, float val)
 void Image2dframe::createPicks()
 {
    Picks *newpicks ; 
-   newpicks = new Picks(MAXPOS, this->getMaxcmp(), this->getN1(), this->getD1(), this->getO1(), PICK_HORIZONTAL);
+   newpicks = new Picks(MAXPOS, this->getMaxcmp()+1, this->getN1(), this->getD1(), this->getO1(), PICK_HORIZONTAL);
    picks.push_back(newpicks);
    nlayers++;
 }

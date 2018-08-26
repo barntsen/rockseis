@@ -16,12 +16,11 @@ public:
 
 private:
     Image2dframe *frame;
+    std::shared_ptr<rockseis::Sort<float>> Sort;
+    std::shared_ptr<rockseis::Data2D<float>> gather;
 
 };
 
-//Global variables
-std::shared_ptr<rockseis::Sort<float>> Sort;
-std::shared_ptr<rockseis::Data2D<float>> gather;
 
 // Main implementation of app
 wxIMPLEMENT_APP(MyApp);
