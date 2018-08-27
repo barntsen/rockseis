@@ -429,7 +429,7 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
     y=ay*pos.y + y0;
 
     if(toolbarset){
-        if(ToolBarItem3->IsToggled()){
+        if(ToolBarItem3->IsToggled() && nlayers > 0){
             picks[layer]->Addpick(this->getCmpnumber(), x, y);
             Refresh();
         }
@@ -500,7 +500,7 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
 void Image2dframe::OnImagewindowRightUp(wxMouseEvent& event)
 {
     if(toolbarset){
-        if(ToolBarItem3->IsToggled()){
+        if(ToolBarItem3->IsToggled() && nlayers > 0){
             int w,h;
             float x0, x1, y0, y1;
             float ax;
@@ -3040,11 +3040,13 @@ void Image2dframe::OnPreviousClicked(wxCommandEvent& event)
 
 void Image2dframe::OnSavepicks(wxCommandEvent& event)
 {
-   wxCommandEvent parevent(SaveEvent, GetId());
-   parevent.SetEventObject(this);
-   parevent.SetInt(0);
-   // Send event to App
-   ProcessWindowEvent(parevent);
+    if(nlayers > 0){
+        wxCommandEvent parevent(SaveEvent, GetId());
+        parevent.SetEventObject(this);
+        parevent.SetInt(0);
+        // Send event to App
+        ProcessWindowEvent(parevent);
+    }
 }
 
 void Image2dframe::setStatusbar(int cmp, float x, float y, float val)
@@ -3058,6 +3060,14 @@ void Image2dframe::createPicks()
 {
    Picks *newpicks ; 
    newpicks = new Picks(MAXPOS, this->getMaxcmp()+1, this->getN1(), this->getD1(), this->getO1(), PICK_HORIZONTAL);
+   picks.push_back(newpicks);
+   nlayers++;
+}
+
+void Image2dframe::createPicks(int direction)
+{
+   Picks *newpicks ; 
+   newpicks = new Picks(MAXPOS, this->getMaxcmp()+1, this->getN1(), this->getD1(), this->getO1(), direction);
    picks.push_back(newpicks);
    nlayers++;
 }
@@ -3159,7 +3169,6 @@ void Image2dframe::OnPick(wxCommandEvent& event)
 {
     if(ToolBarItem4->IsToggled()){
         ToolBar1->ToggleTool(idToolzoom, false);
-        ToolBar1->Refresh();
     }
 }
 
@@ -3167,6 +3176,5 @@ void Image2dframe::OnZoom(wxCommandEvent& event)
 {
     if(ToolBarItem3->IsToggled()){
         ToolBar1->ToggleTool(idToolpick, false);
-        ToolBar1->Refresh();
     }
 }

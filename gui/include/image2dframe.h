@@ -76,6 +76,7 @@ class Image2dframe: public wxFrame
 
 
         void createPicks();
+        void createPicks(int dir);
 
 		//(*Declarations(Image2dframe)
 		wxPanel* Imagewindow;

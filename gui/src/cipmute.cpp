@@ -183,6 +183,7 @@ bool MyApp::OnInit()
 	    cipframe->createToolbar();
 	    cipframe->SetLabel (wxT("Picking window"));
 	    cipframe->setMaxcmp(n1-1);
+        cipframe->createPicks(PICK_VERTICAL);
 	    cipframe->Show( true );
 
 	    Bind(SelectCmp, &MyApp::readCIP, this, cipframe->GetId());
