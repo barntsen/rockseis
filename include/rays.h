@@ -13,6 +13,7 @@
 #include "file.h"
 #include "snap.h"
 #include "interp.h"
+#include <algorithm>
 
 #define RAYS_OK 1;
 #define RAYS_ERR 0;
