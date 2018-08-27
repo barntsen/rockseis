@@ -8,7 +8,7 @@
 #include "geometry.h"
 #include "file.h"
 #include "utils.h"
-#include <rsf.hh>
+#include "fft.h"
 
 
 namespace rockseis {
@@ -46,6 +46,9 @@ public:
     void setFdata(std::shared_ptr<File> Fd) { Fdata = Fd; } ///< Set file handle
     void setField(rs_field _field) { field = _field; } ///< Set data type 
     void setRecinc(const int inc) { recinc = inc; }	///< Set Nx
+
+    // Filter
+    void Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt);
 
 private:
     std::string datafile;

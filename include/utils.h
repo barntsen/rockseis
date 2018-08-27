@@ -10,6 +10,7 @@
 #define NHEAD3D 6
 #define SMAP 0
 #define GMAP 1
+#define PI 3.14159265358979323846
 
 #define PRINT_DOC(s) std::cout << (#s) << std::endl;
 

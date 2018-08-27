@@ -22,7 +22,7 @@ if(env['WX']):
     hello_gui = gui.Program(srcdir + prefix + 'hello_gui',[srcdir + 'hello_gui.cpp',libdir + 'mainframe.cpp'])
     gui.Install(bindir,hello_gui)
 
-    gui.Append(LIBS=['file', 'sort', 'utils', 'geometry', 'data', 'rsfcpp', 'rsfc'])
+    gui.Append(LIBS=['file', 'sort', 'utils', 'geometry', 'data', 'fft'])
     image = gui.Program(srcdir + prefix + 'image',[srcdir + 'image.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
     gui.Install(bindir,image)
 

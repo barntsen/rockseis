@@ -9,7 +9,6 @@
 #include <utils.h>
 #include <data.h>
 
-#define PI 3.14159265358979323846
 #define LN_PAD 1
 #define BS_PAD 2
 #define SN_PAD 3
