@@ -122,7 +122,7 @@ void Data<T>::Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt)
 	fft1d->fft1d(-1);
 	for(i=0; i<nt; i++)
 	{
-		pulse[i] = cdata[2*i];
+		pulse[i] = cdata[2*i]/nf;
 	}
 	free(W);
 } 
@@ -620,15 +620,14 @@ void Data2D<T>::apply_filter (T *freqs)
     f[1] = freqs[1];
     f[2] = freqs[2];
     f[3] = freqs[3];
-	T *wrk = (T *) calloc(nt, sizeof(T));
-	T *flt = (T *) calloc(nt, sizeof(T));
+	T *flt = (T *) calloc(2*nt, sizeof(T));
     for(i=0; i< ntr; i++){
         for(j=0; j< nt; j++) flt[j] = data[Idata(j,i)];
-        this->Filter1D(flt, f[0], f[1], f[2], f[3], d_dt, nt); 
+        for(j=nt; j < 2*nt; j++) flt[j] = 0.0;
+        this->Filter1D(flt, f[0], f[1], f[2], f[3], d_dt, 2*nt); 
         for(j=0; j< nt; j++) data[Idata(j,i)] = flt[j];
     }
 
-    free(wrk);
     free(flt);
 }
 
