@@ -243,7 +243,7 @@ void Picks::Interp(int cmp_number)
             t = (float *) calloc((n+1), sizeof(float));
 
             for(i=0; i < n; i++){
-                t[i]=picks[maxpicks*cmp_number + i].x;
+                t[i]=picks[maxpicks*cmp_number + i].y;
             }
             for(i=0; i<nt; i++)
             {
@@ -252,21 +252,21 @@ void Picks::Interp(int cmp_number)
                 {
                     if(ti <= t[0]){
                         d=(ti-t[0])/(t[1]-t[0]);
-                        p0=picks[maxpicks*cmp_number].y;
-                        p1=picks[maxpicks*cmp_number+1].y;
+                        p0=picks[maxpicks*cmp_number].x;
+                        p1=picks[maxpicks*cmp_number+1].x;
                         vrms[i]=p0*(1.0-d) + p1*d;
                     }
                     if(ti > t[n-1]){
                         d=(ti-t[n-2])/(t[n-1]-t[n-2]);
-                        p0=picks[maxpicks*cmp_number+n-2].y;
-                        p1=picks[maxpicks*cmp_number+n-1].y;
+                        p0=picks[maxpicks*cmp_number+n-2].x;
+                        p1=picks[maxpicks*cmp_number+n-1].x;
                         vrms[i]=p0*(1.0-d) + p1*d;
                     }
                 }else{
                     it=seekindex(t, n, ti);
                     d=(ti-t[it])/(t[it+1]-t[it]);
-                    p0=picks[maxpicks*cmp_number + it].y;
-                    p1=picks[maxpicks*cmp_number + it+1].y;
+                    p0=picks[maxpicks*cmp_number + it].x;
+                    p1=picks[maxpicks*cmp_number + it+1].x;
                     vrms[i]=p0*(1.0-d) + p1*d;
                 }
             }
@@ -296,47 +296,95 @@ void Picks::Project()
 
     int j = 0;
     if(ngath){
-        for(int i=0; i < ncmp; i++){
-            if(npicks[i] == 0){
-                npicks[i] = nt;
-                // Deal with sides 
-                if(i < cmp[0] || i > cmp[ngath-1]){
-                    if(i<cmp[0]){
-                        Interp(cmp[0]);
-                        for(int k=0; k < nt; k++){
-                            picks[maxpicks*i + k].y = vrms[k];
-                            picks[maxpicks*i + k].x = k;
+        if(PICK_HORIZONTAL){
+            for(int i=0; i < ncmp; i++){
+                if(npicks[i] == 0){
+                    npicks[i] = nt;
+                    // Deal with sides 
+                    if(i < cmp[0] || i > cmp[ngath-1]){
+                        if(i<cmp[0]){
+                            Interp(cmp[0]);
+                            for(int k=0; k < nt; k++){
+                                picks[maxpicks*i + k].y = vrms[k];
+                                picks[maxpicks*i + k].x = k*dt +ot;
+                            }
                         }
-                    }
-                    if(i>cmp[ngath-1]){
-                        Interp(cmp[ngath-1]);
-                        for(int k=0; k < nt; k++){
-                            picks[maxpicks*i + k].y = vrms[k];
-                            picks[maxpicks*i + k].x = k;
+                        if(i>cmp[ngath-1]){
+                            Interp(cmp[ngath-1]);
+                            for(int k=0; k < nt; k++){
+                                picks[maxpicks*i + k].y = vrms[k];
+                                picks[maxpicks*i + k].x = k*dt + ot;
+                            }
                         }
-                    }
-                }else{
-                    // Find index
-                    j = 0;
-                    while( i < cmp[j] ){
-                        j++;
-                    }
-                    // i is between cmp[j] and cmp[j+1]
-                    Interp(cmp[j]);
-                    for(int k=0; k < nt; k++){
-                        wrk0[k] = vrms[k];
-                    }
-                    Interp(cmp[j+1]);
-                    for(int k=0; k < nt; k++){
-                        wrk1[k] = vrms[k];
-                    }
-                    d=(i-cmp[j])/(cmp[j+1]-cmp[j]);
-                    for(int k=0; k < nt; k++){
-                        picks[maxpicks*i + k].y = wrk0[k]*(1.0-d) + wrk1[k]*d;
-                        picks[maxpicks*i + k].x = k;
+                    }else{
+                        // Find index
+                        j = 0;
+                        while( i >= cmp[j] ){
+                            j++;
+                        }
+                        j--;
+                        // i is between cmp[j] and cmp[j+1]
+                        Interp(cmp[j]);
+                        for(int k=0; k < nt; k++){
+                            wrk0[k] = vrms[k];
+                        }
+                        Interp(cmp[j+1]);
+                        for(int k=0; k < nt; k++){
+                            wrk1[k] = vrms[k];
+                        }
+                        d=(i-cmp[j])/(cmp[j+1]-cmp[j]);
+                        for(int k=0; k < nt; k++){
+                            picks[maxpicks*i + k].y = wrk0[k]*(1.0-d) + wrk1[k]*d;
+                            picks[maxpicks*i + k].x = k*dt + ot;
+                        }
                     }
                 }
             }
+        }else{
+            for(int i=0; i < ncmp; i++){
+                if(npicks[i] == 0){
+                    npicks[i] = nt;
+                    // Deal with sides 
+                    if(i < cmp[0] || i > cmp[ngath-1]){
+                        if(i<cmp[0]){
+                            Interp(cmp[0]);
+                            for(int k=0; k < nt; k++){
+                                picks[maxpicks*i + k].x = vrms[k];
+                                picks[maxpicks*i + k].y = k*dt + ot;
+                            }
+                        }
+                        if(i>cmp[ngath-1]){
+                            Interp(cmp[ngath-1]);
+                            for(int k=0; k < nt; k++){
+                                picks[maxpicks*i + k].x = vrms[k];
+                                picks[maxpicks*i + k].y = k*dt + ot;
+                            }
+                        }
+                    }else{
+                        // Find index
+                        j = 0;
+                        while( i >= cmp[j] ){
+                            j++;
+                        }
+                        j--;
+                        // i is between cmp[j] and cmp[j+1]
+                        Interp(cmp[j]);
+                        for(int k=0; k < nt; k++){
+                            wrk0[k] = vrms[k];
+                        }
+                        Interp(cmp[j+1]);
+                        for(int k=0; k < nt; k++){
+                            wrk1[k] = vrms[k];
+                        }
+                        d=(i-cmp[j])/(cmp[j+1]-cmp[j]);
+                        for(int k=0; k < nt; k++){
+                            picks[maxpicks*i + k].x = wrk0[k]*(1.0-d) + wrk1[k]*d;
+                            picks[maxpicks*i + k].y = k*dt + ot;
+                        }
+                    }
+                }
+            }
+
         }
     }
     free(cmp);

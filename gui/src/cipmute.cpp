@@ -10,6 +10,7 @@ class MyApp: public wxApp
 public:
 	virtual bool OnInit();
 	void readCIP(wxCommandEvent& event);
+	void Save(wxCommandEvent& event);
 	int FilterEvent(wxEvent& event);
 
 
@@ -187,6 +188,7 @@ bool MyApp::OnInit()
 	    cipframe->Show( true );
 
 	    Bind(SelectCmp, &MyApp::readCIP, this, cipframe->GetId());
+	    Bind(SaveEvent, &MyApp::Save, this, cipframe->GetId());
 
 	    zoframe = new Image2dframe(n1, d1, o1, n3, d3, o3, zodata, 0);
 	    zoframe->SetLabel (wxT("Zero offset image window"));
@@ -262,3 +264,21 @@ int MyApp::FilterEvent(wxEvent& event)
 	return -1;
 }
 
+void MyApp::Save(wxCommandEvent& event)
+{
+    std::vector<Picks*> *picks;
+    picks = cipframe->getPicks();
+    int *npicks; 
+    npicks = (*picks)[0]->Getnpicks();
+    bool haspicks=false;
+    for(int i=0; i< n1; i++)
+    {
+        if(npicks[i] > 0){
+            haspicks=true;
+        }
+    }
+    if(haspicks){
+        (*picks)[0]->Project();
+        cipframe->Refresh();
+    }
+}
