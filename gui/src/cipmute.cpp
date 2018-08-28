@@ -16,6 +16,8 @@ public:
 
 
 private:
+    void OnZoframeDestroy(wxWindowDestroyEvent& event);
+    void OnCipframeDestroy(wxWindowDestroyEvent& event);
     std::string infile, outfile;
     size_t n1,n3,n4,n6,ntot;
     float d1,d3,d4,d6;
@@ -188,8 +190,8 @@ bool MyApp::OnInit()
 	    cipframe->setMaxcmp(n1-1);
         cipframe->createPicks(PICK_VERTICAL);
         cipframe->setGetcrosshair(true);
+        cipframe->Connect(wxEVT_DESTROY, wxWindowDestroyEventHandler(MyApp::OnCipframeDestroy),NULL, this);
 	    cipframe->Show( true );
-
 	    Bind(SelectCmp, &MyApp::readCIP, this, cipframe->GetId());
 	    Bind(SaveEvent, &MyApp::Save, this, cipframe->GetId());
 	    Bind(Crosshair, &MyApp::Cross, this, cipframe->GetId());
@@ -197,6 +199,7 @@ bool MyApp::OnInit()
 	    zoframe = new Image2dframe(n1, d1, o1, n3, d3, o3, zodata, 0);
 	    zoframe->SetLabel (wxT("Zero offset image window"));
         zoframe->setDisplaycrosshair(true);
+        zoframe->Connect(wxEVT_DESTROY, wxWindowDestroyEventHandler(MyApp::OnZoframeDestroy),NULL, this);
 	    zoframe->Show( true );
     }
 
@@ -295,4 +298,16 @@ void MyApp::Cross(wxCommandEvent& event)
     ptzo[0] = pt[0]*d1 + o1;
     ptzo[1] = pt[1];
     zoframe->Refresh();
+}
+
+void MyApp::OnZoframeDestroy(wxWindowDestroyEvent& event)
+{
+    cipframe->Close();
+    exit(0);
+}
+
+void MyApp::OnCipframeDestroy(wxWindowDestroyEvent& event)
+{
+    zoframe->Close();
+    exit(0);
 }
