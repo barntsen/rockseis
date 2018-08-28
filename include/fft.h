@@ -17,24 +17,26 @@ template<typename T>
 class Fft {
 public:
     Fft();
-    Fft(const int _n);
+    Fft(const unsigned long _n);
     ~Fft();
 
     /* Get functions */
-    int getNfft() { return nfft; }		///< Get Nfft 
-    int getN() { return n; }		///< Get n
+    unsigned long getNfft() { return nfft[0]; }		///< Get Nfft for 1D
+    unsigned long getNfft(int i) { if(i<3) return nfft[i]; else return 0; }		///< Get Nfft for higher dimensions
+    unsigned long getN() { return n[0]; }		///< Get n
+    unsigned long getN(int i) { if(i<3) return n[i]; else return 0; }		///< Get Nfft for higher dimensions
     T* getData() { return data; }           ///< Get FFT data
 
-
     /* FFT functions */
-    void fft1d(int isign); ///< Fast fourier trasnform in one dimension
-    
+    void fft1d(int isign); ///< Wrapper to fast fourier trasnform in one dimension
 
 private:
-    int n;
-    int nfft;
+    unsigned long n[3];
+    unsigned long nfft[3];
+    int ndim;
     T *data; // Array to store the fourier trasnform
-    void four1(T *data, unsigned long nn, int isign);
+    void four1(T *data, unsigned long nn, int isign); ///< Fast fourier trasnform in one dimension
+    void fourn(T *data, unsigned long *nn, int ndim, int isign); ///< Fast fourier transform in n dimensions
 };
 
 
