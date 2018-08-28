@@ -11,6 +11,7 @@ public:
 	virtual bool OnInit();
 	void readCIP(wxCommandEvent& event);
 	void Save(wxCommandEvent& event);
+	void Cross(wxCommandEvent& event);
 	int FilterEvent(wxEvent& event);
 
 
@@ -34,6 +35,7 @@ wxIMPLEMENT_APP(MyApp);
 wxDEFINE_EVENT(SelectCmp, wxCommandEvent);
 wxDEFINE_EVENT(SaveEvent, wxCommandEvent);
 wxDEFINE_EVENT(LoadEvent, wxCommandEvent);
+wxDEFINE_EVENT(Crosshair, wxCommandEvent);
 
 // Class implementation of the app
 bool MyApp::OnInit()
@@ -185,13 +187,16 @@ bool MyApp::OnInit()
 	    cipframe->SetLabel (wxT("Picking window"));
 	    cipframe->setMaxcmp(n1-1);
         cipframe->createPicks(PICK_VERTICAL);
+        cipframe->setGetcrosshair(true);
 	    cipframe->Show( true );
 
 	    Bind(SelectCmp, &MyApp::readCIP, this, cipframe->GetId());
 	    Bind(SaveEvent, &MyApp::Save, this, cipframe->GetId());
+	    Bind(Crosshair, &MyApp::Cross, this, cipframe->GetId());
 
 	    zoframe = new Image2dframe(n1, d1, o1, n3, d3, o3, zodata, 0);
 	    zoframe->SetLabel (wxT("Zero offset image window"));
+        zoframe->setDisplaycrosshair(true);
 	    zoframe->Show( true );
     }
 
@@ -281,4 +286,13 @@ void MyApp::Save(wxCommandEvent& event)
         (*picks)[0]->Project();
         cipframe->Refresh();
     }
+}
+
+void MyApp::Cross(wxCommandEvent& event)
+{
+    float *pt = (float *) event.GetClientData();
+    float *ptzo = zoframe->getCrosshair_pt();
+    ptzo[0] = pt[0]*d1 + o1;
+    ptzo[1] = pt[1];
+    zoframe->Refresh();
 }

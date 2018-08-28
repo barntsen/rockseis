@@ -55,6 +55,8 @@ class Image2dframe: public wxFrame
         void setStatusbar(int cmp, float x, float y, float val);
         void ComputeClip();
         void setDisplaypicks(int val) { displaypicks = val; }
+        void setDisplaycrosshair(bool val) { displaycrosshair = val; }
+        void setGetcrosshair(bool val) { getcrosshair = val; }
         void setN1(size_t val) { n1 = val; }
         void setD1(float val) { d1 = val; }
         void setO1(float val) { o1 = val; }
@@ -74,6 +76,7 @@ class Image2dframe: public wxFrame
         void setZoom(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny);
         std::vector<Picks*> *getPicks() { return &picks; }
 
+        float *getCrosshair_pt() { return &crosshair_pt[0]; }
 
         void createPicks();
         void createPicks(int dir);
@@ -136,6 +139,7 @@ class Image2dframe: public wxFrame
         void setImage2dAlloc(bool val) { image2d_allocated = val; }
         void getRgb(int color);
         void Plotpicks(wxDC &dc, int w, int h);
+        void Plotcrosshair(wxDC &dc, int w, int h);
         void OnPick(wxCommandEvent& event);
         void OnZoom(wxCommandEvent& event);
 
@@ -157,6 +161,9 @@ class Image2dframe: public wxFrame
         bool toolbarset;
         int cmpnumber, dcmp, maxcmp;
         bool displaypicks;
+        float crosshair_pt[2];
+        bool displaycrosshair;
+        bool getcrosshair;
 
         // Picking variables
         std::vector<Picks*> picks;
@@ -172,5 +179,6 @@ class Image2dframe: public wxFrame
 wxDECLARE_EVENT(SelectCmp, wxCommandEvent);
 wxDECLARE_EVENT(SaveEvent, wxCommandEvent);
 wxDECLARE_EVENT(LoadEvent, wxCommandEvent);
+wxDECLARE_EVENT(Crosshair, wxCommandEvent);
 
 #endif

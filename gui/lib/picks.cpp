@@ -199,13 +199,13 @@ void Picks::Interp(int cmp_number)
     int i,it;
     float ti,d,p0,p1;
     int n = npicks[cmp_number];
-    if(PICK_HORIZONTAL){
+    if(type == PICK_HORIZONTAL){
         if(n>1){
             float *t;
             t = (float *) calloc((n+1), sizeof(float));
 
             for(i=0; i < n; i++){
-                t[i]=picks[maxpicks*cmp_number + i].y;
+                t[i]=picks[maxpicks*cmp_number + i].x;
             }
             for(i=0; i<nt; i++)
             {
@@ -214,21 +214,21 @@ void Picks::Interp(int cmp_number)
                 {
                     if(ti <= t[0]){
                         d=(ti-t[0])/(t[1]-t[0]);
-                        p0=picks[maxpicks*cmp_number].x;
-                        p1=picks[maxpicks*cmp_number+1].x;
+                        p0=picks[maxpicks*cmp_number].y;
+                        p1=picks[maxpicks*cmp_number+1].y;
                         vrms[i]=p0*(1.0-d) + p1*d;
                     }
                     if(ti > t[n-1]){
                         d=(ti-t[n-2])/(t[n-1]-t[n-2]);
-                        p0=picks[maxpicks*cmp_number+n-2].x;
-                        p1=picks[maxpicks*cmp_number+n-1].x;
+                        p0=picks[maxpicks*cmp_number+n-2].y;
+                        p1=picks[maxpicks*cmp_number+n-1].y;
                         vrms[i]=p0*(1.0-d) + p1*d;
                     }
                 }else{
                     it=seekindex(t, n, ti);
                     d=(ti-t[it])/(t[it+1]-t[it]);
-                    p0=picks[maxpicks*cmp_number + it].x;
-                    p1=picks[maxpicks*cmp_number + it+1].x;
+                    p0=picks[maxpicks*cmp_number + it].y;
+                    p1=picks[maxpicks*cmp_number + it+1].y;
                     vrms[i]=p0*(1.0-d) + p1*d;
                 }
             }
@@ -296,7 +296,7 @@ void Picks::Project()
 
     int j = 0;
     if(ngath){
-        if(PICK_HORIZONTAL){
+        if(type == PICK_HORIZONTAL){
             for(int i=0; i < ncmp; i++){
                 if(npicks[i] == 0){
                     npicks[i] = nt;

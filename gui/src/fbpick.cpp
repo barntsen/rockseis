@@ -30,6 +30,7 @@ wxIMPLEMENT_APP(MyApp);
 wxDEFINE_EVENT(SelectCmp, wxCommandEvent);
 wxDEFINE_EVENT(SaveEvent, wxCommandEvent);
 wxDEFINE_EVENT(LoadEvent, wxCommandEvent);
+wxDEFINE_EVENT(Crosshair, wxCommandEvent);
 
 // Class implementation of the app
 bool MyApp::OnInit()
@@ -86,7 +87,7 @@ bool MyApp::OnInit()
 
     // Get parameters
 	wxString pick = "Gather";
-    frame = new Image2dframe(gather->getNtrace(), 1, 0, gather->getNt(), gather->getDt(), gather->getOt(), gather->getData(), 0);
+    frame = new Image2dframe(gather->getNtrace(), 1.0, 0, gather->getNt(), gather->getDt(), gather->getOt(), gather->getData(), 0);
     frame->createToolbar();
     frame->SetLabel (wxT("Picking window"));
     frame->setMaxcmp(Sort->getNensemb()-1);
@@ -174,6 +175,7 @@ void MyApp::Save(wxCommandEvent& event)
         outgather->setFile(picksfile);
         outgather->open("o");
         outgather->close();
+        frame->Refresh();
         for(int i=0; i< Sort->getNensemb(); i++)
         {
             if(npicks[i] > 0){

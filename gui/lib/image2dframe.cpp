@@ -71,6 +71,9 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
     nlayers=0;
     layer=0;
 
+    displaycrosshair = false;
+    getcrosshair = false;
+
 	//(*Initialize(Image2dframe)
 	wxFlexGridSizer* FlexGridSizer1;
 	wxBoxSizer* BoxSizer1;
@@ -211,6 +214,12 @@ void Image2dframe::OnImagewindowPaint(wxPaintEvent& event)
     if(nlayers>0){
         //Plot picks
         Plotpicks(dc, w, h);
+    }
+
+
+    if(displaycrosshair){
+        //Plot crosshair
+        Plotcrosshair(dc, w, h);
     }
 
     //Plot Zoom box
@@ -400,6 +409,21 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
         box[4].y=zpos1.y;
         zoom->Setbox(box[4], 4);
         Refresh();
+    }
+
+    if(getcrosshair){
+        if(getToolbarset()){
+            crosshair_pt[0] = this->getCmpnumber();
+            crosshair_pt[1] = y;
+        }else{
+            crosshair_pt[0] = x;
+            crosshair_pt[1] = y;
+        }
+        wxCommandEvent parevent(Crosshair, GetId());
+        parevent.SetEventObject(this);
+        parevent.SetClientData((void*) &crosshair_pt[0]);
+        // Send event to App
+        ProcessWindowEvent(parevent);
     }
     event.Skip(true);
 }
@@ -3075,6 +3099,27 @@ void Image2dframe::createPicks(int direction)
    picks.push_back(newpicks);
    nlayers++;
 }
+
+void Image2dframe::Plotcrosshair(wxDC &dc, int w, int h)
+{
+        float v0,v1, t0, t1;
+        v0=zoom->Getx0();
+        v1=zoom->Getx1();
+        t0=zoom->Gety0();
+        t1=zoom->Gety1();
+        float ax;
+        float ay;
+        ay=(t1 - t0)/(h-1);
+        ax=(v1 - v0)/(w-1);
+
+        pos[0].x=(int) ((crosshair_pt[0] - v0)/ax);
+        pos[0].y=(int) ((crosshair_pt[1] - t0)/ay);
+
+        wxPen myCrossPen(*wxWHITE,2,wxDOT_DASH);
+        dc.SetPen(myCrossPen);
+        dc.CrossHair(pos[0]);
+}
+
 
 void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
 {

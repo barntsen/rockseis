@@ -18,6 +18,7 @@ wxIMPLEMENT_APP(MyApp);
 wxDEFINE_EVENT(SelectCmp, wxCommandEvent);
 wxDEFINE_EVENT(SaveEvent, wxCommandEvent);
 wxDEFINE_EVENT(LoadEvent, wxCommandEvent);
+wxDEFINE_EVENT(Crosshair, wxCommandEvent);
 
 // Class implementation of the app
 bool MyApp::OnInit()
