@@ -235,6 +235,11 @@ int main(int argc, char* argv[])
         if (parmaxkey){
              maxkey = args::get(parmaxkey);
         }
+        if(parminkey && parmaxkey){
+            if(minkey > maxkey){
+                rs_error("Check Input: min > max.");
+            }
+        }
         rockseis::Point2D<float> *scoords2d;
         rockseis::Point2D<float> *gcoords2d;
         rockseis::Point3D<float> *scoords3d;
@@ -243,6 +248,7 @@ int main(int argc, char* argv[])
         float *traceout;
 
         size_t ntr;
+        size_t count_traces = 0;
         switch(type)
         {
             case DATA2D:
@@ -315,8 +321,12 @@ int main(int argc, char* argv[])
                     }
                     Outdata2d->copyCoords(Indata2d);
                     if(Outdata2d->writeTraces() == FILE_ERR) rs_error("Error writting to output file");
+                    count_traces++;
                 }
                 Outdata2d->close();
+                if(count_traces == 0){
+                    rs_error("Output has zero traces!");
+                }
                 break;
             case DATA3D:
                 Indata3d = std::make_shared<rockseis::Data3D<float>>(1, in->getN(1), in->getD(1), in->getO(1));
@@ -412,8 +422,12 @@ int main(int argc, char* argv[])
                     }
                     Outdata3d->copyCoords(Indata3d);
                     if(Outdata3d->writeTraces() == FILE_ERR) rs_error("Error writting to output file");
+                    count_traces++;
                 }
                 Outdata3d->close();
+                if(count_traces == 0){
+                    rs_error("Output has zero traces!");
+                }
                 break;
             default:
                 break;
