@@ -1134,6 +1134,32 @@ void Data3D<T>::putImage(std::string imagefile)
     free(imagedata);
 }
 
+template<typename T>
+void Data3D<T>::apply_filter (T *freqs)
+{
+    int i,j;
+    T dt = this->getDt();
+    unsigned long nt = this->getNt();
+    int ntr = this->getNtrace();
+	Index Idata(nt,ntr);
+    double d_dt = dt;
+    T f[4];
+    T *data = this->getData();
+    f[0] = freqs[0];
+    f[1] = freqs[1];
+    f[2] = freqs[2];
+    f[3] = freqs[3];
+	T *flt = (T *) calloc(2*nt, sizeof(T));
+    for(i=0; i< ntr; i++){
+        for(j=0; j< nt; j++) flt[j] = data[Idata(j,i)];
+        for(j=nt; j < 2*nt; j++) flt[j] = 0.0;
+        this->Filter1D(flt, f[0], f[1], f[2], f[3], d_dt, 2*nt); 
+        for(j=0; j< nt; j++) data[Idata(j,i)] = flt[j];
+    }
+
+    free(flt);
+}
+
 // destructor
 template<typename T>
 Data3D<T>::~Data3D() {

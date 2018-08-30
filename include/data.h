@@ -144,6 +144,9 @@ public:
     void putTrace(std::string filename, size_t number); ///< Writes a trace with a specific number to a file
     void putImage(std::string imagefile); ///< Output an image to the end of the datafile
 
+    //Filter
+    void apply_filter(T *freqs); ///< Apply a 4 point filter to the data
+
 private:
     std::shared_ptr<Geometry3D<T>> geometry;  // Data geometry 
     T *data; // Data array 
