@@ -57,6 +57,9 @@ if(env['TEST']):
 rsf2rss = env.Program(prefix + 'rsf2rss','rsf2rss.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp', 'sort', 'rsfcpp','rsfc'])
 env.Install('../bin/',rsf2rss)
 
+rsf2data = env.Program(prefix + 'rsf2data','rsf2data.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp', 'sort', 'rsfcpp','rsfc', 'fft'])
+env.Install('../bin/',rsf2data)
+
 rss2rsf = env.Program(prefix + 'rss2rsf','rss2rsf.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'config4cpp', 'rsfcpp','rsfc'])
 env.Install('../bin/',rss2rsf)
 

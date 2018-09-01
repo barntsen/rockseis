@@ -11,12 +11,7 @@ int main(int argc, char* argv[])
 	std::shared_ptr<rockseis::File> in (new rockseis::File());
 	std::shared_ptr<rockseis::File> out (new rockseis::File());
     bool status;
-    // Read input file
-    status = in->input();
-	if(status == FILE_ERR){
-        rockseis::rs_error("Error reading from input file.");
-	}
-    
+       
     args::ArgumentParser parser("Program to bandpass filter data rss files.", "");
     parser.LongPrefix("");
     parser.LongSeparator("=");
@@ -25,6 +20,7 @@ int main(int argc, char* argv[])
     args::ValueFlag<double> parf1(parser, "Double", "Begining of passband", {"f1"});
     args::ValueFlag<double> parf2(parser, "Double", "End of passband", {"f2"});
     args::ValueFlag<double> parf3(parser, "Double", "Maximum frequency", {"f3"});
+    args::ValueFlag<double> parpad(parser, "Double", "Pad beginning of trace with zeros (in seconds)", {"pad"});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -67,11 +63,27 @@ int main(int argc, char* argv[])
     }else{
         rs_error("Must provide f2"); 
     }
+
+    // Read input file
+    status = in->input();
+	if(status == FILE_ERR){
+        rockseis::rs_error("Error reading from input file.");
+	}
+
     if (parf3) { 
         freqs[3] = (float) args::get(parf3);
     }else{
         freqs[3] = (float) (0.5/in->getD(1));
     }
+
+    double pad;
+    long ipad;
+    if (parpad) { 
+        pad =  args::get(parpad);
+    }else{
+        pad = 0.0;
+    }
+    ipad = (long) (0.5 + pad/in->getD(1));
 
     rockseis::rs_datatype type = static_cast<rockseis::rs_datatype>(in->getType());
     int esize_hdr = in->getHeader_format();
@@ -92,7 +104,7 @@ int main(int argc, char* argv[])
         {
             case DATA2D:
                 Indata2d = std::make_shared<rockseis::Data2D<float>>(1, in->getN(1), in->getD(1), in->getO(1));
-                Outdata2d = std::make_shared<rockseis::Data2D<float>>(1, in->getN(1), in->getD(1), in->getO(1));
+                Outdata2d = std::make_shared<rockseis::Data2D<float>>(1, (ipad + in->getN(1)), in->getD(1), in->getO(1));
                 Indata2d->setFdata(in);
 
                 Outdata2d->setFile("stdout");
@@ -104,11 +116,13 @@ int main(int argc, char* argv[])
                 for(size_t i=0; i< ntr; i++)
                 {
                     if(Indata2d->readTraces() == FILE_ERR) rs_error("Error reading from input file");
-                    Indata2d->apply_filter(&freqs[0]);
-                    
-                    for(long i0=0; i0<in->getN(1); i0++){
-                        traceout[i0] = tracein[i0];
+                    for(long i0=0; i0<ipad; i0++){
+                        traceout[i0] = 0.0;
                     }
+                    for(long i0=0; i0<in->getN(1); i0++){
+                        traceout[i0+ipad] = tracein[i0];
+                    }
+                    Outdata2d->apply_filter(&freqs[0]);
                     Outdata2d->copyCoords(Indata2d);
                     if(Outdata2d->writeTraces() == FILE_ERR) rs_error("Error writting to output file");
                 }
@@ -116,7 +130,7 @@ int main(int argc, char* argv[])
                 break;
             case DATA3D:
                 Indata3d = std::make_shared<rockseis::Data3D<float>>(1, in->getN(1), in->getD(1), in->getO(1));
-                Outdata3d = std::make_shared<rockseis::Data3D<float>>(1, in->getN(1), in->getD(1), in->getO(1));
+                Outdata3d = std::make_shared<rockseis::Data3D<float>>(1, (ipad + in->getN(1)), in->getD(1), in->getO(1));
                 Indata3d->setFdata(in);
 
                 Outdata3d->setFile("stdout");
@@ -128,11 +142,14 @@ int main(int argc, char* argv[])
                 for(size_t i=0; i< ntr; i++)
                 {
                     if(Indata3d->readTraces() == FILE_ERR) rs_error("Error reading from input file");
-                    Indata3d->apply_filter(&freqs[0]);
-                    
-                    for(long i0=0; i0<in->getN(1); i0++){
-                        traceout[i0] = tracein[i0];
+                    for(long i0=0; i0<ipad; i0++){
+                        traceout[i0] = 0.0;
                     }
+                    for(long i0=0; i0<in->getN(1); i0++){
+                        traceout[i0+ipad] = tracein[i0];
+                    }
+                    
+                    Outdata3d->apply_filter(&freqs[0]);
                     Outdata3d->copyCoords(Indata3d);
                     if(Outdata3d->writeTraces() == FILE_ERR) rs_error("Error writting to output file");
                 }

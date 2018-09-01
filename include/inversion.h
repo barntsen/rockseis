@@ -261,6 +261,7 @@ public:
 
     // Regularisation computation
     void computeRegularisation(double *x);
+    void computeTikhonovRegularisation(double *x);
 
     // Combine gradients
     void combineGradients();

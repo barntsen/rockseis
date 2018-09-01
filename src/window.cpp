@@ -36,6 +36,7 @@ int main(int argc, char* argv[])
     parser.LongPrefix("");
     parser.LongSeparator("=");
     args::HelpFlag help(parser, "help", "Display this help menu", {"h", "help"});
+    args::ValueFlag<bool> parseto(parser, "Bool", "Do not set O's", {"notseto"});
     args::ValueFlag<double> parminkey(parser, "Double", "Mininum value in key", {"min"});
     args::ValueFlag<double> parmaxkey(parser, "Double", "Maximum value in key", {"max"});
     args::ValueFlag<std::string> parkey(parser, "String", "Key (s,g,offset,aoffset) ex: sx, offsetx, offset", {"key"});
@@ -147,6 +148,9 @@ int main(int argc, char* argv[])
                 }else{
                     n[i] = (long) (1.5 + (n_in[i] - 1 - f[i])/j[i]);
                 }
+            }
+            if(parseto){
+                o_in[i] -= f[i]*d_in[i]/j[i];
             }
         }else{
             n[i] = 0;

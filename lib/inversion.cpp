@@ -1014,6 +1014,113 @@ void InversionAcoustic2D<T>::applyMute()
 }
 
 template<typename T>
+void InversionAcoustic2D<T>::computeTikhonovRegularisation(double *x)
+{
+    // Models
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> model (new rockseis::ModelAcoustic2D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::Bspl2D<double>> spline;
+
+    // Write linesearch model
+    model->readModel();
+    T *vpgrad, *rhograd;
+    double *c, *mod;
+    int i;
+    int N, Nmod;
+
+    Nmod = (model->getGeom())->getNtot();
+    model->readModel();
+    model->setVpfile(VPREGGRADFILE);
+    model->setRfile(RHOREGGRADFILE);
+    vpgrad = model->getVp();
+    rhograd = model->getR();
+    T fvp = 0.0;
+    T frho = 0.0;
+    T fwrk;
+    switch (this->getParamtype()){
+        case PAR_GRID:
+            N = (model->getGeom())->getNtot();
+            for(i=0; i< N; i++)
+            {
+                vpgrad[i] = x[i]; // * Covariance matrix
+                vpgrad[i] *= kvp; // Diagonal scaling
+                rhograd[i] = x[i+N]; // * Covariance matrix
+                rhograd[i] *= krho; // Diagonal scaling
+
+                fwrk = x[i]; // * Covariance matrix
+                fwrk *= kvp;
+                fvp += 0.5*(fwrk)*(fwrk); 
+
+                fwrk = x[i+N]; //* Covariance matrix
+                fwrk *= krho;
+                fvp += 0.5*(fwrk)*(fwrk); 
+            }
+            break;
+        case PAR_BSPLINE:
+            Nmod = (model->getGeom())->getNtot();
+            spline = std::make_shared<rockseis::Bspl2D<double>>(model->getNx(), model->getNz(), model->getDx(), model->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+            N = spline->getNc();
+            c = spline->getSpline();
+            for(i=0; i< N; i++)
+            {
+                c[i] = x[i];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+            for(i=0; i< N; i++)
+            {
+                vpgrad[i] = mod[i]; // * Covariance matrix
+                vpgrad[i] *= kvp; // Diagonal scaling
+
+                fwrk = mod[i]; //* Covariance matrix
+                fwrk *= kvp;
+                fvp += 0.5*(fwrk)*(fwrk); 
+            }
+            for(i=0; i< N; i++)
+            {
+                c[i] = x[i+N];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+            for(i=0; i< N; i++)
+            {
+                rhograd[i] = mod[i]; // * Covariance matrix
+                rhograd[i] *= krho; // Diagonal scaling
+
+                fwrk = mod[i]; //* Covariance matrix
+                fwrk *= krho;
+                fvp += 0.5*(fwrk)*(fwrk); 
+            }
+
+            break;
+        default:
+            rs_error("InversionAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
+            break;
+    }
+
+
+    /* Write out misfit */
+    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
+    Fmisfit->output(VPREGMISFITFILE);
+    Fmisfit->setN(1,1);
+    Fmisfit->setD(1,1.0);
+    Fmisfit->setData_format(sizeof(T));
+    Fmisfit->write(&fvp,1,0);
+    Fmisfit->close();
+
+    Fmisfit->output(RHOREGMISFITFILE);
+    Fmisfit->setN(1,1);
+    Fmisfit->setD(1,1.0);
+    Fmisfit->setData_format(sizeof(T));
+    Fmisfit->write(&frho,1,0);
+    Fmisfit->close();
+
+    /* Write out gradient */
+    model->writeModel();
+
+}
+
+
+template<typename T>
 void InversionAcoustic2D<T>::computeRegularisation(double *x)
 {
     // Models
