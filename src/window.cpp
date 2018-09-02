@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     args::ValueFlag<bool> parseto(parser, "Bool", "Do not set O's", {"notseto"});
     args::ValueFlag<double> parminkey(parser, "Double", "Mininum value in key", {"min"});
     args::ValueFlag<double> parmaxkey(parser, "Double", "Maximum value in key", {"max"});
-    args::ValueFlag<std::string> parkey(parser, "String", "Key (s,g,offset,aoffset) ex: sx, offsetx, offset", {"key"});
+    args::ValueFlag<std::string> parkey(parser, "String", "Key (s,g,foffset,aoffset) ex: sx, offsetx, foffset", {"key"});
     args::ValueFlag<double> *parmin[MAXDIMS];
     args::ValueFlag<double> *parmax[MAXDIMS];
     args::ValueFlag<long> *parn[MAXDIMS];
