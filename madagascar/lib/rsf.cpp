@@ -225,6 +225,29 @@ iRSF::get (const char* name, int& value) const
     return 1;
 }
 
+void 
+iRSF::get (const char* name, off_t &value, off_t defolt) const
+{
+    if (file_)  {
+	if (!sf_histlargeint (file_,name,&value)) value = defolt;
+    } else {
+	if (!sf_getlargeint (name, &value)) value = defolt;
+    }
+}
+
+bool
+iRSF::get (const char* name, off_t& value) const
+{
+    if (file_)  {
+	if (!sf_histlargeint(file_,name,&value)) 
+        return 0;
+    } else {
+	if (!sf_getlargeint(name,&value)) 
+        return 0;
+    }
+    return 1;
+}
+
 void
 iRSF::get (const char* name, bool &value, bool defolt) const
 {

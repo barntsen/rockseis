@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
     madagascar::iRSF par(0);
     madagascar::iRSF in;
 
-    int n[MAXDIM];
+    off_t n[MAXDIM];
     float d[MAXDIM];
     float o[MAXDIM];
     for(int i=0; i< MAXDIM; i++){
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
     out->setData_format(esize);
     out->writeHeader();
     out->seekp(out->getStartofdata());
-    for (int i=0; i < ntot; i++) {
+    for (long i=0; i < ntot; i++) {
         switch(filetype)
         {
             case 2:

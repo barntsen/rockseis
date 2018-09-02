@@ -56,6 +56,8 @@ public:
     // reading parameters
     void get (const char* name,   int& value,   int defolt) const;
     bool get (const char* name,   int& value) const;
+    void get (const char* name,   off_t& value,   off_t defolt) const;
+    bool get (const char* name,   off_t& value) const;
     void get (const char* name, float& value, float defolt) const;
     bool get (const char* name, float& value) const;
     void get (const char* name, double& value, double defolt) const;

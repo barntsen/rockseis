@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     madagascar::iRSF *tfile;
     tfile = new madagascar::iRSF(hdrfile.c_str());
 
-    int n[MAXDIM];
+    off_t n[MAXDIM];
     float d[MAXDIM];
     float o[MAXDIM];
     for(int i=0; i< MAXDIM; i++){
@@ -129,6 +129,11 @@ int main(int argc, char* argv[])
     for (int i = 2; i < MAXDIM; i++){
         if(n[i] > 0) ntr *= n[i];
     }
+
+    off_t nhx;
+    (*tfile).get("n2", nhx);
+    if(nhx != ntr) rockseis::rs_error("Mismatch in number of traces between data file and tfile.");
+
     // Rockseis data 
     std::shared_ptr<rockseis::Data2D<float>> Bdata2D = NULL;
     std::shared_ptr<rockseis::Data3D<float>> Bdata3D = NULL;
