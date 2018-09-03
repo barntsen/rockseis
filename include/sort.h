@@ -30,6 +30,7 @@ typedef struct
 	    double offy;
 	    double z;
 	    double offz;
+        double foff;
 	    size_t ind;
 
 } position_t;

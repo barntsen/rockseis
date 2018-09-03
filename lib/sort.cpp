@@ -1,5 +1,6 @@
 #include "sort.h"
 
+#define SQ(x) ((x)*(x))
 namespace rockseis {
 // constructor
 template<typename T>
@@ -37,6 +38,9 @@ int sort_sr_0(void const *a, void const *b)
 
 	if( pa->x < pb->x) return -1;
 	if( pa->x > pb->x) return 1;
+
+	if( pa->foff < pb->foff) return -1;
+	if( pa->foff > pb->foff) return 1;
 
 	if( pa->offz < pb->offz) return -1;
 	if( pa->offz > pb->offz) return 1;
@@ -93,6 +97,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = fbuffer[4] - fbuffer[1];
                             positions[i2].z = fbuffer[2];
                             positions[i2].offz = fbuffer[5] - fbuffer[2];
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }else{
                             positions[i2].x = fbuffer[0];
                             positions[i2].offx = fbuffer[2] - fbuffer[0];
@@ -100,6 +105,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = 0.0;
                             positions[i2].z = fbuffer[1];
                             positions[i2].offz = fbuffer[3] - fbuffer[1];
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }
                         break;
                     case RECEIVER:
@@ -110,6 +116,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = fbuffer[1] - fbuffer[4];
                             positions[i2].z = fbuffer[5];
                             positions[i2].offz = fbuffer[2] - fbuffer[5];
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }else{
                             positions[i2].x = fbuffer[2];
                             positions[i2].offx = fbuffer[0] - fbuffer[2];
@@ -117,6 +124,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = 0.0;
                             positions[i2].z = fbuffer[3];
                             positions[i2].offz = fbuffer[1] - fbuffer[3];
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }
                         break;
                     case CMP:
@@ -127,6 +135,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = (fbuffer[4]-fbuffer[1]);
                             positions[i2].z = 0.0;
                             positions[i2].offz = 0.0;
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }else{
                             positions[i2].x = 0.5*(fbuffer[0]+fbuffer[2]);
                             positions[i2].offx = (fbuffer[2]-fbuffer[1]);
@@ -134,6 +143,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = 0.0;
                             positions[i2].z = 0.0;
                             positions[i2].offz = 0.0;
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }
                         // Snapping coordinates to bins
 						ftmp=(positions[i2].x)/dx; // Compute index in irregular coordinate
@@ -157,6 +167,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = dbuffer[4] - dbuffer[1];
                             positions[i2].z = dbuffer[2];
                             positions[i2].offz = dbuffer[5] - dbuffer[2];
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }else{
                             positions[i2].x = dbuffer[0];
                             positions[i2].offx = dbuffer[2] - dbuffer[0];
@@ -164,6 +175,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = 0.0;
                             positions[i2].z = dbuffer[1];
                             positions[i2].offz = dbuffer[3] - dbuffer[1];
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }
                         break;
                     case RECEIVER:
@@ -174,6 +186,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = dbuffer[1] - dbuffer[4];
                             positions[i2].z = dbuffer[5];
                             positions[i2].offz = dbuffer[2] - dbuffer[5];
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }else{
                             positions[i2].x = dbuffer[2];
                             positions[i2].offx = dbuffer[0] - dbuffer[2];
@@ -181,6 +194,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = 0.0;
                             positions[i2].z = dbuffer[3];
                             positions[i2].offz = dbuffer[1] - dbuffer[3];
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }
                         break;
                     case CMP:
@@ -191,6 +205,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = (dbuffer[4]-dbuffer[1]);
                             positions[i2].z = 0.0;
                             positions[i2].offz = 0.0;
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }else{
                             positions[i2].x = 0.5*(dbuffer[0]+dbuffer[2]);
                             positions[i2].offx = (dbuffer[2]-dbuffer[1]);
@@ -198,6 +213,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
                             positions[i2].offy = 0.0;
                             positions[i2].z = 0.0;
                             positions[i2].offz = 0.0;
+                            positions[i2].foff = SQ(positions[i2].offx) + SQ(positions[i2].offy) + SQ(positions[i2].offz);
                         }
 						// Snapping coordinates to bins
 						dtmp=(positions[i2].x)/dx; // Compute index in irregular coordinate
