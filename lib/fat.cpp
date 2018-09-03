@@ -222,16 +222,13 @@ void FatAcoustic2D<T>::computeMisfit()
     T* res = Tres->getData();
     T* obs = Tdata->getData();
     T* wei = NULL;
-    T* fres = NULL;
     if(Tweightset) 
     {
         wei = Tweight->getData();
     }
     size_t itr;
-    size_t pos;
     T deltaT = 0.0;
     T misfit = 0.0;
-    T pclip = 0.0;
 
     Index I(1, ntr);
     for(itr=0; itr<ntr; itr++){
@@ -250,6 +247,10 @@ void FatAcoustic2D<T>::computeMisfit()
     }
 
     // Thresholding
+    /*
+    T pclip = 0.0;
+    size_t pos;
+    T* fres = NULL;
     fres = (T *) calloc(ntr, sizeof(T));
     for(itr=0; itr<ntr; itr++){
         fres[I(0, itr)] = ABS(res[I(0, itr)]);
@@ -265,6 +266,7 @@ void FatAcoustic2D<T>::computeMisfit()
     }
 
     free(fres);
+    */
 
     // Set the final misfit value
     this->setMisfit(misfit);
@@ -391,16 +393,13 @@ void FatAcoustic3D<T>::computeMisfit()
     T* res = Tres->getData();
     T* obs = Tdata->getData();
     T* wei = NULL;
-    T* fres = NULL;
     if(Tweightset) 
     {
         wei = Tweight->getData();
     }
     size_t itr;
-    size_t pos;
     T deltaT = 0.0;
     T misfit = 0.0;
-    T pclip = 0.0;
 
     Index I(1, ntr);
     for(itr=0; itr<ntr; itr++){
@@ -419,6 +418,10 @@ void FatAcoustic3D<T>::computeMisfit()
     }
 
     // Thresholding
+    /*
+    T pclip = 0.0;
+    size_t pos;
+    T* fres = NULL;
     fres = (T *) calloc(ntr, sizeof(T));
     for(itr=0; itr<ntr; itr++){
         fres[I(0, itr)] = ABS(res[I(0, itr)]);
@@ -434,6 +437,7 @@ void FatAcoustic3D<T>::computeMisfit()
     }
 
     free(fres);
+    */
 
 
 
