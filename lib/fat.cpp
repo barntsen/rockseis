@@ -222,29 +222,49 @@ void FatAcoustic2D<T>::computeMisfit()
     T* res = Tres->getData();
     T* obs = Tdata->getData();
     T* wei = NULL;
+    T* fres = NULL;
     if(Tweightset) 
     {
         wei = Tweight->getData();
     }
     size_t itr;
+    size_t pos;
     T deltaT = 0.0;
     T misfit = 0.0;
+    T pclip = 0.0;
 
     Index I(1, ntr);
     for(itr=0; itr<ntr; itr++){
-        deltaT = mod[I(1, itr)] - obs[I(1, itr)];
+        deltaT = mod[I(0, itr)] - obs[I(0, itr)];
         if(Tweightset)
         {
-            deltaT *= wei[I(1, itr)];
+            deltaT *= wei[I(0, itr)];
         }
         misfit += 0.5*deltaT*deltaT;
-        res[I(1, itr)] = deltaT;
+        res[I(0, itr)] = deltaT;
 
         if(Tweightset)
         {
-            res[I(1, itr)] *= wei[I(1, itr)];
+            res[I(0, itr)] *= wei[I(0, itr)];
         }
     }
+
+    // Thresholding
+    fres = (T *) calloc(ntr, sizeof(T));
+    for(itr=0; itr<ntr; itr++){
+        fres[I(0, itr)] = ABS(res[I(0, itr)]);
+    }
+    std::sort(fres, fres+ntr); 
+    pos = (int) (PCLIP*ntr/100);
+    pclip = fres[pos];
+
+    for(itr=0; itr<ntr; itr++){
+        if(ABS(res[I(0, itr)]) >= pclip){
+            res[I(0, itr)] = 0.0;
+        }
+    }
+
+    free(fres);
 
     // Set the final misfit value
     this->setMisfit(misfit);
@@ -371,29 +391,51 @@ void FatAcoustic3D<T>::computeMisfit()
     T* res = Tres->getData();
     T* obs = Tdata->getData();
     T* wei = NULL;
+    T* fres = NULL;
     if(Tweightset) 
     {
         wei = Tweight->getData();
     }
     size_t itr;
+    size_t pos;
     T deltaT = 0.0;
     T misfit = 0.0;
+    T pclip = 0.0;
 
     Index I(1, ntr);
     for(itr=0; itr<ntr; itr++){
-        deltaT = mod[I(1, itr)] - obs[I(1, itr)];
+        deltaT = mod[I(0, itr)] - obs[I(0, itr)];
         if(Tweightset)
         {
-            deltaT *= wei[I(1, itr)];
+            deltaT *= wei[I(0, itr)];
         }
         misfit += 0.5*deltaT*deltaT;
-        res[I(1, itr)] = deltaT;
+        res[I(0, itr)] = deltaT;
 
         if(Tweightset)
         {
-            res[I(1, itr)] *= wei[I(1, itr)];
+            res[I(0, itr)] *= wei[I(0, itr)];
         }
     }
+
+    // Thresholding
+    fres = (T *) calloc(ntr, sizeof(T));
+    for(itr=0; itr<ntr; itr++){
+        fres[I(0, itr)] = ABS(res[I(0, itr)]);
+    }
+    std::sort(fres, fres+ntr); 
+    pos = (int) (PCLIP*ntr/100);
+    pclip = fres[pos];
+
+    for(itr=0; itr<ntr; itr++){
+        if(ABS(res[I(0, itr)]) >= pclip){
+            res[I(0, itr)] = 0.0;
+        }
+    }
+
+    free(fres);
+
+
 
     // Set the final misfit value
     this->setMisfit(misfit);
