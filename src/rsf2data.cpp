@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
                 scoords3D[0].z = fscalel * sz;
                 gcoords3D[0].x = fscalco * gx;
                 gcoords3D[0].y = fscalco * gy;
-                gcoords3D[0].y = fscalel * gz;
+                gcoords3D[0].z = fscalel * gz;
                 for(long j=0; j < n[0]; j++) {
                     ftrace[j] = floattrace[j];
                 }
