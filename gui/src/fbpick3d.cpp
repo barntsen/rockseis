@@ -227,11 +227,7 @@ void MyApp::Save(wxCommandEvent& event)
 
         // Save data in another file
         wrkgather = Sort->get3DGather(0);
-        outgather.reset();
-        outgather = std::make_shared<rockseis::Data3D<float>>(wrkgather->getNtrace(), 1, 1.0, 0.0);
-        outgather->setFile(tdatafile);
-        outgather->open("o");
-        outgather->close();
+        bool open = false;
         for(int i=0; i< Sort->getNensemb(); i++)
         {
             if(npicks[i] > 0){
@@ -250,11 +246,16 @@ void MyApp::Save(wxCommandEvent& event)
                     data[j] = vrms[j];
                 }
                 outgather->setFile(tdatafile);
-                outgather->open("a");
+                if(!open) {
+                    outgather->open("o");
+                    open = true;
+                }else{
+                    outgather->open("a");
+                }
                 outgather->writeTraces();
+                outgather->close();
             }
         }
-        wrkgather->close();
     }
     (*picks)[0]->Setchanged(false);
 }

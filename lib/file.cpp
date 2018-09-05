@@ -262,7 +262,11 @@ bool File::checksum()
     fstream.seekg(current_pos);
     Ntot= geometry->getNtot();
     N1= geometry->getN(1);
-    size_from_geom =  startofdata + (Nheader*header_format*Ntot/N1) + (data_format*Ntot);
+    if(N1 == 0) {
+        size_from_geom = startofdata + 1;
+    }else{
+        size_from_geom =  startofdata + (Nheader*header_format*Ntot/N1) + (data_format*Ntot);
+    }
     if(size_from_file != size_from_geom){
         return FILE_ERR;
     }else {
