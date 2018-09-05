@@ -29,5 +29,5 @@ if(env['WX']):
     cipmute = gui.Program(srcdir + prefix + 'cipmute',[srcdir + 'cipmute.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
     gui.Install(bindir,cipmute)
 
-    fbpick = gui.Program(srcdir + prefix + 'fbpick',[srcdir + 'fbpick.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
-    gui.Install(bindir,fbpick)
+    fbpick2d = gui.Program(srcdir + prefix + 'fbpick2d',[srcdir + 'fbpick2d.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
+    gui.Install(bindir,fbpick2d)

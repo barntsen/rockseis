@@ -132,6 +132,7 @@ class Image2dframe: public wxFrame
 		void OnNextClicked(wxCommandEvent& event);
 		void OnPreviousClicked(wxCommandEvent& event);
 		void OnSavepicks(wxCommandEvent& event);
+		void OnLoadpicks(wxCommandEvent& event);
 		void OnCMPinterval(wxCommandEvent& event);
 		void OnClose(wxCloseEvent& event);
 		void OnImagewindowEraseBackground(wxEraseEvent& event);
