@@ -31,3 +31,6 @@ if(env['WX']):
 
     fbpick2d = gui.Program(srcdir + prefix + 'fbpick2d',[srcdir + 'fbpick2d.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
     gui.Install(bindir,fbpick2d)
+
+    fbpick3d = gui.Program(srcdir + prefix + 'fbpick3d',[srcdir + 'fbpick3d.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
+    gui.Install(bindir,fbpick3d)
