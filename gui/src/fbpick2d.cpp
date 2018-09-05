@@ -242,7 +242,7 @@ void MyApp::Save(wxCommandEvent& event)
                 //Compute interpolated picks
                 (*picks)[0]->Interp(i);
                 vrms  = (*picks)[0]->Getvrms();
-                for(int j=0; j<gather2d->getNtrace(); j++){
+                for(int j=0; j<outgather->getNtrace(); j++){
                     data[j] = vrms[j];
                 }
                 outgather->setFile(tdatafile);
