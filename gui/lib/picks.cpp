@@ -393,14 +393,60 @@ void Picks::Project()
 
 }
 
-void Picks::Savepicks()
+int Picks::Savepicks(std::string filename)
 {
+    FILE *fp;
+
+    int i,j;
+
+    // Get Semblance data
+    fp=fopen(filename.c_str(), "wb");
+    if (fp == NULL) {
+        fprintf(stderr, "Can't open output file %s.\n", filename.c_str());
+        return PICKS_ERR;
+    }
+    int nump;
+    float x,y;
+    for (i=0; i < ncmp; i++){
+        nump=npicks[i];
+        if(fwrite(&nump, sizeof(int), 1, fp) != 1) return PICKS_ERR;
+        for(j=0; j<nump; j++){
+            x=picks[i*maxpicks + j].x;
+            y=picks[i*maxpicks + j].y;
+            if(fwrite(&x, sizeof(float), 1, fp)) return PICKS_ERR;
+            if(fwrite(&y, sizeof(float), 1, fp)) return PICKS_ERR;
+        }
+    }
+    fclose(fp);
+
     // No need to save
     changed=0;
+    return PICKS_OK;
 }
 
-void Picks::Loadpicks()
+int Picks::Loadpicks(std::string filename)
 {
+    FILE *fp;
+    int i,j;
+
+    // Get picks
+    if(wxFileExists(filename.c_str())){
+        fp=fopen(filename.c_str(), "rb");
+        int nump;
+        float x,y;
+        for (i=0; i < ncmp; i++){
+            fread(&nump, sizeof(int), 1, fp);
+            npicks[i]=nump;
+            for(j=0; j<nump; j++){
+                if(fread(&x, sizeof(float), 1, fp) != 1) return PICKS_ERR;
+                if(fread(&y, sizeof(float), 1, fp) != 1) return PICKS_ERR;
+                picks[i*maxpicks +j].x = x;
+                picks[i*maxpicks +j].y = y;
+            }
+        }
+        fclose(fp);
+    }
+    return PICKS_OK;
 }
 
 void Picks::Importpicks(char *filename)

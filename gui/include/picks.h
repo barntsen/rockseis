@@ -20,6 +20,9 @@
 #define PICK_HORIZONTAL 0
 #define PICK_VERTICAL 1
 
+#define PICKS_OK 0
+#define PICKS_ERR 1
+
 class Picks
 {
 	private:
@@ -48,8 +51,8 @@ class Picks
 	    void Removepick(int n, float x, float y);
 	    void Interp(int cmp_number);
 	    void Project();
-	    void Savepicks();
-	    void Loadpicks();
+	    int Savepicks(std::string filename);
+	    int Loadpicks(std::string filename);
 	    void Importpicks(char *filename);
 	    bool Getchanged() { return changed; }
 	    void Setchanged(bool update) { changed = update; }
