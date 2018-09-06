@@ -206,7 +206,10 @@ void MyApp::Save(wxCommandEvent& event)
     }
     // Save only picks in a special format (not RSS)
     if(haspicks){
-        (*picks)[0]->Savepicks(picksfile);
+        if((*picks)[0]->Savepicks(picksfile) != PICKS_OK){
+		    wxMessageBox(_("Something went wrong when saving the picks file."), _("Error saving picks"), wxICON_INFORMATION);
+		    return;
+	}
     /*
        outgather = std::make_shared<rockseis::Data2D<float>>(Sort->getNensemb(), 2*(*picks)[0]->Getmaxpicks(), 1.0, 0.0);
        outgather->setFile(picksfile);
@@ -296,6 +299,7 @@ void MyApp::Load(wxCommandEvent& event)
     filename = openFileDialog.GetPath();
     if((*picks)[0]->Loadpicks(filename) != PICKS_OK) {
         wxMessageBox(_("Something went wrong when reading from the picks file."), _("Error loading picks"), wxICON_INFORMATION);
+	(*picks)[0]->Clearpicks();
         return;
     }
     frame->Refresh();

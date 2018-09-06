@@ -205,6 +205,11 @@ void MyApp::Save(wxCommandEvent& event)
         }
     }
     if(haspicks){
+	    if((*picks)[0]->Savepicks(picksfile) != PICKS_OK){
+		    wxMessageBox(_("Something went wrong when saving the picks file."), _("Error saving picks"), wxICON_INFORMATION);
+		    return;
+	    }
+	    /*
         outgather = std::make_shared<rockseis::Data3D<float>>(Sort->getNensemb(), 2*(*picks)[0]->Getmaxpicks(), 1.0, 0.0);
         outgather->setFile(picksfile);
         scoords3d = (outgather->getGeom())->getScoords();
@@ -224,6 +229,7 @@ void MyApp::Save(wxCommandEvent& event)
         }
         outgather->write();
         outgather->close();
+	*/
 
         // Save data in another file
         wrkgather = Sort->get3DGather(0);
@@ -262,21 +268,12 @@ void MyApp::Save(wxCommandEvent& event)
 
 void MyApp::Load(wxCommandEvent& event)
 {
-    std::shared_ptr<rockseis::Data3D<float>> ingather;
-    rockseis::Point3D<float> *scoords3d;
-    std::shared_ptr<rockseis::File> Fin;
     std::string filename;
     std::vector<Picks*> *picks;
     picks = frame->getPicks();
     int *npicks; 
     npicks = (*picks)[0]->Getnpicks();
-    int maxpicks=(*picks)[0]->Getmaxpicks();
-    npicks = (*picks)[0]->Getnpicks();
-    rockseis::Point2D<float> *points;
-    points=(*picks)[0]->Getpicks();
-    rockseis::Index Ipicks(maxpicks,Sort->getNensemb());
 
-    float *data;
     bool haspicks=false;
     for(int i=0; i< Sort->getNensemb(); i++)
     {
@@ -299,29 +296,10 @@ void MyApp::Load(wxCommandEvent& event)
 
     // proceed loading the file chosen by the user;
     filename = openFileDialog.GetPath();
-    ingather = std::make_shared<rockseis::Data3D<float>>(filename);
-    ingather->read();
-    size_t ntr = ingather->getNtrace();
-    size_t nt = ingather->getNt();
-    rockseis::Index Idata(nt,ntr);
-    scoords3d = (ingather->getGeom())->getScoords();
-    data = ingather->getData();
-    if(ntr != Sort->getNensemb()){
-        wxMessageBox(_("Picks file is not compatible with data, wrong number  of ensembles."), _("Error loading picks"), wxICON_INFORMATION);
+    if((*picks)[0]->Loadpicks(filename) != PICKS_OK) {
+        wxMessageBox(_("Something went wrong when reading from the picks file."), _("Error loading picks"), wxICON_INFORMATION);
         return;
     }
-    for(int i=0; i< Sort->getNensemb(); i++)
-    {
-        npicks[i] = (int) scoords3d[i].x;
-        if(npicks[i] > 0){
-            // Load coordinates from trace
-            for(int j=0; j<npicks[i]; j++){
-                points[Ipicks(j,i)].x = data[Idata(2*j,i)];
-                points[Ipicks(j,i)].y = data[Idata(2*j+1,i)];
-            }
-        }
-    }
-    ingather->close();
-    (*picks)[0]->Setchanged(true);
     frame->Refresh();
 }
+

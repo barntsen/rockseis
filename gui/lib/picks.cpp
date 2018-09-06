@@ -413,8 +413,8 @@ int Picks::Savepicks(std::string filename)
         for(j=0; j<nump; j++){
             x=picks[i*maxpicks + j].x;
             y=picks[i*maxpicks + j].y;
-            if(fwrite(&x, sizeof(float), 1, fp)) return PICKS_ERR;
-            if(fwrite(&y, sizeof(float), 1, fp)) return PICKS_ERR;
+            if(fwrite(&x, sizeof(float), 1, fp) != 1) return PICKS_ERR;
+            if(fwrite(&y, sizeof(float), 1, fp) != 1) return PICKS_ERR;
         }
     }
     fclose(fp);
