@@ -79,7 +79,7 @@ class Image2dframe: public wxFrame
         float *getCrosshair_pt() { return &crosshair_pt[0]; }
 
         void createPicks();
-        void createPicks(int dir);
+        void createPicks(int dir, long n, float d, float o);
 
 		//(*Declarations(Image2dframe)
 		wxPanel* Imagewindow;

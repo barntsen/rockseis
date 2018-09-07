@@ -119,7 +119,7 @@ bool MyApp::OnInit()
     frame->createToolbar();
     frame->SetLabel (wxT("Picking window"));
     frame->setMaxcmp(Sort->getNensemb()-1);
-    frame->createPicks();
+    frame->createPicks(PICK_HORIZONTAL, Sort->getMaxtraces(), 1, 0);
     frame->Show( true );
 
 	Bind(SelectCmp, &MyApp::readGath, this, frame->GetId());

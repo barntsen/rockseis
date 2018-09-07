@@ -67,6 +67,8 @@ public:
     //Get functions
     size_t getNensemb() { return ngathers; } ///< Get number of gathers
     size_t getNtraces() { return ntraces; }  ///< Get number of traces in file
+    size_t getMaxtraces();   ///< Get maximum number of traces in ensembles
+    size_t getMintraces();   ///< Get minimum number of traces in ensembles
     std::string getKmapfile() { return kmapfile; } ///< Get Kmapfile
     std::string getSmapfile() { return smapfile; }  ///< Get Smapfile
     rs_status getStatus(size_t key) { if(key < ngathers && key >= 0) return keymap[key].status; else rs_error("key out of bounds."); return FAILED;} ///< Set status for a key 
@@ -90,6 +92,7 @@ private:
     std::string smapfile;
     std::string datafile;
     bool reciprocity;
+    bool sortset;
 
     bool createSort(std::string filename, rs_key _sortkey, T dx, T dy); ///< Create a sort map using a data file
 };

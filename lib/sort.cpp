@@ -14,6 +14,7 @@ Sort<T>::Sort()
     keymap=(key *) calloc(1,1);
     sortmap=(size_t *) calloc(1,1);
     reciprocity = false;
+    sortset = false;
 }
 
 template<typename T>
@@ -303,6 +304,7 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
     free(ensembles);
     free(map);
 
+    sortset = true;
     return SORT_OK;
 }
 
@@ -661,6 +663,31 @@ void Sort<T>::readKeymap(){
     Fin->read(&status, 1);
     sortkey = static_cast<rs_key>(status);
     Fin->close();
+    sortset = true;
+}
+
+template<typename T>
+size_t Sort<T>::getMaxtraces(){
+    if(!this->sortset) rs_error("Sort::getMaxtraces: sort map is not created.");
+
+    size_t max = 0;
+    for (size_t i=0; i < this->ngathers; i++)
+    {
+        if(this->keymap[i].n > max) max = this->keymap[i].n;
+    }
+    return max;
+}
+
+template<typename T>
+size_t Sort<T>::getMintraces(){
+    if(!this->sortset) rs_error("Sort::getMintraces: sort map is not created.");
+
+    size_t min = 0;
+    for (size_t i=0; i < this->ngathers; i++)
+    {
+        if(this->keymap[i].n < min) min = this->keymap[i].n;
+    }
+    return min;
 }
 
 template<typename T>

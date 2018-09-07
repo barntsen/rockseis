@@ -200,81 +200,85 @@ void Picks::Interp(int cmp_number)
     float ti,d,p0,p1;
     int n = npicks[cmp_number];
     if(type == PICK_HORIZONTAL){
-        if(n>1){
-            float *t;
-            t = (float *) calloc((n+1), sizeof(float));
+	    if(n>1){
+		    float *t;
+		    t = (float *) calloc((n+1), sizeof(float));
 
-            for(i=0; i < n; i++){
-                t[i]=picks[maxpicks*cmp_number + i].x;
-            }
-            for(i=0; i<nt; i++)
-            {
-                ti=i*dt + ot;
-                if(ti <= t[0] || ti > t[n-1])
-                {
-                    if(ti <= t[0]){
-                        d=(ti-t[0])/(t[1]-t[0]);
-                        p0=picks[maxpicks*cmp_number].y;
-                        p1=picks[maxpicks*cmp_number+1].y;
-                        vrms[i]=p0*(1.0-d) + p1*d;
-                    }
-                    if(ti > t[n-1]){
-                        d=(ti-t[n-2])/(t[n-1]-t[n-2]);
-                        p0=picks[maxpicks*cmp_number+n-2].y;
-                        p1=picks[maxpicks*cmp_number+n-1].y;
-                        vrms[i]=p0*(1.0-d) + p1*d;
-                    }
-                }else{
-                    it=seekindex(t, n, ti);
-                    d=(ti-t[it])/(t[it+1]-t[it]);
-                    p0=picks[maxpicks*cmp_number + it].y;
-                    p1=picks[maxpicks*cmp_number + it+1].y;
-                    vrms[i]=p0*(1.0-d) + p1*d;
-                }
-            }
-        }else{
-            for(i=0; i<nt; i++){
-                vrms[i]=0.0;
-            }
-        }
+		    for(i=0; i < n; i++){
+			    t[i]=picks[maxpicks*cmp_number + i].x;
+		    }
+
+		    for(i=0; i<nt; i++)
+		    {
+			    ti=i*dt + ot;
+			    if(ti <= t[0] || ti > t[n-1])
+			    {
+				    if(ti <= t[0]){
+					    d=(t[1]-t[0]);
+					    p0=picks[maxpicks*cmp_number].y;
+					    p1=picks[maxpicks*cmp_number+1].y;
+					    vrms[i]=p0*(t[1]-ti)/d + p1*(ti-t[0])/d;
+				    }
+				    if(ti > t[n-1]){
+					    d=(t[n-1]-t[n-2]);
+					    p0=picks[maxpicks*cmp_number+n-2].y;
+					    p1=picks[maxpicks*cmp_number+n-1].y;
+					    vrms[i]=p0*(t[n-1]-ti)/d + p1*(ti-t[n-2])/d;
+					    //std::cerr << "ti > t[n-1] d: " << d << " p0: " << p0 << " p1: " << p1 << " vrms: " << vrms[i] << std::endl;
+				    }
+			    }else{
+				    it=seekindex(t, n, ti);
+				    d=(ti-t[it])/(t[it+1]-t[it]);
+				    p0=picks[maxpicks*cmp_number + it].y;
+				    p1=picks[maxpicks*cmp_number + it+1].y;
+				    vrms[i]=p0*(1.0-d) + p1*d;
+			    }
+		    }
+		    free(t);
+	    }else{
+		    for(i=0; i<nt; i++){
+			    vrms[i]=0.0;
+		    }
+	    }
     }else{
-        if(n>0){
-            float *t;
-            t = (float *) calloc((n+1), sizeof(float));
+	    if(n>1){
+		    float *t;
+		    t = (float *) calloc((n+1), sizeof(float));
 
-            for(i=0; i < n; i++){
-                t[i]=picks[maxpicks*cmp_number + i].y;
-            }
-            for(i=0; i<nt; i++)
-            {
-                ti=i*dt + ot;
-                if(ti <= t[0] || ti > t[n-1])
-                {
-                    if(ti <= t[0]){
-                        d=(ti-t[0])/(t[1]-t[0]);
-                        p0=picks[maxpicks*cmp_number].x;
-                        p1=picks[maxpicks*cmp_number+1].x;
-                        vrms[i]=p0*(1.0-d) + p1*d;
-                    }
-                    if(ti > t[n-1]){
-                        d=(ti-t[n-2])/(t[n-1]-t[n-2]);
-                        p0=picks[maxpicks*cmp_number+n-2].x;
-                        p1=picks[maxpicks*cmp_number+n-1].x;
-                        vrms[i]=p0*(1.0-d) + p1*d;
-                    }
-                }else{
-                    it=seekindex(t, n, ti);
-                    d=(ti-t[it])/(t[it+1]-t[it]);
-                    p0=picks[maxpicks*cmp_number + it].x;
-                    p1=picks[maxpicks*cmp_number + it+1].x;
-                    vrms[i]=p0*(1.0-d) + p1*d;
-                }
-            }
-        }else{
-            for(i=0; i<nt; i++){
-                vrms[i]=0.0;
-            }
-        }
+		    for(i=0; i < n; i++){
+			    t[i]=picks[maxpicks*cmp_number + i].y;
+		    }
+		    for(i=0; i<nt; i++)
+		    {
+			    ti=i*dt + ot;
+			    if(ti <= t[0] || ti > t[n-1])
+			    {
+				    if(ti <= t[0]){
+					    d=(t[1]-t[0]);
+					    p0=picks[maxpicks*cmp_number].x;
+					    p1=picks[maxpicks*cmp_number+1].x;
+					    vrms[i]=p0*(t[1]-ti)/d + p1*(ti-t[0])/d;
+				    }
+				    if(ti > t[n-1]){
+					    d=(t[n-1]-t[n-2]);
+					    p0=picks[maxpicks*cmp_number+n-2].x;
+					    p1=picks[maxpicks*cmp_number+n-1].x;
+					    vrms[i]=p0*(t[n-1]-ti)/d + p1*(ti-t[n-2])/d;
+				    }
+			    }else{
+				    it=seekindex(t, n, ti);
+				    d=(ti-t[it])/(t[it+1]-t[it]);
+				    p0=picks[maxpicks*cmp_number + it].x;
+				    p1=picks[maxpicks*cmp_number + it+1].x;
+				    vrms[i]=p0*(1.0-d) + p1*d;
+			    }
+		    }
+		    free(t);
+	    }else{
+		    for(i=0; i<nt; i++){
+			    vrms[i]=0.0;
+		    }
+	    }
     }
 }
 

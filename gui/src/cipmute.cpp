@@ -188,7 +188,7 @@ bool MyApp::OnInit()
 	    cipframe->createToolbar();
 	    cipframe->SetLabel (wxT("Picking window"));
 	    cipframe->setMaxcmp(n1-1);
-        cipframe->createPicks(PICK_VERTICAL);
+        cipframe->createPicks(PICK_VERTICAL, n3, d3, o3);
         cipframe->setGetcrosshair(true);
         cipframe->Connect(wxEVT_DESTROY, wxWindowDestroyEventHandler(MyApp::OnCipframeDestroy),NULL, this);
 	    cipframe->Show( true );

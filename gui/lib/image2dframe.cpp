@@ -3100,13 +3100,13 @@ void Image2dframe::createPicks()
    nlayers++;
 }
 
-void Image2dframe::createPicks(int direction)
+void Image2dframe::createPicks(int direction, long n, float d, float o)
 {
     Picks *newpicks ; 
     if(direction == PICK_HORIZONTAL){
-        newpicks = new Picks(MAXPOS, this->getMaxcmp()+1, this->getN1(), this->getD1(), this->getO1(), PICK_HORIZONTAL);
+        newpicks = new Picks(MAXPOS, this->getMaxcmp()+1, n, d, o, PICK_HORIZONTAL);
     }else{
-        newpicks = new Picks(MAXPOS, this->getMaxcmp()+1, this->getN2(), this->getD2(), this->getO2(), PICK_VERTICAL);
+        newpicks = new Picks(MAXPOS, this->getMaxcmp()+1, n, d, o, PICK_VERTICAL);
     }
    picks.push_back(newpicks);
    nlayers++;
