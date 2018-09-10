@@ -2,6 +2,8 @@
 #include "file.h"
 #include "utils.h"
 #include "geometry.h"
+#include <wx/filedlg.h>
+#include <wx/msgdlg.h>
 #include <args.hxx>
 
 // Class declaration of the app
@@ -11,6 +13,7 @@ public:
 	virtual bool OnInit();
 	void readCIP(wxCommandEvent& event);
 	void Save(wxCommandEvent& event);
+	void Load(wxCommandEvent& event);
 	void Cross(wxCommandEvent& event);
 	int FilterEvent(wxEvent& event);
 
@@ -18,7 +21,7 @@ public:
 private:
     void OnZoframeDestroy(wxWindowDestroyEvent& event);
     void OnCipframeDestroy(wxWindowDestroyEvent& event);
-    std::string infile, outfile;
+    std::string infile, picksfile, mutedfile;
     size_t n1,n3,n4,n6,ntot;
     float d1,d3,d4,d6;
     float o1,o3,o4,o6;
@@ -46,8 +49,9 @@ bool MyApp::OnInit()
     parser.LongPrefix("-");
     parser.LongSeparator("=");
     args::HelpFlag help(parser, "help", "Display this help menu", {"h", "help"});
-    args::ValueFlag<std::string> input(parser, "FILENAME", "Input file", {"if"});
-    args::ValueFlag<std::string> output(parser, "FILENAME", "Output file", {"of"});
+    args::ValueFlag<std::string> parinput(parser, "FILENAME", "Input file", {"i"});
+    args::ValueFlag<std::string> parpicksfile(parser, "FILENAME", "Output picks file", {"picks"});
+    args::ValueFlag<std::string> paroutputfile(parser, "FILENAME", "Output muted file", {"mutedfile"});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -69,21 +73,28 @@ bool MyApp::OnInit()
         std::cerr << parser;
         return false;
     }
-    if (input){
-         infile = args::get(input);
-         std::cerr << "-if = " << infile << std::endl;
+    if (parinput){
+         infile = args::get(parinput);
     }else{
         std::cerr << parser;
-        rockseis::rs_error("Missing input file -if");
+        rockseis::rs_error("Missing input file -i");
     }
 
-    if (output){
-         outfile = args::get(output);
-         std::cerr << "-of = " << outfile << std::endl;
+    if (parpicksfile){
+         picksfile = args::get(parpicksfile);
     }else{
         std::cerr << parser;
-        rockseis::rs_error("Missing output file -of");
+        rockseis::rs_error("Missing picks file -picks");
     }
+
+    if (paroutputfile){
+        mutedfile = args::get(paroutputfile);
+    }else{
+        std::cerr << parser;
+        rockseis::rs_error("Missing picks file -picks");
+    }
+
+
 
     std::shared_ptr<rockseis::File> in (new rockseis::File());
 
@@ -194,6 +205,7 @@ bool MyApp::OnInit()
 	    cipframe->Show( true );
 	    Bind(SelectCmp, &MyApp::readCIP, this, cipframe->GetId());
 	    Bind(SaveEvent, &MyApp::Save, this, cipframe->GetId());
+	    Bind(LoadEvent, &MyApp::Load, this, cipframe->GetId());
 	    Bind(Crosshair, &MyApp::Cross, this, cipframe->GetId());
 
 	    zoframe = new Image2dframe(n1, d1, o1, n3, d3, o3, zodata, 0);
@@ -286,9 +298,49 @@ void MyApp::Save(wxCommandEvent& event)
         }
     }
     if(haspicks){
-        (*picks)[0]->Project();
-        cipframe->Refresh();
+        if((*picks)[0]->Savepicks(picksfile) != PICKS_OK) {
+            wxMessageBox(_("Something went wrong when saving the picks file."), _("Error saving picks"), wxICON_INFORMATION);
+            return;
+        }
     }
+}
+
+void MyApp::Load(wxCommandEvent& event)
+{
+    std::string filename;
+    std::vector<Picks*> *picks;
+    picks = cipframe->getPicks();
+    int *npicks; 
+    npicks = (*picks)[0]->Getnpicks();
+
+    bool haspicks=false;
+    for(int i=0; i< n1; i++)
+    {
+        if(npicks[i] > 0){
+            haspicks=true;
+        }
+    }
+
+    if (haspicks && (*picks)[0]->Getchanged())
+    {
+        if (wxMessageBox(_("Current picks have not been saved! Proceed?"), _("Please confirm"),
+                         wxICON_QUESTION | wxYES_NO, cipframe) == wxNO )
+            return;
+        //else: proceed asking to the user the new file to open
+    }
+
+    wxFileDialog openFileDialog(cipframe, _("Open Picks file"), "", "", "Pick files (*.rss)|*.rss", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
+    if (openFileDialog.ShowModal() == wxID_CANCEL)
+        return;     // the user changed idea...
+
+    // proceed loading the file chosen by the user;
+    filename = openFileDialog.GetPath();
+    if((*picks)[0]->Loadpicks(filename) != PICKS_OK) {
+        wxMessageBox(_("Something went wrong when reading from the picks file."), _("Error loading picks"), wxICON_INFORMATION);
+	(*picks)[0]->Clearpicks();
+        return;
+    }
+    cipframe->Refresh();
 }
 
 void MyApp::Cross(wxCommandEvent& event)

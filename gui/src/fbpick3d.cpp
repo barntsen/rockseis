@@ -209,28 +209,6 @@ void MyApp::Save(wxCommandEvent& event)
 		    wxMessageBox(_("Something went wrong when saving the picks file."), _("Error saving picks"), wxICON_INFORMATION);
 		    return;
 	    }
-	    /*
-        outgather = std::make_shared<rockseis::Data3D<float>>(Sort->getNensemb(), 2*(*picks)[0]->Getmaxpicks(), 1.0, 0.0);
-        outgather->setFile(picksfile);
-        scoords3d = (outgather->getGeom())->getScoords();
-        data = outgather->getData();
-        // Save only picks in a special format
-        for(int i=0; i< Sort->getNensemb(); i++)
-        {
-            // Save number of picks in sx
-            scoords3d[i].x = npicks[i];
-            if(npicks[i]){
-                // Save coordinates in trace
-                for(int j=0; j<npicks[i]; j++){
-                    data[Idata(2*j,i)] = points[Ipicks(j,i)].x;
-                    data[Idata(2*j+1,i)] = points[Ipicks(j,i)].y;
-                }
-            }
-        }
-        outgather->write();
-        outgather->close();
-	*/
-
         // Save data in another file
         wrkgather = Sort->get3DGather(0);
         bool open = false;

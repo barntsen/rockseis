@@ -224,7 +224,6 @@ void Picks::Interp(int cmp_number)
 					    p0=picks[maxpicks*cmp_number+n-2].y;
 					    p1=picks[maxpicks*cmp_number+n-1].y;
 					    vrms[i]=p0*(t[n-1]-ti)/d + p1*(ti-t[n-2])/d;
-					    //std::cerr << "ti > t[n-1] d: " << d << " p0: " << p0 << " p1: " << p1 << " vrms: " << vrms[i] << std::endl;
 				    }
 			    }else{
 				    it=seekindex(t, n, ti);
@@ -413,12 +412,21 @@ int Picks::Savepicks(std::string filename)
     float x,y;
     for (i=0; i < ncmp; i++){
         nump=npicks[i];
-        if(fwrite(&nump, sizeof(int), 1, fp) != 1) return PICKS_ERR;
+        if(fwrite(&nump, sizeof(int), 1, fp) != 1){
+            fclose(fp);
+            return PICKS_ERR;
+        }
         for(j=0; j<nump; j++){
             x=picks[i*maxpicks + j].x;
             y=picks[i*maxpicks + j].y;
-            if(fwrite(&x, sizeof(float), 1, fp) != 1) return PICKS_ERR;
-            if(fwrite(&y, sizeof(float), 1, fp) != 1) return PICKS_ERR;
+            if(fwrite(&x, sizeof(float), 1, fp) != 1){
+                fclose(fp);
+                return PICKS_ERR;
+            }
+            if(fwrite(&y, sizeof(float), 1, fp) != 1) {
+                fclose(fp);
+                return PICKS_ERR;
+            }
         }
     }
     fclose(fp);
@@ -440,10 +448,20 @@ int Picks::Loadpicks(std::string filename)
         float x,y;
         for (i=0; i < ncmp; i++){
             fread(&nump, sizeof(int), 1, fp);
+            if(nump > this->maxpicks-1) {
+                fclose(fp);
+                return PICKS_ERR;
+            }
             npicks[i]=nump;
             for(j=0; j<nump; j++){
-                if(fread(&x, sizeof(float), 1, fp) != 1) return PICKS_ERR;
-                if(fread(&y, sizeof(float), 1, fp) != 1) return PICKS_ERR;
+                if(fread(&x, sizeof(float), 1, fp) != 1){
+                    fclose(fp);
+                    return PICKS_ERR;
+                }
+                if(fread(&y, sizeof(float), 1, fp) != 1){
+                    fclose(fp);
+                    return PICKS_ERR;
+                }
                 picks[i*maxpicks +j].x = x;
                 picks[i*maxpicks +j].y = y;
             }
