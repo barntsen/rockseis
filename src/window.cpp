@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
 
     float *tracein = (float *) calloc(n_in[0], sizeof(float));
     float *traceout = (float *) calloc(n[0], sizeof(float));
-    if((type == rockseis::GENERIC || type == rockseis::REGULAR))
+    if((type == rockseis::GENERIC || type == rockseis::REGULAR || type == rockseis::SNAPSHOT))
     {
         out->output();
         for(long i=0; i<MAXDIMS; i++){
