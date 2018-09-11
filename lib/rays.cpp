@@ -188,69 +188,69 @@ void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 
             /* model interior */
             if((h>0)&&(h<nx-1)&&(k>0)&&(k<ny-1)){
-                a = fminf(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
-                b = fminf(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
             }
 
             /* model borders */
             /* left */
             if((h==0)&&(k>0)&&(k<ny-1)){
-                a = fminf(TT[I2D(k,h)],TT[I2D(k,h+1)]);
-                b = fminf(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
+                a = MIN(TT[I2D(k,h)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
             }
 
             /* right */
             if((h==nx-1)&&(k>0)&&(k<ny-1)){
-                a = fminf(TT[I2D(k,h-1)],TT[I2D(k,h)]);
-                b = fminf(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
             }
 
             /* top */
             if((k==0)&&(h>0)&&(h<nx-1)){
-                a = fminf(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
-                b = fminf(TT[I2D(k,h)],TT[I2D(k+1,h)]);
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k,h)],TT[I2D(k+1,h)]);
             }
 
             /* bottom */
             if((k==ny-1)&&(h>0)&&(h<nx-1)){
-                a = fminf(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
-                b = fminf(TT[I2D(k-1,h)],TT[I2D(k,h)]);
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k,h)]);
             }
 
             /* model corners */
             /* upper-left */
             if((h==0)&&(k==0)){
-                a = fminf(TT[I2D(k,h)],TT[I2D(k,h+1)]);
-                b = fminf(TT[I2D(k,h)],TT[I2D(k+1,h)]);
+                a = MIN(TT[I2D(k,h)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k,h)],TT[I2D(k+1,h)]);
             }
 
             /* lower-left */
             if((h==0)&&(k==ny-1)){
-                a = fminf(TT[I2D(k,h)],TT[I2D(k,h+1)]);
-                b = fminf(TT[I2D(k-1,h)],TT[I2D(k,h)]);
+                a = MIN(TT[I2D(k,h)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k,h)]);
             }
 
             /* lower-right */
             if((h==nx-1)&&(k==ny-1)){
-                a = fminf(TT[I2D(k,h-1)],TT[I2D(k,h)]);
-                b = fminf(TT[I2D(k-1,h)],TT[I2D(k,h)]);
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k,h)]);
             }
 
             /* upper-right */
             if((h==nx-1)&&(k==0)){
-                a = fminf(TT[I2D(k,h-1)],TT[I2D(k,h)]);
-                b = fminf(TT[I2D(k,h)],TT[I2D(k+1,h)]);
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h)]);
+                b = MIN(TT[I2D(k,h)],TT[I2D(k+1,h)]);
             }
 
 
             /* calculate solution */
             if(fabs(a-b)>=(S(I2D(k,h))*dh)){
-                Tt = fminf(a,b) + S(I2D(k,h))*dh;
+                Tt = MIN(a,b) + S(I2D(k,h))*dh;
             }else{
                 Tt = (a + b + sqrt((2.0*pow(S(I2D(k,h)),2.0)*pow(dh,2.0)) - pow((a-b),2.0)))/2.0;
             }
 
-            TT[I2D(k,h)] = fminf(TT[I2D(k,h)],Tt);
+            TT[I2D(k,h)] = MIN(TT[I2D(k,h)],Tt);
 
             k += ndy;
         }
@@ -310,7 +310,7 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
                    rhs = (amm*lam[I2D(k,h-1)]-app*lam[I2D(k,h+1)])/dh + (bmm*lam[I2D(k-1,h)]-bpp*lam[I2D(k+1,h)])/dh; */
 
                 lamt = rhs/(lhs+EPS_ADJ);
-                lam[I2D(k,h)] = fminf(lam[I2D(k,h)],lamt);
+                lam[I2D(k,h)] = MIN(lam[I2D(k,h)],lamt);
             }
 
             k += ndy;
@@ -548,7 +548,7 @@ void RaysAcoustic2D<T>::solve_adj()
 // =============== 3D ACOUSTIC RAYS CLASS =============== //
 template<typename T>
 RaysAcoustic3D<T>::RaysAcoustic3D(){
-    int nx, ny, nz;
+    size_t nx, ny, nz;
     nx = this->getNx_pml();
     ny = this->getNy_pml();
     nz = this->getNz_pml();
@@ -559,14 +559,14 @@ RaysAcoustic3D<T>::RaysAcoustic3D(){
     recmask = (bool *) calloc(nx*ny*nz, sizeof(bool));
 
     /* Initialize arrays */
-    for (int i=0; i < nx*ny*nz; i++){
+    for (size_t i=0; i < nx*ny*nz; i++){
         TT[i] = 2.0*TMAX;
     }
 
     Index Ilam(nx,ny,nz);
-    for (int i=1; i < nx-1; i++){
-        for (int j=1; j < ny-1; j++){
-            for (int k=1; k < nz-1; k++){
+    for (size_t i=1; i < nx-1; i++){
+        for (size_t j=1; j < ny-1; j++){
+            for (size_t k=1; k < nz-1; k++){
                 lam[Ilam(i,j,k)] = 10.0*TMAX;
             }
         }
@@ -576,7 +576,7 @@ RaysAcoustic3D<T>::RaysAcoustic3D(){
 template<typename T>
 RaysAcoustic3D<T>::RaysAcoustic3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz): Rays<T>(3, _nx, _ny, _nz, _lpml, _dx, _dy, _dz, _ox, _oy, _oz) {
 
-    int nx, ny, nz;
+    size_t nx, ny, nz;
     nx = _nx + 2*_lpml;
     ny = _ny + 2*_lpml;
     nz = _nz + 2*_lpml;
@@ -586,13 +586,13 @@ RaysAcoustic3D<T>::RaysAcoustic3D(const int _nx, const int _ny, const int _nz, c
     recmask = (bool *) calloc(nx*ny*nz, sizeof(bool));
 
     /* Initialize TT */
-    for (int i=0; i < nx*ny*nz; i++){
+    for (size_t i=0; i < nx*ny*nz; i++){
         TT[i] = 2.0*TMAX;
     }
     Index Ilam(nx,ny,nz);
-    for (int i=1; i < nx-1; i++){
-        for (int j=1; j < ny-1; j++){
-            for (int k=1; k < nz-1; k++){
+    for (size_t i=1; i < nx-1; i++){
+        for (size_t j=1; j < ny-1; j++){
+            for (size_t k=1; k < nz-1; k++){
                 lam[Ilam(i,j,k)] = 10.0*TMAX;
             }
         }
@@ -603,7 +603,7 @@ RaysAcoustic3D<T>::RaysAcoustic3D(const int _nx, const int _ny, const int _nz, c
 template<typename T>
 RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> _model): Rays<T>(){
 
-    int _nx, _ny, _nz;
+    size_t _nx, _ny, _nz;
     T _dx, _dy, _dz; 
     T _ox, _oy, _oz; 
     int _dim;
@@ -636,7 +636,7 @@ RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> 
     // Setting model pointer
     model = _model;
 
-    int nx, ny, nz;
+    size_t nx, ny, nz;
     nx = _nx + 2*_lpml;
     ny = _ny + 2*_lpml;
     nz = _nz + 2*_lpml;
@@ -646,13 +646,13 @@ RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> 
     recmask = (bool *) calloc(nx*ny*nz, sizeof(bool));
 
     /* Initialize TT */
-    for (int i=0; i < nx*ny*nz; i++){
+    for (size_t i=0; i < nx*ny*nz; i++){
         TT[i] = 2.0*TMAX;
     }
     Index Ilam(nx,ny,nz);
-    for (int i=1; i < nx-1; i++){
-        for (int j=1; j < ny-1; j++){
-            for (int k=1; k < nz-1; k++){
+    for (size_t i=1; i < nx-1; i++){
+        for (size_t j=1; j < ny-1; j++){
+            for (size_t k=1; k < nz-1; k++){
                 lam[Ilam(i,j,k)] = 10.0*TMAX;
             }
         }
@@ -670,29 +670,22 @@ RaysAcoustic3D<T>::~RaysAcoustic3D() {
 template<typename T>
 void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy, int nz1, int nz2, int ndz)
 { 
-/*------------------------------------------------------------------------
- *  Solve eikonal equation by fast sweeping method according to Zhao (2004)
- *
- *  D. Koehn
- *  Kiel, 09/12/2015
- *  ----------------------------------------------------------------------*/
-
-    int nx = model->getNx_pml();
-    int ny = model->getNy_pml();
-    int nz = model->getNz_pml();
+    size_t nx = model->getNx_pml();
+    size_t ny = model->getNy_pml();
+    size_t nz = model->getNz_pml();
     T dh = model->getDx();
     T *TT = this->getTT();
     T *Vp = model->getL();
 
     /* local variables */
-    int i, j, k, m, n, l;
+    size_t i, j, k, m, n, l;
     T a[3];
     a[0] = 0.0;
     a[1] = 0.0;
     a[2] = 0.0;
     T Tt;
 
-    T aa, bb, cc;
+    T slo;
 
     /* sweep over FD-grid */
     m = nx1;
@@ -704,134 +697,214 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 
                 /* model interior */
                 if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
                 }
 
+             
                 /* model borders */
                 /* left */
                 if((m==0)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
                 }
 
                 /* right */
                 if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
                 }
 
                 /* top */
                 if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l==0)){
-                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
                 }
 
                 /* bottom */
                 if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
-                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
                 }
 
 
                 /* front */
                 if((m>0)&&(m<nx-1)&&(n==0)&&(l>0)&&(l<nz-1)){
-                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
                 }
 
                 /* back */
                 if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
                 }
 
+
+                /* model edges */
+                /* upper-front */
+                if((m>0)&&(m<nx-1)&&(n==0)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-back */
+                if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* lower-front */
+                if((m>0)&&(m<nx-1)&&(n==0)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* lower-back */
+                if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* left-front */
+                if((m==0)&&(n==0)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* left-back */
+                if((m==0)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* right-front */
+                if((m==nx-1)&&(n==0)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* right-back */
+                if((m==nx-1)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-left */
+                if((m==0)&&(n>0)&&(n<ny-1)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                 /* upper-right */
+                if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* lower-left */
+                if((m==0)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                 /* lower-right */
+                if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
 
                 /* model corners */
                 /* upper-left-front */
                 if((m==0)&&(n==0)&&(l==0)){
-                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
                 }
 
                 /* upper-left-back */
                 if((m==0)&&(n==ny-1)&&(l==0)){
-                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
                 }
 
                 /* upper-right-front */
                 if((m==nx-1)&&(n==0)&&(l==0)){
-                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
                 }
 
                 /* upper-right-back */
                 if((m==nx-1)&&(n==ny-1)&&(l==0)){
-                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
                 }
 
                 /* lower-left-front */
                 if((m==0)&&(n==0)&&(l==nz-1)){
-                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
                 }
 
                 /* lower-left-back */
                 if((m==0)&&(n==ny-1)&&(l==nz-1)){
-                    a[0] = fminf(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
                 }
 
                 /* lower-right-front */
                 if((m==nx-1)&&(n==0)&&(l==nz-1)){
-                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
                 }
 
                 /* lower-right-back */
                 if((m==nx-1)&&(n==ny-1)&&(l==nz-1)){
-                    a[0] = fminf(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = fminf(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = fminf(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
                 }
+
 
                 /* calculate solution */
                 std::sort(a,a+3);
                 while(1){
-                    Tt = a[0] + S(I3D(m,n,l))*dh;
+                    slo = S(I3D(m,n,l))*dh;
+                    Tt = a[0] + slo;
                     if(Tt <= a[1]) break;
-
-                    aa = 2.0;
-                    bb = -2.*a[0] - 2.*a[1];
-                    cc = SQ(a[0]) + SQ(a[1]) - SQ(S(I3D(m,n,l))*dh);
-                    Tt = (- bb + sqrt(SQ(bb) - 4.*aa*cc))/(2.0*aa);
+                    Tt = 0.5*(a[0]+a[1]+sqrt(2.*slo*slo - (a[0]-a[1])*(a[0]-a[1])));
                     if(Tt <= a[2]) break;
-
-                    aa = 3.0;
-                    bb = -2.*a[0] - 2.*a[1] - 2.*a[2];
-                    cc = SQ(a[0]) + SQ(a[1]) + SQ(a[2]) - SQ(S(I3D(m,n,l))*dh);
-                    Tt = (- bb + sqrt(SQ(bb) - 4.*aa*cc))/(2.0*aa);
+                    Tt = 1./3. * ((a[0] + a[1] + a[2]) + sqrt(-2.*a[0]*a[0] + 2.*a[0]*a[1] - 2.*a[1]*a[1] + 2.*a[0]*a[2] + 2.*a[1]*a[2] - 2.*a[2]*a[2] + 3.*slo*slo));
                     break;
                 }
 
 
-                TT[I3D(m,n,l)] = fminf(TT[I3D(m,n,l)],Tt);
+                TT[I3D(m,n,l)] = MIN(TT[I3D(m,n,l)],Tt);
                 l += ndz;
             }
             n += ndy;
@@ -901,7 +974,7 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
                     rhs = (amp*lam[I3D(m-1,n,l)]-apm*lam[I3D(m+1,n,l)])/dh + (bmp*lam[I3D(m,n-1,l)]-bpm*lam[I3D(m,n+1,l)])/dh + (cmp*lam[I3D(m,n,l-1)]-cpm*lam[I3D(m,n,l+1)])/dh;
 
                     lamt = rhs/(lhs+EPS_ADJ);
-                    lam[I3D(m,n,l)] = fminf(lam[I3D(m,n,l)],lamt);
+                    lam[I3D(m,n,l)] = MIN(lam[I3D(m,n,l)],lamt);
                 }
                 l += ndz;
             }
@@ -916,12 +989,13 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
 template<typename T>
 void RaysAcoustic3D<T>::solve()
 {
-    int nx = this->getNx_pml();
-    int ny = this->getNy_pml();
-    int nz = this->getNz_pml();
+    size_t nx = this->getNx_pml();
+    size_t ny = this->getNy_pml();
+    size_t nz = this->getNz_pml();
+
     T tmax = TMAX;
     T *TTold = (T *) calloc(nx*ny*nz, sizeof(T));
-    int i;
+    off_t i;
     int iter=0;
 
     /* initialize l1 norm of TT - TTold */
@@ -936,13 +1010,13 @@ void RaysAcoustic3D<T>::solve()
         }
 
         sweep(0, nx-1, 1,  0, ny-1, 1,  0, nz-1, 1);
-        sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
         sweep(nx-1, 0, -1,  0, ny-1, 1,  0, nz-1, 1);
-        sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
-        sweep(nx-1, 0, -1,  ny-1, 0, -1,  0, nz-1, 1);
-        sweep(nx-1, 0, -1,  ny-1, 0, -1,  nz-1, 0, -1);
         sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
+        sweep(nx-1, 0, -1,  ny-1, 0, -1,  0, nz-1, 1);
+        sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
+        sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
         sweep(0, nx-1, 1,  ny-1, 0, -1,  nz-1, 0, -1);
+        sweep(nx-1, 0, -1,  ny-1, 0, -1,  nz-1, 0, -1);
 
         /* calculate l1 norm of TT - TTold */
         lnorm1 = norm1(TT,TTold);
@@ -955,9 +1029,9 @@ void RaysAcoustic3D<T>::solve()
 template<typename T>
 void RaysAcoustic3D<T>::solve_adj()
 {
-    int nx = this->getNx_pml();
-    int ny = this->getNy_pml();
-    int nz = this->getNz_pml();
+    size_t nx = this->getNx_pml();
+    size_t ny = this->getNy_pml();
+    size_t nz = this->getNz_pml();
     T tmax = TMAX;
     T *lamold = (T *) calloc(nx*ny*nz, sizeof(T));
     int i;
@@ -997,11 +1071,11 @@ template<typename T>
 T RaysAcoustic3D<T>::norm1(T *TT, T *TTold)
 {
     /* local variables */
-    int NX = this->getNx_pml();
-    int NY = this->getNy_pml();
-    int NZ = this->getNz_pml();
+    off_t NX = this->getNx_pml();
+    off_t NY = this->getNy_pml();
+    off_t NZ = this->getNz_pml();
 
-    int i;
+    off_t i;
     T sum, norml1;
 
     /* estimate L1 norm */
@@ -1019,8 +1093,8 @@ T RaysAcoustic3D<T>::norm1(T *TT, T *TTold)
 template<typename T>
 void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
     Point3D<int> *map;
-    int ntrace = source->getNtrace();
-    int nx, ny, nz;
+    size_t ntrace = source->getNtrace();
+    size_t nx, ny, nz;
     int lpml;
 
     lpml = this->getLpml();
@@ -1035,10 +1109,9 @@ void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source
         map = (source->getGeom())->getGmap();
     }
 
-    int i;
+    size_t i;
     //Indexes 
     Index I(nx, ny, nz); //Model and Field indexes
-    Index Idat(1, ntrace); // Data indexes
     for (i=0; i < ntrace; i++) 
     {
         if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
@@ -1055,9 +1128,9 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
     Point3D<T> *shift;
     T *dataarray; 
     T *Fielddata;
-    int ntrace = data->getNtrace();
-    int nt = data->getNt();
-    int nx, ny, nz;
+    size_t ntrace = data->getNtrace();
+    size_t nt = data->getNt();
+    size_t nx, ny, nz;
     int lpml;
     lpml = this->getLpml();
     nx = this->getNx_pml();
@@ -1074,7 +1147,7 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
     }
 
     dataarray = data->getData();
-    int i;
+    size_t i;
     Index I(nx, ny, nz);
     Index Idat(nt, ntrace);
     Fielddata = this->getTT();
@@ -1091,8 +1164,8 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
 template<typename T>
 void RaysAcoustic3D<T>::createRecmask(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
     Point3D<int> *map;
-    int ntrace = source->getNtrace();
-    int nx, ny, nz;
+    size_t ntrace = source->getNtrace();
+    size_t nx, ny, nz;
     int lpml;
     lpml = this->getLpml();
     nx = this->getNx_pml();
@@ -1106,7 +1179,7 @@ void RaysAcoustic3D<T>::createRecmask(std::shared_ptr<rockseis::Data3D<T>> sourc
         map = (source->getGeom())->getGmap();
     }
 
-    int i;
+    size_t i;
     //Indexes 
     Index I(nx, ny, nz); //Model and Field indexes
     Index Idat(1, ntrace); // Data indexes
@@ -1123,7 +1196,7 @@ template<typename T>
 void RaysAcoustic3D<T>::insertResiduals(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
     Point3D<int> *map;
     int ntrace = source->getNtrace();
-    int nx, ny, nz;
+    size_t nx, ny, nz;
     int lpml;
     lpml = this->getLpml();
     nx = this->getNx_pml();
@@ -1140,7 +1213,7 @@ void RaysAcoustic3D<T>::insertResiduals(std::shared_ptr<rockseis::Data3D<T>> sou
     T *res;
     res = source->getData();
 
-    int i;
+    size_t i;
     //Indexes 
     Index I(nx, ny, nz); //Model and Field indexes
     Index Idat(1, ntrace); // Data indexes

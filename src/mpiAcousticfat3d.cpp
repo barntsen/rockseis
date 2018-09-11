@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
                 lmodel->staggerModels_Eikonal();
 
                 // Set shot coordinates and make a map
-	            std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(ntr, 1, 1.0, 0.0));
+	            std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(1, 1, 1.0, 0.0));
                 source->copyCoords(Shotgeom);
                 source->makeMap(lmodel->getGeom(), SMAP);
 
