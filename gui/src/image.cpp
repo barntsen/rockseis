@@ -31,29 +31,25 @@ bool MyApp::OnInit()
         std::cerr << status << std::endl;
     }
 
-    size_t n1,n2,ntot;
-    float d1,d2;
-    float o1,o2;
+    size_t n[2],ntot;
+    float d[2];
+    float o[2];
 
+    int ndims=0;
     // Get parameters
-    n1 = in->getN(1);
-    n2 = in->getN(3);
-
-    d1 = (float) in->getD(1);
-    d2 = (float) in->getD(3);
-
-    o1 = (float) in->getO(1);
-    o2 = (float) in->getO(3);
-
-    if(n2 == 0){
-        n2 = in->getN(2);
-        d2 = (float) in->getD(2);
-        o2 = (float) in->getO(2);
+    for(int i=0; i<MAXDIMS; i++){
+        if(in->getN(i+1) > 1){
+            if(ndims < 2){
+                n[ndims]  = in->getN(i+1);
+                d[ndims]  = (float) in->getD(i+1);
+                o[ndims]  = (float) in->getO(i+1);
+            }
+            ndims ++;
+        }
     }
+    if(ndims > 2) rockseis::rs_error("Image data is not 2 dimensional");
+    ntot = n[0]*n[1];
 
-    ntot = in->getNtot();
-
-    if(n1*n2 != ntot) rockseis::rs_error("Image data is not 2 dimensional");
 
     float *fdata=NULL;
     double *ddata=NULL;
@@ -72,21 +68,21 @@ bool MyApp::OnInit()
     }
     switch(dsize){
         case 4:
-            for (size_t j=0; j < n2; j++){
+            for (size_t j=0; j < n[1]; j++){
                 in->read(&hdata[0], Nheader*hsize);
-                in->read(&fdata[j*n1], n1);
+                in->read(&fdata[j*n[0]], n[0]);
             }
             break;
         case 8:
             ddata = (double *) calloc(ntot, sizeof(double));
             if(ddata == NULL) rockseis::rs_error("Failed to allocate memory for the image.");
-            for (size_t j=0; j < n2; j++){
+            for (size_t j=0; j < n[1]; j++){
                 if(Nheader){
                     in->read(&hdata[0], Nheader*hsize);
                 }
-                in->read(&ddata[j*n1], n1);
-                for (size_t i=0; i < n1; i++){
-                    fdata[j*n1 + i] = (float) ddata[j*n1 + i];
+                in->read(&ddata[j*n[0]], n[0]);
+                for (size_t i=0; i < n[0]; i++){
+                    fdata[j*n[0] + i] = (float) ddata[j*n[0] + i];
                 }
             }
             free(ddata);
@@ -97,7 +93,7 @@ bool MyApp::OnInit()
     }
 
 	wxString pick = "2D image";
-	Image2dframe *frame = new Image2dframe(n1, d1, o1, n2, d2, o2, fdata, 0);
+	Image2dframe *frame = new Image2dframe(n[0], d[0], o[0], n[1], d[1], o[1], fdata, 0);
 	frame->Show( true );
 
 	return true;
