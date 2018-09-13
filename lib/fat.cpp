@@ -204,7 +204,11 @@ void FatAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic2D<T>> m
     Index Igrad(nx, nz);
     for (int i=0; i<nx; i++){
         for (int j=0; j<nz; j++){
-            grad[Igrad(i,j)] = -1.0*lam[Ilam(i+lpml,j+lpml)]/CUB(vp[Igrad(i,j)]);
+            if(isnan(lam[Ilam(i+lpml, j+lpml)]) || isinf(lam[Ilam(i+lpml, j+lpml)]) ){
+                grad[Igrad(i,j)] = 0.0;
+            }else{
+                grad[Igrad(i,j)] = -1.0*lam[Ilam(i+lpml,j+lpml)]/CUB(vp[Igrad(i,j)]);
+            }
         }
     }
 }
@@ -374,7 +378,11 @@ void FatAcoustic3D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic3D<T>> m
     for (int i=0; i<nx; i++){
         for (int j=0; j<ny; j++){
             for (int k=0; k<nz; k++){
-                grad[Igrad(i,j,k)] = -1.0*lam[Ilam(i+lpml, j+lpml, k+lpml)]/CUB(vp[Igrad(i,j,k)]);
+                if(isnan(lam[Ilam(i+lpml, j+lpml, k+lpml)]) || isinf(lam[Ilam(i+lpml, j+lpml, k+lpml)]) ){
+                    grad[Igrad(i,j,k)] = 0.0;
+                }else{
+                    grad[Igrad(i,j,k)] = -1.0*lam[Ilam(i+lpml, j+lpml, k+lpml)]/CUB(vp[Igrad(i,j,k)]);
+                }
             }
         }
     }
