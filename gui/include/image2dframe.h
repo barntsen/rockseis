@@ -45,6 +45,10 @@ class Image2dframe: public wxFrame
         bool getToolbarset() { return toolbarset; } 
         void createToolbar();
         void destroyToolbar();
+
+        void setMenubarset(bool val) { menubarset = val; } 
+        bool getMenubarset() { return menubarset; } 
+        void createMenubar();
         void LoadImage(int zi1, int zn1, int zi2, int zn2);
         void setCmpnumber(int val) { cmpnumber = val; }
         int getCmpnumber() { return cmpnumber; }
@@ -97,6 +101,17 @@ class Image2dframe: public wxFrame
 		wxToolBarToolBase* ToolBarItem5;
 		wxToolBarToolBase* ToolBarItem6;
 		wxToolBarToolBase* ToolBarItem7;
+
+
+		wxMenuBar* MenuBar;
+		wxMenu* Menu1;
+		wxMenu* Menu2;
+		wxMenuItem* MenuItem1;
+		wxMenuItem* MenuItem2;
+		wxMenuItem* MenuItem3;
+		wxMenuItem* MenuItem4;
+		wxMenuItem* MenuItem5;
+		wxMenuItem* MenuItem6;
 		//*)
 
 	protected:
@@ -116,7 +131,13 @@ class Image2dframe: public wxFrame
 		static const long idToolSave;
 		static const long idToolLoad;
 		static const long ID_TOOLBAR1;
-		static const long ID_LISTBOX1;
+        static const long ID_LISTBOX1;
+        static const long ID_MENUITEM1;
+        static const long ID_MENUITEM2;
+        static const long ID_MENUITEM3;
+        static const long ID_MENUITEM4;
+        static const long ID_MENUITEM5;
+        static const long ID_MENUITEM6;
 		//*)
 
 	private:
@@ -132,7 +153,10 @@ class Image2dframe: public wxFrame
 		void OnNextClicked(wxCommandEvent& event);
 		void OnPreviousClicked(wxCommandEvent& event);
 		void OnSavepicks(wxCommandEvent& event);
+		void OnClearpicks(wxCommandEvent& event);
 		void OnLoadpicks(wxCommandEvent& event);
+		void OnMute_la(wxCommandEvent& event);
+		void OnMute_rb(wxCommandEvent& event);
 		void OnCMPinterval(wxCommandEvent& event);
 		void OnClose(wxCloseEvent& event);
 		void OnImagewindowEraseBackground(wxEraseEvent& event);
@@ -160,6 +184,7 @@ class Image2dframe: public wxFrame
         Zoom *zoom;
         int color; 
         bool toolbarset;
+        bool menubarset;
         int cmpnumber, dcmp, maxcmp;
         bool displaypicks;
         float crosshair_pt[2];
@@ -181,5 +206,6 @@ wxDECLARE_EVENT(SelectCmp, wxCommandEvent);
 wxDECLARE_EVENT(SaveEvent, wxCommandEvent);
 wxDECLARE_EVENT(LoadEvent, wxCommandEvent);
 wxDECLARE_EVENT(Crosshair, wxCommandEvent);
+wxDECLARE_EVENT(MuteEvent, wxCommandEvent);
 
 #endif

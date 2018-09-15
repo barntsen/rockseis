@@ -244,7 +244,7 @@ void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 
 
             /* calculate solution */
-            if(fabs(a-b)>=(S(I2D(k,h))*dh)){
+            if(ABS(a-b)>=(S(I2D(k,h))*dh)){
                 Tt = MIN(a,b) + S(I2D(k,h))*dh;
             }else{
                 Tt = (a + b + sqrt((2.0*pow(S(I2D(k,h)),2.0)*pow(dh,2.0)) - pow((a-b),2.0)))/2.0;
@@ -288,29 +288,26 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
                 bp = -(TT[I2D(k+1,h)]-TT[I2D(k,h)])/dh;
                 bm = -(TT[I2D(k,h)]-TT[I2D(k-1,h)])/dh;
 
-                app = (ap + fabs(ap))/2.0;
-                apm = (ap - fabs(ap))/2.0;
+                app = (ap + ABS(ap))/2.0;
+                apm = (ap - ABS(ap))/2.0;
 
-                amp = (am + fabs(am))/2.0;
-                amm = (am - fabs(am))/2.0;
+                amp = (am + ABS(am))/2.0;
+                amm = (am - ABS(am))/2.0;
 
-                bpp = (bp + fabs(bp))/2.0;
-                bpm = (bp - fabs(bp))/2.0;
+                bpp = (bp + ABS(bp))/2.0;
+                bpm = (bp - ABS(bp))/2.0;
 
-                bmp = (bm + fabs(bm))/2.0;
-                bmm = (bm - fabs(bm))/2.0;
+                bmp = (bm + ABS(bm))/2.0;
+                bmm = (bm - ABS(bm))/2.0;
 
 
                 /* Leung & Qian (2006) */
                 lhs = (app-amm)/dh + (bpp-bmm)/dh;
                 rhs = (amp*lam[I2D(k,h-1)]-apm*lam[I2D(k,h+1)])/dh + (bmp*lam[I2D(k-1,h)]-bpm*lam[I2D(k+1,h)])/dh;
-
-                /* Taillandier et al. (2009) */
-                /* lhs = (apm-amp)/dh + (bpm-bmp)/dh;
-                   rhs = (amm*lam[I2D(k,h-1)]-app*lam[I2D(k,h+1)])/dh + (bmm*lam[I2D(k-1,h)]-bpp*lam[I2D(k+1,h)])/dh; */
-
-                lamt = rhs/(lhs+EPS_ADJ);
+                //
+                lamt = rhs*lhs/(SQ(lhs)+EPS_ADJ);
                 lam[I2D(k,h)] = MIN(lam[I2D(k,h)],lamt);
+
             }
 
             k += ndy;
@@ -950,30 +947,30 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
                     cp = -(TT[I3D(m,n,l+1)]-TT[I3D(m,n,l)])/dh;
                     cm = -(TT[I3D(m,n,l)]-TT[I3D(m,n,l-1)])/dh;
 
-                    app = (ap + fabs(ap))/2.0;
-                    apm = (ap - fabs(ap))/2.0;
+                    app = (ap + ABS(ap))/2.0;
+                    apm = (ap - ABS(ap))/2.0;
 
-                    amp = (am + fabs(am))/2.0;
-                    amm = (am - fabs(am))/2.0;
+                    amp = (am + ABS(am))/2.0;
+                    amm = (am - ABS(am))/2.0;
 
-                    bpp = (bp + fabs(bp))/2.0;
-                    bpm = (bp - fabs(bp))/2.0;
+                    bpp = (bp + ABS(bp))/2.0;
+                    bpm = (bp - ABS(bp))/2.0;
 
-                    bmp = (bm + fabs(bm))/2.0;
-                    bmm = (bm - fabs(bm))/2.0;
+                    bmp = (bm + ABS(bm))/2.0;
+                    bmm = (bm - ABS(bm))/2.0;
 
-                    cpp = (cp + fabs(cp))/2.0;
-                    cpm = (cp - fabs(cp))/2.0;
+                    cpp = (cp + ABS(cp))/2.0;
+                    cpm = (cp - ABS(cp))/2.0;
 
-                    cmp = (cm + fabs(cm))/2.0;
-                    cmm = (cm - fabs(cm))/2.0;
+                    cmp = (cm + ABS(cm))/2.0;
+                    cmm = (cm - ABS(cm))/2.0;
 
 
                     /* Leung & Qian (2006) */
                     lhs = (app-amm)/dh + (bpp-bmm)/dh + (cpp-cmm)/dh;
                     rhs = (amp*lam[I3D(m-1,n,l)]-apm*lam[I3D(m+1,n,l)])/dh + (bmp*lam[I3D(m,n-1,l)]-bpm*lam[I3D(m,n+1,l)])/dh + (cmp*lam[I3D(m,n,l-1)]-cpm*lam[I3D(m,n,l+1)])/dh;
 
-                    lamt = rhs/(lhs+EPS_ADJ);
+                    lamt = rhs*lhs/(SQ(lhs)+EPS_ADJ);
                     lam[I3D(m,n,l)] = MIN(lam[I3D(m,n,l)],lamt);
                 }
                 l += ndz;

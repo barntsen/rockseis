@@ -4,6 +4,7 @@
 #include "geometry.h"
 #include <wx/filedlg.h>
 #include <wx/msgdlg.h>
+#include <wx/progdlg.h>
 #include <args.hxx>
 
 // Class declaration of the app
@@ -14,6 +15,7 @@ public:
 	void readCIP(wxCommandEvent& event);
 	void Save(wxCommandEvent& event);
 	void Load(wxCommandEvent& event);
+	void Mute(wxCommandEvent& event);
 	void Cross(wxCommandEvent& event);
 	int FilterEvent(wxEvent& event);
 
@@ -41,6 +43,7 @@ wxDEFINE_EVENT(SelectCmp, wxCommandEvent);
 wxDEFINE_EVENT(SaveEvent, wxCommandEvent);
 wxDEFINE_EVENT(LoadEvent, wxCommandEvent);
 wxDEFINE_EVENT(Crosshair, wxCommandEvent);
+wxDEFINE_EVENT(MuteEvent, wxCommandEvent);
 
 // Class implementation of the app
 bool MyApp::OnInit()
@@ -197,6 +200,7 @@ bool MyApp::OnInit()
 
 	    cipframe = new Image2dframe(n4, d4, o4, n3, d3, o3, cipdata, 0);
 	    cipframe->createToolbar();
+	    cipframe->createMenubar();
 	    cipframe->SetLabel (wxT("Picking window"));
 	    cipframe->setMaxcmp(n1-1);
         cipframe->createPicks(PICK_VERTICAL, n3, d3, o3);
@@ -207,6 +211,7 @@ bool MyApp::OnInit()
 	    Bind(SaveEvent, &MyApp::Save, this, cipframe->GetId());
 	    Bind(LoadEvent, &MyApp::Load, this, cipframe->GetId());
 	    Bind(Crosshair, &MyApp::Cross, this, cipframe->GetId());
+	    Bind(MuteEvent, &MyApp::Mute, this, cipframe->GetId());
 
 	    zoframe = new Image2dframe(n1, d1, o1, n3, d3, o3, zodata, 0);
 	    zoframe->SetLabel (wxT("Zero offset image window"));
@@ -252,7 +257,7 @@ void MyApp::readCIP(wxCommandEvent& event)
             for (size_t i=0; i < n3; i++){
                 for (size_t j=0; j < n4; j++){
                     in->seekg(I2D(ix,i,j, 0)*dsize + in->getStartofdata());
-                    in->read(&cipdata[i*n4 + j], 1);
+                    in->read(&ddata[i*n4 + j], 1);
                 }
             }
             for (size_t i=0; i < n1*n4; i++){
@@ -350,6 +355,96 @@ void MyApp::Cross(wxCommandEvent& event)
     ptzo[0] = pt[0]*d1 + o1;
     ptzo[1] = pt[1];
     zoframe->Refresh();
+}
+
+void MyApp::Mute(wxCommandEvent& event)
+{
+    int side = event.GetInt();
+
+    std::vector<Picks*> *picks;
+    picks = cipframe->getPicks();
+    int *npicks; 
+    npicks = (*picks)[0]->Getnpicks();
+    bool haspicks=false;
+    for(int i=0; i< n1; i++)
+    {
+        if(npicks[i] > 0){
+            haspicks=true;
+        }
+    }
+    if(haspicks){
+        // Save backup data
+        if((*picks)[0]->Savepicks("tmppicks.dat") != PICKS_OK) {
+            wxMessageBox(_("Something went wrong when saving the temporary picks file."), _("Error saving picks"), wxICON_INFORMATION);
+            return;
+        }
+        (*picks)[0]->Project();
+        rockseis::Point2D<float> *points;
+        points=(*picks)[0]->Getpicks();
+        rockseis::Index I2D(n1,n3,n4,n6); 
+
+        int cont;
+        wxProgressDialog dialog(wxT("Muting cipfile"), wxT("Progress"), n1+1, cipframe, wxPD_APP_MODAL | wxPD_ELAPSED_TIME | wxPD_ELAPSED_TIME | wxPD_REMAINING_TIME);
+
+
+        // Copy cip file 
+        std::ifstream  src(infile, std::ios::binary);
+        std::ofstream  dst(mutedfile,   std::ios::binary);
+        dst << src.rdbuf();
+        src.close();
+        dst.close();
+
+        cont=dialog.Update(0);
+
+        std::shared_ptr<rockseis::File> in (new rockseis::File());
+
+        bool status;
+        status = in->append(mutedfile);
+        if(status == FILE_ERR){
+            rockseis::rs_error("rsrss2rsf: Error opening file for input.");
+            std::cerr << status << std::endl;
+        }
+
+
+        float wrkdata = 0.0;
+        float *mutetrc;
+        for(size_t ix=0; ix < n1; ix++){
+            (*picks)[0]->Interp(ix);
+            mutetrc = (*picks)[0]->Getvrms();
+            float h;
+            for (size_t i=0; i < n3; i++){
+                for (size_t j=0; j < n4; j++){
+                    h = j*d4 + o4;
+                    if(side){
+                        if( h > mutetrc[i]){
+                            in->seekp(I2D(ix,i,j, 0)*dsize + in->getStartofdata());
+                            in->write(&wrkdata, 1);
+                        }
+                    }else{
+                        if( h < mutetrc[i]){
+                            in->seekp(I2D(ix,i,j, 0)*dsize + in->getStartofdata());
+                            in->write(&wrkdata, 1);
+                        }
+                    }
+                }
+            }
+
+            cont=dialog.Update(ix+1);
+            if(ix == (n1-1)) cont=dialog.Update(ix+1); // 100%
+        }
+        in->close();
+        // Load backed up data
+        if((*picks)[0]->Loadpicks("tmppicks.dat") != PICKS_OK) {
+            wxMessageBox(_("Something went wrong when reading from the picks file."), _("Error loading picks"), wxICON_INFORMATION);
+            (*picks)[0]->Clearpicks();
+            return;
+        }
+        // Remove backed up data
+        if (remove("tmppicks.dat") !=0){
+            wxMessageBox(_("Something went wrong when trying to remove temporary file."), _("Error removing temporary picks"), wxICON_INFORMATION);
+        }
+    }
+
 }
 
 void MyApp::OnZoframeDestroy(wxWindowDestroyEvent& event)

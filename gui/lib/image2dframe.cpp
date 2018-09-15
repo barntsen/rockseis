@@ -42,6 +42,12 @@ const long Image2dframe::idToolSave = wxNewId();
 const long Image2dframe::idToolLoad = wxNewId();
 const long Image2dframe::ID_TOOLBAR1 = wxNewId();
 const long Image2dframe::ID_LISTBOX1 = wxNewId();
+const long Image2dframe::ID_MENUITEM1 = wxNewId();
+const long Image2dframe::ID_MENUITEM2 = wxNewId();
+const long Image2dframe::ID_MENUITEM3 = wxNewId();
+const long Image2dframe::ID_MENUITEM4 = wxNewId();
+const long Image2dframe::ID_MENUITEM5 = wxNewId();
+const long Image2dframe::ID_MENUITEM6 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(Image2dframe,wxFrame)
@@ -63,6 +69,7 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
     imagedata = _imagedata;
     image2d_allocated = false;
     toolbarset = false;
+    menubarset = false;
 
     cmpnumber = 0;
     dcmp = 1;
@@ -644,6 +651,40 @@ void Image2dframe::createToolbar()
         Connect(idToolcmpint,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnCMPinterval);
 	    Connect(idToolSave,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnSavepicks);
 	    Connect(idToolLoad,wxEVT_COMMAND_TOOL_CLICKED,(wxObjectEventFunction)&Image2dframe::OnLoadpicks);
+    }
+}
+
+void Image2dframe::createMenubar()
+{
+    if(!this->getMenubarset()){
+        MenuBar = new wxMenuBar();
+        Menu1 = new wxMenu();
+        MenuItem1 = new wxMenuItem(Menu1, ID_MENUITEM1, _("Load picks"), wxEmptyString, wxITEM_NORMAL);
+        Menu1->Append(MenuItem1);
+        MenuItem2 = new wxMenuItem(Menu1, ID_MENUITEM2, _("Save picks"), wxEmptyString, wxITEM_NORMAL);
+        Menu1->Append(MenuItem2);
+        MenuItem3 = new wxMenuItem(Menu1, ID_MENUITEM3, _("Clear picks"), _("Clear all picks on the dataset"), wxITEM_NORMAL);
+        Menu1->Append(MenuItem3);
+        MenuItem4 = new wxMenuItem(Menu1, ID_MENUITEM4, _("Close"), wxEmptyString, wxITEM_NORMAL);
+        Menu1->Append(MenuItem4);
+        MenuBar->Append(Menu1, _("File"));
+
+        Menu2 = new wxMenu();
+        MenuItem5 = new wxMenuItem(Menu2, ID_MENUITEM5, _("Mute left/above"), _("Mute events to the left of vertical picks or above horizontal picks"), wxITEM_NORMAL);
+        Menu2->Append(MenuItem5);
+        MenuItem6 = new wxMenuItem(Menu2, ID_MENUITEM6, _("Mute right/below"), _("Mute events to the right of vertical picks or below horizontal picks"), wxITEM_NORMAL);
+        Menu2->Append(MenuItem6);
+        MenuBar->Append(Menu2, _("Mute"));
+        SetMenuBar(MenuBar);
+        this->setMenubarset(true);
+
+
+	    Connect(ID_MENUITEM1,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&Image2dframe::OnLoadpicks);
+	    Connect(ID_MENUITEM2,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&Image2dframe::OnSavepicks);
+	    Connect(ID_MENUITEM3,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&Image2dframe::OnClearpicks);
+	    Connect(ID_MENUITEM4,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&Image2dframe::OnClose);
+	    Connect(ID_MENUITEM5,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&Image2dframe::OnMute_la);
+	    Connect(ID_MENUITEM6,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&Image2dframe::OnMute_rb);
     }
 }
 
@@ -3080,6 +3121,50 @@ void Image2dframe::OnLoadpicks(wxCommandEvent& event)
         wxCommandEvent parevent(LoadEvent, GetId());
         parevent.SetEventObject(this);
         parevent.SetInt(0);
+        // Send event to App
+        ProcessWindowEvent(parevent);
+    }
+}
+
+void Image2dframe::OnClearpicks(wxCommandEvent& event)
+{
+
+    if(nlayers > 0){
+        wxMessageDialog dialog( this, wxT("This will clear all picks in the data.\nDo you really want to proceed?"),
+                wxT("Clear all picks"),
+                wxNO_DEFAULT | wxYES_NO);
+
+        switch( dialog.ShowModal() )
+        {
+            case wxID_YES:
+                picks[layer]->Clearpicks();
+                Refresh();
+                break;
+            case wxID_NO:
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void Image2dframe::OnMute_la(wxCommandEvent& event)
+{
+    if(nlayers > 0){
+        wxCommandEvent parevent(MuteEvent, GetId());
+        parevent.SetEventObject(this);
+        parevent.SetInt(0);
+        // Send event to App
+        ProcessWindowEvent(parevent);
+    }
+}
+
+void Image2dframe::OnMute_rb(wxCommandEvent& event)
+{
+    if(nlayers > 0){
+        wxCommandEvent parevent(MuteEvent, GetId());
+        parevent.SetEventObject(this);
+        parevent.SetInt(1);
         // Send event to App
         ProcessWindowEvent(parevent);
     }

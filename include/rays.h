@@ -25,6 +25,7 @@
 #define SQ(x) ((x)*(x))
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
 
 #define TMAX 99.0
 #define MAXITER 30
