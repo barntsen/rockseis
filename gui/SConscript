@@ -23,14 +23,14 @@ if(env['WX']):
     gui.Install(bindir,hello_gui)
 
     gui.Append(LIBS=['file', 'sort', 'utils', 'geometry', 'data', 'fft'])
-    image = gui.Program(srcdir + prefix + 'image',[srcdir + 'image.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
+    image = gui.Program(srcdir + prefix + 'image',[srcdir + 'image.cpp',libdir + 'image2dframe.cpp', libdir + 'image3dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp', libdir + 'colors.cpp'])
     gui.Install(bindir,image)
 
-    cipmute = gui.Program(srcdir + prefix + 'cipmute',[srcdir + 'cipmute.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
+    cipmute = gui.Program(srcdir + prefix + 'cipmute',[srcdir + 'cipmute.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp', libdir + 'colors.cpp'])
     gui.Install(bindir,cipmute)
 
-    fbpick2d = gui.Program(srcdir + prefix + 'fbpick2d',[srcdir + 'fbpick2d.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
+    fbpick2d = gui.Program(srcdir + prefix + 'fbpick2d',[srcdir + 'fbpick2d.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp', libdir + 'colors.cpp'])
     gui.Install(bindir,fbpick2d)
 
-    fbpick3d = gui.Program(srcdir + prefix + 'fbpick3d',[srcdir + 'fbpick3d.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp'])
+    fbpick3d = gui.Program(srcdir + prefix + 'fbpick3d',[srcdir + 'fbpick3d.cpp',libdir + 'image2dframe.cpp', libdir + 'zoom.cpp', libdir + 'picks.cpp', libdir + 'colors.cpp'])
     gui.Install(bindir,fbpick3d)

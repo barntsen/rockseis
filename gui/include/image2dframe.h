@@ -29,6 +29,7 @@
 #include "picks.h"
 #include <algorithm>
 #include <vector>
+#include "colors.h"
 
 #define FONTSIZE1 6 
 #define FONTSIZE2 9 
@@ -162,7 +163,7 @@ class Image2dframe: public wxFrame
 		void OnImagewindowEraseBackground(wxEraseEvent& event);
         bool getImage2dAlloc() { return image2d_allocated; }
         void setImage2dAlloc(bool val) { image2d_allocated = val; }
-        void getRgb(int color);
+        //void getRgb(int color);
         void Plotpicks(wxDC &dc, int w, int h);
         void Plotcrosshair(wxDC &dc, int w, int h);
         void OnPick(wxCommandEvent& event);

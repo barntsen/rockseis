@@ -1,8 +1,9 @@
-#include "image2dframe.h"
 #include "file.h"
 #include "utils.h"
 #include "geometry.h"
 #include <args.hxx>
+#include "image2dframe.h"
+#include "image3dframe.h"
 
 // Class declaration of the app
 class MyApp: public wxApp
@@ -32,15 +33,15 @@ bool MyApp::OnInit()
         std::cerr << status << std::endl;
     }
 
-    size_t n[2],ntot;
-    float d[2];
-    float o[2];
+    size_t n[3],ntot,ntr;
+    float d[3];
+    float o[3];
 
     int ndims=0;
     // Get parameters
     for(int i=0; i<MAXDIMS; i++){
         if(in->getN(i+1) > 1){
-            if(ndims < 2){
+            if(ndims < 3){
                 n[ndims]  = in->getN(i+1);
                 d[ndims]  = (float) in->getD(i+1);
                 o[ndims]  = (float) in->getO(i+1);
@@ -48,14 +49,18 @@ bool MyApp::OnInit()
             ndims ++;
         }
     }
-    if(ndims > 2) rockseis::rs_error("Image data is not 2 dimensional");
+    if(ndims < 2 || ndims > 3) rockseis::rs_error("Only 2D and 3D data are supported");
     ntot = n[0]*n[1];
-
+    ntr = ntot;
+    if(ndims == 3) ntot *= n[2];
 
     float *fdata=NULL;
     double *ddata=NULL;
     fdata = (float *) calloc(ntot, sizeof(float));
     if(fdata == NULL) rockseis::rs_error("Failed to allocate memory for the image.");
+
+    Image2dframe *frame2d = NULL;
+    Image3dframe *frame3d = NULL;
 
     int dsize, hsize;
     dsize = in->getData_format();
@@ -69,7 +74,7 @@ bool MyApp::OnInit()
     }
     switch(dsize){
         case 4:
-            for (size_t j=0; j < n[1]; j++){
+            for (size_t j=0; j < ntr; j++){
                 in->read(&hdata[0], Nheader*hsize);
                 in->read(&fdata[j*n[0]], n[0]);
             }
@@ -77,7 +82,7 @@ bool MyApp::OnInit()
         case 8:
             ddata = (double *) calloc(ntot, sizeof(double));
             if(ddata == NULL) rockseis::rs_error("Failed to allocate memory for the image.");
-            for (size_t j=0; j < n[1]; j++){
+            for (size_t j=0; j < ntr; j++){
                 if(Nheader){
                     in->read(&hdata[0], Nheader*hsize);
                 }
@@ -93,9 +98,13 @@ bool MyApp::OnInit()
             break;
     }
 
-	wxString pick = "2D image";
-	Image2dframe *frame = new Image2dframe(n[0], d[0], o[0], n[1], d[1], o[1], fdata, 0);
-	frame->Show( true );
+    if(ndims == 2){
+        frame2d = new Image2dframe(n[0], d[0], o[0], n[1], d[1], o[1], fdata, 0);
+        frame2d->Show( true );
+    }else{
+        frame3d = new Image3dframe(n[0], d[0], o[0], n[1], d[1], o[1], n[2], d[2], o[2], fdata, 0);
+        frame3d->Show( true );
+    }
 
 	return true;
 }

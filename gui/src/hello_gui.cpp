@@ -24,7 +24,7 @@ bool MyApp::OnInit()
 	wxString hello = "Hello World";
 	MainFrame *frame1 = new MainFrame( hello, wxPoint(50, 50), wxSize(600, 600) );
 	frame1->Show( true );
-
+    
 	return true;
 }
 
