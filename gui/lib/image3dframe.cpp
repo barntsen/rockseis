@@ -59,6 +59,7 @@ Image3dframe::Image3dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 
 	Create(parent, wxID_ANY, _("3D Stack/Velocity viewer"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
 	FlexGridSizer1 = new wxFlexGridSizer(4, 4, 0, 0);
+	FlexGridSizer1->AddGrowableCol(0);
 	FlexGridSizer1->AddGrowableCol(1);
 	FlexGridSizer1->AddGrowableRow(0);
 	FlexGridSizer1->AddGrowableCol(3);
@@ -130,6 +131,16 @@ Image3dframe::Image3dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 	Xplotwindow->Connect(wxEVT_KEY_UP,(wxObjectEventFunction)&Image3dframe::OnKeyUp,0,this);
 	Yplotwindow->Connect(wxEVT_KEY_UP,(wxObjectEventFunction)&Image3dframe::OnKeyUp,0,this);
 	Zplotwindow->Connect(wxEVT_KEY_UP,(wxObjectEventFunction)&Image3dframe::OnKeyUp,0,this);
+	Xplotwindow->Connect(wxEVT_MOTION,(wxObjectEventFunction)&Image3dframe::OnXplotwindowMouseMove,0,this);
+	Yplotwindow->Connect(wxEVT_MOTION,(wxObjectEventFunction)&Image3dframe::OnYplotwindowMouseMove,0,this);
+	Zplotwindow->Connect(wxEVT_MOTION,(wxObjectEventFunction)&Image3dframe::OnZplotwindowMouseMove,0,this);
+
+	Xplotwindow->Connect(wxEVT_LEFT_DOWN,(wxObjectEventFunction)&Image3dframe::OnXplotwindowLeftDown,0,this);
+	Xplotwindow->Connect(wxEVT_LEFT_UP,(wxObjectEventFunction)&Image3dframe::OnXplotwindowLeftUp,0,this);
+	Yplotwindow->Connect(wxEVT_LEFT_DOWN,(wxObjectEventFunction)&Image3dframe::OnYplotwindowLeftDown,0,this);
+	Yplotwindow->Connect(wxEVT_LEFT_UP,(wxObjectEventFunction)&Image3dframe::OnYplotwindowLeftUp,0,this);
+	Zplotwindow->Connect(wxEVT_LEFT_DOWN,(wxObjectEventFunction)&Image3dframe::OnZplotwindowLeftDown,0,this);
+	Zplotwindow->Connect(wxEVT_LEFT_UP,(wxObjectEventFunction)&Image3dframe::OnZplotwindowLeftUp,0,this);
 
     // Compute Maxmimum and minimum values
     this->ComputeClip();
@@ -176,6 +187,14 @@ void Image3dframe::OnXplotwindowPaint(wxPaintEvent& event)
     wxImage image_scaled=this->ximage->Scale(w,h);
     wxBitmap bitmap(image_scaled);
     dc.DrawBitmap(bitmap, 0, 0, false);
+
+    PlotXcrosshair(dc, w, h);
+
+    if(xslicezoom->Getzooming()){
+        wxPen myWhitePen(*wxWHITE,2,wxSOLID);
+        dc.SetPen(myWhitePen);
+        dc.DrawLines( 5, xslicezoom->Getbox() );
+    }
 }
 
 void Image3dframe::OnYplotwindowPaint(wxPaintEvent& event)
@@ -184,10 +203,18 @@ void Image3dframe::OnYplotwindowPaint(wxPaintEvent& event)
     wxPoint pos;
     wxPaintDC dc( Yplotwindow );
 
-    Xplotwindow->GetSize(&w,&h);
+    Yplotwindow->GetSize(&w,&h);
     wxImage image_scaled=this->yimage->Scale(w,h);
     wxBitmap bitmap(image_scaled);
     dc.DrawBitmap(bitmap, 0, 0, false);
+
+    PlotYcrosshair(dc, w, h);
+
+    if(yslicezoom->Getzooming()){
+        wxPen myWhitePen(*wxWHITE,2,wxSOLID);
+        dc.SetPen(myWhitePen);
+        dc.DrawLines( 5, yslicezoom->Getbox() );
+    }
 }
 
 void Image3dframe::OnZplotwindowPaint(wxPaintEvent& event)
@@ -196,10 +223,18 @@ void Image3dframe::OnZplotwindowPaint(wxPaintEvent& event)
     wxPoint pos;
     wxPaintDC dc( Zplotwindow );
 
-    Xplotwindow->GetSize(&w,&h);
+    Zplotwindow->GetSize(&w,&h);
     wxImage image_scaled=this->zimage->Scale(w,h);
     wxBitmap bitmap(image_scaled);
     dc.DrawBitmap(bitmap, 0, 0, false);
+
+    PlotZcrosshair(dc, w, h);
+
+    if(zslicezoom->Getzooming()){
+        wxPen myWhitePen(*wxWHITE,2,wxSOLID);
+        dc.SetPen(myWhitePen);
+        dc.DrawLines( 5, zslicezoom->Getbox() );
+    }
 }
 
 void Image3dframe::OnXaxisPaint(wxPaintEvent& event)
@@ -616,6 +651,578 @@ void Image3dframe::OnKeyUp(wxKeyEvent& event)
         Close();
     }
 }
+
+void Image3dframe::PlotXcrosshair(wxDC &dc, int w, int h)
+{
+        float v0,v1, t0, t1;
+        v0=xslicezoom->Getx0();
+        v1=xslicezoom->Getx1();
+        t0=xslicezoom->Gety0();
+        t1=xslicezoom->Gety1();
+        float ax;
+        float ay;
+        ay=(t1 - t0)/(h-1);
+        ax=(v1 - v0)/(w-1);
+        wxPoint pos;
+
+        pos.x=(int) ((Slider2->GetValue()*d1 + o1 - v0)/ax + 0.5);
+        pos.y=(int) ((Slider1->GetValue()*d3 + o3 - t0)/ay + 0.5);
+
+        wxPen myCrossPen(*wxWHITE,2,wxDOT_DASH);
+        dc.SetPen(myCrossPen);
+        dc.CrossHair(pos);
+}
+
+void Image3dframe::PlotYcrosshair(wxDC &dc, int w, int h)
+{
+        float v0,v1, t0, t1;
+        v0=yslicezoom->Getx0();
+        v1=yslicezoom->Getx1();
+        t0=yslicezoom->Gety0();
+        t1=yslicezoom->Gety1();
+        float ax;
+        float ay;
+        ay=(t1 - t0)/(h-1);
+        ax=(v1 - v0)/(w-1);
+        wxPoint pos;
+
+        pos.x=(int) ((Slider3->GetValue()*d2 + o2 - v0)/ax + 0.5);
+        pos.y=(int) ((Slider1->GetValue()*d3 + o3 - t0)/ay + 0.5);
+
+        wxPen myCrossPen(*wxWHITE,2,wxDOT_DASH);
+        dc.SetPen(myCrossPen);
+        dc.CrossHair(pos);
+}
+
+void Image3dframe::PlotZcrosshair(wxDC &dc, int w, int h)
+{
+        float v0,v1, t0, t1;
+        v0=zslicezoom->Getx0();
+        v1=zslicezoom->Getx1();
+        t0=zslicezoom->Gety0();
+        t1=zslicezoom->Gety1();
+        float ax;
+        float ay;
+        ay=(t1 - t0)/(h-1);
+        ax=(v1 - v0)/(w-1);
+        wxPoint pos;
+
+        pos.x=(int) ((Slider2->GetValue()*d1 + o1 - v0)/ax + 0.5);
+        pos.y=(int) ((Slider3->GetValue()*d2 + o2 - t0)/ay + 0.5);
+
+        wxPen myCrossPen(*wxWHITE,2,wxDOT_DASH);
+        dc.SetPen(myCrossPen);
+        dc.CrossHair(pos);
+}
+
+
+void Image3dframe::OnXplotwindowMouseMove(wxMouseEvent& event)
+{
+
+    wxPaintDC dc( Xplotwindow );
+    wxPoint pos;
+    pos=event.GetLogicalPosition(dc);
+
+    wxPoint box[5];
+    wxPoint zpos1=xslicezoom->Getzpos1();
+
+    float x0, x1, y0, y1;
+    x0=xslicezoom->Getx0();
+    x1=xslicezoom->Getx1();
+    y0=xslicezoom->Gety0();
+    y1=xslicezoom->Gety1();
+
+    int w,h;
+    Xplotwindow->GetSize(&w,&h);
+    float ax, ay;
+    ay=(y1 - y0)/(h-1);
+    ax=(x1 - x0)/(w-1);
+
+    // Compute current position
+    float x,y,z;
+    x=ax*pos.x + x0;
+    y=Slider3->GetValue()*d2 + o2;
+    z=ay*pos.y + y0;
+
+    size_t ix,iy,iz;
+    float val;
+    ix = (size_t) ((x-o1)/d1);
+    iy = (size_t) Slider3->GetValue();
+    iz = (size_t) ((z-o3)/d3);
+    if(ix < n1 && iy < n2 && iz < n3){
+        val = imagedata[iz*n1*n2 + iy*n1 + ix];
+    }else{
+        val = 0.0;
+    }
+
+    char label[128];
+    snprintf(label, 128, "CMPx: %zu, CMPy: %zu, X: %.2f, Y: %.2f, Z: %.2f, Val: %f", ix, iy, x, y, z, val);
+    StatusBar1->SetStatusText(_(label));
+
+    if(event.LeftIsDown()){
+        box[0].x=zpos1.x;
+        box[0].y=zpos1.y;
+        xslicezoom->Setbox(box[0], 0);
+        box[1].x=zpos1.x;
+        box[1].y=pos.y;
+        xslicezoom->Setbox(box[1], 1);
+        box[2].x=pos.x;
+        box[2].y=pos.y;
+        xslicezoom->Setbox(box[2], 2);
+        box[3].x=pos.x;
+        box[3].y=zpos1.y;
+        xslicezoom->Setbox(box[3], 3);
+        box[4].x=zpos1.x;
+        box[4].y=zpos1.y;
+        xslicezoom->Setbox(box[4], 4);
+        Refresh();
+    }
+}
+
+void Image3dframe::OnYplotwindowMouseMove(wxMouseEvent& event)
+{
+    wxPaintDC dc( Yplotwindow );
+    wxPoint pos;
+    pos=event.GetLogicalPosition(dc);
+
+    wxPoint box[5];
+    wxPoint zpos1=yslicezoom->Getzpos1();
+
+    float x0, x1, y0, y1;
+    x0=yslicezoom->Getx0();
+    x1=yslicezoom->Getx1();
+    y0=yslicezoom->Gety0();
+    y1=yslicezoom->Gety1();
+
+    int w,h;
+    Yplotwindow->GetSize(&w,&h);
+    float ax, ay;
+    ay=(y1 - y0)/(h-1);
+    ax=(x1 - x0)/(w-1);
+
+    // Compute current position
+    float x,y,z;
+    x=Slider2->GetValue()*d1 + o1;
+    y=ax*pos.x + x0;
+    z=ay*pos.y + y0;
+
+    size_t ix,iy,iz;
+    float val;
+    ix = (size_t) Slider2->GetValue();
+    iy = (size_t) ((y-o2)/d2);
+    iz = (size_t) ((z-o3)/d3);
+    if(ix < n1 && iy < n2 && iz < n3){
+        val = imagedata[iz*n1*n2 + iy*n1 + ix];
+    }else{
+        val = 0.0;
+    }
+
+    char label[128];
+    snprintf(label, 128, "CMPx: %zu, CMPy: %zu, X: %.2f, Y: %.2f, Z: %.2f, Val: %f", ix, iy, x, y, z, val);
+    StatusBar1->SetStatusText(_(label));
+
+    if(event.LeftIsDown()){
+        box[0].x=zpos1.x;
+        box[0].y=zpos1.y;
+        yslicezoom->Setbox(box[0], 0);
+        box[1].x=zpos1.x;
+        box[1].y=pos.y;
+        yslicezoom->Setbox(box[1], 1);
+        box[2].x=pos.x;
+        box[2].y=pos.y;
+        yslicezoom->Setbox(box[2], 2);
+        box[3].x=pos.x;
+        box[3].y=zpos1.y;
+        yslicezoom->Setbox(box[3], 3);
+        box[4].x=zpos1.x;
+        box[4].y=zpos1.y;
+        yslicezoom->Setbox(box[4], 4);
+        Refresh();
+    }
+}
+
+void Image3dframe::OnZplotwindowMouseMove(wxMouseEvent& event)
+{
+
+    wxPaintDC dc( Zplotwindow );
+    wxPoint pos;
+    pos=event.GetLogicalPosition(dc);
+
+    wxPoint box[5];
+    wxPoint zpos1=zslicezoom->Getzpos1();
+
+    float x0, x1, y0, y1;
+    x0=zslicezoom->Getx0();
+    x1=zslicezoom->Getx1();
+    y0=zslicezoom->Gety0();
+    y1=zslicezoom->Gety1();
+
+    int w,h;
+    Zplotwindow->GetSize(&w,&h);
+    float ax, ay;
+    ay=(y1 - y0)/(h-1);
+    ax=(x1 - x0)/(w-1);
+
+    // Compute current position
+    float x,y,z;
+    x=ax*pos.x + x0;
+    y=ay*pos.y + y0;
+    z=Slider1->GetValue()*d3 + o3;
+
+    size_t ix,iy,iz;
+    float val;
+    ix = (size_t) ((x-o1)/d1);
+    iy = (size_t) ((y-o2)/d2);
+    iz = (size_t) Slider1->GetValue();
+    if(ix < n1 && iy < n2 && iz < n3){
+        val = imagedata[iz*n1*n2 + iy*n1 + ix];
+    }else{
+        val = 0.0;
+    }
+
+    char label[128];
+    snprintf(label, 128, "CMPx: %zu, CMPy: %zu, X: %.2f, Y: %.2f, Z: %.2f, Val: %f", ix, iy, x, y, z, val);
+    StatusBar1->SetStatusText(_(label));
+
+    if(event.LeftIsDown()){
+        box[0].x=zpos1.x;
+        box[0].y=zpos1.y;
+        zslicezoom->Setbox(box[0], 0);
+        box[1].x=zpos1.x;
+        box[1].y=pos.y;
+        zslicezoom->Setbox(box[1], 1);
+        box[2].x=pos.x;
+        box[2].y=pos.y;
+        zslicezoom->Setbox(box[2], 2);
+        box[3].x=pos.x;
+        box[3].y=zpos1.y;
+        zslicezoom->Setbox(box[3], 3);
+        box[4].x=zpos1.x;
+        box[4].y=zpos1.y;
+        zslicezoom->Setbox(box[4], 4);
+        Refresh();
+    }
+}
+
+void Image3dframe::OnXplotwindowLeftDown(wxMouseEvent& event)
+{
+    wxPaintDC dc( Xplotwindow );
+    wxPoint zpos1=event.GetLogicalPosition(dc);
+    xslicezoom->Setzpos1(zpos1);
+    xslicezoom->Setzooming(true);
+}
+
+void Image3dframe::OnXplotwindowLeftUp(wxMouseEvent& event)
+{
+    wxPoint pos;
+    wxPaintDC dc( Xplotwindow );
+    pos=event.GetLogicalPosition(dc);
+    int w,h;
+    Xplotwindow->GetSize(&w,&h);
+
+    float x0, x1, y0, y1;
+    x0=xslicezoom->Getx0();
+    x1=xslicezoom->Getx1();
+    y0=xslicezoom->Gety0();
+    y1=xslicezoom->Gety1();
+    
+    float ax, ay;
+    ay=(y1 - y0)/(h-1);
+    ax=(x1 - x0)/(w-1);
+
+    float x,y;
+    x=ax*pos.x + x0;
+    y=ay*pos.y + y0;
+
+
+    wxPoint zpos1=xslicezoom->Getzpos1();
+    wxPoint temp;
+    if(zpos1.y > pos.y){
+        temp.y=zpos1.y;
+        zpos1.y=pos.y;
+        pos.y=temp.y;
+    }
+    if(zpos1.x > pos.x){
+        temp.x=zpos1.x;
+        zpos1.x=pos.x;
+        pos.x=temp.x;
+    }
+    if(zpos1.x<0) zpos1.x=0;
+    if(zpos1.y<0) zpos1.y=0;
+    if(zpos1.x>w-1) zpos1.x=w-1;
+    if(zpos1.y>h-1) zpos1.y=h-1;
+    if(pos.x<0) pos.x=0;
+    if(pos.y<0) pos.y=0;
+    if(pos.x>w-1) pos.x=w-1;
+    if(pos.y>h-1) pos.y=h-1;
+    xslicezoom->Setzpos1(zpos1);
+    xslicezoom->Setzpos2(pos);
+    if(zpos1.x != pos.x && zpos1.y != pos.y){
+        //Compute limits
+        y1=ay*pos.y + y0;
+        y0=ay*zpos1.y + y0;
+        x1=ax*pos.x + x0;
+        x0=ax*zpos1.x + x0;
+        xslicezoom->Sety0(y0);
+        xslicezoom->Setiy0(int ((y0-o3)/d3));
+        xslicezoom->Setny(int ((y1-y0)/d3 + 1 ));
+        xslicezoom->Sety1(y1);
+
+        yslicezoom->Sety0(y0);
+        yslicezoom->Setiy0(int ((y0-o3)/d3));
+        yslicezoom->Setny(int ((y1-y0)/d3 + 1 ));
+        yslicezoom->Sety1(y1);
+
+        zslicezoom->Setx0(x0);
+        zslicezoom->Setix0(int ((x0-o1)/d1));
+        zslicezoom->Setnx(int ((x1-x0)/d1 + 1 ));
+        zslicezoom->Setx1(x1);
+
+        xslicezoom->Setx0(x0);
+        xslicezoom->Setix0(int ((x0-o1)/d1));
+        xslicezoom->Setnx(int ((x1-x0)/d1 + 1 ));
+        xslicezoom->Setx1(x1);
+    }else{
+        yslicezoom->Sety0(o3);
+        yslicezoom->Sety1((n3-1)*d3 + o3);
+        yslicezoom->Setiy0(0);
+        yslicezoom->Setny(n3);
+
+        zslicezoom->Setx0(o1);
+        zslicezoom->Setx1((n1-1)*d1 + o1);
+        zslicezoom->Setix0(0);
+        zslicezoom->Setnx(n1);
+
+        xslicezoom->Setx0(o1);
+        xslicezoom->Setx1((n1-1)*d1 + o1);
+        xslicezoom->Setix0(0);
+        xslicezoom->Setnx(n1);
+
+        xslicezoom->Sety0(o3);
+        xslicezoom->Sety1((n3-1)*d3 + o3);
+        xslicezoom->Setiy0(0);
+        xslicezoom->Setny(n3);
+    }
+    xslicezoom->Setzooming(false);
+    this->LoadXimage(xslicezoom->Getix0(), xslicezoom->Getnx(), xslicezoom->Getiy0(), xslicezoom->Getny());
+    this->LoadYimage(yslicezoom->Getix0(), yslicezoom->Getnx(), yslicezoom->Getiy0(), yslicezoom->Getny());
+    this->LoadZimage(zslicezoom->Getix0(), zslicezoom->Getnx(), zslicezoom->Getiy0(), zslicezoom->Getny());
+    Refresh();
+}
+
+void Image3dframe::OnYplotwindowLeftDown(wxMouseEvent& event)
+{
+    wxPaintDC dc( Yplotwindow );
+    wxPoint zpos1=event.GetLogicalPosition(dc);
+    yslicezoom->Setzpos1(zpos1);
+    yslicezoom->Setzooming(true);
+}
+
+void Image3dframe::OnYplotwindowLeftUp(wxMouseEvent& event)
+{
+    wxPoint pos;
+    wxPaintDC dc( Yplotwindow );
+    pos=event.GetLogicalPosition(dc);
+    int w,h;
+    Yplotwindow->GetSize(&w,&h);
+
+    float x0, x1, y0, y1;
+    x0=yslicezoom->Getx0();
+    x1=yslicezoom->Getx1();
+    y0=yslicezoom->Gety0();
+    y1=yslicezoom->Gety1();
+    
+    float ax, ay;
+    ay=(y1 - y0)/(h-1);
+    ax=(x1 - x0)/(w-1);
+
+    float x,y;
+    x=ax*pos.x + x0;
+    y=ay*pos.y + y0;
+
+
+    wxPoint zpos1=yslicezoom->Getzpos1();
+    wxPoint temp;
+    if(zpos1.y > pos.y){
+        temp.y=zpos1.y;
+        zpos1.y=pos.y;
+        pos.y=temp.y;
+    }
+    if(zpos1.x > pos.x){
+        temp.x=zpos1.x;
+        zpos1.x=pos.x;
+        pos.x=temp.x;
+    }
+    if(zpos1.x<0) zpos1.x=0;
+    if(zpos1.y<0) zpos1.y=0;
+    if(zpos1.x>w-1) zpos1.x=w-1;
+    if(zpos1.y>h-1) zpos1.y=h-1;
+    if(pos.x<0) pos.x=0;
+    if(pos.y<0) pos.y=0;
+    if(pos.x>w-1) pos.x=w-1;
+    if(pos.y>h-1) pos.y=h-1;
+    yslicezoom->Setzpos1(zpos1);
+    yslicezoom->Setzpos2(pos);
+    if(zpos1.x != pos.x && zpos1.y != pos.y){
+        //Compute limits
+        y1=ay*pos.y + y0;
+        y0=ay*zpos1.y + y0;
+        x1=ax*pos.x + x0;
+        x0=ax*zpos1.x + x0;
+        yslicezoom->Sety0(y0);
+        yslicezoom->Setiy0(int ((y0-o3)/d3));
+        yslicezoom->Setny(int ((y1-y0)/d3 + 1 ));
+        yslicezoom->Sety1(y1);
+
+        xslicezoom->Sety0(y0);
+        xslicezoom->Setiy0(int ((y0-o3)/d3));
+        xslicezoom->Setny(int ((y1-y0)/d3 + 1 ));
+        xslicezoom->Sety1(y1);
+
+        zslicezoom->Sety0(x0);
+        zslicezoom->Setiy0(int ((x0-o2)/d2));
+        zslicezoom->Setny(int ((x1-x0)/d2 + 1 ));
+        zslicezoom->Sety1(x1);
+
+        yslicezoom->Setx0(x0);
+        yslicezoom->Setix0(int ((x0-o2)/d2));
+        yslicezoom->Setnx(int ((x1-x0)/d2 + 1 ));
+        yslicezoom->Setx1(x1);
+    }else{
+        xslicezoom->Sety0(o3);
+        xslicezoom->Sety1((n3-1)*d3 + o3);
+        xslicezoom->Setiy0(0);
+        xslicezoom->Setny(n3);
+
+        zslicezoom->Sety0(o2);
+        zslicezoom->Sety1((n2-1)*d2 + o2);
+        zslicezoom->Setiy0(0);
+        zslicezoom->Setny(n2);
+
+        yslicezoom->Setx0(o1);
+        yslicezoom->Setx1((n2-1)*d2 + o2);
+        yslicezoom->Setix0(0);
+        yslicezoom->Setnx(n2);
+
+        yslicezoom->Sety0(o3);
+        yslicezoom->Sety1((n3-1)*d3 + o3);
+        yslicezoom->Setiy0(0);
+        yslicezoom->Setny(n3);
+    }
+    yslicezoom->Setzooming(false);
+    this->LoadXimage(xslicezoom->Getix0(), xslicezoom->Getnx(), xslicezoom->Getiy0(), xslicezoom->Getny());
+    this->LoadYimage(yslicezoom->Getix0(), yslicezoom->Getnx(), yslicezoom->Getiy0(), yslicezoom->Getny());
+    this->LoadZimage(zslicezoom->Getix0(), zslicezoom->Getnx(), zslicezoom->Getiy0(), zslicezoom->Getny());
+    Refresh();
+}
+
+void Image3dframe::OnZplotwindowLeftDown(wxMouseEvent& event)
+{
+    wxPaintDC dc( Zplotwindow );
+    wxPoint zpos1=event.GetLogicalPosition(dc);
+    zslicezoom->Setzpos1(zpos1);
+    zslicezoom->Setzooming(true);
+}
+
+void Image3dframe::OnZplotwindowLeftUp(wxMouseEvent& event)
+{
+    wxPoint pos;
+    wxPaintDC dc( Zplotwindow );
+    pos=event.GetLogicalPosition(dc);
+    int w,h;
+    Zplotwindow->GetSize(&w,&h);
+
+    float x0, x1, y0, y1;
+    x0=zslicezoom->Getx0();
+    x1=zslicezoom->Getx1();
+    y0=zslicezoom->Gety0();
+    y1=zslicezoom->Gety1();
+    
+    float ax, ay;
+    ay=(y1 - y0)/(h-1);
+    ax=(x1 - x0)/(w-1);
+
+    float x,y;
+    x=ax*pos.x + x0;
+    y=ay*pos.y + y0;
+
+
+    wxPoint zpos1=zslicezoom->Getzpos1();
+    wxPoint temp;
+    if(zpos1.y > pos.y){
+        temp.y=zpos1.y;
+        zpos1.y=pos.y;
+        pos.y=temp.y;
+    }
+    if(zpos1.x > pos.x){
+        temp.x=zpos1.x;
+        zpos1.x=pos.x;
+        pos.x=temp.x;
+    }
+    if(zpos1.x<0) zpos1.x=0;
+    if(zpos1.y<0) zpos1.y=0;
+    if(zpos1.x>w-1) zpos1.x=w-1;
+    if(zpos1.y>h-1) zpos1.y=h-1;
+    if(pos.x<0) pos.x=0;
+    if(pos.y<0) pos.y=0;
+    if(pos.x>w-1) pos.x=w-1;
+    if(pos.y>h-1) pos.y=h-1;
+    zslicezoom->Setzpos1(zpos1);
+    zslicezoom->Setzpos2(pos);
+    if(zpos1.x != pos.x && zpos1.y != pos.y){
+        //Compute limits
+        y1=ay*pos.y + y0;
+        y0=ay*zpos1.y + y0;
+        x1=ax*pos.x + x0;
+        x0=ax*zpos1.x + x0;
+        zslicezoom->Sety0(y0);
+        zslicezoom->Setiy0(int ((y0-o2)/d2));
+        zslicezoom->Setny(int ((y1-y0)/d2 + 1 ));
+        zslicezoom->Sety1(y1);
+
+        yslicezoom->Setx0(y0);
+        yslicezoom->Setix0(int ((y0-o2)/d2));
+        yslicezoom->Setnx(int ((y1-y0)/d2 + 1 ));
+        yslicezoom->Setx1(y1);
+
+        zslicezoom->Setx0(x0);
+        zslicezoom->Setix0(int ((x0-o1)/d1));
+        zslicezoom->Setnx(int ((x1-x0)/d1 + 1 ));
+        zslicezoom->Setx1(x1);
+
+        xslicezoom->Setx0(x0);
+        xslicezoom->Setix0(int ((x0-o1)/d1));
+        xslicezoom->Setnx(int ((x1-x0)/d1 + 1 ));
+        xslicezoom->Setx1(x1);
+    }else{
+        zslicezoom->Sety0(o2);
+        zslicezoom->Sety1((n2-1)*d2 + o2);
+        zslicezoom->Setiy0(0);
+        zslicezoom->Setny(n2);
+
+        yslicezoom->Setx0(o2);
+        yslicezoom->Setx1((n2-1)*d2 + o2);
+        yslicezoom->Setix0(0);
+        yslicezoom->Setnx(n2);
+
+        zslicezoom->Setx0(o1);
+        zslicezoom->Setx1((n1-1)*d1 + o1);
+        zslicezoom->Setix0(0);
+        zslicezoom->Setnx(n1);
+
+        xslicezoom->Setx0(o1);
+        xslicezoom->Setx1((n1-1)*d1 + o1);
+        xslicezoom->Setix0(0);
+        xslicezoom->Setnx(n1);
+    }
+    zslicezoom->Setzooming(false);
+    this->LoadXimage(xslicezoom->Getix0(), xslicezoom->Getnx(), xslicezoom->Getiy0(), xslicezoom->Getny());
+    this->LoadYimage(yslicezoom->Getix0(), yslicezoom->Getnx(), yslicezoom->Getiy0(), yslicezoom->Getny());
+    this->LoadZimage(zslicezoom->Getix0(), zslicezoom->Getnx(), zslicezoom->Getiy0(), zslicezoom->Getny());
+    Refresh();
+}
+
+
 
 Image3dframe::~Image3dframe()
 {

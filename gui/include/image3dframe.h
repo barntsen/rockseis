@@ -121,7 +121,11 @@ class Image3dframe: public wxFrame
 
         void createPicks();
         void createPicks(int dir, long n, float d, float o);
-	protected:
+
+        void PlotXcrosshair(wxDC &dc, int w, int h);
+        void PlotYcrosshair(wxDC &dc, int w, int h);
+        void PlotZcrosshair(wxDC &dc, int w, int h);
+    protected:
 
 		//(*Identifiers(StackVel3dframe)
 		static const long ID_PANEL1;
@@ -160,6 +164,15 @@ class Image3dframe: public wxFrame
 		void OnSlider2CmdScroll(wxScrollEvent& event);
 		void OnSlider3CmdScroll(wxScrollEvent& event);
 		void OnKeyUp(wxKeyEvent& event);
+        void OnXplotwindowMouseMove(wxMouseEvent& event);
+        void OnYplotwindowMouseMove(wxMouseEvent& event);
+        void OnZplotwindowMouseMove(wxMouseEvent& event);
+		void OnXplotwindowLeftUp(wxMouseEvent& event);
+		void OnXplotwindowLeftDown(wxMouseEvent& event);
+		void OnYplotwindowLeftUp(wxMouseEvent& event);
+		void OnYplotwindowLeftDown(wxMouseEvent& event);
+		void OnZplotwindowLeftUp(wxMouseEvent& event);
+		void OnZplotwindowLeftDown(wxMouseEvent& event);
 
         //Variables
         size_t n1;
