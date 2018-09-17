@@ -59,7 +59,6 @@ Image3dframe::Image3dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 
 	Create(parent, wxID_ANY, _("3D Stack/Velocity viewer"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
 	FlexGridSizer1 = new wxFlexGridSizer(4, 4, 0, 0);
-	FlexGridSizer1->AddGrowableCol(0);
 	FlexGridSizer1->AddGrowableCol(1);
 	FlexGridSizer1->AddGrowableRow(0);
 	FlexGridSizer1->AddGrowableCol(3);
@@ -69,7 +68,7 @@ Image3dframe::Image3dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 	Zplotwindow = new wxPanel(this, ID_PANEL2, wxDefaultPosition, wxSize(300,300), wxTAB_TRAVERSAL, _T("ID_PANEL2"));
 	FlexGridSizer1->Add(Zplotwindow, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
 	Slider1panel = new wxPanel(this, ID_PANEL3, wxDefaultPosition, wxSize(50,300), wxTAB_TRAVERSAL, _T("ID_PANEL3"));
-	Slider1 = new wxSlider(Slider1panel, ID_SLIDER1, 0, 0, 10, wxPoint(1,50), wxSize(50,200), wxSL_VERTICAL|wxSL_LABELS, wxDefaultValidator, _T("ID_SLIDER1"));
+	Slider1 = new wxSlider(Slider1panel, ID_SLIDER1, 0, 0, 10, wxPoint(1,50), wxSize(50,200), wxSL_VERTICAL, wxDefaultValidator, _T("ID_SLIDER1"));
 	FlexGridSizer1->Add(Slider1panel, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
 	Cornerup = new wxPanel(this, ID_PANEL4, wxDefaultPosition, wxSize(300,300), wxTAB_TRAVERSAL, _T("ID_PANEL4"));
 	FlexGridSizer1->Add(Cornerup, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
@@ -78,14 +77,14 @@ Image3dframe::Image3dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 	FlexGridSizer1->Add(Gap1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
     
 	Slider2panel = new wxPanel(this, ID_PANEL6, wxDefaultPosition, wxSize(300,50), wxTAB_TRAVERSAL, _T("ID_PANEL6"));
-	Slider2 = new wxSlider(Slider2panel, ID_SLIDER2, 0, 0, 10, wxPoint(50,1), wxSize(200,50), wxSL_HORIZONTAL|wxSL_LABELS, wxDefaultValidator, _T("ID_SLIDER2"));
+	Slider2 = new wxSlider(Slider2panel, ID_SLIDER2, 0, 0, 10, wxPoint(50,1), wxSize(200,50), wxSL_HORIZONTAL, wxDefaultValidator, _T("ID_SLIDER2"));
 	FlexGridSizer1->Add(Slider2panel, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
 
 	Gap2 = new wxPanel(this, ID_PANEL7, wxDefaultPosition, wxSize(50,50), wxTAB_TRAVERSAL, _T("ID_PANEL7"));
 	FlexGridSizer1->Add(Gap2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
 
 	Slider3panel = new wxPanel(this, ID_PANEL8, wxDefaultPosition, wxSize(300,50), wxTAB_TRAVERSAL, _T("ID_PANEL8"));
-	Slider3 = new wxSlider(Slider3panel, ID_SLIDER2, 0, 0, 10, wxPoint(50,1), wxSize(200,50), wxSL_HORIZONTAL|wxSL_LABELS, wxDefaultValidator, _T("ID_SLIDER3"));
+	Slider3 = new wxSlider(Slider3panel, ID_SLIDER2, 0, 0, 10, wxPoint(50,1), wxSize(200,50), wxSL_HORIZONTAL, wxDefaultValidator, _T("ID_SLIDER3"));
 	FlexGridSizer1->Add(Slider3panel, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
 
 	Zaxis = new wxPanel(this, ID_PANEL9, wxDefaultPosition, wxSize(50,300), wxTAB_TRAVERSAL, _T("ID_PANEL9"));
@@ -155,20 +154,20 @@ Image3dframe::Image3dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
     zslicezoom = new Zoom(o1, (n1-1)*d1 + o1, o2, (n2-1)*d2 + o2, 0, n1, 0, n2);
 
     int X, Y, Z;
-    X = (int) n1/4;
-    Y = (int) n2/4;
-    Z = (int) n3/4;
+    X = (int) n1/2;
+    Y = (int) n2/2;
+    Z = (int) n3/2;
     Slider1->SetRange(0,n3-1);
     Slider1->SetValue(Z);
-    Slider1->SetTickFreq(Z);
+    Slider1->SetTickFreq(1);
 
     Slider2->SetRange(0,n1-1);
     Slider2->SetValue(X);
-    Slider2->SetTickFreq(X);
+    Slider2->SetTickFreq(1);
 
     Slider3->SetRange(0,n2-1);
     Slider3->SetValue(Y);
-    Slider3->SetTickFreq(Y);
+    Slider3->SetTickFreq(1);
 
     // Create image 
     this->LoadXimage(xslicezoom->Getix0(), xslicezoom->Getnx(), xslicezoom->Getiy0(), xslicezoom->Getny());
@@ -982,6 +981,9 @@ void Image3dframe::OnXplotwindowLeftUp(wxMouseEvent& event)
         xslicezoom->Setix0(int ((x0-o1)/d1));
         xslicezoom->Setnx(int ((x1-x0)/d1 + 1 ));
         xslicezoom->Setx1(x1);
+
+        Slider1->SetRange(int ((y0-o3)/d3), int (((y0-o3)/d3) + ((y1-y0)/d3 + 1 )));
+        Slider2->SetRange(int ((x0-o1)/d1), int (((x0-o1)/d1) + ((x1-x0)/d1 + 1 )));
     }else{
         yslicezoom->Sety0(o3);
         yslicezoom->Sety1((n3-1)*d3 + o3);
@@ -1002,6 +1004,9 @@ void Image3dframe::OnXplotwindowLeftUp(wxMouseEvent& event)
         xslicezoom->Sety1((n3-1)*d3 + o3);
         xslicezoom->Setiy0(0);
         xslicezoom->Setny(n3);
+
+        Slider1->SetRange(0,n3-1);
+        Slider2->SetRange(0,n1-1);
     }
     xslicezoom->Setzooming(false);
     this->LoadXimage(xslicezoom->Getix0(), xslicezoom->Getnx(), xslicezoom->Getiy0(), xslicezoom->Getny());
@@ -1088,6 +1093,9 @@ void Image3dframe::OnYplotwindowLeftUp(wxMouseEvent& event)
         yslicezoom->Setix0(int ((x0-o2)/d2));
         yslicezoom->Setnx(int ((x1-x0)/d2 + 1 ));
         yslicezoom->Setx1(x1);
+
+        Slider1->SetRange(int ((y0-o3)/d3), int (((y0-o3)/d3) + ((y1-y0)/d3 + 1 )));
+        Slider3->SetRange(int ((x0-o2)/d2), int (((x0-o2)/d2) + ((x1-x0)/d2 + 1 )));
     }else{
         xslicezoom->Sety0(o3);
         xslicezoom->Sety1((n3-1)*d3 + o3);
@@ -1099,7 +1107,7 @@ void Image3dframe::OnYplotwindowLeftUp(wxMouseEvent& event)
         zslicezoom->Setiy0(0);
         zslicezoom->Setny(n2);
 
-        yslicezoom->Setx0(o1);
+        yslicezoom->Setx0(o2);
         yslicezoom->Setx1((n2-1)*d2 + o2);
         yslicezoom->Setix0(0);
         yslicezoom->Setnx(n2);
@@ -1108,6 +1116,9 @@ void Image3dframe::OnYplotwindowLeftUp(wxMouseEvent& event)
         yslicezoom->Sety1((n3-1)*d3 + o3);
         yslicezoom->Setiy0(0);
         yslicezoom->Setny(n3);
+
+        Slider1->SetRange(0, n3-1);
+        Slider3->SetRange(0, n2-1);
     }
     yslicezoom->Setzooming(false);
     this->LoadXimage(xslicezoom->Getix0(), xslicezoom->Getnx(), xslicezoom->Getiy0(), xslicezoom->Getny());
@@ -1194,6 +1205,8 @@ void Image3dframe::OnZplotwindowLeftUp(wxMouseEvent& event)
         xslicezoom->Setix0(int ((x0-o1)/d1));
         xslicezoom->Setnx(int ((x1-x0)/d1 + 1 ));
         xslicezoom->Setx1(x1);
+        Slider3->SetRange(int ((y0-o2)/d2), int (((y0-o2)/d2) + ((y1-y0)/d2 + 1 )));
+        Slider2->SetRange(int ((x0-o1)/d1), int (((x0-o1)/d1) + ((x1-x0)/d1 + 1 )));
     }else{
         zslicezoom->Sety0(o2);
         zslicezoom->Sety1((n2-1)*d2 + o2);
@@ -1214,6 +1227,8 @@ void Image3dframe::OnZplotwindowLeftUp(wxMouseEvent& event)
         xslicezoom->Setx1((n1-1)*d1 + o1);
         xslicezoom->Setix0(0);
         xslicezoom->Setnx(n1);
+        Slider2->SetRange(0,n1-1);
+        Slider3->SetRange(0,n2-1);
     }
     zslicezoom->Setzooming(false);
     this->LoadXimage(xslicezoom->Getix0(), xslicezoom->Getnx(), xslicezoom->Getiy0(), xslicezoom->Getny());
