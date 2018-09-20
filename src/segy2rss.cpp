@@ -3,7 +3,7 @@
 #include "file.h"
 #include "data.h"
 #include "utils.h"
-#include "inparse.h"
+#include <args.hxx>
 
 #define MAXDIM 8
 
@@ -515,27 +515,37 @@ int main(int argc, char* argv[])
     bool status = false;
     std::string Datatype;
 
-    std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
-    if(argc < 2) {
-        PRINT_DOC(# RSSEGY2RSS - Convert SEGY to RSS files);
-        PRINT_DOC(# Default configuration file for rssegy2rss);
-        PRINT_DOC();
-        PRINT_DOC(#Parameters );
-        PRINT_DOC(Datatype = "DATA3D";   # Options are DATA2D; or DATA3D);
-
-        rockseis::rs_error("No configuration file given");
-    }
-
-    /* Get parameters from input */
-    if(Inpar->parse(argv[1]) == INPARSE_ERR) 
+    args::ArgumentParser parser("Program to convert RSF file to Data RSS file.", "");
+    parser.LongPrefix("");
+    parser.LongSeparator("=");
+    args::HelpFlag help(parser, "help", "Display this help menu", {"h", "help"});
+    args::ValueFlag<std::string> partype(parser, "DATA2D or DATA3D", "Dimension", {"type"});
+    try
     {
-        rockseis::rs_error("Parse error on input config file", argv[1]);
+        parser.ParseCLI(argc, argv);
     }
-    status = false; 
-    if(Inpar->getPar("Datatype", &Datatype) == INPARSE_ERR) status = true;
-
-    if(status == true){
-        rockseis::rs_error("Program terminated due to input errors.");
+    catch (args::Help)
+    {
+        std::cerr << parser;
+        return 1;
+    }
+    catch (args::ParseError e)
+    {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
+        return 1;
+    }
+    catch (args::ValidationError e)
+    {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
+        return 1;
+    }
+    if (partype){
+         Datatype = args::get(partype);
+    }else{
+        std::cerr << parser;
+        rockseis::rs_error("Missing type.");
     }
 
     int type = -1; 

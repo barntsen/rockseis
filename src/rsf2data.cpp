@@ -3,7 +3,6 @@
 #include "file.h"
 #include "data.h"
 #include "utils.h"
-#include "inparse.h"
 #include <args.hxx>
 
 #define NTFILE 91
