@@ -51,8 +51,8 @@ bool MyApp::OnInit()
     }
     if(ndims < 2 || ndims > 3) rockseis::rs_error("Only 2D and 3D data are supported");
     ntot = n[0]*n[1];
-    ntr = ntot;
     if(ndims == 3) ntot *= n[2];
+    ntr = ntot/n[0];
 
     float *fdata=NULL;
     double *ddata=NULL;
