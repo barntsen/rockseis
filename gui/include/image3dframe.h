@@ -41,27 +41,6 @@ class Image3dframe: public wxFrame
         Image3dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _d2, float _o2,  size_t _n3, float _d3, float _o3, float *_imagedata, wxWindow* parent, wxWindowID id=wxID_ANY,const wxPoint& pos=wxDefaultPosition,const wxSize& size=wxDefaultSize);
 		virtual ~Image3dframe();
 
-		wxStatusBar* StatusBar1;
-		wxPanel* Xaxis;
-		wxPanel* Yaxis_vert;
-		wxPanel* Yaxis_hor;
-		wxPanel* Zaxis;
-		wxPanel* Cornerup;
-		wxPanel* Cornerdown;
-		wxPanel* Slider1panel;
-		wxPanel* Slider2panel;
-		wxPanel* Slider3panel;
-		wxPanel* Gap1;
-		wxPanel* Gap2;
-		wxPanel* Gap3;
-		wxPanel* Gap4;
-		wxPanel* Xplotwindow;
-		wxPanel* Zplotwindow;
-		wxPanel* Yplotwindow;
-		wxSlider* Slider1;
-		wxSlider* Slider2;
-		wxSlider* Slider3;
-
         void setToolbarset(bool val) { toolbarset = val; } 
         bool getToolbarset() { return toolbarset; } 
         void createToolbar();
@@ -125,9 +104,34 @@ class Image3dframe: public wxFrame
         void PlotXcrosshair(wxDC &dc, int w, int h);
         void PlotYcrosshair(wxDC &dc, int w, int h);
         void PlotZcrosshair(wxDC &dc, int w, int h);
+
+		//(*Declarations(Image3dframe)
+		wxStatusBar* StatusBar1;
+		wxPanel* Xaxis;
+		wxPanel* Yaxis_vert;
+		wxPanel* Yaxis_hor;
+		wxPanel* Zaxis;
+		wxPanel* Cornerup;
+		wxPanel* Cornerdown;
+		wxPanel* Slider1panel;
+		wxPanel* Slider2panel;
+		wxPanel* Slider3panel;
+		wxPanel* Gap1;
+		wxPanel* Gap2;
+		wxPanel* Gap3;
+		wxPanel* Gap4;
+		wxPanel* Xplotwindow;
+		wxPanel* Zplotwindow;
+		wxPanel* Yplotwindow;
+		wxSlider* Slider1;
+		wxSlider* Slider2;
+		wxSlider* Slider3;
+		//*)
+
+
     protected:
 
-		//(*Identifiers(StackVel3dframe)
+		//(*Identifiers(Image3dframe)
 		static const long ID_PANEL1;
 		static const long ID_PANEL2;
 		static const long ID_PANEL3;

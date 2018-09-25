@@ -183,16 +183,18 @@ void Image3dframe::OnXplotwindowPaint(wxPaintEvent& event)
     wxPaintDC dc( Xplotwindow );
 
     Xplotwindow->GetSize(&w,&h);
-    wxImage image_scaled=this->ximage->Scale(w,h);
-    wxBitmap bitmap(image_scaled);
-    dc.DrawBitmap(bitmap, 0, 0, false);
+    if(w > 0 && h > 0){
+	    wxImage image_scaled=this->ximage->Scale(w,h);
+	    wxBitmap bitmap(image_scaled);
+	    dc.DrawBitmap(bitmap, 0, 0, false);
 
-    PlotXcrosshair(dc, w, h);
+	    PlotXcrosshair(dc, w, h);
 
-    if(xslicezoom->Getzooming()){
-        wxPen myWhitePen(*wxWHITE,2,wxSOLID);
-        dc.SetPen(myWhitePen);
-        dc.DrawLines( 5, xslicezoom->Getbox() );
+	    if(xslicezoom->Getzooming()){
+		    wxPen myWhitePen(*wxWHITE,2,wxSOLID);
+		    dc.SetPen(myWhitePen);
+		    dc.DrawLines( 5, xslicezoom->Getbox() );
+	    }
     }
 }
 
@@ -203,16 +205,18 @@ void Image3dframe::OnYplotwindowPaint(wxPaintEvent& event)
     wxPaintDC dc( Yplotwindow );
 
     Yplotwindow->GetSize(&w,&h);
-    wxImage image_scaled=this->yimage->Scale(w,h);
-    wxBitmap bitmap(image_scaled);
-    dc.DrawBitmap(bitmap, 0, 0, false);
+    if(w > 0 && h > 0){
+	    wxImage image_scaled=this->yimage->Scale(w,h);
+	    wxBitmap bitmap(image_scaled);
+	    dc.DrawBitmap(bitmap, 0, 0, false);
 
-    PlotYcrosshair(dc, w, h);
+	    PlotYcrosshair(dc, w, h);
 
-    if(yslicezoom->Getzooming()){
-        wxPen myWhitePen(*wxWHITE,2,wxSOLID);
-        dc.SetPen(myWhitePen);
-        dc.DrawLines( 5, yslicezoom->Getbox() );
+	    if(yslicezoom->Getzooming()){
+		    wxPen myWhitePen(*wxWHITE,2,wxSOLID);
+		    dc.SetPen(myWhitePen);
+		    dc.DrawLines( 5, yslicezoom->Getbox() );
+	    }
     }
 }
 
@@ -223,16 +227,18 @@ void Image3dframe::OnZplotwindowPaint(wxPaintEvent& event)
     wxPaintDC dc( Zplotwindow );
 
     Zplotwindow->GetSize(&w,&h);
-    wxImage image_scaled=this->zimage->Scale(w,h);
-    wxBitmap bitmap(image_scaled);
-    dc.DrawBitmap(bitmap, 0, 0, false);
+    if(w > 0 && h > 0){
+	    wxImage image_scaled=this->zimage->Scale(w,h);
+	    wxBitmap bitmap(image_scaled);
+	    dc.DrawBitmap(bitmap, 0, 0, false);
 
-    PlotZcrosshair(dc, w, h);
+	    PlotZcrosshair(dc, w, h);
 
-    if(zslicezoom->Getzooming()){
-        wxPen myWhitePen(*wxWHITE,2,wxSOLID);
-        dc.SetPen(myWhitePen);
-        dc.DrawLines( 5, zslicezoom->Getbox() );
+	    if(zslicezoom->Getzooming()){
+		    wxPen myWhitePen(*wxWHITE,2,wxSOLID);
+		    dc.SetPen(myWhitePen);
+		    dc.DrawLines( 5, zslicezoom->Getbox() );
+	    }
     }
 }
 
@@ -246,6 +252,7 @@ void Image3dframe::OnXaxisPaint(wxPaintEvent& event)
     t1=xslicezoom->Getx1();
 
     Xaxis->GetSize(&w,&h);
+    if(w < 2 || h < 2 ) return; 
 
     float a = (t1-t0)/(w-1);
     float t;
@@ -298,6 +305,7 @@ void Image3dframe::OnZaxisPaint(wxPaintEvent& event)
     t1=xslicezoom->Gety1();
     int w,h;
     Zaxis->GetSize(&w,&h);
+    if(w < 2 || h < 2 ) return; 
 
     float a = (t1-t0)/(h-1);
     float t;
@@ -349,6 +357,7 @@ void Image3dframe::OnYaxis_vertPaint(wxPaintEvent& event)
     t1=yslicezoom->Getx1();
     int w,h;
     Yaxis_vert->GetSize(&w,&h);
+    if(w < 2 || h < 2 ) return; 
 
     float a = (t1-t0)/(h-1);
     float t;
@@ -401,6 +410,7 @@ void Image3dframe::OnYaxis_horPaint(wxPaintEvent& event)
     t1=yslicezoom->Getx1();
 
     Yaxis_hor->GetSize(&w,&h);
+    if(w < 2 || h < 2 ) return; 
 
     float a = (t1-t0)/(w-1);
     float t;
@@ -594,7 +604,6 @@ void Image3dframe::OnSlider3CmdScroll(wxScrollEvent& event)
 
 void Image3dframe::OnKeyUp(wxKeyEvent& event)
 {
-
     if(event.GetKeyCode() == wxKeyCode('X')){
         // Increase clip
         iminclip++;
@@ -721,6 +730,7 @@ void Image3dframe::OnXplotwindowMouseMove(wxMouseEvent& event)
     wxPaintDC dc( Xplotwindow );
     wxPoint pos;
     pos=event.GetLogicalPosition(dc);
+    Xplotwindow->SetFocus();
 
     wxPoint box[5];
     wxPoint zpos1=xslicezoom->Getzpos1();
@@ -783,6 +793,7 @@ void Image3dframe::OnYplotwindowMouseMove(wxMouseEvent& event)
     wxPaintDC dc( Yplotwindow );
     wxPoint pos;
     pos=event.GetLogicalPosition(dc);
+    Yplotwindow->SetFocus();
 
     wxPoint box[5];
     wxPoint zpos1=yslicezoom->Getzpos1();
@@ -846,6 +857,7 @@ void Image3dframe::OnZplotwindowMouseMove(wxMouseEvent& event)
     wxPaintDC dc( Zplotwindow );
     wxPoint pos;
     pos=event.GetLogicalPosition(dc);
+    Zplotwindow->SetFocus();
 
     wxPoint box[5];
     wxPoint zpos1=zslicezoom->Getzpos1();

@@ -555,7 +555,6 @@ void Image2dframe::OnImagewindowLeftDown(wxMouseEvent& event)
 
 void Image2dframe::OnImagewindowKeyUp(wxKeyEvent& event)
 {
-
     if(event.GetKeyCode() == wxKeyCode('X')){
         // Increase clip
         iminclip++;
