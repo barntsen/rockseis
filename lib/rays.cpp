@@ -485,7 +485,7 @@ void RaysAcoustic2D<T>::solve()
     T lnorm1 = 10.0 * tmax;
 
     /* apply fast sweeping method to solve the eikonal equation */
-    while(lnorm1>=TTNORM){
+    while(lnorm1>=TTNORM && iter < MINITER){
 
         /* save old TT values */
         for (i=0; i<nx*nz; i++){
@@ -520,7 +520,7 @@ void RaysAcoustic2D<T>::solve_adj()
     T lnorm1 = 10.0 * tmax;
 
     /* apply fast sweeping method to solve the eikonal equation */
-    while(lnorm1>=TTNORM){
+    while(lnorm1>=TTNORM && iter < MINITER){
 
         /* save old lam values */
         for (i=0; i<nx*nz; i++){
@@ -999,7 +999,7 @@ void RaysAcoustic3D<T>::solve()
     T lnorm1 = 10.0 * tmax;
 
     /* apply fast sweeping method to solve the eikonal equation */
-    while(lnorm1>=TTNORM && iter > MINITER){
+    while(lnorm1>=TTNORM && iter < MINITER){
 
         /* save old TT values */
         for (i=0; i<nx*ny*nz; i++){
@@ -1038,7 +1038,7 @@ void RaysAcoustic3D<T>::solve_adj()
     T lnorm1 = 10.0 * tmax;
 
     /* apply fast sweeping method to solve the eikonal equation */
-    while(lnorm1>=TTNORM && iter > MINITER){
+    while(lnorm1>=TTNORM && iter < MINITER){
 
         /* save old lam values */
         for (i=0; i<nx*ny*nz; i++){
