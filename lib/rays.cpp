@@ -466,7 +466,7 @@ void RaysAcoustic2D<T>::insertResiduals(std::shared_ptr<rockseis::Data2D<T>> sou
     {
         if(map[i].x >= 0 && map[i].y >=0)
         { 
-            lam[I(lpml+map[i].x, lpml+map[i].y)] = res[Idat(1,i)];
+            lam[I(lpml+map[i].x, lpml+map[i].y)] = res[Idat(0,i)];
         }
     }
 }
@@ -992,14 +992,14 @@ void RaysAcoustic3D<T>::solve()
 
     T tmax = TMAX;
     T *TTold = (T *) calloc(nx*ny*nz, sizeof(T));
-    off_t i;
+    size_t i;
     int iter=0;
 
     /* initialize l1 norm of TT - TTold */
     T lnorm1 = 10.0 * tmax;
 
     /* apply fast sweeping method to solve the eikonal equation */
-    while(lnorm1>=TTNORM){
+    while(lnorm1>=TTNORM && iter > MINITER){
 
         /* save old TT values */
         for (i=0; i<nx*ny*nz; i++){
@@ -1031,14 +1031,14 @@ void RaysAcoustic3D<T>::solve_adj()
     size_t nz = this->getNz_pml();
     T tmax = TMAX;
     T *lamold = (T *) calloc(nx*ny*nz, sizeof(T));
-    int i;
+    size_t i;
     int iter=0;
 
     /* initialize l1 norm of lam - lamold */
     T lnorm1 = 10.0 * tmax;
 
     /* apply fast sweeping method to solve the eikonal equation */
-    while(lnorm1>=TTNORM){
+    while(lnorm1>=TTNORM && iter > MINITER){
 
         /* save old lam values */
         for (i=0; i<nx*ny*nz; i++){
@@ -1068,11 +1068,11 @@ template<typename T>
 T RaysAcoustic3D<T>::norm1(T *TT, T *TTold)
 {
     /* local variables */
-    off_t NX = this->getNx_pml();
-    off_t NY = this->getNy_pml();
-    off_t NZ = this->getNz_pml();
+    size_t NX = this->getNx_pml();
+    size_t NY = this->getNy_pml();
+    size_t NZ = this->getNz_pml();
 
-    off_t i;
+    size_t i;
     T sum, norml1;
 
     /* estimate L1 norm */
@@ -1218,7 +1218,7 @@ void RaysAcoustic3D<T>::insertResiduals(std::shared_ptr<rockseis::Data3D<T>> sou
     {
         if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
         { 
-            lam[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = res[Idat(1,i)];
+            lam[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = res[Idat(0,i)];
         }
     }
 }
