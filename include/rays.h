@@ -28,7 +28,7 @@
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 
 #define TMAX 99.0
-#define MINITER 1
+#define MINITER 0
 #define MAXITER 30
 
 namespace rockseis {
