@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='Plot a 2d rss model file .')
 parser.add_argument("-i", dest="inputfile", required=True, help="input RSS file", metavar="FILE")
-parser.add_argument("-cbar", type=int, dest="cbar", required=False, help="Add a colorbar", default=False)
+parser.add_argument("--cbar", type=bool, dest="cbar", required=False, help="Add a colorbar", default=False)
 parser.add_argument("-o", dest="figfile", required=False, help="output image file", metavar="FILE")
 parser.add_argument("--format", dest="format", required=False, help="output image file format: pdf (default), png, eps.", default="pdf")
 parser.add_argument("--interp", dest="interp", required=False, help="interpolation method: neareast (default), bicubic, lanczos.", default="nearest")
@@ -35,7 +35,11 @@ max_z = float(min_z + (nz-1.)*dz)
 fig = plt.imshow((model.data.squeeze()).transpose(),interpolation=args.interp, extent=[min_x,max_x,max_z,min_z])
 vmin, vmax = fig.get_clim()
 
-fig.set_cmap(args.cmap)
+if(args.cmap == 'uis'):
+    colormap = rs.uiscolor()
+    fig.set_cmap(colormap)
+else:
+    fig.set_cmap(args.cmap)
 
 if(hasattr(args, 'minclip')):
     vmin = args.minclip
@@ -44,7 +48,7 @@ if(hasattr(args, 'maxclip')):
 fig.set_clim(vmin,vmax)
 
 if(args.showclip):
-    print "--vmin",vmin," --vmax",vmax
+    print "--vmin=",vmin," --vmax=",vmax
 
 plt.axes().set_aspect(args.aspect)
 
