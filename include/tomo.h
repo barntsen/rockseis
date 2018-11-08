@@ -83,7 +83,6 @@ public:
     MPImodeling * getMpi() { return mpi; }
     void setLpml(int val) { lpml = val; }
     int getLpml() { return lpml; }
-    bool getFilter() { return filter; }
     void setIncore(bool val) { incore = val; } 
     bool getIncore() { return incore; }
     int getOrder() { return order; }
@@ -96,6 +95,8 @@ public:
     void setParamtype(rs_paramtype val) { paramtype = val; }
     void setMisfit(T val) { misfit = val; } ///< Sets data misfit value
     T getMisfit() { return misfit; }   ///< Gets misfit value
+    bool getConstrain() { return constrain; }
+    void setConstrain(bool val) { constrain = val; }
 
     T getTmax() { return tmax; }   ///< Gets tmax
     void setTmax(T val) { tmax = val; }
@@ -118,7 +119,7 @@ private:
 	int order;
 	int snapinc;
 	int nsnaps;
-    bool filter;
+    bool constrain;
     double fnorm;
     std::string logfile; ///< Log file
     std::string progressfile; ///< Log file
@@ -168,6 +169,12 @@ public:
 
     void setMutefile(std::string file) { Mutefile = file; }
     std::string getMutefile() { return Mutefile; }
+
+    void setLboundfile(std::string file) { Lboundfile = file; }
+    std::string getLboundfile() { return Lboundfile; }
+
+    void setUboundfile(std::string file) { Uboundfile = file; }
+    std::string getUboundfile() { return Uboundfile; }
 
     void setApertx(T val) { apertx = val; }
     T getApertx() { return apertx; }
@@ -228,6 +235,8 @@ private:
     std::string Tmodelledfile;
     std::string Tresidualfile;
     std::string Dataweightfile;
+    std::string Lboundfile;
+    std::string Uboundfile;
     bool dataweight;
     std::string Mutefile;
     T apertx;
@@ -270,6 +279,12 @@ public:
 
     void setMutefile(std::string file) { Mutefile = file; }
     std::string getMutefile() { return Mutefile; }
+
+    void setLboundfile(std::string file) { Lboundfile = file; }
+    std::string getLboundfile() { return Lboundfile; }
+
+    void setUboundfile(std::string file) { Uboundfile = file; }
+    std::string getUboundfile() { return Uboundfile; }
 
     void setApertx(T val) { apertx = val; }
     T getApertx() { return apertx; }
@@ -330,6 +345,8 @@ private:
     std::string Tmodelledfile;
     std::string Tresidualfile;
     std::string Dataweightfile;
+    std::string Lboundfile;
+    std::string Uboundfile;
     bool dataweight;
     std::string Mutefile;
     T apertx;

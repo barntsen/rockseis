@@ -140,6 +140,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
+            PRINT_DOC(constrain = "false";  # Constrain inversion requires Lboundfile and Uboundfile containing models with the bounds);
 
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
             PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
@@ -170,6 +171,7 @@ int main(int argc, char** argv) {
     bool status;
     bool dataweight;
     bool mute;
+    bool constrain;
     int _paramtype;
     float dtx=-1;
     float dty=-1;
@@ -187,6 +189,8 @@ int main(int argc, char** argv) {
     std::string Tmodelledfile;
     std::string Tresidualfile;
     std::string Mutefile;
+    std::string Lboundfile;
+    std::string Uboundfile;
 
 
     /* Get parameters from configuration file */
@@ -224,6 +228,12 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("linesearch", &linesearch) == INPARSE_ERR) status = true;
     if(Inpar->getPar("optmethod", &optmethod) == INPARSE_ERR) status = true;
 
+    if(Inpar->getPar("constrain", &constrain) == INPARSE_ERR) status = true;
+    if(constrain){
+        if(Inpar->getPar("Lbound", &Lboundfile) == INPARSE_ERR) status = true;
+        if(Inpar->getPar("Ubound", &Uboundfile) == INPARSE_ERR) status = true;
+    }
+
 	if(status == true){
 		rs_error("Program terminated due to input errors.");
 	}
@@ -233,6 +243,11 @@ int main(int argc, char** argv) {
     fatt->setDataweightfile(Dataweightfile);
     if(mute){
         fatt->setMutefile(Mutefile);
+    }
+    fatt->setConstrain(constrain);
+    if(constrain){
+        fatt->setLboundfile(Lboundfile);
+        fatt->setUboundfile(Uboundfile);
     }
     fatt->setVpfile(VPLSFILE);
     fatt->setMisfitfile(MISFITFILE);

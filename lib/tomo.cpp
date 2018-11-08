@@ -17,6 +17,7 @@ Tomo<T>::Tomo() {
     dty = -1;
     dtz = -1;
     fnorm = 0.0;
+    constrain = false;
     if(createLog() == TOM_ERR)
     {
         rs_error("Tomo<T>::Tomo(): Error creating logfile for writting.");
@@ -43,6 +44,7 @@ Tomo<T>::Tomo(MPImodeling *_mpi) {
     dty = -1;
     dtz = -1;
     fnorm = 0.0;
+    constrain = false;
     if(createLog() == TOM_ERR)
     {
         rs_error("Tomo<T>::Tomo(): Error creating logfile for writting.");
@@ -554,6 +556,7 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> lsmodel (new rockseis::ModelAcoustic2D<T>(VPLSFILE, VPLSFILE, 1 ,0));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute;
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
 
     // Write linesearch model
     model0->readModel();
@@ -561,6 +564,8 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
     T *vp0, *vpls;
     T *c, *mod;
     T *vpmutedata;
+    T *lbounddata;
+    T *ubounddata;
     vp0 = model0->getVp(); 
     vpls = lsmodel->getVp(); 
     int i;
@@ -569,12 +574,11 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
     // If mute
     if(!Mutefile.empty()){
         mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Mutefile, Mutefile, 1 ,0);
-        int Nmute = (mute->getGeom())->getNtot();
+        long Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
         if(N != Nmute) rs_error("TomoAcoustic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
-        N = (lsmodel->getGeom())->getNtot();
     }else{
         N = (lsmodel->getGeom())->getNtot();
         vpmutedata = (T *) calloc(N, sizeof(T)); 
@@ -582,13 +586,25 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
             vpmutedata[i] = 1.0;
         }
     }
-
+    if(this->getConstrain()){
+        bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
+        bound->readModel();
+        long Nbound = (bound->getGeom())->getNtot();
+        N = (lsmodel->getGeom())->getNtot();
+        if(N != Nbound) rs_error("TomoAcoustic2D<T>::saveLinesearch(): Geometry in Boundary files does not match geometry in the model.");
+        lbounddata = bound->getVp();
+        ubounddata = bound->getR();
+    }
     switch (this->getParamtype()){
         case PAR_GRID:
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
             {
                 vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
+                if(this->getConstrain()){
+                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
+                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
+                }
             }
             lsmodel->writeVp();
             break;
@@ -607,6 +623,10 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
             for(i=0; i< Nmod; i++)
             {
                 vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
+                if(this->getConstrain()){
+                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
+                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
+                }
             }
             lsmodel->writeVp();
             break;
@@ -1271,6 +1291,7 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
     std::shared_ptr<rockseis::ModelAcoustic3D<T>> lsmodel (new rockseis::ModelAcoustic3D<T>(VPLSFILE, VPLSFILE, 1 ,0));
     std::shared_ptr<rockseis::Bspl3D<T>> spline;
     std::shared_ptr<rockseis::ModelAcoustic3D<T>> mute;
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> bound;
 
     // Write linesearch model
     model0->readModel();
@@ -1278,6 +1299,8 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
     T *vp0, *vpls;
     T *c, *mod;
     T *vpmutedata;
+    T *lbounddata;
+    T *ubounddata;
     vp0 = model0->getVp(); 
     vpls = lsmodel->getVp(); 
     int i;
@@ -1286,7 +1309,7 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
     // If mute
     if(!Mutefile.empty()){
         mute = std::make_shared <rockseis::ModelAcoustic3D<T>>(Mutefile, Mutefile, 1 ,0);
-        int Nmute = (mute->getGeom())->getNtot();
+        long Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
         if(N != Nmute) rs_error("TomoAcoustic3D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
         mute->readModel();
@@ -1300,12 +1323,26 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
         }
     }
 
+    if(this->getConstrain()){
+        bound = std::make_shared <rockseis::ModelAcoustic3D<T>>(Lboundfile, Uboundfile, 1 ,0);
+        bound->readModel();
+        long Nbound = (bound->getGeom())->getNtot();
+        N = (lsmodel->getGeom())->getNtot();
+        if(N != Nbound) rs_error("TomoAcoustic3D<T>::saveLinesearch(): Geometry in Boundary files does not match geometry in the model.");
+        lbounddata = bound->getVp();
+        ubounddata = bound->getR();
+    }
+
     switch (this->getParamtype()){
         case PAR_GRID:
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
             {
                 vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
+                if(this->getConstrain()){
+                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
+                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
+                }
             }
             lsmodel->writeVp();
             break;
@@ -1324,6 +1361,10 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
             for(i=0; i< Nmod; i++)
             {
                 vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
+                if(this->getConstrain()){
+                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
+                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
+                }
             }
             lsmodel->writeVp();
             break;
