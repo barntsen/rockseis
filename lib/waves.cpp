@@ -1000,7 +1000,7 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
                     for(i1=0; i1<2*LANC_SIZE; i1++){
                         for(i2=0; i2<2*LANC_SIZE; i2++){
                             for(i3=0; i3<2*LANC_SIZE; i3++){
-                                P2[I(lpml + map[i].x - (LANC_SIZE - 1) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)] += dt*dt*Mod[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - 1 - i1 ,LANC_SIZE); 
+                                P2[I(lpml + map[i].x - (LANC_SIZE - 1) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)] += dt*dt*Mod[I(lpml + map[i].x - (LANC_SIZE - 1) + i3, lpml + map[i].y - (LANC_SIZE - 1) + i2, lpml + map[i].z - (LANC_SIZE - 1) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - 1 - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - 1 - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - 1 - i1 ,LANC_SIZE); 
                             }
                         }
                     }
