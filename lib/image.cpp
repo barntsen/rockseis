@@ -361,6 +361,8 @@ bool Image2D<T>::write()
     dz = this->getDz();
     ox = this->getOx();
     oz = this->getOz();
+    if(nhx == 0) nhx = 1;
+    if(nhz == 0) nhz = 1;
 
     if ( Fout->is_open() && allocated)
     {
@@ -756,6 +758,10 @@ bool Image3D<T>::write()
     ox = this->getOx();
     oy = this->getOy();
     oz = this->getOz();
+
+    if(nhx == 0) nhx = 1;
+    if(nhy == 0) nhy = 1;
+    if(nhz == 0) nhz = 1;
 
     if ( Fout->is_open() && allocated)
     {
