@@ -547,12 +547,8 @@ void LsrtmAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int
     if(srcilumset){
         srcilumdata = srcilum->getImagedata();
     }
-    T mrxx, mrzz;
-    T L;
     int nx = vpgrad->getNx();
     int nz = vpgrad->getNz();
-    int dx = vpgrad->getDx();
-    int dz = vpgrad->getDz();
     int nxs = nx+2*pads;
     int nxr = nx+2*padr;
 	//int nhx = vpgrad->getNhx();
@@ -560,10 +556,7 @@ void LsrtmAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int
     for (ix=1; ix<nx-1; ix++){
         {
             for (iz=1; iz<nz-1; iz++){
-                L = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
-                mrxx = (wrx[kr2D(ix+padr, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr)])/dx;
-                mrzz = (wrz[kr2D(ix+padr, iz+padr)] - wrz[kr2D(ix+padr, iz+padr-1)])/dz;
-                vpgraddata[ki2D(ix,iz)] += wsp[ks2D(ix+pads, iz+pads)]*L*(mrxx + mrzz);
+                vpgraddata[ki2D(ix,iz)] -= wsp[ks2D(ix+pads, iz+pads)]*wrp[kr2D(ix+padr, iz+padr)];
 
                 if(srcilumset){
                     srcilumdata[ki2D(ix,iz)] += wsp[ks2D(ix+pads, iz+pads)]*wsp[ks2D(ix+pads, iz+pads)];
@@ -1190,8 +1183,6 @@ int LsrtmAcoustic2D<T>::run_optimal(){
                 // Time stepping
                 waves_fw->forwardstepAcceleration(model, der);
                 waves_fw->forwardstepStress(model, der);
-
-
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);

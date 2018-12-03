@@ -50,6 +50,9 @@ Image2D<T>::Image2D(std::string _imagefile): Model<T>(2)
     _nhx=Fin->getN(4);
     _nhz=Fin->getN(6);
 
+    if(_nhx == 0) _nhx = 1;
+    if(_nhz == 0) _nhz = 1;
+
     this->setNx(_nx);
     this->setNy(_ny);
     this->setNz(_nz);
@@ -588,6 +591,11 @@ Image3D<T>::Image3D(std::string imagefile): Model<T>(3)
     _nhx=Fin->getN(4);
     _nhy=Fin->getN(5);
     _nhz=Fin->getN(6);
+
+
+    if(_nhx == 0) _nhx = 1;
+    if(_nhy == 0) _nhy = 1;
+    if(_nhz == 0) _nhz = 1;
 
     this->setNx(_nx);
     this->setNy(_ny);
