@@ -213,6 +213,9 @@ public:
     void setPrecordfile(std::string file) { Precordfile = file; }
     std::string getPrecordfile() { return Precordfile; }
 
+    void setMultiplefile(std::string file) { Multiplefile = file; }
+    std::string getMultiplefile() { return Multiplefile; }
+
     void setPmodelledfile(std::string file) { Pmodelledfile = file; }
     std::string getPmodelledfile() { return Pmodelledfile; }
 
@@ -236,6 +239,7 @@ public:
 
     // Run gradient
     void runGrad();
+    void runGrad_Multiples();
    
     // Run BSProjection
     void runBsproj();
@@ -285,6 +289,7 @@ private:
     std::string Misfitfile;
     std::string Psnapfile;
     std::string Precordfile;
+    std::string Multiplefile;
     std::string Pmodelledfile;
     std::string Presidualfile;
     std::string Dataweightfile;
