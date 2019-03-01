@@ -130,6 +130,9 @@ if(env['MPI']):
         Acousticlsrtm2d = mpi.Program(prefix + 'Acousticlsrtm2d','Acousticlsrtm2d.cpp',LIBS=['lsmiginv', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'lsrtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft','rsfc'])
         mpi.Install('../bin/',Acousticlsrtm2d)
 
+        AcousticlsMrtm2d = mpi.Program(prefix + 'AcousticlsMrtm2d','AcousticlsMrtm2d.cpp',LIBS=['lsmiginv', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'lsrtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft','rsfc'])
+        mpi.Install('../bin/',AcousticlsMrtm2d)
+
         hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl','fft','rsfc'])
         mpi.Install('../bin/',hello_fdgrad)
 

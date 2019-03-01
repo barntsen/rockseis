@@ -447,6 +447,262 @@ void LsmiginvAcoustic2D<T>::runGrad() {
 }
 
 template<typename T>
+void LsmiginvAcoustic2D<T>::runGrad_Multiples() {
+    MPImodeling *mpi = this->getMpi();
+    std::shared_ptr<rockseis::Data2D<T>> shot2D;
+    std::shared_ptr<rockseis::Data2D<T>> shot2Di;
+    std::shared_ptr<rockseis::Data2D<T>> shotmod2D;
+    std::shared_ptr<rockseis::Data2D<T>> shotmod2Di;
+    std::shared_ptr<rockseis::Data2D<T>> Mshot2D;
+    std::shared_ptr<rockseis::Data2D<T>> Mshot2Di;
+    std::shared_ptr<rockseis::Data2D<T>> shotres2D;
+    std::shared_ptr<rockseis::Data2D<T>> shotres2Di;
+    std::shared_ptr<rockseis::Data2D<T>> shotweight2D;
+    std::shared_ptr<rockseis::Data2D<T>> shotweight2Di;
+    std::shared_ptr<rockseis::Image2D<T>> vpgrad;
+    std::shared_ptr<rockseis::Image2D<T>> srcilum;
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lmodel;
+    std::shared_ptr<rockseis::Image2D<T>> pimage;
+    std::shared_ptr<rockseis::Image2D<T>> lpimage;
+
+    // Create a sort class
+    std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
+    Sort->setDatafile(Precordfile);
+	
+    // Create a global model class
+	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
+
+    // Create a data class for the source wavelet
+	std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(Waveletfile));
+
+    // Create an interpolation class
+    std::shared_ptr<rockseis::Interp<T>> interp (new rockseis::Interp<T>(SINC));
+
+    // Create a file to output data misfit values
+    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
+
+	if(mpi->getRank() == 0) {
+		// Master
+
+        // Get shot map
+        Sort->readKeymap();
+        Sort->readSortmap();
+        size_t ngathers =  Sort->getNensemb();
+
+        // Misfit file creation
+        Fmisfit->output(Misfitfile);
+        Fmisfit->setN(1,ngathers);
+        Fmisfit->setD(1,1.0);
+        Fmisfit->setData_format(sizeof(T));
+        Fmisfit->createEmpty();
+        Fmisfit->close();
+
+        // Create a data class for the recorded data
+        std::shared_ptr<rockseis::Data2D<T>> shot2D (new rockseis::Data2D<T>(Precordfile));
+        // Create modelling and residual data files
+        shotmod2D = std::make_shared<rockseis::Data2D<T>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+        shotmod2D->setFile(Pmodelledfile);
+        shotmod2D->createEmpty(shot2D->getNtrace());
+
+        shotres2D = std::make_shared<rockseis::Data2D<T>>(1, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+        shotres2D->setFile(Presidualfile);
+        shotres2D->createEmpty(shot2D->getNtrace());
+        
+		// Create work queue
+		for(long int i=0; i<ngathers; i++) {
+			// Work struct
+			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
+			mpi->addWork(work);
+		}
+
+		// Perform work in parallel
+		mpi->performWork();
+
+        // Image
+        vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
+        vpgrad->createEmpty();
+
+        if(this->srcilumset){
+            srcilum = std::make_shared<rockseis::Image2D<T>>(Srcilumfile, gmodel, 1, 1);
+            srcilum->createEmpty();
+        }
+
+        for(long int i=0; i<ngathers; i++) {
+            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            remove_file(Vpgradfile + "-" + std::to_string(i));
+
+            if(this->srcilumset){
+                srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
+                remove_file(Srcilumfile + "-" + std::to_string(i));
+            }
+        }
+
+		//Clear work vector 
+		mpi->clearWork();
+	}
+    else {
+        /* Slave */
+        std::shared_ptr<rockseis::LsrtmAcoustic2D<T>> lsrtm;
+        while(1) {
+            workModeling_t work = mpi->receiveWork();
+
+            if(work.MPItag == MPI_TAG_DIE) {
+                break;
+            }
+
+            if(work.MPItag == MPI_TAG_NO_WORK) {
+                mpi->sendNoWork(0);
+            }
+            else {
+                // Do migration
+                Sort->readKeymap();
+                Sort->readSortmap();
+
+                // Get the shot
+                Sort->setDatafile(Precordfile);
+                shot2D = Sort->get2DGather(work.id);
+                size_t ntr = shot2D->getNtrace();
+
+                Sort->setDatafile(Multiplefile);
+                Mshot2D = Sort->get2DGather(work.id);
+
+                // Get the weight
+                if(dataweight){
+                    Sort->setDatafile(Dataweightfile);
+                    shotweight2D = Sort->get2DGather(work.id);
+                }
+
+                lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
+
+
+                // Interpolate shot
+                shot2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(shot2D, shot2Di);
+                shot2Di->makeMap(lmodel->getGeom(), GMAP);
+                shot2Di->copyGmap2Smap();
+
+
+                Mshot2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                interp->interp(Mshot2D, Mshot2Di);
+                Mshot2Di->makeMap(lmodel->getGeom(), GMAP);
+
+                // Create image object
+                pimage = std::make_shared<rockseis::Image2D<T>>(VPLSFILE);
+                lpimage = pimage->getLocal(shot2D, apertx, SMAP);
+
+                // Create lsrtm object
+                lsrtm = std::make_shared<rockseis::LsrtmAcoustic2D<T>>(lmodel, lpimage, shot2Di, Mshot2Di, this->getOrder(), this->getSnapinc());
+
+                // Create modelled and residual data objects 
+                shotmod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotmod2D->copyCoords(shot2D);
+                shotmod2D->makeMap(lmodel->getGeom(), GMAP);
+                lsrtm->setDatamodP(shotmod2D);
+                shotres2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotres2D->copyCoords(shot2D);
+                shotres2D->makeMap(lmodel->getGeom(), GMAP);
+                lsrtm->setDataresP(shotres2D);
+
+                // Interpolate weight
+                if(dataweight){
+                    shotweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    interp->interp(shotweight2D, shotweight2Di);
+                    shotweight2Di->makeMap(lmodel->getGeom(), GMAP);
+                    lsrtm->setDataweight(shotweight2Di);
+                }
+                
+                // Setting misfit type
+                lsrtm->setMisfit_type(this->getMisfit_type());
+                lsrtm->setFilter(this->getFilter());
+                lsrtm->setAllfreqs(this->getFreqs());
+
+                // Creating gradient objects
+                vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+
+                if(this->srcilumset){
+                    srcilum = std::make_shared<rockseis::Image2D<T>>(Srcilumfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                    lsrtm->setSrcilum(srcilum);
+                }
+
+                // Setting up gradient objects in lsrtm class
+                lsrtm->setVpgrad(vpgrad);
+
+                // Setting Snapshot file 
+                lsrtm->setSnapfile(Psnapfile + "-" + std::to_string(work.id));
+
+                // Setting Snapshot parameters
+                lsrtm->setNcheck(this->getNsnaps());
+                lsrtm->setIncore(this->getIncore());
+
+                // Set logfile
+                lsrtm->setLogfile("log.txt-" + std::to_string(work.id));
+
+                // Stagger model
+                lmodel->staggerModels();
+
+                // Run simulation
+                switch(this->getSnapmethod()){
+                    case rockseis::FULL:
+                        lsrtm->run();
+                        break;
+                    case rockseis::OPTIMAL:
+                        lsrtm->run_optimal();
+                        break;
+                    default:
+                        rockseis::rs_error("Invalid option of snapshot saving."); 
+                }
+
+                // Output gradients
+                vpgrad->write();
+
+                // Output ilumination
+                if(this->srcilumset){
+                    srcilum->write();
+                }
+
+                // Output misfit
+                Fmisfit->append(Misfitfile);
+                T val = lsrtm->getMisfit();
+                Fmisfit->write(&val, 1, work.id*sizeof(T));
+                Fmisfit->close();
+
+                // Output modelled and residual data
+                shotmod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+                shotmod2Di->setFile(Pmodelledfile);
+                interp->interp(shotmod2D, shotmod2Di);
+                Sort->put2DGather(shotmod2Di, work.id);
+
+                shotres2Di = std::make_shared<rockseis::Data2D<T>>(ntr, shot2D->getNt(), shot2D->getDt(), shot2D->getOt());
+                shotres2Di->setFile(Presidualfile);
+                interp->interp(shotres2D, shotres2Di);
+                Sort->put2DGather(shotres2Di, work.id);
+
+                
+                // Reset all classes
+                shot2D.reset();
+                shot2Di.reset();
+                Mshot2D.reset();
+                Mshot2Di.reset();
+                shotmod2D.reset();
+                shotmod2Di.reset();
+                shotres2D.reset();
+                shotres2Di.reset();
+                lmodel.reset();
+                pimage.reset();
+                lpimage.reset();
+                vpgrad.reset();
+                srcilum.reset();
+                lsrtm.reset();
+                work.status = WORK_FINISHED;
+
+                // Send result back
+                mpi->sendResult(work);		
+            }
+        }
+    }
+}
+
+template<typename T>
 int LsmiginvAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile)
 {
 
