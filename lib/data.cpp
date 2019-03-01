@@ -95,9 +95,9 @@ void Data<T>::Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt)
 	{
 		f = i*df;
 		if(f < f0) W[2*i] = 0.0;
-		if(f>= f0 && f < f1) W[2*i] = 0.5*(1.0 - cosf(PI*(f-f0)/(f1-f0))); 
+		if(f>= f0 && f < f1) W[2*i] = 0.5*(1.0 - cos(PI*(f-f0)/(f1-f0))); 
 		if(f >= f1 && f <= f2 ) W[2*i] = 1;
-		if(f > f2)  W[2*i] = 0.5*(1.0 - cosf(PI*(f3-f)/(f3-f2))); 
+		if(f > f2)  W[2*i] = 0.5*(1.0 - cos(PI*(f3-f)/(f3-f2))); 
 		if(f > f3) W[2*i] = 0;
 	}
 
