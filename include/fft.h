@@ -9,7 +9,7 @@
 
 #define TWOPI	(2.0*PI)
 #define SWAP(a,b) tempr=(a);(a)=(b);(b)=tempr
-
+#define CEIL(x)  ((x) >= 0 ? (int) (x + 1) : (int) (x))
 
 namespace rockseis {
 /* Fft class */
