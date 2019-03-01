@@ -5,7 +5,7 @@ template <typename T>
 Fft<T>::Fft(unsigned long _n)
 {
     n[0] = _n;
-    nfft[0] = (unsigned long)pow(2.0, ceil(log((double)n[0])/log(2.0))); 
+    nfft[0] = (unsigned long)pow(2.0, mapceil(log((double)n[0])/log(2.0))); 
     data = (T *) calloc(2*nfft[0],sizeof(T));
 }
 

@@ -38,6 +38,9 @@ public:
     // Floor function (to avoid calling std::floor which is unstable in Centos)
     int mapfloor( const T x ) { return x >= 0 ? (int) x : (int) x - 1; } ///< Rounds to the lowest integer
 
+    // Floor function (to avoid calling std::floor which is unstable in Centos)
+    int mapceil( const T x ) { return x >= 0 ? (int) (x + 1) : (int) (x); } ///< Rounds to the highest integer
+
     // Print geometry functions
     void print(); ///< Print geometry information 
 

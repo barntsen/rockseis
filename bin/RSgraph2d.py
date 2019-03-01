@@ -33,7 +33,8 @@ if(min_t == max_t):
     max_t = max_t*1.1;
     
 t = np.arange(o, (n*d + o), d);
-fig = plt.plot(t, (model.data).squeeze(), '+')
+#fig = plt.plot(t, (model.data).squeeze(), '+')
+fig = plt.plot(t, (model.data).squeeze())
 
 delta = max_x - min_x
 if(delta == 0):
