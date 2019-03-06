@@ -160,6 +160,7 @@ class Opt{
         void opt_lbfgs_calculate_initial_hessian(double *hessian, const int n, const double gamma); 
         void opt_lbfgs_calculate_pk(OptLbfgsContPtr cont, OptInstancePtr instance, double *hessian);
         void opt_lbfgs_container_update(OptLbfgsContPtr cont, OptInstancePtr current, OptInstancePtr next,  const int iteration);
+        void opt_lbfgs_calculate_diag_hess(OptLbfgsContPtr cont, OptInstancePtr instance, double *hessian);
         void opt_set_initial_guess(double *x); 
         void opt_set_status_msg();
         int opt_linesearch_check(OptInstancePtr current, OptInstancePtr next);

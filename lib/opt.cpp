@@ -567,6 +567,54 @@ void Opt::opt_lbfgs_calculate_pk(OptLbfgsContPtr cont, OptInstancePtr instance, 
 	}
 }
 
+void Opt::opt_lbfgs_calculate_diag_hess(OptLbfgsContPtr cont, OptInstancePtr instance, double *hessian)
+/*<Calculates the diagonal of the iverse Hessian using the BFGS approximation.>*/
+{
+	// Variables
+	int i,j,mod;
+	double dot, beta;
+
+
+	// Save initial r (the gradient)
+	opt_vector_copy(instance->g,cont->q,cont->n);
+	
+	// Calcuates q
+	for(i=0; i<cont->m; i++) {
+		// Calculates alpha_i
+		mod = (cont->m-1-i)%cont->m;
+		dot = opt_vector_dot(cont->s + mod*cont->n,cont->q,cont->n);
+		cont->alpha[cont->m-1-i] = cont->rho[cont->m-1-i]*dot;
+		
+		// Updates q
+		for(j=0; j<cont->n; j++) {
+			cont->q[j] = cont->q[j] - cont->alpha[cont->m-1-i]*cont->y[mod*cont->n + j];
+		}
+	}
+	
+	// Saves initial r
+	for(i=0; i<cont->n; i++) {
+		cont->r[i] = hessian[i]*cont->q[i];
+	}
+
+	// Calculates r
+	for(i=0; i<cont->m; i++) {
+		// Calculates beta
+		mod = i%cont->m;
+		dot = opt_vector_dot(cont->y + mod*cont->n,cont->r,cont->n);
+		beta = cont->rho[i]*dot;
+
+		// Updates r
+		for(j=0; j<cont->n; j++) {
+			cont->r[j] = cont->r[j] + cont->s[mod*cont->n + j]*(cont->alpha[i]-beta);
+		}
+	}
+	
+	// Store to pk
+	for(i=0; i<cont->n; i++) {
+		instance->pk[i] = -1.0*cont->r[i];
+	}
+}
+
 void Opt::opt_lbfgs_container_update(OptLbfgsContPtr cont, OptInstancePtr current, OptInstancePtr next,  const int iteration)
 /*<Update the container with new information>*/
 {

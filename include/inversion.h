@@ -62,6 +62,7 @@
 #define VPGRADMUTEFILE "vp_grad_muted.rss"
 #define VSGRADMUTEFILE "vs_grad_muted.rss"
 #define RHOGRADMUTEFILE "rho_grad_muted.rss"
+#define SOURCEGRADMUTEFILE "source_grad_muted.rss"
 
 #define VPPROJGRADFILE "vp_proj_grad.rss"
 #define VSPROJGRADFILE "vs_proj_grad.rss"
@@ -217,8 +218,11 @@ public:
     void setPmodelledfile(std::string file) { Pmodelledfile = file; }
     std::string getPmodelledfile() { return Pmodelledfile; }
 
-    void setMutefile(std::string file) { Mutefile = file; }
-    std::string getMutefile() { return Mutefile; }
+    void setModmutefile(std::string file) { Modmutefile = file; }
+    std::string getModmutefile() { return Modmutefile; }
+
+    void setSrcmutefile(std::string file) { Srcmutefile = file; }
+    std::string getSrcmutefile() { return Srcmutefile; }
 
     void setPresidualfile(std::string file) { Presidualfile = file; }
     std::string getPresidualfile() { return Presidualfile; }
@@ -307,7 +311,8 @@ private:
     std::string Pmodelledfile;
     std::string Presidualfile;
     std::string Dataweightfile;
-    std::string Mutefile;
+    std::string Modmutefile;
+    std::string Srcmutefile;
     std::string Srcilumfile;
     T apertx;
     T kvp, krho, ksource;
@@ -362,8 +367,11 @@ public:
     void setPmodelledfile(std::string file) { Pmodelledfile = file; }
     std::string getPmodelledfile() { return Pmodelledfile; }
 
-    void setMutefile(std::string file) { Mutefile = file; }
-    std::string getMutefile() { return Mutefile; }
+    void setModmutefile(std::string file) { Modmutefile = file; }
+    std::string getModmutefile() { return Modmutefile; }
+
+    void setSrcmutefile(std::string file) { Srcmutefile = file; }
+    std::string getSrcmutefile() { return Srcmutefile; }
 
     void setPresidualfile(std::string file) { Presidualfile = file; }
     std::string getPresidualfile() { return Presidualfile; }
@@ -453,7 +461,8 @@ private:
     std::string Precordfile;
     std::string Pmodelledfile;
     std::string Presidualfile;
-    std::string Mutefile;
+    std::string Modmutefile;
+    std::string Srcmutefile;
     std::string Srcilumfile;
     T apertx, aperty;
     T kvp, krho, ksource;
@@ -532,8 +541,11 @@ public:
     void setUzresidualfile(std::string file) { Uzresidualfile = file; }
     std::string getUzresidualfile() { return Uzresidualfile; }
 
-    void setMutefile(std::string file) { Mutefile = file; }
-    std::string getMutefile() { return Mutefile; }
+    void setModmutefile(std::string file) { Modmutefile = file; }
+    std::string getModmutefile() { return Modmutefile; }
+
+    void setSrcmutefile(std::string file) { Srcmutefile = file; }
+    std::string getSrcmutefile() { return Srcmutefile; }
 
     void setApertx(T val) { apertx = val; }
     T getApertx() { return apertx; }
@@ -634,7 +646,8 @@ private:
     std::string Uzmodelledfile;
     std::string Uzresidualfile;
     std::string Snapfile;
-    std::string Mutefile;
+    std::string Modmutefile;
+    std::string Srcmutefile;
     std::string Srcilumfile;
     T apertx;
     T kvp, kvs, krho, ksource;
@@ -726,8 +739,11 @@ public:
     void setSnapfile(std::string file) { Snapfile = file; }
     std::string getSnapfile() { return Snapfile; }
 
-    void setMutefile(std::string file) { Mutefile = file; }
-    std::string getMutefile() { return Mutefile; }
+    void setModmutefile(std::string file) { Modmutefile = file; }
+    std::string getModmutefile() { return Modmutefile; }
+
+    void setSrcmutefile(std::string file) { Srcmutefile = file; }
+    std::string getSrcmutefile() { return Srcmutefile; }
 
     void setApertx(T val) { apertx = val; }
     T getApertx() { return apertx; }
@@ -834,7 +850,8 @@ private:
     std::string Uzmodelledfile;
     std::string Uzresidualfile;
     std::string Snapfile;
-    std::string Mutefile;
+    std::string Modmutefile;
+    std::string Srcmutefile;
     T apertx, aperty;
     T kvp, kvs, krho, ksource;
     T reg_eps[3];

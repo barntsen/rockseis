@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(Dataweightyfile = "yweights.rss";);
             PRINT_DOC(Dataweightzfile = "zweights.rss";);
             PRINT_DOC(mute = "false";  # Mute gradient and updates);
-            PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
+            PRINT_DOC(Modmutefile = "mute.rss"; # File with mute weights);
             PRINT_DOC(max_linesearch = "10"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
@@ -253,7 +253,7 @@ int main(int argc, char** argv) {
     std::string Uzrecordfile;
     std::string Uzmodelledfile;
     std::string Uzresidualfile;
-    std::string Mutefile;
+    std::string Modmutefile;
 
 
     /* Get parameters from configuration file */
@@ -321,7 +321,7 @@ int main(int argc, char** argv) {
 
     if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
     if(mute){
-        if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
+        if(Inpar->getPar("Modmutefile", &Modmutefile) == INPARSE_ERR) status = true;
     }
 
     if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
@@ -364,7 +364,7 @@ int main(int argc, char** argv) {
     inv->setDataweightyfile(Dataweightyfile);
     inv->setDataweightzfile(Dataweightzfile);
     if(mute){
-        inv->setMutefile(Mutefile);
+        inv->setModmutefile(Modmutefile);
     }
     inv->setVpfile(VPLSFILE);
     inv->setVsfile(VSLSFILE);

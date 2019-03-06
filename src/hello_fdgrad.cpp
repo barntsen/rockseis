@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     std::string Uzrecordfile;
     std::string Uzmodelledfile;
     std::string Uzresidualfile;
-    std::string Mutefile;
+    std::string Modmutefile;
 
 
     /* Get parameters from configuration file */
@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
 
     if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
     if(mute){
-        if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
+        if(Inpar->getPar("Modmutefile", &Modmutefile) == INPARSE_ERR) status = true;
     }
 
     if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
     inv->setDataweightxfile(Dataweightxfile);
     inv->setDataweightzfile(Dataweightzfile);
     if(mute){
-        inv->setMutefile(Mutefile);
+        inv->setModmutefile(Modmutefile);
     }
     inv->setVpfile(VPLSFILE);
     inv->setVsfile(VSLSFILE);

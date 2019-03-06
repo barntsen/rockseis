@@ -155,8 +155,10 @@ int main(int argc, char** argv) {
             PRINT_DOC(dataweightz = "false";);
             PRINT_DOC(Dataweightxfile = "xweights.rss";);
             PRINT_DOC(Dataweightzfile = "zweights.rss";);
-            PRINT_DOC(mute = "false";  # Mute gradient and updates);
-            PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
+            PRINT_DOC(modmute = "false";  # Mute model gradient and updates);
+            PRINT_DOC(Modmutefile = "modmute.rss"; # File with model mute weights);
+            PRINT_DOC(srcmute = "false";  # Mute source gradient);
+            PRINT_DOC(Sodmutefile = "srcmute.rss"; # File with source mute weights);
             PRINT_DOC(max_linesearch = "10"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
@@ -205,7 +207,8 @@ int main(int argc, char** argv) {
     bool dataweightx;
     bool dataweightz;
     bool reciprocity;
-    bool mute;
+    bool modmute;
+    bool srcmute;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
@@ -241,7 +244,8 @@ int main(int argc, char** argv) {
     std::string Uzrecordfile;
     std::string Uzmodelledfile;
     std::string Uzresidualfile;
-    std::string Mutefile;
+    std::string Modmutefile;
+    std::string Srcmutefile;
 
 
     /* Get parameters from configuration file */
@@ -299,9 +303,14 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("Dataweightzfile", &Dataweightzfile) == INPARSE_ERR) status = true;
     }
 
-    if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
-    if(mute){
-        if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("modmute", &modmute) == INPARSE_ERR) status = true;
+    if(modmute){
+        if(Inpar->getPar("Modmutefile", &Modmutefile) == INPARSE_ERR) status = true;
+    }
+
+    if(Inpar->getPar("srcmute", &srcmute) == INPARSE_ERR) status = true;
+    if(srcmute){
+        if(Inpar->getPar("Srcmutefile", &Srcmutefile) == INPARSE_ERR) status = true;
     }
 
     if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
@@ -341,8 +350,12 @@ int main(int argc, char** argv) {
 
     inv->setDataweightz(dataweightz);
     inv->setDataweightzfile(Dataweightzfile);
-    if(mute){
-        inv->setMutefile(Mutefile);
+    if(modmute){
+        inv->setModmutefile(Modmutefile);
+    }
+
+    if(srcmute){
+        inv->setSrcmutefile(Srcmutefile);
     }
     inv->setVpfile(VPLSFILE);
     inv->setVsfile(VSLSFILE);

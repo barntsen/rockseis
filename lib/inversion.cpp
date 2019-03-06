@@ -490,7 +490,7 @@ void InversionAcoustic2D<T>::runBsproj() {
     std::string vpgradfile;
     std::string rhogradfile;
 
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         vpgradfile = VPGRADCOMBFILE;
         rhogradfile = RHOGRADCOMBFILE;
     }else{
@@ -727,12 +727,21 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
     int i;
     int N, Ns, Nmod;
 
+
+    if(!Srcmutefile.empty()){
+        std::shared_ptr<rockseis::Data2D<T>> sourcemute (new rockseis::Data2D<T>(Srcmutefile));
+        Ns = sourcemute->getNt();
+        if(Ns != source0->getNt()){
+            rs_error("InversionAcoustic2D<T>::saveLinesearch(): Geometry in Srcmutefile does not match geometry in the Source file.");
+        }
+    }
+
     // If mute
-    if(!Mutefile.empty()){
-        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Mutefile, Mutefile, 1 ,0);
+    if(!Modmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Modmutefile, Modmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
-        if(N != Nmute) rs_error("InversionAcoustic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
+        if(N != Nmute) rs_error("InversionAcoustic2D<T>::saveLinesearch(): Geometry in Modmutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         rhomutedata = mute->getR();
@@ -802,7 +811,7 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
             rs_error("InversionAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
             break;
     }
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         free(vpmutedata);
         free(rhomutedata);
     }
@@ -837,13 +846,14 @@ void InversionAcoustic2D<T>::readMisfit(double *f)
 template<typename T>
 void InversionAcoustic2D<T>::readGrad(double *g)
 {
-    int i;
-    int N,Ns;
+    int i,j;
+    int N,Ns,Nsrc;
     float *g_in;
     T *gvp, *grho, *gwav;
     std::string vpgradfile;
     std::string rhogradfile;
-    if(Mutefile.empty()){
+    std::string srcgradfile;
+    if(Modmutefile.empty()){
         vpgradfile = VPGRADFILE;
         rhogradfile = RHOGRADFILE;
     }else{
@@ -851,8 +861,14 @@ void InversionAcoustic2D<T>::readGrad(double *g)
         rhogradfile = RHOGRADMUTEFILE;
     }
 
+    if(Srcmutefile.empty()){
+        srcgradfile = SOURCEGRADFILE;
+    }else{
+        srcgradfile = SOURCEGRADMUTEFILE;
+    }
+
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> modelgrad (new rockseis::ModelAcoustic2D<T>(vpgradfile, rhogradfile, 1 ,0));
-    std::shared_ptr<rockseis::Data2D<T>> sourcegrad (new rockseis::Data2D<T>(SOURCEGRADFILE));
+    std::shared_ptr<rockseis::Data2D<T>> sourcegrad (new rockseis::Data2D<T>(srcgradfile));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
     std::shared_ptr<rockseis::File> Fgrad;
     switch (this->getParamtype()){
@@ -867,12 +883,23 @@ void InversionAcoustic2D<T>::readGrad(double *g)
                 g[N+i] = grho[i]*krho;
             }
             Ns = sourcegrad->getNt();
+            Nsrc = sourcegrad->getNtrace();
             sourcegrad->read();
             gwav = sourcegrad->getData();
+            // Zero out gradient
             for(i=0; i< Ns; i++)
             {
-                g[2*N+i] = gwav[i]*ksource;
+                g[2*N+i] = 0;
 
+            }
+            // Stack src gradient
+            for(j=0; j< Nsrc; j++)
+            {
+                for(i=0; i< Ns; i++)
+                {
+                    g[2*N+i] += gwav[Ns*j + i]*ksource;
+
+                }
             }
             break;
         case PAR_BSPLINE:
@@ -892,12 +919,23 @@ void InversionAcoustic2D<T>::readGrad(double *g)
                 g[N+i] = g_in[N+i]*krho;
             }
             Ns = sourcegrad->getNt();
+            Nsrc = sourcegrad->getNtrace();
             sourcegrad->read();
             gwav = sourcegrad->getData();
+            // Zero out gradient
             for(i=0; i< Ns; i++)
             {
-                g[2*N+i] = gwav[i]*ksource;
+                g[2*N+i] = 0;
 
+            }
+            // Stack src gradient
+            for(j=0; j< Nsrc; j++)
+            {
+                for(i=0; i< Ns; i++)
+                {
+                    g[2*N+i] += gwav[Ns*j + i]*ksource;
+
+                }
             }
             // Free temporary array
             free(g_in);
@@ -983,12 +1021,12 @@ void InversionAcoustic2D<T>::applySrcilum()
 template<typename T>
 void InversionAcoustic2D<T>::applyMute()
 {
-    if(!Mutefile.empty()){
+    if(!Modmutefile.empty()){
         // Models
         std::shared_ptr<rockseis::ModelAcoustic2D<T>> model;
         model = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADCOMBFILE, RHOGRADCOMBFILE, 1 ,0);
         // Mute
-        std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute (new rockseis::ModelAcoustic2D<T>(Mutefile, Mutefile, 1 ,0));
+        std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute (new rockseis::ModelAcoustic2D<T>(Modmutefile, Modmutefile, 1 ,0));
 
         // Mute model and write
         model->readModel();
@@ -1010,6 +1048,28 @@ void InversionAcoustic2D<T>::applyMute()
         model->setVpfile(VPGRADMUTEFILE);
         model->setRfile(RHOGRADMUTEFILE);
         model->writeModel();
+    }
+
+    if(!Srcmutefile.empty()){
+        std::shared_ptr<rockseis::Data2D<T>> srcgrad (new rockseis::Data2D<T>(SOURCEGRADFILE));
+        std::shared_ptr<rockseis::Data2D<T>> srcmute (new rockseis::Data2D<T>(Srcmutefile));
+        T *srcgraddata, *srcmutedata;
+        srcgrad->read();
+        srcmute->read();
+        srcgraddata = srcgrad->getData();
+        srcmutedata = srcmute->getData();
+        int Ns = srcgrad->getNt();
+        int Nsrc = srcgrad->getNtrace();
+        int i,j;
+        for(j=0; j< Nsrc; j++)
+        {
+            for(i=0; i< Ns; i++)
+            {
+                srcgraddata[Ns*j+i] *= srcmutedata[i];
+            }
+        }
+        srcgrad->setFile(SOURCEGRADMUTEFILE);
+        srcgrad->write();
     }
 }
 
@@ -1636,7 +1696,7 @@ void InversionAcoustic3D<T>::runBsproj() {
     std::string vpgradfile;
     std::string rhogradfile;
 
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         vpgradfile = VPGRADCOMBFILE;
         rhogradfile = RHOGRADCOMBFILE;
     }else{
@@ -1884,11 +1944,11 @@ void InversionAcoustic3D<T>::saveLinesearch(double *x)
     int N=0, Ns=0, Nmod=0, Npar=0;
 
     // If mute
-    if(!Mutefile.empty()){
-        mute = std::make_shared <rockseis::ModelAcoustic3D<T>>(Mutefile, Mutefile, 1 ,0);
+    if(!Modmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelAcoustic3D<T>>(Modmutefile, Modmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
-        if(N != Nmute) rs_error("InversionAcoustic3D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
+        if(N != Nmute) rs_error("InversionAcoustic3D<T>::saveLinesearch(): Geometry in Modmutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         rhomutedata = mute->getR();
@@ -1996,7 +2056,7 @@ void InversionAcoustic3D<T>::saveLinesearch(double *x)
     }
     lssource->write();
 
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         free(vpmutedata);
         free(rhomutedata);
     }
@@ -2031,13 +2091,13 @@ void InversionAcoustic3D<T>::readMisfit(double *f)
 template<typename T>
 void InversionAcoustic3D<T>::readGrad(double *g)
 {
-    int i;
-    int N,Ns,Npar=0;
+    int i,j;
+    int N,Ns,Nsrc,Npar=0;
     float *g_in;
     T *gvp, *grho, *gwav;
     std::string vpgradfile;
     std::string rhogradfile;
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         vpgradfile = VPGRADFILE;
         rhogradfile = RHOGRADFILE;
     }else{
@@ -2109,12 +2169,21 @@ void InversionAcoustic3D<T>::readGrad(double *g)
     }
     if(update_source){
         Ns = sourcegrad->getNt();
+        Nsrc = sourcegrad->getNtrace();
         sourcegrad->read();
         gwav = sourcegrad->getData();
         for(i=0; i< Ns; i++)
         {
-            g[Npar+i] = gwav[i]*ksource;
+            g[Npar+i] = 0.0;
 
+        }
+        for(j=0; j< Nsrc; j++)
+        {
+            for(i=0; i< Ns; i++)
+            {
+                g[Npar+i] += gwav[Ns*j + i]*ksource;
+
+            }
         }
     }
 }
@@ -2198,12 +2267,12 @@ void InversionAcoustic3D<T>::combineGradients()
 template<typename T>
 void InversionAcoustic3D<T>::applyMute()
 {
-    if(!Mutefile.empty()){
+    if(!Modmutefile.empty()){
         // Models
         std::shared_ptr<rockseis::ModelAcoustic3D<T>> model;
         model = std::make_shared<rockseis::ModelAcoustic3D<T>>(VPGRADCOMBFILE, RHOGRADCOMBFILE, 1 ,0);
         // Mute
-        std::shared_ptr<rockseis::ModelAcoustic3D<T>> mute (new rockseis::ModelAcoustic3D<T>(Mutefile, Mutefile, 1 ,0));
+        std::shared_ptr<rockseis::ModelAcoustic3D<T>> mute (new rockseis::ModelAcoustic3D<T>(Modmutefile, Modmutefile, 1 ,0));
 
         // Mute model and write
         model->readModel();
@@ -3048,7 +3117,7 @@ void InversionElastic2D<T>::runBsproj() {
     std::string vsgradfile;
     std::string rhogradfile;
 
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         vpgradfile = VPGRADCOMBFILE;
         vsgradfile = VSGRADCOMBFILE;
         rhogradfile = RHOGRADCOMBFILE;
@@ -3343,12 +3412,20 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
     int i;
     int N=0, Ns=0, Nmod=0, Npar=0;
 
+    if(!Srcmutefile.empty()){
+        std::shared_ptr<rockseis::Data2D<T>> sourcemute (new rockseis::Data2D<T>(Srcmutefile));
+        Ns = sourcemute->getNt();
+        if(Ns != source0->getNt()){
+            rs_error("InversionElastic2D<T>::saveLinesearch(): Geometry in Srcmutefile does not match geometry in the Source file.");
+        }
+    }
+
     // If mute
-    if(!Mutefile.empty()){
-        mute = std::make_shared <rockseis::ModelElastic2D<T>>(Mutefile, Mutefile, Mutefile, 1 ,0);
+    if(!Modmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelElastic2D<T>>(Modmutefile, Modmutefile, Modmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
-        if(N != Nmute) rs_error("InversionElastic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
+        if(N != Nmute) rs_error("InversionElastic2D<T>::saveLinesearch(): Geometry in Modmutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         vsmutedata = mute->getVs();
@@ -3508,7 +3585,7 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
     lssource->write();
 
     // Free allocated arrays
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         free(vpmutedata);
         free(vsmutedata);
         free(rhomutedata);
@@ -3549,14 +3626,15 @@ void InversionElastic2D<T>::readMisfit(double *f)
 template<typename T>
 void InversionElastic2D<T>::readGrad(double *g)
 {
-    int i;
-    int N,Ns,Npar=0;
+    int i,j;
+    int N,Ns,Nsrc,Npar=0;
     float *g_in;
     T *gvp, *gvs, *grho, *gwav;
     std::string vpgradfile;
     std::string vsgradfile;
     std::string rhogradfile;
-    if(Mutefile.empty()){
+    std::string srcgradfile;
+    if(Modmutefile.empty()){
         vpgradfile = VPGRADFILE;
         vsgradfile = VSGRADFILE;
         rhogradfile = RHOGRADFILE;
@@ -3566,8 +3644,14 @@ void InversionElastic2D<T>::readGrad(double *g)
         rhogradfile = RHOGRADMUTEFILE;
     }
 
+    if(Srcmutefile.empty()){
+        srcgradfile = SOURCEGRADFILE;
+    }else{
+        srcgradfile = SOURCEGRADMUTEFILE;
+    }
+
     std::shared_ptr<rockseis::ModelElastic2D<T>> modelgrad (new rockseis::ModelElastic2D<T>(vpgradfile, vsgradfile, rhogradfile, 1 ,0));
-    std::shared_ptr<rockseis::Data2D<T>> sourcegrad (new rockseis::Data2D<T>(SOURCEGRADFILE));
+    std::shared_ptr<rockseis::Data2D<T>> sourcegrad (new rockseis::Data2D<T>(srcgradfile));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
     std::shared_ptr<rockseis::File> Fgrad;
     switch (this->getParamtype()){
@@ -3648,12 +3732,21 @@ void InversionElastic2D<T>::readGrad(double *g)
     }
     if(update_source){
         Ns = sourcegrad->getNt();
+        Nsrc = sourcegrad->getNtrace();
         sourcegrad->read();
         gwav = sourcegrad->getData();
         for(i=0; i< Ns; i++)
         {
-            g[Npar+i] = gwav[i]*ksource;
+            g[Npar+i] = 0.0;
 
+        }
+        for(j=0; j< Nsrc; j++)
+        {
+            for(i=0; i< Ns; i++)
+            {
+                g[Npar+i] += gwav[Ns*j + i]*ksource;
+
+            }
         }
     }
 }
@@ -3704,12 +3797,12 @@ void InversionElastic2D<T>::combineGradients()
 template<typename T>
 void InversionElastic2D<T>::applyMute()
 {
-    if(!Mutefile.empty()){
+    if(!Modmutefile.empty()){
         // Models
         std::shared_ptr<rockseis::ModelElastic2D<T>> model;
         model = std::make_shared<rockseis::ModelElastic2D<T>>(VPGRADCOMBFILE, VSGRADCOMBFILE, RHOGRADCOMBFILE, 1 ,0);
         // Mute
-        std::shared_ptr<rockseis::ModelElastic2D<T>> mute (new rockseis::ModelElastic2D<T>(Mutefile, Mutefile, Mutefile, 1 ,0));
+        std::shared_ptr<rockseis::ModelElastic2D<T>> mute (new rockseis::ModelElastic2D<T>(Modmutefile, Modmutefile, Modmutefile, 1 ,0));
 
         // Mute model and write
         model->readModel();
@@ -3736,6 +3829,29 @@ void InversionElastic2D<T>::applyMute()
         model->setRfile(RHOGRADMUTEFILE);
         model->writeModel();
     }
+
+    if(!Srcmutefile.empty()){
+        std::shared_ptr<rockseis::Data2D<T>> srcgrad (new rockseis::Data2D<T>(SOURCEGRADFILE));
+        std::shared_ptr<rockseis::Data2D<T>> srcmute (new rockseis::Data2D<T>(Srcmutefile));
+        T *srcgraddata, *srcmutedata;
+        srcgrad->read();
+        srcmute->read();
+        srcgraddata = srcgrad->getData();
+        srcmutedata = srcmute->getData();
+        int Ns = srcgrad->getNt();
+        int Nsrc = srcgrad->getNtrace();
+        int i,j;
+        for(j=0; j< Nsrc; j++)
+        {
+            for(i=0; i< Ns; i++)
+            {
+                srcgraddata[Ns*j+i] *= srcmutedata[i];
+            }
+        }
+        srcgrad->setFile(SOURCEGRADMUTEFILE);
+        srcgrad->write();
+    }
+
 }
 
 template<typename T>
@@ -4734,7 +4850,7 @@ void InversionElastic3D<T>::runBsproj() {
     std::string vsgradfile;
     std::string rhogradfile;
 
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         vpgradfile = VPGRADCOMBFILE;
         vsgradfile = VSGRADCOMBFILE;
         rhogradfile = RHOGRADCOMBFILE;
@@ -5029,11 +5145,11 @@ void InversionElastic3D<T>::saveLinesearch(double *x)
     int N=0, Ns=0, Nmod=0, Npar=0;
 
     // If mute
-    if(!Mutefile.empty()){
-        mute = std::make_shared <rockseis::ModelElastic3D<T>>(Mutefile, Mutefile, Mutefile, 1 ,0);
+    if(!Modmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelElastic3D<T>>(Modmutefile, Modmutefile, Modmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
-        if(N != Nmute) rs_error("InversionElastic3D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
+        if(N != Nmute) rs_error("InversionElastic3D<T>::saveLinesearch(): Geometry in Modmutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         vsmutedata = mute->getVs();
@@ -5175,7 +5291,7 @@ void InversionElastic3D<T>::saveLinesearch(double *x)
     lssource->write();
 
     // Free allocated arrays
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         free(vpmutedata);
         free(vsmutedata);
         free(rhomutedata);
@@ -5216,14 +5332,14 @@ void InversionElastic3D<T>::readMisfit(double *f)
 template<typename T>
 void InversionElastic3D<T>::readGrad(double *g)
 {
-    int i;
-    int N,Ns,Npar=0;
+    int i,j;
+    int N,Ns,Nsrc,Npar=0;
     float *g_in;
     T *gvp, *gvs, *grho, *gwav;
     std::string vpgradfile;
     std::string vsgradfile;
     std::string rhogradfile;
-    if(Mutefile.empty()){
+    if(Modmutefile.empty()){
         vpgradfile = VPGRADFILE;
         vsgradfile = VSGRADFILE;
         rhogradfile = RHOGRADFILE;
@@ -5315,13 +5431,23 @@ void InversionElastic3D<T>::readGrad(double *g)
     }
     if(update_source){
         Ns = sourcegrad->getNt();
+        Nsrc = sourcegrad->getNtrace();
         sourcegrad->read();
         gwav = sourcegrad->getData();
         for(i=0; i< Ns; i++)
         {
-            g[Npar+i] = gwav[i]*ksource;
+            g[Npar+i] = 0.0;
 
         }
+        for(j=0; j< Nsrc; j++)
+        {
+            for(i=0; i< Ns; i++)
+            {
+                g[Npar+i] += gwav[Ns*j + i]*ksource;
+
+            }
+        }
+
     }
 }
 
@@ -5371,12 +5497,12 @@ void InversionElastic3D<T>::combineGradients()
 template<typename T>
 void InversionElastic3D<T>::applyMute()
 {
-    if(!Mutefile.empty()){
+    if(!Modmutefile.empty()){
         // Models
         std::shared_ptr<rockseis::ModelElastic3D<T>> model;
         model = std::make_shared<rockseis::ModelElastic3D<T>>(VPGRADCOMBFILE, VSGRADCOMBFILE, RHOGRADCOMBFILE, 1 ,0);
         // Mute
-        std::shared_ptr<rockseis::ModelElastic3D<T>> mute (new rockseis::ModelElastic3D<T>(Mutefile, Mutefile, Mutefile, 1 ,0));
+        std::shared_ptr<rockseis::ModelElastic3D<T>> mute (new rockseis::ModelElastic3D<T>(Modmutefile, Modmutefile, Modmutefile, 1 ,0));
 
         // Mute model and write
         model->readModel();
@@ -5402,6 +5528,9 @@ void InversionElastic3D<T>::applyMute()
         model->setVsfile(VSGRADMUTEFILE);
         model->setRfile(RHOGRADMUTEFILE);
         model->writeModel();
+    }
+
+    if(!Srcmutefile.empty()){
     }
 }
 

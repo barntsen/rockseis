@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(dataweight = "false";);
             PRINT_DOC(Dataweightfile = "weights.rss";);
             PRINT_DOC(mute = "false";  # Mute gradient and updates);
-            PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
+            PRINT_DOC(Modmutefile = "mute.rss"; # File with mute weights);
             PRINT_DOC(srcilum = "false"; # Correct gradient for source ilumination);
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
@@ -228,7 +228,7 @@ int main(int argc, char** argv) {
     std::string Precordfile;
     std::string Pmodelledfile;
     std::string Presidualfile;
-    std::string Mutefile;
+    std::string Modmutefile;
 
 
     /* Get parameters from configuration file */
@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
 
     if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
     if(mute){
-        if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
+        if(Inpar->getPar("Modmutefile", &Modmutefile) == INPARSE_ERR) status = true;
     }
 
     if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
@@ -316,7 +316,7 @@ int main(int argc, char** argv) {
     inv->setDataweight(dataweight);
     inv->setDataweightfile(Dataweightfile);
     if(mute){
-        inv->setMutefile(Mutefile);
+        inv->setModmutefile(Modmutefile);
     }
     inv->setVpfile(VPLSFILE);
     inv->setRhofile(RHOLSFILE);

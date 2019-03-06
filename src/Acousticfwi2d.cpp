@@ -153,8 +153,11 @@ int main(int argc, char** argv) {
             PRINT_DOC(misfit_type = "0";  # 0- Difference; 1- Correlation; 2- Adaptive with Gaussian; 3-Adaptive with linear);
             PRINT_DOC(dataweight = "false";);
             PRINT_DOC(Dataweightfile = "weights.rss";);
-            PRINT_DOC(mute = "false";  # Mute gradient and updates);
-            PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
+            PRINT_DOC(modmute = "false";  # Mute model gradient and updates);
+            PRINT_DOC(Modmutefile = "modmute.rss"; # File with model mute weights);
+
+            PRINT_DOC(srcmute = "false";  # Mute source gradient);
+            PRINT_DOC(Srcmutefile = "srcmute.rss"; # File with source mute weights);
             PRINT_DOC(srcilum = "false"; # Correct gradient for source ilumination);
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
@@ -204,7 +207,8 @@ int main(int argc, char** argv) {
 	bool fs;
     bool incore = false;
     bool dataweight;
-    bool mute;
+    bool modmute;
+    bool srcmute;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
@@ -235,7 +239,8 @@ int main(int argc, char** argv) {
     std::string Precordfile;
     std::string Pmodelledfile;
     std::string Presidualfile;
-    std::string Mutefile;
+    std::string Modmutefile;
+    std::string Srcmutefile;
 
 
     /* Get parameters from configuration file */
@@ -284,9 +289,13 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("Dataweightfile", &Dataweightfile) == INPARSE_ERR) status = true;
     }
 
-    if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
-    if(mute){
-        if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("modmute", &modmute) == INPARSE_ERR) status = true;
+    if(modmute){
+        if(Inpar->getPar("Modmutefile", &Modmutefile) == INPARSE_ERR) status = true;
+    }
+    if(Inpar->getPar("srcmute", &srcmute) == INPARSE_ERR) status = true;
+    if(srcmute){
+        if(Inpar->getPar("Srcmutefile", &Srcmutefile) == INPARSE_ERR) status = true;
     }
 
     if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
@@ -328,8 +337,12 @@ int main(int argc, char** argv) {
     inv->setPrecordfile(Precordfile);
     inv->setDataweight(dataweight);
     inv->setDataweightfile(Dataweightfile);
-    if(mute){
-        inv->setMutefile(Mutefile);
+    if(modmute){
+        inv->setModmutefile(Modmutefile);
+    }
+
+    if(srcmute){
+        inv->setSrcmutefile(Srcmutefile);
     }
     inv->setVpfile(VPLSFILE);
     inv->setRhofile(RHOLSFILE);
