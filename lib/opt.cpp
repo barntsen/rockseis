@@ -190,6 +190,8 @@ void Opt::opt_param_default(OptParamPtr param)
 		param->xMin[i] = -10000.0;
 		param->xMax[i] = 10000.0;
 	}
+
+    param->compDiaghessian = false;
 }
 
 
@@ -231,6 +233,16 @@ OptInstancePtr Opt::opt_instance_init(const int n)
 
 	// Return
 	return instance;
+}
+
+void Opt::opt_diag_hessian_init(OptInstancePtr instance)
+{
+	instance->diaghessian = (double *) malloc(sizeof(double)*instance->n);
+}
+
+void Opt::opt_diag_hessian_free(OptInstancePtr instance)
+{
+	free(instance->diaghessian);
 }
 
 void Opt::opt_instance_free(OptInstancePtr instance)
@@ -567,52 +579,56 @@ void Opt::opt_lbfgs_calculate_pk(OptLbfgsContPtr cont, OptInstancePtr instance, 
 	}
 }
 
-void Opt::opt_lbfgs_calculate_diag_hess(OptLbfgsContPtr cont, OptInstancePtr instance, double *hessian)
+void Opt::opt_lbfgs_calculate_diag_hess(OptLbfgsContPtr cont, OptInstancePtr instance, double *hessian0)
 /*<Calculates the diagonal of the iverse Hessian using the BFGS approximation.>*/
 {
 	// Variables
-	int i,j,mod;
+	int i,j,k,mod;
 	double dot, beta;
 
 
-	// Save initial r (the gradient)
-	opt_vector_copy(instance->g,cont->q,cont->n);
-	
-	// Calcuates q
-	for(i=0; i<cont->m; i++) {
-		// Calculates alpha_i
-		mod = (cont->m-1-i)%cont->m;
-		dot = opt_vector_dot(cont->s + mod*cont->n,cont->q,cont->n);
-		cont->alpha[cont->m-1-i] = cont->rho[cont->m-1-i]*dot;
-		
-		// Updates q
-		for(j=0; j<cont->n; j++) {
-			cont->q[j] = cont->q[j] - cont->alpha[cont->m-1-i]*cont->y[mod*cont->n + j];
-		}
-	}
-	
-	// Saves initial r
-	for(i=0; i<cont->n; i++) {
-		cont->r[i] = hessian[i]*cont->q[i];
-	}
+    for(k=0; k < cont->n; k++){
+        // Set basis vector for collumn k of the hessian 
+        for(i=0; i<cont->n; i++) {
+            cont->q[i] = 0.0;
+        }
+        cont->q[k] = 1.0;
 
-	// Calculates r
-	for(i=0; i<cont->m; i++) {
-		// Calculates beta
-		mod = i%cont->m;
-		dot = opt_vector_dot(cont->y + mod*cont->n,cont->r,cont->n);
-		beta = cont->rho[i]*dot;
+        // Calcuates q
+        for(i=0; i<cont->m; i++) {
+            // Calculates alpha_i
+            mod = (cont->m-1-i)%cont->m;
+            dot = opt_vector_dot(cont->s + mod*cont->n,cont->q,cont->n);
+            cont->alpha[cont->m-1-i] = cont->rho[cont->m-1-i]*dot;
 
-		// Updates r
-		for(j=0; j<cont->n; j++) {
-			cont->r[j] = cont->r[j] + cont->s[mod*cont->n + j]*(cont->alpha[i]-beta);
-		}
-	}
-	
-	// Store to pk
-	for(i=0; i<cont->n; i++) {
-		instance->pk[i] = -1.0*cont->r[i];
-	}
+            // Updates q
+            for(j=0; j<cont->n; j++) {
+                cont->q[j] = cont->q[j] - cont->alpha[cont->m-1-i]*cont->y[mod*cont->n + j];
+            }
+        }
+
+        // Saves initial r
+        for(i=0; i<cont->n; i++) {
+            cont->r[i] = hessian0[i]*cont->q[i];
+        }
+
+        // Calculates r
+        for(i=0; i<cont->m; i++) {
+            // Calculates beta
+            mod = i%cont->m;
+            dot = opt_vector_dot(cont->y + mod*cont->n,cont->r,cont->n);
+            beta = cont->rho[i]*dot;
+
+            // Updates r
+            for(j=0; j<cont->n; j++) {
+                cont->r[j] = cont->r[j] + cont->s[mod*cont->n + j]*(cont->alpha[i]-beta);
+            }
+        }
+
+        // Store to inverse diagonal of the hessian
+        instance->diaghessian[k] = cont->r[k];
+    }
+
 }
 
 void Opt::opt_lbfgs_container_update(OptLbfgsContPtr cont, OptInstancePtr current, OptInstancePtr next,  const int iteration)
@@ -1112,7 +1128,7 @@ void Opt::opt_conjugate_gradient_pr(void (*evaluate)(OptInstancePtr), void (*pro
 	opt_instance_free(next);
 }
 
-void Opt::opt_lbfgs(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, OptInstancePtr))
+void Opt::opt_lbfgs(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, OptInstancePtr), void (*finalize)(Opt *, OptInstancePtr))
 /*<Running L-BFGS optimization>*/
 {
 	// Variables
@@ -1185,11 +1201,27 @@ void Opt::opt_lbfgs(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, Op
 		// Copying information from next to current to avoid tmp structs
 		opt_instance_flip(current,next);
 	}
-	
+
+    if(param->compDiaghessian == true)
+    {
+        opt_diag_hessian_init(current);
+		current->steplength = 1.0;
+		gamma = opt_lbfgs_calculate_gamma(cont,i);
+		opt_lbfgs_calculate_initial_hessian(hessian,this->param->n,gamma);
+		opt_lbfgs_calculate_diag_hess(cont,current,hessian);
+    }
+
+    // Run finalisation function
+    finalize(this, current);
+
 	// Setting status message
 	opt_set_status_msg();
 
 	// Clearing results
+    if(param->compDiaghessian == true)
+    {
+        opt_diag_hessian_free(current);
+    }
 	opt_instance_free(current);
 	opt_instance_free(next);
 	opt_lbfgs_container_free(cont);

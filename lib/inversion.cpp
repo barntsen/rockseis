@@ -818,6 +818,122 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
 }
 
 template<typename T>
+void InversionAcoustic2D<T>::saveHessian(double *x)
+{
+    // Models
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lsmodel (new rockseis::ModelAcoustic2D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<T>> lssource (new rockseis::Data2D<T>(SOURCELSFILE));
+    std::shared_ptr<rockseis::Bspl2D<T>> spline;
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute;
+
+    // Write linesearch model
+    lssource->read();
+    lsmodel->readModel();
+    T *vpls, *rhols, *wavls;
+    T *c, *mod;
+    T *vpmutedata;
+    T *rhomutedata;
+    vpls = lsmodel->getVp(); 
+    rhols = lsmodel->getR(); 
+    wavls = lssource->getData();
+    lsmodel->setVpfile(VPHESSFILE);
+    lsmodel->setRfile(RHOHESSFILE);
+    lssource->setFile(SOURCEHESSFILE);
+    int i;
+    int N, Ns, Nmod;
+
+
+    if(!Srcmutefile.empty()){
+        std::shared_ptr<rockseis::Data2D<T>> sourcemute (new rockseis::Data2D<T>(Srcmutefile));
+        Ns = sourcemute->getNt();
+        if(Ns != lssource->getNt()){
+            rs_error("InversionAcoustic2D<T>::saveHessian(): Geometry in Srcmutefile does not match geometry in the Source file.");
+        }
+    }
+
+    // If mute
+    if(!Modmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Modmutefile, Modmutefile, 1 ,0);
+        int Nmute = (mute->getGeom())->getNtot();
+        N = (lsmodel->getGeom())->getNtot();
+        if(N != Nmute) rs_error("InversionAcoustic2D<T>::saveHessian(): Geometry in Modmutefile does not match geometry in the model.");
+        mute->readModel();
+        vpmutedata = mute->getVp();
+        rhomutedata = mute->getR();
+        N = (lsmodel->getGeom())->getNtot();
+    }else{
+        N = (lsmodel->getGeom())->getNtot();
+        vpmutedata = (T *) calloc(N, sizeof(T)); 
+        rhomutedata = (T *) calloc(N, sizeof(T)); 
+        for(i=0; i < N; i++){
+            vpmutedata[i] = 1.0;
+            rhomutedata[i] = 1.0;
+        }
+    }
+
+    switch (this->getParamtype()){
+        case PAR_GRID:
+            N = (lsmodel->getGeom())->getNtot();
+            for(i=0; i< N; i++)
+            {
+                vpls[i] = x[i]*vpmutedata[i]*kvp;
+                rhols[i] = x[N+i]*rhomutedata[i]*krho;
+            }
+            lsmodel->writeModel();
+            Ns = lssource->getNt();
+            for(i=0; i< Ns; i++)
+            {
+                wavls[i] = x[2*N+i]*ksource;
+            }
+            lssource->write();
+            break;
+        case PAR_BSPLINE:
+            Nmod = (lsmodel->getGeom())->getNtot();
+            spline = std::make_shared<rockseis::Bspl2D<T>>(lsmodel->getNx(), lsmodel->getNz(), lsmodel->getDx(), lsmodel->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+            N = spline->getNc();
+            c = spline->getSpline();
+            for(i=0; i< N; i++)
+            {
+                c[i] = x[i];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+
+            for(i=0; i< Nmod; i++)
+            {
+                vpls[i] = mod[i]*vpmutedata[i]*kvp;
+            }
+            for(i=0; i< N; i++)
+            {
+                c[i] = x[i+N];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+
+            for(i=0; i< Nmod; i++)
+            {
+                rhols[i] = mod[i]*rhomutedata[i]*krho;
+            }
+            lsmodel->writeModel();
+            Ns = lssource->getNt();
+            for(i=0; i< Ns; i++)
+            {
+                wavls[i] = x[2*N+i]*ksource;
+            }
+            lssource->write();
+            break;
+        default:
+            rs_error("InversionAcoustic2D<T>::saveHessian(): Unknown parameterisation."); 
+            break;
+    }
+    if(Modmutefile.empty()){
+        free(vpmutedata);
+        free(rhomutedata);
+    }
+}
+
+
+template<typename T>
 void InversionAcoustic2D<T>::readMisfit(double *f)
 {
     // Data misfit

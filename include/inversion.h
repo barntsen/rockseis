@@ -39,6 +39,11 @@
 #define RHOLSFILE "rho_ls.rss"
 #define SOURCELSFILE "source_ls.rss"
 
+#define VPHESSFILE "vp_hess.rss"
+#define VSHESSFILE "vs_hess.rss"
+#define RHOHESSFILE "rho_hess.rss"
+#define SOURCEHESSFILE "source_hess.rss"
+
 #define VP0FILE "vp_0.rss"
 #define VS0FILE "vs_0.rss"
 #define RHO0FILE "rho_0.rss"
@@ -275,6 +280,9 @@ public:
 
     // Save line search models
     void saveLinesearch(double *x);
+
+    // Save diagonal hessian models
+    void saveHessian(double *x);
 
     // Save Results
     void saveResults(int i);

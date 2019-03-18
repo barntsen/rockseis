@@ -34,6 +34,11 @@ void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
     fprintf(stderr, "  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
 }
 
+void finalize(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
+{
+    // Do nothing
+}
+
 // Main 
 int main(int argc, char* argv[]) {
 	/* L-BFGS parameters */
@@ -56,7 +61,7 @@ int main(int argc, char* argv[]) {
        */
     //opt->opt_steepest_descent(evaluate, progress);
     //opt->opt_conjugate_gradient_pr(evaluate, progress);
-    opt->opt_lbfgs(evaluate, progress);
+    opt->opt_lbfgs(evaluate,progress,finalize);
     //opt->opt_heat_bath(evaluate, progress);
 
     /* Report the result. */

@@ -123,6 +123,19 @@ void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
 	inv->writeProgress(buffer);
 }
 
+
+void finalize(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
+{
+    if(opt->getCompdiaghessian())
+    {
+        inv->writeLog("Saving diagonal Hessian");
+        double *x = instance->diaghessian;
+        inv->saveHessian(x);
+    }else{
+        // Do nothing
+    }
+}
+
 int main(int argc, char** argv) {
 
     // Initializing MPI
@@ -394,6 +407,7 @@ int main(int argc, char** argv) {
         opt->opt_set_initial_guess(x);
         opt->setMax_linesearch(max_linesearch);
         opt->setMax_iterations(max_iterations);
+        opt->setCompdiaghessian(true);
 
         switch(optmethod) {
             case 1:
@@ -443,7 +457,7 @@ int main(int argc, char** argv) {
                 break;
             case 1:
             default:
-                opt->opt_lbfgs(evaluate,progress);
+                opt->opt_lbfgs(evaluate,progress,finalize);
                 break;
         }
 

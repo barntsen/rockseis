@@ -119,6 +119,11 @@ void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
 	wva->writeProgress(buffer);
 }
 
+void finalize(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
+{
+    // Do nothing
+}
+
 int main(int argc, char** argv) {
 
     // Initializing MPI
@@ -366,7 +371,7 @@ int main(int argc, char** argv) {
                 break;
             case 1:
             default:
-                opt->opt_lbfgs(evaluate,progress);
+                opt->opt_lbfgs(evaluate,progress,finalize);
                 break;
         }
 

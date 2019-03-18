@@ -79,6 +79,7 @@ typedef struct {
 	double *xMin;			// Minimum allowed value for x[j]
 	double *xMax;			// Minimum allowed value for x[j]
 	int nFuncEval;			// Number of functional evaluations performed
+    bool compDiaghessian;  // Compute diagonal hessian at last iteration
 } OptParam;
 /*^*/
 
@@ -100,6 +101,7 @@ typedef struct {
 	double *g;
 	double *tmp;
 	double *pk;
+	double *diaghessian;
 	double beta;
 	double f;
 	double steplength;
@@ -160,7 +162,9 @@ class Opt{
         void opt_lbfgs_calculate_initial_hessian(double *hessian, const int n, const double gamma); 
         void opt_lbfgs_calculate_pk(OptLbfgsContPtr cont, OptInstancePtr instance, double *hessian);
         void opt_lbfgs_container_update(OptLbfgsContPtr cont, OptInstancePtr current, OptInstancePtr next,  const int iteration);
-        void opt_lbfgs_calculate_diag_hess(OptLbfgsContPtr cont, OptInstancePtr instance, double *hessian);
+        void opt_diag_hessian_init(OptInstancePtr instance);
+        void opt_diag_hessian_free(OptInstancePtr instance);
+        void opt_lbfgs_calculate_diag_hess(OptLbfgsContPtr cont, OptInstancePtr instance, double *hessian0);
         void opt_set_initial_guess(double *x); 
         void opt_set_status_msg();
         int opt_linesearch_check(OptInstancePtr current, OptInstancePtr next);
@@ -171,7 +175,7 @@ class Opt{
         void opt_steepest_descent(void (*evaluate)(OptInstancePtr), void (*progress)(Opt*, OptInstancePtr));
         void opt_conjugate_gradient_fr(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, OptInstancePtr));
         void opt_conjugate_gradient_pr(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, OptInstancePtr));
-        void opt_lbfgs(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, OptInstancePtr));
+        void opt_lbfgs(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, OptInstancePtr), void (*finalize)(Opt *, OptInstancePtr));
         void opt_heat_bath(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, OptInstancePtr));
         void opt_heat_bath_neighbour(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, OptInstancePtr), void (*neighbour)(OptInstancePtr, OptInstancePtr, OptParamPtr));
         void opt_metropolis(void (*evaluate)(OptInstancePtr), void (*progress)(Opt *, OptInstancePtr), void (*neighbour)(OptInstancePtr, OptInstancePtr, OptParamPtr));
@@ -186,6 +190,8 @@ class Opt{
 
         int getMax_iterations() { return param->max_iterations; }
         int getMax_linesearch() { return param->max_linesearch; }
+        bool getCompdiaghessian() { return param->compDiaghessian; }
+        void setCompdiaghessian(bool val) { param->compDiaghessian = val; }
 
     private:
         OptParamPtr param;
