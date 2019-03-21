@@ -3747,7 +3747,7 @@ void InversionElastic2D<T>::saveHessian(double *x)
 
     // Set output files for the Hessian models
     lsmodel->setVpfile(VPHESSFILE);
-    lsmodel->setVpfile(VSHESSFILE);
+    lsmodel->setVsfile(VSHESSFILE);
     lsmodel->setRfile(RHOHESSFILE);
     lssource->setFile(SOURCEHESSFILE);
 
