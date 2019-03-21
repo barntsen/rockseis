@@ -75,6 +75,17 @@ void Inversion<T>::normalize(double *v, double *f, int n){
 }
 
 template<typename T>
+void Inversion<T>::un_normalize(double *v, int n){
+	int i;
+    if(fnorm == 0.0) {
+        fnorm = 1.0;
+    }
+	for(i=0; i<n; i++) {
+		v[i] *= fabs(fnorm);
+	}
+}
+
+template<typename T>
 double Inversion<T>::vector_norm(double *v, const int type, const int n){
 	// Variables
 	int i;
@@ -876,14 +887,14 @@ void InversionAcoustic2D<T>::saveHessian(double *x)
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
             {
-                vpls[i] = x[i]*vpmutedata[i]*kvp;
-                rhols[i] = x[N+i]*rhomutedata[i]*krho;
+                vpls[i] = x[i]*vpmutedata[i]*kvp*kvp;
+                rhols[i] = x[N+i]*rhomutedata[i]*krho*krho;
             }
             lsmodel->writeModel();
             Ns = lssource->getNt();
             for(i=0; i< Ns; i++)
             {
-                wavls[i] = x[2*N+i]*ksource;
+                wavls[i] = x[2*N+i]*ksource*ksource;
             }
             lssource->write();
             break;
@@ -901,7 +912,7 @@ void InversionAcoustic2D<T>::saveHessian(double *x)
 
             for(i=0; i< Nmod; i++)
             {
-                vpls[i] = mod[i]*vpmutedata[i]*kvp;
+                vpls[i] = mod[i]*vpmutedata[i]*kvp*kvp;
             }
             for(i=0; i< N; i++)
             {
@@ -912,13 +923,13 @@ void InversionAcoustic2D<T>::saveHessian(double *x)
 
             for(i=0; i< Nmod; i++)
             {
-                rhols[i] = mod[i]*rhomutedata[i]*krho;
+                rhols[i] = mod[i]*rhomutedata[i]*krho*krho;
             }
             lsmodel->writeModel();
             Ns = lssource->getNt();
             for(i=0; i< Ns; i++)
             {
-                wavls[i] = x[2*N+i]*ksource;
+                wavls[i] = x[2*N+i]*ksource*ksource;
             }
             lssource->write();
             break;

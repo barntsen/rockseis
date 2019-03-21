@@ -121,7 +121,15 @@ void progress(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
 
 void finalize(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
 {
-    // Do nothing
+    if(opt->getCompdiaghessian())
+    {
+        fatt->writeLog("Saving diagonal Hessian");
+        double *x = instance->diaghessian;
+        fatt->normalize(x, &instance->f, instance->n);
+        fatt->saveHessian(x);
+    }else{
+        // Do nothing
+    }
 }
 
 int main(int argc, char** argv) {
@@ -136,7 +144,7 @@ int main(int argc, char** argv) {
 
     if(argc < 2){
         if(mpi.getRank() == 0){
-            PRINT_DOC(# MPI 2d acoustic full-waveform inversion configuration file);
+            PRINT_DOC(# MPI 2d first arrival tomography configuration file);
             PRINT_DOC();
             PRINT_DOC(#Fatt parameters);
             PRINT_DOC(dataweight = "false";);
@@ -284,6 +292,7 @@ int main(int argc, char** argv) {
         opt->opt_set_initial_guess(x);
         opt->setMax_linesearch(max_linesearch);
         opt->setMax_iterations(max_iterations);
+        opt->setCompdiaghessian(true);
 
         switch(optmethod) {
             case 1:

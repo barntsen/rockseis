@@ -37,6 +37,8 @@
 
 #define VPLSFILE "vp_ls.rss"
 
+#define VPHESSFILE "vp_hess.rss"
+
 #define VP0FILE "vp_0.rss"
 
 #define VPGRADFILE "vp_grad.rss"
@@ -109,6 +111,7 @@ public:
     void setFnorm(double norm) { fnorm = norm; }
     double getFnorm() { return fnorm; }
     void normalize(double *v, double *f, int n);
+    void un_normalize(double *v, int n);
     void setNoreverse(bool val) { noreverse = val; }
     bool getNoreverse() { return noreverse; }
 
@@ -214,6 +217,9 @@ public:
 
     // Save line search models
     void saveLinesearch(double *x);
+
+    // Save diagonal Hessian models
+    void saveHessian(double *x);
 
     // Save Results
     void saveResults(int i);
