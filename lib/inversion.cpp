@@ -3720,6 +3720,216 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
 }
 
 template<typename T>
+void InversionElastic2D<T>::saveHessian(double *x)
+{
+    // Models
+    std::shared_ptr<rockseis::ModelElastic2D<T>> lsmodel (new rockseis::ModelElastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::Data2D<T>> lssource (new rockseis::Data2D<T>(SOURCELSFILE));
+    std::shared_ptr<rockseis::Bspl2D<T>> spline;
+    std::shared_ptr<rockseis::ModelElastic2D<T>> mute;
+
+    lsmodel->setVpfile(VPHESSFILE);
+    lsmodel->setVpfile(VSHESSFILE);
+    lsmodel->setRfile(RHOHESSFILE);
+    lssource->setFile(SOURCEHESSFILE);
+
+    // Write linesearch model
+    lsmodel->readModel();
+    lssource->read();
+    T *vpls, *vsls, *rhols, *wavls;
+    T *c, *mod;
+    T *vpmutedata;
+    T *vsmutedata;
+    T *rhomutedata;
+    vpls = lsmodel->getVp(); 
+    vsls = lsmodel->getVs(); 
+    rhols = lsmodel->getR(); 
+    wavls = lssource->getData();
+    int i;
+    int N=0, Ns=0, Nmod=0, Npar=0;
+
+    if(!Srcmutefile.empty()){
+        std::shared_ptr<rockseis::Data2D<T>> sourcemute (new rockseis::Data2D<T>(Srcmutefile));
+        Ns = sourcemute->getNt();
+        if(Ns != lssource->getNt()){
+            rs_error("InversionElastic2D<T>::saveHessian(): Geometry in Srcmutefile does not match geometry in the Source file.");
+        }
+    }
+
+    // If mute
+    if(!Modmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelElastic2D<T>>(Modmutefile, Modmutefile, Modmutefile, 1 ,0);
+        int Nmute = (mute->getGeom())->getNtot();
+        N = (lsmodel->getGeom())->getNtot();
+        if(N != Nmute) rs_error("InversionElastic2D<T>::saveHessian(): Geometry in Modmutefile does not match geometry in the model.");
+        mute->readModel();
+        vpmutedata = mute->getVp();
+        vsmutedata = mute->getVs();
+        rhomutedata = mute->getR();
+        N = (lsmodel->getGeom())->getNtot();
+    }else{
+        N = (lsmodel->getGeom())->getNtot();
+        vpmutedata = (T *) calloc(N, sizeof(T)); 
+        vsmutedata = (T *) calloc(N, sizeof(T)); 
+        rhomutedata = (T *) calloc(N, sizeof(T)); 
+        for(i=0; i < N; i++){
+            vpmutedata[i] = 1.0;
+            vsmutedata[i] = 1.0;
+            rhomutedata[i] = 1.0;
+        }
+    }
+
+    switch (this->getParamtype()){
+        case PAR_GRID:
+            N = (lsmodel->getGeom())->getNtot();
+            Npar = 0;
+            if(update_vp){
+                for(i=0; i< N; i++)
+                {
+                    vpls[i] = x[i]*vpmutedata[i]*kvp*kvp;
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< N; i++)
+                {
+                    vpls[i] = 0.0;
+                }
+            }
+            if(update_vs){
+                for(i=0; i< N; i++)
+                {
+                    vsls[i] = x[Npar+i]*vsmutedata[i]*kvs*kvs;
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< N; i++)
+                {
+                    vsls[i] = 0.0;
+                }
+            }
+            if(update_rho){
+                for(i=0; i< N; i++)
+                {
+                    rhols[i] = x[Npar+i]*rhomutedata[i]*krho;
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< N; i++)
+                {
+                    rhols[i] = 0.0;
+                }
+            }
+            /*Ensure vp/vs boundary */
+            for(i=0; i< N; i++)
+            {
+                if(vpls[i] < 1.2*vsls[i])
+                {
+                    vsls[i] = vpls[i]/1.2;
+                }
+            }
+            lsmodel->writeModel();
+            break;
+        case PAR_BSPLINE:
+            Nmod = (lsmodel->getGeom())->getNtot();
+            Npar = 0;
+            spline = std::make_shared<rockseis::Bspl2D<T>>(lsmodel->getNx(), lsmodel->getNz(), lsmodel->getDx(), lsmodel->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+            N = spline->getNc();
+            c = spline->getSpline();
+            if(update_vp){
+                for(i=0; i< N; i++)
+                {
+                    c[i] = x[i];
+                }
+                spline->bisp();
+                mod = spline->getMod();
+                for(i=0; i< Nmod; i++)
+                {
+                    vpls[i] = mod[i]*vpmutedata[i]*kvp*kvp;
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< Nmod; i++)
+                {
+                    vpls[i] = 0.0;
+                }
+            }
+            if(update_vs){
+                for(i=0; i< N; i++)
+                {
+                    c[i] = x[Npar+i];
+                }
+                spline->bisp();
+                mod = spline->getMod();
+
+                for(i=0; i< Nmod; i++)
+                {
+                    vsls[i] = mod[i]*vsmutedata[i]*kvs*kvs;
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< Nmod; i++)
+                {
+                    vsls[i] = 0.0;
+                }
+            }
+            if(update_rho){
+                for(i=0; i< N; i++)
+                {
+                    c[i] = x[Npar+i];
+                }
+                spline->bisp();
+                mod = spline->getMod();
+
+                for(i=0; i< Nmod; i++)
+                {
+                    rhols[i] = mod[i]*rhomutedata[i]*krho;
+                }
+                Npar += N;
+            }else{
+                for(i=0; i< Nmod; i++)
+                {
+                    rhols[i] = 0.0;
+                }
+
+            }
+
+            /*Ensure vp/vs boundary */
+            for(i=0; i< Nmod; i++){
+                if(vpls[i] < 1.2*vsls[i])
+                {
+                    vsls[i] = vpls[i]/1.2;
+                }
+            }
+
+            lsmodel->writeModel();
+            break;
+        default:
+            rs_error("InversionElastic2D<T>::saveHessian(): Unknown parameterisation."); 
+            break;
+    }
+
+    // Source wavelet
+    Ns = lssource->getNt();
+    for(i=0; i< Ns; i++)
+    {
+        if(update_source){
+            wavls[i] = x[Npar+i]*ksource*ksource;
+        }else{
+            wavls[i] = 0.0;
+        }
+    }
+    lssource->write();
+
+    // Free allocated arrays
+    if(Modmutefile.empty()){
+        free(vpmutedata);
+        free(vsmutedata);
+        free(rhomutedata);
+    }
+}
+
+
+template<typename T>
 void InversionElastic2D<T>::readMisfit(double *f)
 {
     // Data misfit

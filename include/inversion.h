@@ -613,6 +613,9 @@ public:
     // Save line search models
     void saveLinesearch(double *x);
 
+    // Save diagonal hessian models
+    void saveHessian(double *x);
+
     // Save Results
     void saveResults(int i);
 
