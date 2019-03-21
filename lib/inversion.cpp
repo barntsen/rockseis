@@ -3728,10 +3728,6 @@ void InversionElastic2D<T>::saveHessian(double *x)
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
     std::shared_ptr<rockseis::ModelElastic2D<T>> mute;
 
-    lsmodel->setVpfile(VPHESSFILE);
-    lsmodel->setVpfile(VSHESSFILE);
-    lsmodel->setRfile(RHOHESSFILE);
-    lssource->setFile(SOURCEHESSFILE);
 
     // Write linesearch model
     lsmodel->readModel();
@@ -3747,6 +3743,13 @@ void InversionElastic2D<T>::saveHessian(double *x)
     wavls = lssource->getData();
     int i;
     int N=0, Ns=0, Nmod=0, Npar=0;
+
+
+    // Set output files for the Hessian models
+    lsmodel->setVpfile(VPHESSFILE);
+    lsmodel->setVpfile(VSHESSFILE);
+    lsmodel->setRfile(RHOHESSFILE);
+    lssource->setFile(SOURCEHESSFILE);
 
     if(!Srcmutefile.empty()){
         std::shared_ptr<rockseis::Data2D<T>> sourcemute (new rockseis::Data2D<T>(Srcmutefile));
