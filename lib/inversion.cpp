@@ -75,13 +75,10 @@ void Inversion<T>::normalize(double *v, double *f, int n){
 }
 
 template<typename T>
-void Inversion<T>::un_normalize(double *v, int n){
+void Inversion<T>::un_normalize(double *v, double f, int n){
 	int i;
-    if(fnorm == 0.0) {
-        fnorm = 1.0;
-    }
 	for(i=0; i<n; i++) {
-		v[i] *= fabs(fnorm);
+		v[i] *= fabs(f);
 	}
 }
 

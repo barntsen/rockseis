@@ -125,7 +125,7 @@ void finalize(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
     {
         fatt->writeLog("Saving diagonal Hessian");
         double *x = instance->diaghessian;
-        fatt->normalize(x, &instance->f, instance->n);
+        fatt->un_normalize(x, instance->f, instance->n);
         fatt->saveHessian(x);
     }else{
         // Do nothing

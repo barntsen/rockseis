@@ -111,7 +111,7 @@ public:
     void setFnorm(double norm) { fnorm = norm; }
     double getFnorm() { return fnorm; }
     void normalize(double *v, double *f, int n);
-    void un_normalize(double *v, int n);
+    void un_normalize(double *v, double f, int n);
     void setNoreverse(bool val) { noreverse = val; }
     bool getNoreverse() { return noreverse; }
 

@@ -130,7 +130,7 @@ void finalize(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
     {
         inv->writeLog("Saving diagonal Hessian");
         double *x = instance->diaghessian;
-        inv->normalize(x, &instance->f, instance->n);
+        inv->un_normalize(x, instance->f, instance->n);
         inv->saveHessian(x);
     }else{
         // Do nothing
