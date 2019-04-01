@@ -3810,7 +3810,7 @@ void InversionElastic2D<T>::saveHessian(double *x)
             if(update_rho){
                 for(i=0; i< N; i++)
                 {
-                    rhols[i] = x[Npar+i]*rhomutedata[i]*krho;
+                    rhols[i] = x[Npar+i]*rhomutedata[i]*krho*krho;
                 }
                 Npar += N;
             }else{
@@ -3882,7 +3882,7 @@ void InversionElastic2D<T>::saveHessian(double *x)
 
                 for(i=0; i< Nmod; i++)
                 {
-                    rhols[i] = mod[i]*rhomutedata[i]*krho;
+                    rhols[i] = mod[i]*rhomutedata[i]*krho*krho;
                 }
                 Npar += N;
             }else{
