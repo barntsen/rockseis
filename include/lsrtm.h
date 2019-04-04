@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 #include <time.h>
 #include "geometry.h"
 #include "utils.h"

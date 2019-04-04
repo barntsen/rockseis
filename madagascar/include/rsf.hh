@@ -6,15 +6,16 @@
 #define _rsf_hh
 
 #include <valarray>
-
+/*
 #include <complex>
 typedef std::complex<float> Complex8;
 typedef std::complex<double> Complex16;
+*/
 
 // to simplify main program includes
 extern "C" {
-#define cpx8 Complex8
-#define cpx16 Complex16
+//#define cpx8 Complex8
+//#define cpx16 Complex16
 
 #include "alloc.h"
 #include "_bool.h"
