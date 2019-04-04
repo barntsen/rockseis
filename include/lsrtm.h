@@ -17,7 +17,6 @@
 #include "snap.h"
 #include "image.h"
 #include "revolve.h"
-#include <rsf.hh>
 
 #define LSRTM_OK 1
 #define LSRTM_ERR 0
@@ -103,7 +102,7 @@ public:
     void xcor(int lx, int ifx, T *x,int ly, int ify, T *y, int lz, int ifz, T *z);
     T gauss(int it, T stdev);
     T linear(int it, T stdev);
-    void apply_filter(T *data, int nt, T dt);
+    //void apply_filter(T *data, int nt, T dt);
 
 private:
     int order;  ///< Order of the FD stencil 

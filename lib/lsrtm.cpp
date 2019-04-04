@@ -417,7 +417,7 @@ T Lsrtm<T>::linear (int it, T stdev)
     }
 }
 
-
+/*
 template<typename T>
 void Lsrtm<T>::apply_filter (T *data, int nt, T dt)
 {
@@ -437,6 +437,7 @@ void Lsrtm<T>::apply_filter (T *data, int nt, T dt)
     free(wrk);
     free(flt);
 }
+*/
 
 template<typename T>
 Lsrtm<T>::~Lsrtm() {
@@ -583,14 +584,6 @@ void LsrtmAcoustic2D<T>::computeMisfit(){
     size_t itr, it;
     T res = 0.0;
     T misfit = 0.0;
-    T *shaper;
-    T *spiker;
-    T *autocorr;
-    T *crosscorr;
-    T *modwei, *recwei;
-    T norm; 
-    T H;
-    T stdev;
 
     Index I(nt, ntr);
     switch(this->getMisfit_type()){
@@ -633,92 +626,6 @@ void LsrtmAcoustic2D<T>::computeMisfit(){
             }
 
             break;
-        case ADAPTIVE_GAUSS:
-            stdev = STDEV*nt;
-            modwei = (T *) calloc(nt, sizeof(T));
-            recwei = (T *) calloc(nt, sizeof(T));
-            shaper = (T *) calloc(nt, sizeof(T));
-            spiker = (T *) calloc(nt, sizeof(T));
-            autocorr = (T *) calloc(nt, sizeof(T));
-            crosscorr = (T *) calloc(nt, sizeof(T));
-            for(itr=0; itr<ntr; itr++){
-                for (it=0; it < nt; it++)
-                {
-                    if(dataweightset){
-                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
-                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
-                    }else{
-                        modwei[it] = mod[I(it, itr)];
-                        recwei[it] = rec[I(it, itr)];
-                    }
-                }
-                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
-                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
-                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
-                autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
-                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
-
-                norm = 0.0; 
-                for(it=0; it<nt; it++){
-                    norm += shaper[it]*shaper[it];
-                }
-                if (norm == 0.0) norm = 1.0;
-                for(it=0; it<nt; it++){
-                    H = this->gauss(it,stdev);
-                    res = H*shaper[it];
-                    misfit -= 0.5*res*res/norm;
-                }
-            }
-            free(modwei);
-            free(recwei);
-            free(shaper);
-            free(spiker);
-            free(autocorr);
-            free(crosscorr);
-            break;
-        case ADAPTIVE_LINEAR:
-            stdev = HMAX;
-            modwei = (T *) calloc(nt, sizeof(T));
-            recwei = (T *) calloc(nt, sizeof(T));
-            shaper = (T *) calloc(nt, sizeof(T));
-            spiker = (T *) calloc(nt, sizeof(T));
-            autocorr = (T *) calloc(nt, sizeof(T));
-            crosscorr = (T *) calloc(nt, sizeof(T));
-            for(itr=0; itr<ntr; itr++){
-                for (it=0; it < nt; it++)
-                {
-                    if(dataweightset){
-                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
-                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
-                    }else{
-                        modwei[it] = mod[I(it, itr)];
-                        recwei[it] = rec[I(it, itr)];
-                    }
-                }
-                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
-                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
-                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
-                autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
-                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
-
-                norm = 0.0; 
-                for(it=0; it<nt; it++){
-                    norm += shaper[it]*shaper[it];
-                }
-                if (norm == 0.0) norm = 1.0;
-                for(it=0; it<nt; it++){
-                    H = this->linear(it,stdev);
-                    res = H*shaper[it];
-                    misfit += 0.5*res*res/norm;
-                }
-            }
-            free(modwei);
-            free(recwei);
-            free(shaper);
-            free(spiker);
-            free(autocorr);
-            free(crosscorr);
-            break;
         default:
             for(itr=0; itr<ntr; itr++){
                 for(it=0; it<nt; it++){
@@ -742,7 +649,6 @@ void LsrtmAcoustic2D<T>::computeResiduals(){
     if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
     if(dataresP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
     size_t nt = datamodP->getNt();
-    T dt = datamodP->getDt();
     if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
     if(dataresP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
@@ -755,18 +661,9 @@ void LsrtmAcoustic2D<T>::computeResiduals(){
         wei = dataweight->getData();
     }
 
-    T *shaper;
-    T *spiker;
-    T *autocorr;
-    T *crosscorr;
-    T *modwei, *recwei;
     T *fres;
     T pclip; 
     int pos;
-    T norm; 
-    T misfit;
-    T H;
-    T stdev;
 
     size_t itr, it;
     Index I(nt, ntr);
@@ -829,166 +726,6 @@ void LsrtmAcoustic2D<T>::computeResiduals(){
             }
             free(fres);
 
-            break;
-        case ADAPTIVE_GAUSS:
-            stdev = STDEV*nt;
-            modwei = (T *) calloc(nt, sizeof(T));
-            recwei = (T *) calloc(nt, sizeof(T));
-            shaper = (T *) calloc(nt, sizeof(T));
-            spiker = (T *) calloc(nt, sizeof(T));
-            autocorr = (T *) calloc(nt, sizeof(T));
-            crosscorr = (T *) calloc(nt, sizeof(T));
-            for(itr=0; itr<ntr; itr++){
-                for (it=0; it < nt; it++)
-                {
-                    if(dataweightset){
-                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
-                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
-                    }else{
-                        modwei[it] = mod[I(it, itr)];
-                        recwei[it] = rec[I(it, itr)];
-                    }
-                }
-                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
-                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
-                // If zero trace we need to add something to avoid division by zero
-                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
-                autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
-                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
-                norm = 0.0; 
-                for(it=0; it<nt; it++){
-                    norm += shaper[it]*shaper[it];
-                }
-                
-                // Ensure norm different than 0.0
-                if (norm == 0.0) norm = 1.0;
-                misfit = 0.0;
-                for(it=0; it<nt; it++){
-                    H = this->gauss(it, stdev);
-                    misfit += 0.5*(H*shaper[it])*(H*shaper[it])/norm;
-                }
-
-                for(it=0; it<nt; it++){
-                    H = this->gauss(it, stdev);
-                    res[I(it, itr)] = -1.0*(H*H - 2.0*misfit)*shaper[it]/norm;
-                }
-                this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
-                this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
-                if(this->getFilter()){
-                    this->apply_filter(&res[I(0, itr)], nt, dt);
-                }
-                if(dataweightset){
-                    for (it=0; it < nt; it++)
-                    {
-                        res[I(it,itr)] *= wei[I(it,itr)];
-                    }
-                }
-            }
-            // Thresholding
-            fres = (T *) calloc(nt*ntr, sizeof(T));
-            for(itr=0; itr<ntr; itr++){
-                for(it=0; it<nt; it++){
-                    fres[I(it, itr)] = ABS(res[I(it, itr)]);
-                }
-            }
-            std::sort(fres, fres+nt*ntr); 
-            pos = (int) (PCLIP*nt*ntr/100);
-            pclip = fres[pos];
-
-            for(itr=0; itr<ntr; itr++){
-                for(it=0; it<nt; it++){
-                    if(ABS(res[I(it, itr)]) >= pclip){
-                        res[I(it, itr)] = 0.0;
-                    }
-                }
-            }
-            free(fres);
-            free(modwei);
-            free(recwei);
-            free(shaper);
-            free(spiker);
-            free(autocorr);
-            free(crosscorr);
-            break;
-        case ADAPTIVE_LINEAR:
-            stdev = HMAX;
-            modwei = (T *) calloc(nt, sizeof(T));
-            recwei = (T *) calloc(nt, sizeof(T));
-            shaper = (T *) calloc(nt, sizeof(T));
-            spiker = (T *) calloc(nt, sizeof(T));
-            autocorr = (T *) calloc(nt, sizeof(T));
-            crosscorr = (T *) calloc(nt, sizeof(T));
-            for(itr=0; itr<ntr; itr++){
-                for (it=0; it < nt; it++)
-                {
-                    if(dataweightset){
-                        modwei[it] = mod[I(it, itr)]*wei[I(it,itr)];
-                        recwei[it] = rec[I(it, itr)]*wei[I(it,itr)];
-                    }else{
-                        modwei[it] = mod[I(it, itr)];
-                        recwei[it] = rec[I(it, itr)];
-                    }
-                }
-                this->xcor(nt, 0, recwei, nt, 0, recwei, nt, 0, autocorr);  /* for matrix */
-                this->xcor(nt, 0, recwei, nt, 0, modwei, nt, 0, crosscorr); /* right hand side */
-                // If zero trace we need to add something to avoid division by zero
-                if (autocorr[0] == 0.0)  autocorr[0] = 1.0;
-                autocorr[0] *= (1.0 + PNOISE_ACOUSTIC);			/* whiten */
-                this->stoep(nt, autocorr, crosscorr, shaper, spiker);
-                norm = 0.0; 
-                for(it=0; it<nt; it++){
-                    norm += shaper[it]*shaper[it];
-                }
-                
-                // Ensure norm different than 0.0
-                if (norm == 0.0) norm = 1.0;
-                misfit = 0.0;
-                for(it=0; it<nt; it++){
-                    H = this->linear(it, stdev);
-                    misfit += 0.5*(H*shaper[it])*(H*shaper[it])/norm;
-                }
-
-                for(it=0; it<nt; it++){
-                    H = this->linear(it, stdev);
-                    res[I(it, itr)] = (H*H - 2.0*misfit)*shaper[it]/norm;
-                }
-                this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
-                this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
-                if(this->getFilter()){
-                    this->apply_filter(&res[I(0, itr)], nt, dt);
-                }
-                if(dataweightset){
-                    for (it=0; it < nt; it++)
-                    {
-                        res[I(it,itr)] *= wei[I(it,itr)];
-                    }
-                }
-            }
-            // Thresholding
-            fres = (T *) calloc(nt*ntr, sizeof(T));
-            for(itr=0; itr<ntr; itr++){
-                for(it=0; it<nt; it++){
-                    fres[I(it, itr)] = ABS(res[I(it, itr)]);
-                }
-            }
-            std::sort(fres, fres+nt*ntr); 
-            pos = (int) (PCLIP*nt*ntr/100);
-            pclip = fres[pos];
-
-            for(itr=0; itr<ntr; itr++){
-                for(it=0; it<nt; it++){
-                    if(ABS(res[I(it, itr)]) >= pclip){
-                        res[I(it, itr)] = 0.0;
-                    }
-                }
-            }
-            free(fres);
-            free(modwei);
-            free(recwei);
-            free(shaper);
-            free(spiker);
-            free(autocorr);
-            free(crosscorr);
             break;
         default:
             for(itr=0; itr<ntr; itr++){

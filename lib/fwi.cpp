@@ -417,7 +417,7 @@ T Fwi<T>::linear (int it, T stdev)
     }
 }
 
-
+/*
 template<typename T>
 void Fwi<T>::apply_filter (T *data, int nt, T dt)
 {
@@ -437,6 +437,7 @@ void Fwi<T>::apply_filter (T *data, int nt, T dt)
     free(wrk);
     free(flt);
 }
+*/
 
 template<typename T>
 Fwi<T>::~Fwi() {
@@ -837,9 +838,11 @@ void FwiAcoustic2D<T>::computeResiduals(){
                 }
                 this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
                 this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
+                /*
                 if(this->getFilter()){
-                    this->apply_filter(&res[I(0, itr)], nt, dt);
+                   this->apply_filter(&res[I(0, itr)], nt, dt);
                 }
+                */
                 if(dataweightset){
                     for (it=0; it < nt; it++)
                     {
@@ -917,9 +920,11 @@ void FwiAcoustic2D<T>::computeResiduals(){
                 }
                 this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
                 this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
+                /*
                 if(this->getFilter()){
                     this->apply_filter(&res[I(0, itr)], nt, dt);
                 }
+                */
                 if(dataweightset){
                     for (it=0; it < nt; it++)
                     {
