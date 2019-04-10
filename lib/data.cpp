@@ -69,9 +69,9 @@ template<typename T>
 void Data<T>::Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt)
 /*< Filters with a hamming window>*/
 {
-	int i;
+	unsigned long i;
 	T f,df;
-	int nf,nfs;
+	unsigned long nf,nfs;
     std::shared_ptr<rockseis::Fft<double>> fft1d (new rockseis::Fft<double>(nt));
 
 	/* Compute size of complex array */
@@ -126,6 +126,46 @@ void Data<T>::Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt)
 	}
 	free(W);
 } 
+
+template<typename T>
+void Data<T>::Hilbert1D(T *pulse, unsigned long nt)
+/*< Compute the Hilbert transform of a trace */
+{
+	unsigned long i;
+	unsigned long nf,nfs;
+    std::shared_ptr<rockseis::Fft<T>> fft1d (new rockseis::Fft<T>(nt));
+
+	/* Compute size of complex array */
+	nf=fft1d->getNfft();
+
+	nfs=nf/2;
+	T *cdata;
+	
+	cdata = fft1d->getData();
+    for(i=0; i<nt; i++){
+        cdata[2*i] = pulse[i];
+    }
+
+	/* Apply forward fourier transform */
+	fft1d->fft1d(1);
+
+	/* Zero out negative frequencies */
+	for(i=nfs; i<nf; i++)
+	{
+        cdata[2*i] = 0.0;
+        cdata[2*i+1] = 0.0;
+	}
+
+	/* Apply backward fourier transform */
+	fft1d->fft1d(-1);
+
+    /* Get imaginary part (Hilbert transform*0.5) */
+	for(i=0; i<nt; i++)
+	{
+		pulse[i] = 2.0*cdata[2*i+1]/nf;
+	}
+} 
+
 
 template<typename T>
 void Data<T>::close()
@@ -628,6 +668,23 @@ void Data2D<T>::apply_filter (T *freqs)
         for(j=0; j< nt; j++) data[Idata(j,i)] = flt[j];
     }
 
+    free(flt);
+}
+
+template<typename T>
+void Data2D<T>::applyHilbert()
+{
+    int i,j;
+    unsigned long nt = this->getNt();
+    int ntr = this->getNtrace();
+	Index Idata(nt,ntr);
+    T *data = this->getData();
+	T *flt = (T *) calloc(nt, sizeof(T));
+    for(i=0; i< ntr; i++){
+        for(j=0; j< nt; j++) flt[j] = data[Idata(j,i)];
+        this->Hilbert1D(flt, nt); 
+        for(j=0; j< nt; j++) data[Idata(j,i)] = flt[j];
+    }
     free(flt);
 }
 
@@ -1157,6 +1214,23 @@ void Data3D<T>::apply_filter (T *freqs)
         for(j=0; j< nt; j++) data[Idata(j,i)] = flt[j];
     }
 
+    free(flt);
+}
+
+template<typename T>
+void Data3D<T>::applyHilbert()
+{
+    int i,j;
+    unsigned long nt = this->getNt();
+    int ntr = this->getNtrace();
+	Index Idata(nt,ntr);
+    T *data = this->getData();
+	T *flt = (T *) calloc(nt, sizeof(T));
+    for(i=0; i< ntr; i++){
+        for(j=0; j< nt; j++) flt[j] = data[Idata(j,i)];
+        this->Hilbert1D(flt, nt); 
+        for(j=0; j< nt; j++) data[Idata(j,i)] = flt[j];
+    }
     free(flt);
 }
 

@@ -18,6 +18,7 @@
 #include "snap.h"
 #include "image.h"
 #include "revolve.h"
+#include "hilbert.h"
 
 #define LSRTM_OK 1
 #define LSRTM_ERR 0
@@ -147,7 +148,7 @@ public:
 
     void calcAdjointsource(T *adjsrc_bw, T* wrp, int padr);
     void insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>> waves_fw, T* adjsrc_fw, T *L);
-    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho);
+    void crossCorr(T* wsp, T *wsp_hilb, int pads, T* wrp1, T* wrp2, T * wrp1_hilb, T* wrp2_hilb, int padr, T *vp, T* rho);
 
     void computeMisfit();
     void computeResiduals();

@@ -534,7 +534,7 @@ void LsrtmAcoustic2D<T>::insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>>
 
 
 template<typename T>
-void LsrtmAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T* Vp, T* Rho)
+void LsrtmAcoustic2D<T>::crossCorr(T *wsp, T *wsp_hilb, int pads, T* wrp1, T* wrp2, T* wrp1_hilb, T* wrp2_hilb, int padr, T* Vp, T* Rho)
 {
     if(!vpgradset) rs_error("LsrtmAcoustic2D:crossCorr: No gradient set in lsrtm class");
     if(!vpgrad->getAllocated()) vpgrad->allocateImage();
@@ -557,7 +557,10 @@ void LsrtmAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int
     for (ix=1; ix<nx-1; ix++){
         {
             for (iz=1; iz<nz-1; iz++){
-                vpgraddata[ki2D(ix,iz)] -= wsp[ks2D(ix+pads, iz+pads)]*wrp[kr2D(ix+padr, iz+padr)];
+                vpgraddata[ki2D(ix,iz)] -= 0.25*wsp[ks2D(ix+pads, iz+pads)]*wrp1[kr2D(ix+padr, iz+padr)];
+                vpgraddata[ki2D(ix,iz)] += 0.25*wsp_hilb[ks2D(ix+pads, iz+pads)]*wrp1_hilb[kr2D(ix+padr, iz+padr)];
+                vpgraddata[ki2D(ix,iz)] += 0.25*wsp[ks2D(ix+pads, iz+pads)]*wrp2_hilb[kr2D(ix+padr, iz+padr)];
+                vpgraddata[ki2D(ix,iz)] += 0.25*wsp_hilb[ks2D(ix+pads, iz+pads)]*wrp2[kr2D(ix+padr, iz+padr)];
 
                 if(srcilumset){
                     srcilumdata[ki2D(ix,iz)] += wsp[ks2D(ix+pads, iz+pads)]*wsp[ks2D(ix+pads, iz+pads)];
@@ -655,6 +658,7 @@ void LsrtmAcoustic2D<T>::computeResiduals(){
     T* mod = datamodP->getData();
     T* rec = dataP->getData();
     T* res = dataresP->getData();
+    T* resh = dataresAz->getData();
     T* wei = NULL;
     if(dataweightset) 
     {
@@ -676,6 +680,7 @@ void LsrtmAcoustic2D<T>::computeResiduals(){
                    {
                        res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
+                   resh[I(it, itr)] = res[I(it, itr)];
                 }
             }
             break;
@@ -723,6 +728,7 @@ void LsrtmAcoustic2D<T>::computeResiduals(){
                         res[I(it, itr)] = 0.0;
                     }
                 }
+                resh[I(it, itr)] = res[I(it, itr)];
             }
             free(fres);
 
@@ -735,6 +741,7 @@ void LsrtmAcoustic2D<T>::computeResiduals(){
                    {
                        res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
                    }
+                   resh[I(it, itr)] = res[I(it, itr)];
                 }
             }
             break;
@@ -760,6 +767,9 @@ int LsrtmAcoustic2D<T>::run(){
      std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<WavesAcoustic2D<T>> waves_adj (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
+     std::shared_ptr<Hilbert<T>> hilb_s (new Hilbert<T>(waves->getNx(), 1, waves->getNz()));
+     std::shared_ptr<Hilbert<T>> hilb_r1 (new Hilbert<T>(waves->getNx_pml(), 1, waves->getNz_pml()));
+     std::shared_ptr<Hilbert<T>> hilb_r2 (new Hilbert<T>(waves->getNx_pml(), 1, waves->getNz_pml()));
 
      // Create snapshots
      std::shared_ptr<Snapshot2D<T>> Psnap;
@@ -815,6 +825,9 @@ int LsrtmAcoustic2D<T>::run(){
     waves.reset();
     waves  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot);
 
+    // Hilbert transform wavefield
+    std::shared_ptr<WavesAcoustic2D<T>> waves_hilb (new WavesAcoustic2D<T>(model, nt, dt, ot));
+
     // Create images 
     vpgrad->allocateImage();
 
@@ -824,6 +837,9 @@ int LsrtmAcoustic2D<T>::run(){
     if(!this->getNoreverse()){
         // Compute residuals
         computeResiduals();
+
+        // Apply Hilbert transform to residuals in dataresAz
+        this->dataresAz->applyHilbert();
 
         Psnap->openSnap(this->getSnapfile(), 'r');
         Psnap->allocSnap(0);
@@ -836,22 +852,33 @@ int LsrtmAcoustic2D<T>::run(){
             waves->forwardstepAcceleration(model, der);
             waves->forwardstepStress(model, der);
 
+            waves_hilb->forwardstepAcceleration(model, der);
+            waves_hilb->forwardstepStress(model, der);
+
             // Inserting residuals
             waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
+            waves_hilb->insertSource(model, dataresAz, GMAP, (nt - 1 - it));
 
             //Read forward snapshot
             Psnap->readSnap(nt - 1 - it);
 
             // Do Crosscorrelation
             if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-                T *wrp = waves->getP1();
-                T* wrx = waves->getAx(); 
-                T* wrz = waves->getAz(); 
-                crossCorr(Psnap->getData(0), 0, wrp, wrx, wrz, waves->getLpml(), model->getVp(), model->getR());
+                T *wsp = Psnap->getData(0);
+                hilb_s->hilbertz(Psnap->getData(0));
+                T *wsp_hilbz = hilb_s->getDf();
+                T *wrp1 = waves->getP1();
+                hilb_r1->hilbertz(waves->getP1());
+                T *wrp1_hilbz = hilb_r1->getDf();
+                T* wrp2 = waves_hilb->getP1(); 
+                hilb_r2->hilbertz(waves_hilb->getP1()); 
+                T* wrp2_hilbz = hilb_r2->getDf();
+                crossCorr(wsp, wsp_hilbz, 0, wrp1, wrp2, wrp1_hilbz, wrp2_hilbz, waves->getLpml(), model->getVp(), model->getR());
             }
 
             // Roll the pointers P1 and P2
             waves->roll();
+            waves_hilb->roll();
 
             // Output progress to logfile
             this->writeProgress(it, nt-1, 20, 48);
@@ -888,7 +915,11 @@ int LsrtmAcoustic2D<T>::run_optimal(){
      std::shared_ptr<WavesAcoustic2D<T>> waves_fw (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<WavesAcoustic2D<T>> waves_bw (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<WavesAcoustic2D<T>> waves_adj (new WavesAcoustic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesAcoustic2D<T>> waves_hilb (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
+     std::shared_ptr<Hilbert<T>> hilb_s (new Hilbert<T>(waves_fw->getNx(), 1, waves_fw->getNz()));
+     std::shared_ptr<Hilbert<T>> hilb_r1 (new Hilbert<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml()));
+     std::shared_ptr<Hilbert<T>> hilb_r2 (new Hilbert<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml()));
      std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
      revolve_action whatodo;
      int oldcapo,capo;
@@ -975,19 +1006,29 @@ int LsrtmAcoustic2D<T>::run_optimal(){
             // Compute residuals
             computeResiduals();
 
+            // Apply Hilbert transform to residuals in dataresAz
+            this->dataresAz->applyHilbert();
+
             // Inserting data
             waves_bw->insertSource(model, dataresP, GMAP, capo);
+            waves_hilb->insertSource(model, dataresAz, GMAP, capo);
 
             /* Do Crosscorrelation */
             T *wsp = waves_fw->getP1();
-            T *wrp = waves_bw->getP1();
-            T* wrx = waves_bw->getAx(); 
-            T* wrz = waves_bw->getAz(); 
-            crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
+            hilb_s->hilbertz(waves_fw->getP1());
+            T *wsp_hilbz = hilb_s->getDf();
+            T *wrp1 = waves_bw->getP1();
+            hilb_r1->hilbertz(waves_bw->getP1());
+            T *wrp1_hilbz = hilb_r1->getDf();
+            T* wrp2 = waves_hilb->getP1(); 
+            hilb_r2->hilbertz(waves_hilb->getP1()); 
+            T* wrp2_hilbz = hilb_r2->getDf();
+            crossCorr(wsp, wsp_hilbz, waves_fw->getLpml(), wrp1, wrp2, wrp1_hilbz, wrp2_hilbz, waves_bw->getLpml(), model->getVp(), model->getR());
 
             // Roll the pointers P1 and P2
             waves_fw->roll();
             waves_bw->roll();
+            waves_hilb->roll();
             waves_adj->roll();
 
             // Output progress to logfile
@@ -1007,18 +1048,28 @@ int LsrtmAcoustic2D<T>::run_optimal(){
             waves_bw->forwardstepAcceleration(model, der);
             waves_bw->forwardstepStress(model, der);
 
+            waves_hilb->forwardstepAcceleration(model, der);
+            waves_hilb->forwardstepStress(model, der);
+
             // Inserting data
             waves_bw->insertSource(model, dataresP, GMAP, capo);
+            waves_hilb->insertSource(model, dataresAz, GMAP, capo);
 
             /* Do Crosscorrelation */
             T *wsp = waves_fw->getP1();
-            T *wrp = waves_bw->getP1();
-            T* wrx = waves_bw->getAx(); 
-            T* wrz = waves_bw->getAz(); 
-            crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
+            hilb_s->hilbertz(waves_fw->getP1());
+            T *wsp_hilbz = hilb_s->getDf();
+            T *wrp1 = waves_bw->getP1();
+            hilb_r1->hilbertz(waves_bw->getP1());
+            T *wrp1_hilbz = hilb_r1->getDf();
+            T* wrp2 = waves_hilb->getP1(); 
+            hilb_r2->hilbertz(waves_hilb->getP1()); 
+            T* wrp2_hilbz = hilb_r2->getDf();
+            crossCorr(wsp, wsp_hilbz, waves_fw->getLpml(), wrp1, wrp2, wrp1_hilbz, wrp2_hilbz, waves_bw->getLpml(), model->getVp(), model->getR());
 
             // Roll the pointers P1 and P2
             waves_bw->roll();
+            waves_hilb->roll();
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);

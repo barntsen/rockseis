@@ -50,6 +50,9 @@ public:
     // Filter
     void Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt);
 
+    // Hilbert transform
+    void Hilbert1D(T *pulse, unsigned long nt);
+
 private:
     std::string datafile;
     int ntrace;
@@ -102,6 +105,9 @@ public:
     //Filter
     void apply_filter(T *freqs); ///< Apply a 4 point filter to the data
 
+    //Hilbert transform
+    void applyHilbert(); ///< Apply a Hilbert transform to the data
+
 private:
     std::shared_ptr<Geometry2D<T>> geometry; // Data geometry 
     T *data; // Data array
@@ -146,6 +152,9 @@ public:
 
     //Filter
     void apply_filter(T *freqs); ///< Apply a 4 point filter to the data
+
+    //Hilbert transform
+    void applyHilbert(); ///< Apply a Hilbert transform to the data
 
 private:
     std::shared_ptr<Geometry3D<T>> geometry;  // Data geometry 
