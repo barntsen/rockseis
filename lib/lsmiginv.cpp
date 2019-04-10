@@ -464,6 +464,7 @@ void LsmiginvAcoustic2D<T>::runGrad_Multiples() {
     std::shared_ptr<rockseis::Data2D<T>> Mshot2D;
     std::shared_ptr<rockseis::Data2D<T>> Mshot2Di;
     std::shared_ptr<rockseis::Data2D<T>> shotres2D;
+    std::shared_ptr<rockseis::Data2D<T>> shotres2Dh;
     std::shared_ptr<rockseis::Data2D<T>> shotres2Di;
     std::shared_ptr<rockseis::Data2D<T>> shotweight2D;
     std::shared_ptr<rockseis::Data2D<T>> shotweight2Di;
@@ -611,6 +612,12 @@ void LsmiginvAcoustic2D<T>::runGrad_Multiples() {
                 shotres2D->makeMap(lmodel->getGeom(), GMAP);
                 lsrtm->setDataresP(shotres2D);
 
+                // Hilbert transformed recorded data is stored in DataresAz
+                shotres2Dh = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+                shotres2Dh->copyCoords(shot2D);
+                shotres2Dh->makeMap(lmodel->getGeom(), GMAP);
+                lsrtm->setDataresAz(shotres2Dh);
+
                 // Interpolate weight
                 if(dataweight){
                     shotweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
@@ -694,6 +701,7 @@ void LsmiginvAcoustic2D<T>::runGrad_Multiples() {
                 shotmod2D.reset();
                 shotmod2Di.reset();
                 shotres2D.reset();
+                shotres2Dh.reset();
                 shotres2Di.reset();
                 lmodel.reset();
                 pimage.reset();
