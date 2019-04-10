@@ -437,6 +437,7 @@ void LsmiginvAcoustic2D<T>::runGrad() {
                 shotmod2D.reset();
                 shotmod2Di.reset();
                 shotres2D.reset();
+                shotres2Dh.reset();
                 shotres2Di.reset();
                 lmodel.reset();
                 pimage.reset();

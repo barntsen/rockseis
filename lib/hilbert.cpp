@@ -54,7 +54,6 @@ void Hilbert<T>::Hilbert1D()
 
 	/* Compute size of complex array */
 	unsigned long int nf=fft1d->getNfft();
-
 	unsigned long int nfs=nf/2;
 	
 	/* Apply forward fourier transform */
@@ -63,7 +62,7 @@ void Hilbert<T>::Hilbert1D()
 	T *cdata;
 	cdata = fft1d->getData();
 	/* Zero out negative frequencies */
-	for(i=nfs; i<nf; i++)
+	for(i=nfs+1; i<nf; i++)
 	{
         cdata[2*i] = 0.0;
         cdata[2*i+1] = 0.0;
@@ -94,11 +93,13 @@ void Hilbert<T>::hilbertx(T *f){
             for(int ix=0; ix < nx; ix++){
                 f1 = f2 + ind(ix,0,0);
                 cdata[2*ix] =  f1[ind(0, 0, 0)];
+                cdata[2*ix+1] =  0.0;
             }
             for(int ix=nx; ix < nf; ix++){
                 cdata[2*ix] =  0.0;
                 cdata[2*ix+1] =  0.0;
             }
+
             // Transform cdata
             Hilbert1D();
 
@@ -131,6 +132,7 @@ void Hilbert<T>::hilberty(T *f){
             f1 = f2 + ind(ix,0,0);
             for(iy=0; iy < ny; iy++){
                 cdata[2*iy] =  f1[ind(0, iy, 0)];
+                cdata[2*iy+1] =  0.0;
             }
             for(iy=ny; iy < nf; iy++){
                 cdata[2*iy] =  0.0;
@@ -168,6 +170,7 @@ void Hilbert<T>::hilbertz(T *f){
             f1 = f2 + ind(ix,0,0);
             for(iz=0; iz<nz; iz++){
                 cdata[2*iz] =  f1[ind(0, 0, iz)];
+                cdata[2*iz+1] =  0.0;
             }
             for(iz=nz; iz < nf; iz++){
                 cdata[2*iz] =  0.0;
@@ -177,7 +180,7 @@ void Hilbert<T>::hilbertz(T *f){
             Hilbert1D();
 
             /* Get imaginary part (Hilbert transform*0.5) */
-            for(iz=0; iz < ny; iz++){
+            for(iz=0; iz < nz; iz++){
                 df1[ind(0, 0, iz)] = 2.0*cdata[2*iz+1]/nf;
             }
         }

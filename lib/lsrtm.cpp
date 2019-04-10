@@ -917,7 +917,7 @@ int LsrtmAcoustic2D<T>::run_optimal(){
      std::shared_ptr<WavesAcoustic2D<T>> waves_adj (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<WavesAcoustic2D<T>> waves_hilb (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
-     std::shared_ptr<Hilbert<T>> hilb_s (new Hilbert<T>(waves_fw->getNx(), 1, waves_fw->getNz()));
+     std::shared_ptr<Hilbert<T>> hilb_s (new Hilbert<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml()));
      std::shared_ptr<Hilbert<T>> hilb_r1 (new Hilbert<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml()));
      std::shared_ptr<Hilbert<T>> hilb_r2 (new Hilbert<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml()));
      std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));

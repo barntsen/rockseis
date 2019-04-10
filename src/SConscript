@@ -15,7 +15,7 @@ if(env['TEST']):
     hello_argparse = env.Program(prefix + 'hello_argparse','hello_argparse.cpp')
     env.Install('../bin/',hello_argparse)
 
-    hello_models = env.Program(prefix + 'hello_models','hello_models.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'fft'])
+    hello_models = env.Program(prefix + 'hello_models','hello_models.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'fft', 'hilbert'])
     env.Install('../bin/',hello_models)
 
     hello_der = env.Program(prefix + 'hello_der','hello_der.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'fft'])

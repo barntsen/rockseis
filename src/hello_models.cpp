@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "der.h"
 #include "data.h"
+#include "hilbert.h"
 #include "file.h"
 #include <memory>
 #include <fstream>
@@ -53,6 +54,9 @@ int main()
 	// Create the classes 
 	std::shared_ptr<rockseis::ModelElastic2D<float>> model2d (new rockseis::ModelElastic2D<float>(nx, nz, lpml, dx, dz, ox, oz, fs));
 	std::shared_ptr<rockseis::ModelElastic3D<float>> model3d (new rockseis::ModelElastic3D<float>(nx, ny, nz, lpml, dx, dy, dz, ox, oy, oz, fs));
+    
+	std::shared_ptr<rockseis::Hilbert<float>> hilb (new rockseis::Hilbert<float>(nx, 1, nz));
+	std::shared_ptr<rockseis::ModelElastic2D<float>> model2d_hilb (new rockseis::ModelElastic2D<float>(nx, nz, lpml, dx, dz, ox, oz, fs));
 
 
 	/* Make a model */
@@ -87,15 +91,15 @@ int main()
     }
 
     // Adding a reflector
-//    for(iz=22; iz<nz; iz++){
-//        for(iy=0; iy<ny; iy++){
-//            for(ix=0; ix<nx; ix++){
-//                Vp2d[k2d(ix,iz)]= 2500;
-//                Vp3d[k3d(ix,iy,iz)]= 2500;
-//            }
-//        }
-//    }
-//
+    for(iz=22; iz<nz; iz++){
+        for(iy=0; iy<ny; iy++){
+            for(ix=0; ix<nx; ix++){
+                Vp2d[k2d(ix,iz)]= 2500;
+                Vp3d[k3d(ix,iy,iz)]= 2500;
+            }
+        }
+    }
+
     model2d->setVpfile("Vp2d.rss");
     model2d->setVsfile("Vs2d.rss");
     model2d->setRfile("Rho2d.rss");
@@ -106,6 +110,21 @@ int main()
     model3d->setRfile("Rho3d.rss");
     model3d->writeModel();
 
+
+    model2d_hilb->createModel();
+    hilb->hilbertz(Vp2d);
+    float *Vp2d_hilb = model2d_hilb->getVp();
+    float *tmp = hilb->getDf();
+
+    for(iz=0; iz<nz; iz++){
+        for(iy=0; iy<ny; iy++){
+            for(ix=0; ix<nx; ix++){
+                Vp2d_hilb[k2d(ix,iz)] = tmp[k2d(ix,iz)];
+            }
+        }
+    }
+    model2d_hilb->setVpfile("Vp2d_hilb.rss");
+    model2d_hilb->writeVp();
 
 	// Setup a 2d Wavelet 
 	std::shared_ptr<rockseis::Data2D<float>> source2d (new rockseis::Data2D<float>(1, nt, dt, 0.0));

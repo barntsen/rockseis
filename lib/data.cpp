@@ -150,7 +150,7 @@ void Data<T>::Hilbert1D(T *pulse, unsigned long nt)
 	fft1d->fft1d(1);
 
 	/* Zero out negative frequencies */
-	for(i=nfs; i<nf; i++)
+	for(i=nfs+1; i<nf; i++)
 	{
         cdata[2*i] = 0.0;
         cdata[2*i+1] = 0.0;
