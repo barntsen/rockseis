@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <memory>
 #include "utils.h"
 #include "fft.h"
 
