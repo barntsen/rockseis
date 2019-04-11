@@ -54,13 +54,20 @@ void evaluate(rockseis::OptInstancePtr instance)
     lsmig->readMisfit(&instance->f);
     lsmig->writeLog("##### Evaluation finished #####");
 
-    // Normalize error and gradient
+    double xnorm, gnorm, step;
+
+    // Set kvp and normalize error and gradient 
     if(lsmig->getFnorm() == 0.0){
+
+        gnorm = lsmig->vector_norm(instance->g, 2, instance->n);
+        // Reset kvp 
+        lsmig->setKvp(instance->f/gnorm);
+        // Re-read gradient with new kvp set
+        lsmig->readGrad(g);
         lsmig->setFnorm(instance->f);
     }
     lsmig->normalize(g, &instance->f, instance->n);
 
-    double xnorm, gnorm, step;
     gnorm = lsmig->vector_norm(instance->g, 2, instance->n);
     xnorm = lsmig->vector_norm(instance->x, 2, instance->n);
     step = instance->steplength;
@@ -158,9 +165,6 @@ int main(int argc, char** argv) {
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
             PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
             PRINT_DOC();
-            PRINT_DOC(# Diagonal scaling parameters);
-            PRINT_DOC(kvp = "100.0";);
-            PRINT_DOC();
             PRINT_DOC(#Filter parameters);
             PRINT_DOC(filter = "false"; # Apply 4 point filter to wavelet gradient and residuals);
             PRINT_DOC(f0 = "0"; # First point);
@@ -234,7 +238,6 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("kvp", &kvp) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapmethod", &_snapmethod) == INPARSE_ERR) status = true;
@@ -309,6 +312,7 @@ int main(int argc, char** argv) {
     lsmig->setMisfit_type(fwimisfit);
 
     lsmig->setVpgradfile(VPGRADFILE);
+    kvp = 1.0;
     lsmig->setKvp(kvp);
     lsmig->setVpregalpha(vpregalpha);
     lsmig->setPimagefile(VPLSFILE);
