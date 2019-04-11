@@ -48,7 +48,7 @@ public:
     void setRecinc(const int inc) { recinc = inc; }	///< Set Nx
 
     // Filter
-    void Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt);
+    void Filter1D(T f0, T f1, T f2, T f3, T df, unsigned long nf, T* W, T *cdata);
 
     // Hilbert transform
     void Hilbert1D(T *pulse, unsigned long nt);

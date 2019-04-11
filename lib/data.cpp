@@ -66,38 +66,20 @@ bool Data<T>::open(std::string flag)
 
 
 template<typename T>
-void Data<T>::Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt)
+void Data<T>::Filter1D(T f0, T f1, T f2, T f3, T df, unsigned long nf, T *W, T *cdata)
 /*< Filters with a hamming window>*/
 {
 	unsigned long i;
-	T f,df;
-	unsigned long nf,nfs;
-    std::shared_ptr<rockseis::Fft<double>> fft1d (new rockseis::Fft<double>(nt));
-
-	/* Compute size of complex array */
-	nf=fft1d->getNfft();
-
-	nfs=nf/2 + 1;
-	df=(1.0/(2.0*dt))/nfs;
-	double *cdata;
-    double *W = (double *) calloc(2*nf, sizeof(double));
-	
-	cdata = fft1d->getData();
-    for(i=0; i<nt; i++){
-        cdata[2*i] = pulse[i];
-    }
-
-	/* Apply forward fourier transform */
-	fft1d->fft1d(1);
-
+	T f;
+    unsigned long nfs = nf/2;
 	/* Compute window spectrum  */
 	for(i=0; i<nfs; i++)
 	{
 		f = i*df;
 		if(f < f0) W[2*i] = 0.0;
-		if(f>= f0 && f < f1) W[2*i] = 0.5*(1.0 - cos(PI*(f-f0)/(f1-f0))); 
+		if(f>= f0 && f < f1) W[2*i] = (T) (0.5*(1.0 - cos(PI*(f-f0)/(f1-f0)))); 
 		if(f >= f1 && f <= f2 ) W[2*i] = 1;
-		if(f > f2)  W[2*i] = 0.5*(1.0 - cos(PI*(f3-f)/(f3-f2))); 
+		if(f > f2)  W[2*i] = (T) (0.5*(1.0 - cos(PI*(f3-f)/(f3-f2)))); 
 		if(f > f3) W[2*i] = 0;
 	}
 
@@ -108,7 +90,7 @@ void Data<T>::Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt)
 		W[2*(nfs-2 - i + nfs) +1] = -1.0*W[2*i +1];  
 	}
 
-    double a,b;
+    T a,b;
     // Apply filter
 	for(i=0; i<nf; i++)
     {
@@ -118,13 +100,6 @@ void Data<T>::Filter1D(T *pulse, T f0, T f1, T f2, T f3, T dt, unsigned long nt)
         cdata[2*i+1] = b;
     }
 
-	/* Apply backward fourier transform */
-	fft1d->fft1d(-1);
-	for(i=0; i<nt; i++)
-	{
-		pulse[i] = cdata[2*i]/nf;
-	}
-	free(W);
 } 
 
 template<typename T>
@@ -653,22 +628,48 @@ void Data2D<T>::apply_filter (T *freqs)
     unsigned long nt = this->getNt();
     int ntr = this->getNtrace();
 	Index Idata(nt,ntr);
-    double d_dt = dt;
     T f[4];
     T *data = this->getData();
     f[0] = freqs[0];
     f[1] = freqs[1];
     f[2] = freqs[2];
     f[3] = freqs[3];
-	T *flt = (T *) calloc(2*nt, sizeof(T));
+    std::shared_ptr<Fft<T>> fft1d (new Fft<T>(2*nt));
+
+	/* Compute size of complex array */
+	unsigned long nf,nfs;
+	nf=fft1d->getNfft();
+    nfs = nf/2;
+
+	T df=(1.0/(2.0*dt))/nfs;
+	T *cdata;
+    T *W = (T *) calloc(2*nf, sizeof(T));
+	
+	cdata = fft1d->getData();
+
     for(i=0; i< ntr; i++){
-        for(j=0; j< nt; j++) flt[j] = data[Idata(j,i)];
-        for(j=nt; j < 2*nt; j++) flt[j] = 0.0;
-        this->Filter1D(flt, f[0], f[1], f[2], f[3], d_dt, 2*nt); 
-        for(j=0; j< nt; j++) data[Idata(j,i)] = flt[j];
+        for(j=0; j<nt; j++){
+            cdata[2*j] = data[Idata(j,i)];
+            cdata[2*j+1] = 0.0;
+        }
+        for(j=nt; j < nf; j++){
+            cdata[2*j] = 0.0;
+            cdata[2*j+1] = 0.0;
+        }
+
+        /* Apply forward fourier transform */
+        fft1d->fft1d(1);
+
+        this->Filter1D(f[0], f[1], f[2], f[3], df, nf, W, cdata); 
+
+        /* Apply backward fourier transform */
+        fft1d->fft1d(-1);
+        for(j=0; j< nt; j++) {
+            data[Idata(j,i)] = cdata[2*j];
+        }
     }
 
-    free(flt);
+	free(W);
 }
 
 template<typename T>
@@ -1199,22 +1200,48 @@ void Data3D<T>::apply_filter (T *freqs)
     unsigned long nt = this->getNt();
     int ntr = this->getNtrace();
 	Index Idata(nt,ntr);
-    double d_dt = dt;
     T f[4];
     T *data = this->getData();
     f[0] = freqs[0];
     f[1] = freqs[1];
     f[2] = freqs[2];
     f[3] = freqs[3];
-	T *flt = (T *) calloc(2*nt, sizeof(T));
+    std::shared_ptr<Fft<T>> fft1d (new Fft<T>(2*nt));
+
+	/* Compute size of complex array */
+	unsigned long nf,nfs;
+	nf=fft1d->getNfft();
+    nfs = nf/2;
+
+	T df=(1.0/(2.0*dt))/nfs;
+	T *cdata;
+    T *W = (T *) calloc(2*nf, sizeof(T));
+	
+	cdata = fft1d->getData();
+
     for(i=0; i< ntr; i++){
-        for(j=0; j< nt; j++) flt[j] = data[Idata(j,i)];
-        for(j=nt; j < 2*nt; j++) flt[j] = 0.0;
-        this->Filter1D(flt, f[0], f[1], f[2], f[3], d_dt, 2*nt); 
-        for(j=0; j< nt; j++) data[Idata(j,i)] = flt[j];
+        for(j=0; j<nt; j++){
+            cdata[2*j] = data[Idata(j,i)];
+            cdata[2*j+1] = 0.0;
+        }
+        for(j=nt; j < nf; j++){
+            cdata[2*j] = 0.0;
+            cdata[2*j+1] = 0.0;
+        }
+
+        /* Apply forward fourier transform */
+        fft1d->fft1d(1);
+
+        this->Filter1D(f[0], f[1], f[2], f[3], df, nf, W, cdata); 
+
+        /* Apply backward fourier transform */
+        fft1d->fft1d(-1);
+        for(j=0; j< nt; j++) {
+            data[Idata(j,i)] = cdata[2*j];
+        }
     }
 
-    free(flt);
+	free(W);
 }
 
 template<typename T>
