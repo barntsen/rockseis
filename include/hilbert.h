@@ -15,6 +15,7 @@ class Hilbert {
 public:
     Hilbert();
     Hilbert(const int _nx, const int _ny, const int _nz);
+    Hilbert(const int _nx, const int _ny, const int _nz, const int _nmax);
     ~Hilbert();
     /* Get functions */
     int getNx() { return nx; }		///< Get Nx

@@ -4,6 +4,7 @@
 #define ind(i,j,k) ((k)*ny*nx + (j)*nx + (i))
 #define cind(i) (((i)*(i+1))/2)
 #define MAX(x,y) (((x)>=(y))?(x):(y))
+#define MIN(x,y) (((x)<=(y))?(x):(y))
 
 namespace rockseis {
 /* Constructors*/
@@ -37,6 +38,31 @@ Hilbert<T>::Hilbert(const int _nx, const int _ny, const int _nz)
     long int nmax = 0;
     nmax = MAX(nx, MAX(ny,nz));
     fft1d = std::make_shared<Fft<T>>(nmax);
+}
+
+template <typename T>
+Hilbert<T>::Hilbert(const int _nx, const int _ny, const int _nz, const int _nmax)
+{
+    nx = _nx;
+    ny = _ny;
+    nz = _nz;
+    
+    /* Check for possibility of interger overflow */
+    long int lnx, lny, lnz;
+    lnx = nx;
+    lny = ny;
+    lnz = nz;
+    if((lnx*lny*lnz - 1) != ind(nx-1, ny-1, nz-1)) rs_error("Hilbert::Hilbert: The model size is beyond the size this program can handle.");
+    
+       // Allocating the hilbert transform array
+    df = (T *) calloc(nx*ny*nz,sizeof(T));
+
+    // Allocating Fourier transform
+    //
+    long int nmin = 0;
+    nmin = MIN(nx, MIN(ny,nz));
+    if(_nmax < nmin) rs_error("Hilbert::Hilbert: The nmax variable is smaller than the smallest dimension size, this is not allowed.");
+    fft1d = std::make_shared<Fft<T>>(_nmax);
 }
 
 /* Destructor*/
