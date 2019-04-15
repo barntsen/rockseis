@@ -61,7 +61,7 @@ void evaluate(rockseis::OptInstancePtr instance)
 
         gnorm = lsmig->vector_norm(instance->g, 2, instance->n);
         // Reset kvp 
-        lsmig->setKvp(0.1*instance->f/gnorm);
+        lsmig->setKvp(lsmig->getKvp()*lsmig->getKvp()*instance->f/gnorm);
         // Re-read gradient with new kvp set
         lsmig->readGrad(g);
         lsmig->setFnorm(instance->f);
@@ -172,6 +172,9 @@ int main(int argc, char** argv) {
             PRINT_DOC(f2 = "10"; # Third point);
             PRINT_DOC(f3 = "12.5"; # Fourth point);
             PRINT_DOC();
+            PRINT_DOC(#Gradient scaling parameter);
+            PRINT_DOC(kvp = "1.0";);
+            PRINT_DOC();
             PRINT_DOC(#Regularisation);
             PRINT_DOC(vpregalpha = "0.0";);
             PRINT_DOC();
@@ -270,6 +273,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("max_iterations", &max_iterations) == INPARSE_ERR) status = true;
 
     if(Inpar->getPar("srcilum", &srcilum) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("kvp", &kvp) == INPARSE_ERR) status = true;
 
     if(Inpar->getPar("linesearch", &linesearch) == INPARSE_ERR) status = true;
     if(Inpar->getPar("optmethod", &optmethod) == INPARSE_ERR) status = true;
@@ -312,7 +316,6 @@ int main(int argc, char** argv) {
     lsmig->setMisfit_type(fwimisfit);
 
     lsmig->setVpgradfile(VPGRADFILE);
-    kvp = 1.0;
     lsmig->setKvp(kvp);
     lsmig->setVpregalpha(vpregalpha);
     lsmig->setPimagefile(VPLSFILE);
