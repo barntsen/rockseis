@@ -203,6 +203,10 @@ int main(int argc, char** argv) {
             PRINT_DOC(vpregalpha = "0.0";);
             PRINT_DOC(rhoregalpha = "0.0";);
             PRINT_DOC();
+            PRINT_DOC(# Uncertainty);
+            PRINT_DOC();
+            PRINT_DOC(Outputhess = "false"; # Output diagonal of L-BFGS inverse Hessian at last iteration ;)
+            PRINT_DOC();
             PRINT_DOC(# Files);
             PRINT_DOC(Vp = "Vp2d.rss";);
             PRINT_DOC(Rho = "Rho2d.rss";);
@@ -223,6 +227,7 @@ int main(int argc, char** argv) {
     bool dataweight;
     bool modmute;
     bool srcmute;
+    bool outputhess;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
@@ -276,6 +281,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("krho", &krho) == INPARSE_ERR) status = true;
     if(Inpar->getPar("ksource", &ksource) == INPARSE_ERR) status = true;
     if(Inpar->getPar("paramtype", &_paramtype) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("outputhess", &outputhess) == INPARSE_ERR) status = true;
     rockseis::rs_paramtype paramtype = static_cast<rockseis::rs_paramtype>(_paramtype);
     if(paramtype == PAR_BSPLINE){
         if(Inpar->getPar("dtx", &dtx) == INPARSE_ERR) status = true;
@@ -408,7 +414,7 @@ int main(int argc, char** argv) {
         opt->opt_set_initial_guess(x);
         opt->setMax_linesearch(max_linesearch);
         opt->setMax_iterations(max_iterations);
-        opt->setCompdiaghessian(true);
+        opt->setCompdiaghessian(outputhess);
 
         switch(optmethod) {
             case 1:
