@@ -61,7 +61,7 @@ void evaluate(rockseis::OptInstancePtr instance)
 
         gnorm = lsmig->vector_norm(instance->g, 2, instance->n);
         // Reset kvp 
-        lsmig->setKvp(0.2*instance->f/gnorm);
+        lsmig->setKvp(0.1*instance->f/gnorm);
         // Re-read gradient with new kvp set
         lsmig->readGrad(g);
         lsmig->setFnorm(instance->f);
