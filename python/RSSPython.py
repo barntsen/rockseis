@@ -81,7 +81,7 @@ class RSSdata:
                     self.data[i*self.geomN[0] + j] = st.unpack('f', f.read(4))[0];
         else:
             for i in range(0,self.fullsize):
-                self.data[i] = st.unpack('f', f.read(4))[0];
+               self.data[i] = st.unpack('f', f.read(4))[0];
 
         # Reshape data to correct dimensions
         self.data=self.data.reshape(resize, order='F')
