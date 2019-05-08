@@ -170,6 +170,9 @@ int main(int argc, char** argv) {
             PRINT_DOC(f2 = "10"; # Third point);
             PRINT_DOC(f3 = "12.5"; # Fourth point);
             PRINT_DOC();
+            PRINT_DOC(#Preconditioning);
+            PRINT_DOC(zder = "true"; # Z-derivative preconditioning);
+            PRINT_DOC();
             PRINT_DOC(#Gradient scaling parameter);
             PRINT_DOC(kvp = "1.0";);
             PRINT_DOC();
@@ -210,6 +213,7 @@ int main(int argc, char** argv) {
     int linesearch;
     int optmethod; 
     bool srcilum;
+    bool zder;
     std::string Waveletfile;
     std::string Vpfile;
     std::string Rhofile;
@@ -286,6 +290,7 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("f2", &freqs[2]) == INPARSE_ERR) status = true;
         if(Inpar->getPar("f3", &freqs[3]) == INPARSE_ERR) status = true;
     }
+    if(Inpar->getPar("zder", &zder) == INPARSE_ERR) status = true;
 
 
 	if(status == true){
@@ -327,6 +332,7 @@ int main(int argc, char** argv) {
     lsmig->setSrcilumfile(SRCILUMFILE);
     lsmig->setFilter(filter);
     lsmig->setFreqs(&freqs[0]);
+    lsmig->setZder(zder);
 
     //MASTER
     if(mpi.getRank() == 0){

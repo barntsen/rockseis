@@ -99,6 +99,8 @@ public:
     void writeProgress(int x, int n, int r, int w);
     void setNoreverse(bool val) { noreverse = val; }
     bool getNoreverse() { return noreverse; }
+    void setZder(bool val) { zder=val; } ///< Set zder flag
+    bool getZder() { return zder; } ////< Get zder flag
     void stoep(int n, T r[], T g[], T f[], T a[]);
     void convolve(int lx, int ifx, T *x, int ly, int ify, T *y, int lz, int ifz, T *z);
     void xcor(int lx, int ifx, T *x,int ly, int ify, T *y, int lz, int ifz, T *z);
@@ -120,6 +122,7 @@ private:
     T misfit; ///< Misfit value
     bool noreverse; ///< Do only forward loop flag
     bool filter; ///< Whether or not to filter residuals in Adaptive misfit 
+    bool zder; ///< Use a z-derivative preconditioning 
     T freqs[4];  ///< Four corner filter  
 };
 

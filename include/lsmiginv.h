@@ -146,6 +146,8 @@ public:
     void normalize(double *v, double *f, int n);
     void setNoreverse(bool val) { noreverse = val; }
     bool getNoreverse() { return noreverse; }
+    void setZder(bool val) { zder = val; }
+    bool getZder() { return zder; }
 
 
 private:
@@ -170,6 +172,7 @@ private:
     MPImodeling *mpi;
     T dtx, dty, dtz;
     bool noreverse;
+    bool zder;
 };
 
 // ##### ACOUSTIC 2D LSMIGINV CLASS

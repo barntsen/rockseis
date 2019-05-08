@@ -30,6 +30,7 @@ Lsmiginv<T>::Lsmiginv() {
     }
     noreverse = false;
     filter = false;
+    zder = false;
 }
 
 template<typename T>
@@ -60,6 +61,7 @@ Lsmiginv<T>::Lsmiginv(MPImodeling *_mpi) {
     }
     noreverse = false;
     filter = false;
+    zder = false;
 }
 
 template<typename T>
@@ -366,8 +368,13 @@ void LsmiginvAcoustic2D<T>::runGrad() {
                 
                 // Setting misfit type
                 lsrtm->setMisfit_type(this->getMisfit_type());
+
+                // Setting filter
                 lsrtm->setFilter(this->getFilter());
                 lsrtm->setAllfreqs(this->getFreqs());
+
+                // Setting zder 
+                lsrtm->setZder(this->getZder());
 
                 // Creating gradient objects
                 vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
@@ -628,8 +635,13 @@ void LsmiginvAcoustic2D<T>::runGrad_Multiples() {
                 
                 // Setting misfit type
                 lsrtm->setMisfit_type(this->getMisfit_type());
+
+                // Setting filter
                 lsrtm->setFilter(this->getFilter());
                 lsrtm->setAllfreqs(this->getFreqs());
+
+                // Setting zder 
+                lsrtm->setZder(this->getZder());
 
                 // Creating gradient objects
                 vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);

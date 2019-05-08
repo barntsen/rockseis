@@ -22,6 +22,7 @@ Lsrtm<T>::Lsrtm() {
     freqs[1]=0;
     freqs[2]=0;
     freqs[3]=0;
+    zder = false;
 }
 
 template<typename T>
@@ -52,6 +53,7 @@ Lsrtm<T>::Lsrtm(int _order, int _snapinc) {
     freqs[1]=0;
     freqs[2]=0;
     freqs[3]=0;
+    zder = false;
 }
 
 template<typename T>
@@ -486,6 +488,7 @@ void LsrtmAcoustic2D<T>::calcAdjointsource(T *adjsrc_bw, T* wrp, int padr)
 	int nxr = nx+2*padr;
 	int nz = pimage->getNz();
 	int hx, hz;
+    T wrk = 0.0;
     //Reset arrays
     for (ix=0; ix<nx; ix++){
         for (iz=0; iz<nz; iz++){
@@ -500,13 +503,17 @@ void LsrtmAcoustic2D<T>::calcAdjointsource(T *adjsrc_bw, T* wrp, int padr)
             for (ix=0; ix<nx; ix++){
                 if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
                 {
-                    for (iz=0; iz<nz; iz++){
+                    for (iz=1; iz<nz-1; iz++){
                         if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz))
                         {
-							adjsrc_bw[km2D(ix,iz)] -= imagedata[kim2D(ix-hx,iz-hz,ihx,ihz)]*wrp[kr2D(ix-2*hx+padr, iz-2*hz+padr)];
+                            if(this->getZder()){
+                                wrk = imagedata[kim2D(ix-hx,iz+1-hz,ihx,ihz)] -2.0*imagedata[kim2D(ix-hx,iz-hz,ihx,ihz)] + imagedata[kim2D(ix-hx,iz-1-hz,ihx,ihz)];
+                            }else{
+                                wrk = imagedata[kim2D(ix-hx,iz-hz,ihx,ihz)];
+                            }
+							adjsrc_bw[km2D(ix,iz)] -= wrk*wrp[kr2D(ix-2*hx+padr, iz-2*hz+padr)];
 
                         }
-
                     }	
                 }
             }
@@ -552,13 +559,22 @@ void LsrtmAcoustic2D<T>::crossCorr(T *wsp, T *wsp_hilb, int pads, T* wrp1, T* wr
     int nz = vpgrad->getNz();
     int nxs = nx+2*pads;
     int nxr = nx+2*padr;
+    T wrk1, wrk2;
     for (ix=1; ix<nx-1; ix++){
         {
             for (iz=1; iz<nz-1; iz++){
-                vpgraddata[ki2D(ix,iz)] -= snapinc*0.25*wsp[ks2D(ix+pads, iz+pads)]*wrp1[kr2D(ix+padr, iz+padr)];
-                vpgraddata[ki2D(ix,iz)] += snapinc*0.25*wsp_hilb[ks2D(ix+pads, iz+pads)]*wrp1_hilb[kr2D(ix+padr, iz+padr)];
-                vpgraddata[ki2D(ix,iz)] += snapinc*0.25*wsp[ks2D(ix+pads, iz+pads)]*wrp2_hilb[kr2D(ix+padr, iz+padr)];
-                vpgraddata[ki2D(ix,iz)] += snapinc*0.25*wsp_hilb[ks2D(ix+pads, iz+pads)]*wrp2[kr2D(ix+padr, iz+padr)];
+
+                if(this->getZder()){
+                    wrk1 = wsp[ks2D(ix+pads, iz+pads+1)] -2.0*wsp[ks2D(ix+pads, iz+pads)] + wsp[ks2D(ix+pads, iz+pads-1)];
+                    wrk2 = wsp_hilb[ks2D(ix+pads, iz+pads+1)] -2.0*wsp_hilb[ks2D(ix+pads, iz+pads)] + wsp_hilb[ks2D(ix+pads, iz+pads-1)];
+                }else{
+                    wrk1 = wsp[ks2D(ix+pads, iz+pads)];
+                    wrk2 = wsp_hilb[ks2D(ix+pads, iz+pads)];
+                }
+                vpgraddata[ki2D(ix,iz)] -= snapinc*0.25*wrk1*wrp1[kr2D(ix+padr, iz+padr)];
+                vpgraddata[ki2D(ix,iz)] += snapinc*0.25*wrk2*wrp1_hilb[kr2D(ix+padr, iz+padr)];
+                vpgraddata[ki2D(ix,iz)] += snapinc*0.25*wrk1*wrp2_hilb[kr2D(ix+padr, iz+padr)];
+                vpgraddata[ki2D(ix,iz)] += snapinc*0.25*wrk2*wrp2[kr2D(ix+padr, iz+padr)];
 
                 if(srcilumset){
                     srcilumdata[ki2D(ix,iz)] += snapinc*wsp[ks2D(ix+pads, iz+pads)]*wsp[ks2D(ix+pads, iz+pads)];
