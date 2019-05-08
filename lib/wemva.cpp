@@ -757,10 +757,10 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
         case SI:
             for (ihx=0; ihx<nhx; ihx++){
                 hx= -(nhx-1)/2 + ihx;
-                G1 = GAUSS(hx, 0.1*nhx);
+                G1 = WEIGHT((T) hx, (T) ((nhx-1)/2));
                 for (ihz=0; ihz<nhz; ihz++){
                     hz= -(nhz-1)/2 + ihz;
-                    G2 = G1*GAUSS(hz, 0.1*nhz);
+                    G2 = G1*WEIGHT((T) hz, (T) ((nhz-1)/2));
                     for (ix=0; ix<nx; ix++){
                         // Misfit
                         for (iz=0; iz<nz-1; iz++){
@@ -812,10 +812,10 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
             // Misfit
             for (ihx=0; ihx<nhx; ihx++){
                 hx= -(nhx-1)/2 + ihx;
-                G1 = GAUSS(hx, 0.1*nhx);
+                G1 = WEIGHT((T) hx, (T) ((nhx-1)/2));
                 for (ihz=0; ihz<nhz; ihz++){
                     hz= -(nhz-1)/2 + ihz;
-                    G2 = G1*GAUSS(hz, 0.1*nhz);
+                    G2 = G1*WEIGHT((T) hz, (T) ((nhz-1)/2));
                     for (ix=0; ix<nx; ix++){
                         for (iz=0; iz<nz-1; iz++){
                             wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
@@ -835,10 +835,10 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
             //Residual
             for (ihx=0; ihx<nhx; ihx++){
                 hx= -(nhx-1)/2 + ihx;
-                G1 = GAUSS(hx, 0.1*nhx);
+                G1 = WEIGHT((T) hx, (T) ((nhx-1)/2));
                 for (ihz=0; ihz<nhz; ihz++){
                     hz= -(nhz-1)/2 + ihz;
-                    G2 = G1*GAUSS(hz, 0.1*nhz);
+                    G2 = G1*WEIGHT((T) hz, (T) ((nhz-1)/2));
                     for (ix=0; ix<nx; ix++){
                         for (iz=1; iz<nz-1; iz++){
                             wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];

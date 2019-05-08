@@ -38,6 +38,7 @@
 #define kr3D(i,j,k) ((k)*nxr*nyr + (j)*nxr + (i))
   
 #define GAUSS(x,y) expf(-1.0*((x)*(x))/(2.0*(y)*(y)));
+#define WEIGHT(x,y) ((1/((y)*(y)*(y)*(y)))*((x)*(x)*(x)*(x)) -(2/((y)*(y)))*((x)*(x)) + 1);
 
 namespace rockseis {
 
