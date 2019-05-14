@@ -199,8 +199,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(rhoregalpha = "1.0e-5";);
             PRINT_DOC();
             PRINT_DOC(# Uncertainty);
-            PRINT_DOC();
-            PRINT_DOC(Outputhess = "false"; # Output diagonal of L-BFGS inverse Hessian at last iteration ;)
+            PRINT_DOC(outputhess = "false"; # Output diagonal of L-BFGS inverse Hessian at last iteration ;)
             PRINT_DOC();
             PRINT_DOC(# Files);
             PRINT_DOC(Vp = "Vp2d.rss";);
