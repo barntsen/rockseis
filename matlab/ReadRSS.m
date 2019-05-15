@@ -23,6 +23,7 @@ function [data, head] = ReadRSS(filename)
 MAGICNUMBER='R0CKS'; %rss identifier
 MAGICNUMBERLENGTH=5;
 MAXDIMS=9;
+
 data=[];
 head=[];
 
@@ -66,14 +67,18 @@ if(head.Nheader)
         
         data(:,i) = fread(fileID, head.geometry.N(1),'*float32');
     end
-else
+else    
+    ndim = 0;
     for i=1:MAXDIMS
         if (head.geometry.N(i) > 0)
             Dsz(i) = head.geometry.N(i);
+            ndim = ndim + 1;
         end
     end
     data = fread(fileID, prod(Dsz),'*float32');
-    data = reshape(data, Dsz);
+    if(ndim > 1)
+        data = reshape(data, Dsz);
+    end
 end
 
 fclose(fileID);
