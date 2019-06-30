@@ -1172,9 +1172,9 @@ void LsrtmAcoustic3D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wry, T*w
 	int nx = vpgrad->getNx();
 	int ny = vpgrad->getNy();
 	int nz = vpgrad->getNz();
-    int dx = vpgrad->getDx();
-    int dy = vpgrad->getDy();
-    int dz = vpgrad->getDz();
+    T dx = vpgrad->getDx();
+    T dy = vpgrad->getDy();
+    T dz = vpgrad->getDz();
 	int nxs = nx + 2*pads;
 	int nxr = nx + 2*padr;
 	int nys = ny + 2*pads;

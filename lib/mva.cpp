@@ -267,8 +267,8 @@ void MvaAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
     T vpscale;
     int nx = vpgrad->getNx();
     int nz = vpgrad->getNz();
-    int dx = vpgrad->getDx();
-    int dz = vpgrad->getDz();
+    T dx = vpgrad->getDx();
+    T dz = vpgrad->getDz();
     int nxs = nx+2*pads;
     int nxr = nx+2*padr;
     for (ix=1; ix<nx-1; ix++){
