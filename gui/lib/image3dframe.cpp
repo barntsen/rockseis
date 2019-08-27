@@ -64,51 +64,51 @@ Image3dframe::Image3dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 	FlexGridSizer1->AddGrowableCol(3);
 	FlexGridSizer1->AddGrowableRow(2);
 	Yaxis_vert = new wxPanel(this, ID_PANEL1, wxDefaultPosition, wxSize(50,300), wxTAB_TRAVERSAL, _T("ID_PANEL1"));
-	FlexGridSizer1->Add(Yaxis_vert, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Yaxis_vert, 1, wxALL|wxEXPAND, 1);
 	Zplotwindow = new wxPanel(this, ID_PANEL2, wxDefaultPosition, wxSize(300,300), wxTAB_TRAVERSAL, _T("ID_PANEL2"));
-	FlexGridSizer1->Add(Zplotwindow, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Zplotwindow, 1, wxALL|wxEXPAND, 1);
 	Slider1panel = new wxPanel(this, ID_PANEL3, wxDefaultPosition, wxSize(50,300), wxTAB_TRAVERSAL, _T("ID_PANEL3"));
 	Slider1 = new wxSlider(Slider1panel, ID_SLIDER1, 0, 0, 10, wxPoint(1,50), wxSize(50,200), wxSL_VERTICAL, wxDefaultValidator, _T("ID_SLIDER1"));
-	FlexGridSizer1->Add(Slider1panel, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Slider1panel, 1, wxALL|wxEXPAND, 1);
 	Cornerup = new wxPanel(this, ID_PANEL4, wxDefaultPosition, wxSize(300,300), wxTAB_TRAVERSAL, _T("ID_PANEL4"));
-	FlexGridSizer1->Add(Cornerup, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Cornerup, 1, wxALL|wxEXPAND, 1);
 
 	Gap1 = new wxPanel(this, ID_PANEL5, wxDefaultPosition, wxSize(50,50), wxTAB_TRAVERSAL, _T("ID_PANEL5"));
-	FlexGridSizer1->Add(Gap1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Gap1, 1, wxALL|wxEXPAND, 1);
     
 	Slider2panel = new wxPanel(this, ID_PANEL6, wxDefaultPosition, wxSize(300,50), wxTAB_TRAVERSAL, _T("ID_PANEL6"));
 	Slider2 = new wxSlider(Slider2panel, ID_SLIDER2, 0, 0, 10, wxPoint(50,1), wxSize(200,50), wxSL_HORIZONTAL, wxDefaultValidator, _T("ID_SLIDER2"));
-	FlexGridSizer1->Add(Slider2panel, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Slider2panel, 1, wxALL|wxEXPAND, 1);
 
 	Gap2 = new wxPanel(this, ID_PANEL7, wxDefaultPosition, wxSize(50,50), wxTAB_TRAVERSAL, _T("ID_PANEL7"));
-	FlexGridSizer1->Add(Gap2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Gap2, 1, wxALL|wxEXPAND, 1);
 
 	Slider3panel = new wxPanel(this, ID_PANEL8, wxDefaultPosition, wxSize(300,50), wxTAB_TRAVERSAL, _T("ID_PANEL8"));
 	Slider3 = new wxSlider(Slider3panel, ID_SLIDER2, 0, 0, 10, wxPoint(50,1), wxSize(200,50), wxSL_HORIZONTAL, wxDefaultValidator, _T("ID_SLIDER3"));
-	FlexGridSizer1->Add(Slider3panel, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Slider3panel, 1, wxALL|wxEXPAND, 1);
 
 	Zaxis = new wxPanel(this, ID_PANEL9, wxDefaultPosition, wxSize(50,300), wxTAB_TRAVERSAL, _T("ID_PANEL9"));
-	FlexGridSizer1->Add(Zaxis, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Zaxis, 1, wxALL|wxEXPAND, 1);
 	Xplotwindow = new wxPanel(this, ID_PANEL10, wxDefaultPosition, wxSize(300,300), wxTAB_TRAVERSAL, _T("ID_PANEL10"));
-	FlexGridSizer1->Add(Xplotwindow, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Xplotwindow, 1, wxALL|wxEXPAND, 1);
 
 	Gap3 = new wxPanel(this, ID_PANEL11, wxDefaultPosition, wxSize(50,300), wxTAB_TRAVERSAL, _T("ID_PANEL11"));
-	FlexGridSizer1->Add(Gap3, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Gap3, 1, wxALL|wxEXPAND, 1);
 
 	Yplotwindow = new wxPanel(this, ID_PANEL12, wxDefaultPosition, wxSize(300,300), wxTAB_TRAVERSAL, _T("ID_PANEL12"));
-	FlexGridSizer1->Add(Yplotwindow, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Yplotwindow, 1, wxALL|wxEXPAND, 1);
 
 	Cornerdown = new wxPanel(this, ID_PANEL13, wxDefaultPosition, wxSize(50,50), wxTAB_TRAVERSAL, _T("ID_PANEL13"));
-	FlexGridSizer1->Add(Cornerdown, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Cornerdown, 1, wxALL|wxEXPAND, 1);
 
 	Xaxis = new wxPanel(this, ID_PANEL14, wxDefaultPosition, wxSize(300,50), wxTAB_TRAVERSAL, _T("ID_PANEL14"));
-	FlexGridSizer1->Add(Xaxis, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Xaxis, 1, wxALL|wxEXPAND, 1);
 
 	Gap4 = new wxPanel(this, ID_PANEL15, wxDefaultPosition, wxSize(50,50), wxTAB_TRAVERSAL, _T("ID_PANEL15"));
-	FlexGridSizer1->Add(Gap4, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Gap4, 1, wxALL|wxEXPAND, 1);
 
 	Yaxis_hor = new wxPanel(this, ID_PANEL16, wxDefaultPosition, wxSize(300,50), wxTAB_TRAVERSAL, _T("ID_PANEL16"));
-	FlexGridSizer1->Add(Yaxis_hor, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Yaxis_hor, 1, wxALL|wxEXPAND, 1);
 	SetSizer(FlexGridSizer1);
 	StatusBar1 = new wxStatusBar(this, ID_STATUSBAR1, 0, _T("ID_STATUSBAR1"));
 	int __wxStatusBarWidths_1[1] = { -10 };

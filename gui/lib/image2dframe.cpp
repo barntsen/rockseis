@@ -57,27 +57,24 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
 
 	//(*Initialize(Image2dframe)
 	wxFlexGridSizer* FlexGridSizer1;
-	wxBoxSizer* BoxSizer1;
 
 	Create(parent, id, _("2D image window"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("id"));
 	SetClientSize(wxDefaultSize);
 	Move(wxDefaultPosition);
-	BoxSizer1 = new wxBoxSizer(wxHORIZONTAL);
 	FlexGridSizer1 = new wxFlexGridSizer(2, 3, 0, 0);
+	this->SetSizer(FlexGridSizer1);
 	FlexGridSizer1->AddGrowableCol(1);
 	FlexGridSizer1->AddGrowableRow(1);
 	LeftCorner = new wxPanel(this, ID_PANEL1, wxDefaultPosition, wxSize(50,50), wxTAB_TRAVERSAL, _T("ID_PANEL1"));
-	FlexGridSizer1->Add(LeftCorner, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(LeftCorner, 1, wxALL|wxEXPAND, 1);
 	Xaxis = new wxPanel(this, ID_PANEL2, wxDefaultPosition, wxSize(600,50), wxTAB_TRAVERSAL, _T("ID_PANEL2"));
-	FlexGridSizer1->Add(Xaxis, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Xaxis, 1, wxALL|wxEXPAND, 1);
 	RightCorner = new wxPanel(this, ID_PANEL3, wxDefaultPosition, wxSize(50,50), wxTAB_TRAVERSAL, _T("ID_PANEL3"));
-	FlexGridSizer1->Add(RightCorner, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(RightCorner, 1, wxALL|wxEXPAND, 1);
 	Zaxis = new wxPanel(this, ID_PANEL4, wxDefaultPosition, wxSize(50,600), wxTAB_TRAVERSAL, _T("ID_PANEL4"));
-	FlexGridSizer1->Add(Zaxis, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
+	FlexGridSizer1->Add(Zaxis, 1, wxALL|wxEXPAND, 1);
 	Imagewindow = new wxPanel(this, ID_IMAGEWINDOW1, wxDefaultPosition, wxSize(600,600), wxWANTS_CHARS, _T("ID_IMAGEWINDOW1"));
-	FlexGridSizer1->Add(Imagewindow, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
-	BoxSizer1->Add(FlexGridSizer1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 1);
-	SetSizer(BoxSizer1);
+	FlexGridSizer1->Add(Imagewindow, 1, wxALL|wxEXPAND, 1);
     StatusBar1 = new wxStatusBar(this, ID_STATUSBAR1, wxSIMPLE_BORDER, _T("ID_STATUSBAR1"));
     int __wxStatusBarWidths_1[1] = { -10 };
     int __wxStatusBarStyles_1[1] = { wxSB_NORMAL };
@@ -85,8 +82,8 @@ Image2dframe::Image2dframe(size_t _n1, float _d1, float _o1, size_t _n2, float _
     StatusBar1->SetStatusStyles(1,__wxStatusBarStyles_1);
     SetStatusBar(StatusBar1);
 
-    BoxSizer1->Fit(this);
-	BoxSizer1->SetSizeHints(this);
+    FlexGridSizer1->Fit(this);
+	FlexGridSizer1->SetSizeHints(this);
 
 	Xaxis->Connect(wxEVT_PAINT,(wxObjectEventFunction)&Image2dframe::OnXaxisPaint,0,this);
 	Zaxis->Connect(wxEVT_PAINT,(wxObjectEventFunction)&Image2dframe::OnZaxisPaint,0,this);
