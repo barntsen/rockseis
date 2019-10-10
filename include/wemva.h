@@ -23,6 +23,7 @@
 #include "mva.h"
 #include "sort.h"
 #include "bspl.h"
+#include "hilbert.h"
 
 #define RUN_F_GRAD 0
 #define RUN_BS_PROJ 1
@@ -78,7 +79,7 @@
 
 #define RESULTDIR "Results"
 
-
+#define THRES 70
 
 namespace rockseis {
 
@@ -94,6 +95,7 @@ public:
     ~Wemva(); ///<Destructor
     void createResult();
     double vector_norm(double *v, const int type, const int n);
+    void find_max(T *v, T *max, int *imax, const int n);
     void setMpi(MPImodeling *_mpi) { mpi = _mpi; }
     void writeLog(std::string msg);
     void writeProgress(std::string msg);

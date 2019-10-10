@@ -103,6 +103,22 @@ double Wemva<T>::vector_norm(double *v, const int type, const int n){
 }
 
 template<typename T>
+void Wemva<T>::find_max(T *v, T* max, int *imax, int n){
+	// Variables
+	int i;
+
+    *max = v[0];
+    *imax = 0;
+    for(i=1; i < n; i++)
+    {
+        if (v[i] > *max){
+            *max = v[i];
+            *imax = i;
+        }
+    }
+}
+
+template<typename T>
 bool Wemva<T>::createLog(){
 	logfile = LOGFILE;
 	Flog.open(logfile.c_str());
@@ -753,6 +769,20 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
     T f1 = 0.;
     T f2 = 0.;
 
+    /* Variables for DS_hmax misfit and residual computation*/
+    T *cip = (T *) calloc(nz*nhx*nhz, sizeof(T));
+    T *env = (T *) calloc(nz*nhx*nhz, sizeof(T));
+    T *hmax = (T *) calloc(nz, sizeof(T));
+    T *hsort = (T *) calloc(nz, sizeof(T));
+    T *hwrk = (T *) calloc(nhx, sizeof(T));
+    int *imax = (int *) calloc(nz, sizeof(int));
+    std::shared_ptr<Hilbert<T>> hilb_cip1 (new Hilbert<T>(nz, nhx, nhz, nz));
+    std::shared_ptr<Hilbert<T>> hilb_cip2 (new Hilbert<T>(nz, nhx, nhz, nz));
+    T pclip;
+    T *imag;
+    int pos;
+    T num, den;
+
     switch(this->getMisfit_type()){
         case SI:
             for (ihx=0; ihx<nhx; ihx++){
@@ -851,6 +881,98 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                 }
             }
             break;
+        case DS_HMAX:
+            // Misfit
+            // Get a CIP gather
+            for (ix=0; ix<nx; ix++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        // Derivative
+                        for (iz=1; iz<nz-1; iz++){
+                            cip[kres2D(iz,ihx,ihz)] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                        }
+                    }
+                }
+                // Hilbert transform over first non-singleton axis
+                hilb_cip1->hilbertx(cip);
+                imag = hilb_cip1->getDf();
+
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (iz=0; iz<nz; iz++){
+                           env[kres2D(iz,ihx,ihz)] = SQ(cip[kres2D(iz,ihx,ihz)]) + SQ(imag[kres2D(iz,ihx,ihz)]);
+                        }
+                    }
+                }
+                // Find maximum and index of maximum along hx axis and store in an array
+                for (iz=0; iz<nz; iz++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (ihx=0; ihx<nhx; ihx++){
+                            hwrk[ihx] = env[kres2D(iz,ihx,ihz)];
+                        }
+                    }
+                    this->find_max(hwrk, &hmax[iz], &imax[iz], nhx);
+                }
+
+                // Threshold 
+                for (iz=0; iz<nz; iz++){
+                    hsort[iz] = hmax[iz];
+                }
+                std::sort(hsort, hsort+nz); 
+                pos = (int) (THRES*nz/100);
+                pclip = hsort[pos];
+                for (iz=0; iz<nz; iz++){
+                    if(hmax[iz] < pclip){
+                        hmax[iz] = 0;
+                        imax[iz] = (nhx-1)/2;
+                    }
+                }
+                // Calculate delta h, and misfit. 
+                for (iz=0; iz<nz; iz++){
+                    f += 0.5*SQ(imax[iz]-((nhx-1)/2));
+                }
+                // Residual
+                // Calculate second derivative
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (iz=1; iz<nz-1; iz++){
+                            cip[kres2D(iz,ihx,ihz)] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
+                        }
+                    }
+                }
+
+                // Calculate double Hilbert transform
+                hilb_cip1->hilbertx(cip);
+                imag = hilb_cip1->getDf();
+                hilb_cip2->hilbertx(imag);
+                imag = hilb_cip2->getDf();
+
+                //Build residual
+                for (iz=0; iz<nz; iz++){
+                    den = 0.0;
+                    num = 0.0;
+                    if(imax[iz] >1 && imax[iz] < nhx-1){
+                        den = (env[kres2D(iz,imax[iz]+2,0)] - 2.0*env[kres2D(iz,imax[iz],0)] + env[kres2D(iz,imax[iz]-2,0)])/4.0;
+                    }
+                    if(imax[iz] >1 && imax[iz] < nhx-1){
+                        num = -2.0*(cip[kres2D(iz,imax[iz]+1,0)] - cip[kres2D(iz,imax[iz]-1,0)])/2.0;
+                        num += 2.0*(imag[kres2D(iz,imax[iz]+1,0)] - imag[kres2D(iz,imax[iz]-1,0)])/2.0;
+                    }
+
+                    // Zero out residual data not in hmax
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (ihx=0; ihx<nhx; ihx++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] = 0.0;
+                        }
+                    }
+
+                    if(den != 0.0){
+                        imagedata[ki2D(ix,iz,imax[iz],0)] = 1.0*(imax[iz]-((nhx-1)/2))*num/den;
+                    }
+                }
+            }
+
+            break;
         default:
             f = 0;
             break;
@@ -858,6 +980,12 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
 
     // Free work array
     free(wrk);
+    free(cip);
+    free(env);
+    free(hmax);
+    free(hsort);
+    free(hwrk);
+    free(imax);
 
     pimage->setImagefile(PIMAGERESFILE);
     pimage->write();

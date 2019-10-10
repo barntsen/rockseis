@@ -26,6 +26,7 @@
 #define SMAP 0
 
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
+#define kres2D(i,j,k) ((k)*nz*nhx + (j)*nz + (i))
 #define km2D(i,j) ((j)*nx + (i))
 #define kw2D(i,j) ((j)*nxw + (i))
 #define ks2D(i,j) ((j)*nxs + (i))

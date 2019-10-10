@@ -11,6 +11,8 @@
 #define SMAP 0
 #define GMAP 1
 #define PI 3.14159265358979323846
+#define SQ(x) ((x)*(x))
+
 
 #define PRINT_DOC(s) std::cout << (#s) << std::endl;
 
@@ -22,7 +24,7 @@ typedef enum {SOURCE, RECEIVER, CMP} rs_key; ///< Information on how data is sor
 typedef enum {FINISHED, RUNNING, NOT_STARTED, FAILED} rs_status; ///< Status of a process(ex. in modelling, migration, ...)
 typedef enum {LINEAR, BSPLINE, SINC} rs_interpmode; ///< Interpolation mode.)
 typedef enum {DIFFERENCE, CORRELATION, ADAPTIVE_GAUSS, ADAPTIVE_LINEAR, ADAPTIVE_SINGLE} rs_fwimisfit; ///< Type of misfit for FWI.)
-typedef enum {SI, DS, DS_PLUS_SI} rs_wemvamisfit; ///< Type of misfit for WEMVA.)
+typedef enum {SI, DS, DS_PLUS_SI, DS_HMAX} rs_wemvamisfit; ///< Type of misfit for WEMVA.)
 
 /** The Progress struct
  *

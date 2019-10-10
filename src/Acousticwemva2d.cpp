@@ -290,6 +290,7 @@ int main(int argc, char** argv) {
     wva->setSnapmethod(snapmethod);
     wva->setNsnaps(nsnaps);
     wva->setIncore(incore);
+    if(wemvamisfit == DS_HMAX && nhz > 1) rs_error("DS_HMAX misfit is currently only implemented for the cases where nhz = 1");
     wva->setMisfit_type(wemvamisfit);
 
     wva->setVpgradfile(VPGRADFILE);
