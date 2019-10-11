@@ -929,9 +929,57 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                 }
                 // Calculate delta h, and misfit. 
                 for (iz=0; iz<nz; iz++){
-                    f += 0.5*SQ(imax[iz]-((nhx-1)/2));
+                    f1 += 0.5*SQ(imax[iz]-((nhx-1)/2));
+                    f2 += 0.5*SQ(cip[kres2D(iz,(nhx-1)/2,(nhz-1)/2)]);
                 }
-                // Residual
+            }
+            f = f1/f2;
+
+            // Residual
+            for (ix=0; ix<nx; ix++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        // Derivative
+                        for (iz=1; iz<nz-1; iz++){
+                            cip[kres2D(iz,ihx,ihz)] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                        }
+                    }
+                }
+                // Hilbert transform over first non-singleton axis
+                hilb_cip1->hilbertx(cip);
+                imag = hilb_cip1->getDf();
+
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (iz=0; iz<nz; iz++){
+                           env[kres2D(iz,ihx,ihz)] = SQ(cip[kres2D(iz,ihx,ihz)]) + SQ(imag[kres2D(iz,ihx,ihz)]);
+                        }
+                    }
+                }
+                // Find maximum and index of maximum along hx axis and store in an array
+                for (iz=0; iz<nz; iz++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (ihx=0; ihx<nhx; ihx++){
+                            hwrk[ihx] = env[kres2D(iz,ihx,ihz)];
+                        }
+                    }
+                    this->find_max(hwrk, &hmax[iz], &imax[iz], nhx);
+                }
+
+                // Threshold 
+                for (iz=0; iz<nz; iz++){
+                    hsort[iz] = hmax[iz];
+                }
+                std::sort(hsort, hsort+nz); 
+                pos = (int) (THRES*nz/100);
+                pclip = hsort[pos];
+                for (iz=0; iz<nz; iz++){
+                    if(hmax[iz] < pclip){
+                        hmax[iz] = 0;
+                        imax[iz] = (nhx-1)/2;
+                    }
+                }
+
                 // Calculate second derivative
                 for (ihx=0; ihx<nhx; ihx++){
                     for (ihz=0; ihz<nhz; ihz++){
@@ -967,8 +1015,9 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                     }
 
                     if(den != 0.0){
-                        imagedata[ki2D(ix,iz,imax[iz],0)] = 1.0*(imax[iz]-((nhx-1)/2))*num/den;
+                        imagedata[ki2D(ix,iz,imax[iz],0)] = (1.0/f2)*1.0*(imax[iz]-((nhx-1)/2))*num/den;
                     }
+                    imagedata[ki2D(ix,iz,(nhx-1)/2,(nhz-1)/2)] += (f1/(f2*f2))*cip[kres2D(iz,(nhx-1)/2,(nhz-1)/2)];
                 }
             }
 
