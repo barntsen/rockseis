@@ -768,6 +768,7 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
     T G2 = 0.;
     T f1 = 0.;
     T f2 = 0.;
+    T f3 = 0.;
 
     /* Variables for DS_hmax misfit and residual computation*/
     T *cip = (T *) calloc(nz*nhx*nhz, sizeof(T));
@@ -782,6 +783,9 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
     T *imag;
     int pos;
     T num, den;
+    T rms=0;
+    size_t fold=0;
+    
 
     switch(this->getMisfit_type()){
         case SI:
@@ -932,8 +936,37 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                     f1 += 0.5*SQ(imax[iz]-((nhx-1)/2));
                     f2 += 0.5*SQ(cip[kres2D(iz,(nhx-1)/2,(nhz-1)/2)]);
                 }
+
+                for (iz=0; iz<nz; iz++){
+                    if(imax[iz] >1 && imax[iz] < nhx-1){
+                        rms += SQ((env[kres2D(iz,imax[iz]+2,0)] - 2.0*env[kres2D(iz,imax[iz],0)] + env[kres2D(iz,imax[iz]-2,0)])/4.0);
+                        fold++;
+                    }
+                }
             }
-            f = f1/f2;
+            for (ihx=0; ihx<nhx; ihx++){
+                hx= -(nhx-1)/2 + ihx;
+                G1 = (hx*hx);
+                for (ihz=0; ihz<nhz; ihz++){
+                    hz= -(nhz-1)/2 + ihz;
+                    G2 = G1 + (hz*hz);
+                    for (ix=0; ix<nx; ix++){
+                        // Misfit
+                        for (iz=0; iz<nz-1; iz++){
+                            wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                        }
+                        for (iz=0; iz<nz; iz++){
+                            f3 += 0.5*G2*wrk[iz]*wrk[iz];
+                        }
+                                            }
+                }
+            }
+
+            f = f1*f3/f2;
+
+            if(fold >0){
+                rms = (T) std::sqrt(rms)/fold;
+            }
 
             // Residual
             for (ix=0; ix<nx; ix++){
@@ -1015,12 +1048,24 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                     }
 
                     if(den != 0.0){
-                        imagedata[ki2D(ix,iz,imax[iz],0)] = (1.0/f2)*1.0*(imax[iz]-((nhx-1)/2))*num/den;
+                        imagedata[ki2D(ix,iz,imax[iz],0)] = (f3/f2)*(imax[iz]-((nhx-1)/2))*num*den/(SQ(den) + (rms*1.0e-6));
                     }
-                    imagedata[ki2D(ix,iz,(nhx-1)/2,(nhz-1)/2)] += (f1/(f2*f2))*cip[kres2D(iz,(nhx-1)/2,(nhz-1)/2)];
+                    // SI residual
+                    imagedata[ki2D(ix,iz,(nhx-1)/2,(nhz-1)/2)] += (f1*f3/(f2*f2))*cip[kres2D(iz,(nhx-1)/2,(nhz-1)/2)];
+
+                    // DS resudual
+                    for (ihx=0; ihx<nhx; ihx++){
+                        hx= -(nhx-1)/2 + ihx;
+                        G1 = (hx*hx);
+                        for (ihz=0; ihz<nhz; ihz++){
+                            hz= -(nhz-1)/2 + ihz;
+                            G2 = G1 + (hz*hz);
+                            imagedata[ki2D(ix,iz,ihx,ihz)] -= (f1/f2)*G2*cip[kres2D(iz,ihx,ihz)];
+
+                        }
+                    }
                 }
             }
-
             break;
         default:
             f = 0;
