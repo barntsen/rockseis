@@ -485,7 +485,7 @@ void WemvaAcoustic2D<T>::runBsproj() {
 
     std::string vpgradfile;
 
-    if(Mutefile.empty()){
+    if(Modelmutefile.empty()){
         vpgradfile = VPGRADCOMBFILE;
     }else{
         vpgradfile = VPGRADMUTEFILE;
@@ -683,11 +683,11 @@ void WemvaAcoustic2D<T>::saveLinesearch(double *x)
     int N, Ns, Nmod;
 
     // If mute
-    if(!Mutefile.empty()){
-        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Mutefile, Mutefile, 1 ,0);
+    if(!Modelmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Modelmutefile, Modelmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
-        if(N != Nmute) rs_error("WemvaAcoustic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
+        if(N != Nmute) rs_error("WemvaAcoustic2D<T>::saveLinesearch(): Geometry in Modelmutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         N = (lsmodel->getGeom())->getNtot();
@@ -744,7 +744,7 @@ void WemvaAcoustic2D<T>::saveLinesearch(double *x)
             rs_error("WemvaAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
             break;
     }
-    if(Mutefile.empty()){
+    if(Modelmutefile.empty()){
         free(vpmutedata);
     }
 }
@@ -769,6 +769,28 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
     T f1 = 0.;
     T f2 = 0.;
     T f3 = 0.;
+
+
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute;
+    int N;
+    T *mutedata;
+    // If mute
+    if(!Residualmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Residualmutefile, Residualmutefile, 1 ,0);
+        int Nmute = (mute->getGeom())->getNtot();
+        N = (nx*nz);
+        if(N != Nmute) rs_error("WemvaAcoustic2D<T>::computeMisfit(): Geometry in Residualmutefile does not match geometry in the image.");
+        mute->readModel();
+        mutedata = mute->getVp();
+    }else{
+        N = (nx*nz);
+        mutedata = (T *) calloc(N, sizeof(T)); 
+        for(ix=0; ix < N; ix++){
+            mutedata[ix] = 1.0;
+        }
+    }
+
+
 
     /* Variables for DS_hmax misfit and residual computation*/
     T *cip = (T *) calloc(nz*nhx*nhz, sizeof(T));
@@ -1066,6 +1088,16 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                     }
                 }
             }
+            // Apply mute
+            for (ihz=0; ihz<nhz; ihz++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (iz=0; iz<nz; iz++){
+                        for (ix=0; ix<nx; ix++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] *= mutedata[km2D(ix,iz)];
+                        }
+                    }
+                }
+            }
             break;
         default:
             f = 0;
@@ -1121,7 +1153,7 @@ void WemvaAcoustic2D<T>::readGrad(double *g)
     float *g_in;
     T *gvp;
     std::string vpgradfile;
-    if(Mutefile.empty()){
+    if(Modelmutefile.empty()){
         vpgradfile = VPGRADFILE;
     }else{
         vpgradfile = VPGRADMUTEFILE;
@@ -1193,12 +1225,12 @@ void WemvaAcoustic2D<T>::combineGradients()
 template<typename T>
 void WemvaAcoustic2D<T>::applyMute()
 {
-    if(!Mutefile.empty()){
+    if(!Modelmutefile.empty()){
         // Models
         std::shared_ptr<rockseis::ModelAcoustic2D<T>> model;
         model = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADCOMBFILE, VPGRADCOMBFILE, 1 ,0);
         // Mute
-        std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute (new rockseis::ModelAcoustic2D<T>(Mutefile, Mutefile, 1 ,0));
+        std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute (new rockseis::ModelAcoustic2D<T>(Modelmutefile, Modelmutefile, 1 ,0));
 
         // Mute model and write
         model->readModel();
@@ -2228,7 +2260,7 @@ void WemvaElastic2D<T>::runBsproj() {
     std::string vpgradfile;
     std::string vsgradfile;
 
-    if(Mutefile.empty()){
+    if(Modelmutefile.empty()){
         vpgradfile = VPGRADCOMBFILE;
         vsgradfile = VSGRADCOMBFILE;
     }else{
@@ -2498,11 +2530,11 @@ void WemvaElastic2D<T>::saveLinesearch(double *x)
     int N=0, Ns=0, Nmod=0, Npar=0;
 
     // If mute
-    if(!Mutefile.empty()){
-        mute = std::make_shared <rockseis::ModelElastic2D<T>>(Mutefile, Mutefile, Mutefile, 1 ,0);
+    if(!Modelmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelElastic2D<T>>(Modelmutefile, Modelmutefile, Modelmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
-        if(N != Nmute) rs_error("WemvaElastic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
+        if(N != Nmute) rs_error("WemvaElastic2D<T>::saveLinesearch(): Geometry in Modelmutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         vsmutedata = mute->getVs();
@@ -2633,7 +2665,7 @@ void WemvaElastic2D<T>::saveLinesearch(double *x)
     lssource->write();
 
     // Free allocated arrays
-    if(Mutefile.empty()){
+    if(Modelmutefile.empty()){
         free(vpmutedata);
         free(vsmutedata);
     }
@@ -2674,7 +2706,7 @@ void WemvaElastic2D<T>::readGrad(double *g)
     T *gvp, *gvs;
     std::string vpgradfile;
     std::string vsgradfile;
-    if(Mutefile.empty()){
+    if(Modelmutefile.empty()){
         vpgradfile = VPGRADFILE;
         vsgradfile = VSGRADFILE;
     }else{
@@ -2784,12 +2816,12 @@ void WemvaElastic2D<T>::combineGradients()
 template<typename T>
 void WemvaElastic2D<T>::applyMute()
 {
-    if(!Mutefile.empty()){
+    if(!Modelmutefile.empty()){
         // Models
         std::shared_ptr<rockseis::ModelElastic2D<T>> model;
         model = std::make_shared<rockseis::ModelElastic2D<T>>(VPGRADCOMBFILE, VSGRADCOMBFILE, VPGRADCOMBFILE, 1 ,0);
         // Mute
-        std::shared_ptr<rockseis::ModelElastic2D<T>> mute (new rockseis::ModelElastic2D<T>(Mutefile, Mutefile, Mutefile, 1 ,0));
+        std::shared_ptr<rockseis::ModelElastic2D<T>> mute (new rockseis::ModelElastic2D<T>(Modelmutefile, Modelmutefile, Modelmutefile, 1 ,0));
 
         // Mute model and write
         model->readModel();

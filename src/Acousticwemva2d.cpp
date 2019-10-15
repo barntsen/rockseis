@@ -152,8 +152,10 @@ int main(int argc, char** argv) {
             PRINT_DOC();
             PRINT_DOC(#Inversion parameters);
             PRINT_DOC(misfit_type = "0";  # 0- SI; 1- DS; 2- DS_PLUS_SI;);
-            PRINT_DOC(mute = "false";  # Mute gradient and updates);
-            PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
+            PRINT_DOC(modelmute = "false";  # Mute gradient and updates);
+            PRINT_DOC(Modelmutefile = "Mmute.rss"; # File with mute weights);
+            PRINT_DOC(residualmute = "false";  # Mute residual image);
+            PRINT_DOC(Residualmutefile = "Rmute.rss"; # File with mute weights);
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
             PRINT_DOC(#Migration parameters);
@@ -190,7 +192,8 @@ int main(int argc, char** argv) {
 	int lpml;
 	bool fs;
     bool incore = false;
-    bool mute;
+    bool modelmute;
+    bool residualmute;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
@@ -214,7 +217,8 @@ int main(int argc, char** argv) {
     std::string Misfitfile;
     std::string Psnapfile;
     std::string Precordfile;
-    std::string Mutefile;
+    std::string Modelmutefile;
+    std::string Residualmutefile;
 
 
     /* Get parameters from configuration file */
@@ -257,9 +261,14 @@ int main(int argc, char** argv) {
     }
     if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
     rockseis::rs_wemvamisfit wemvamisfit = static_cast<rockseis::rs_wemvamisfit>(misfit_type);
-    if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
-    if(mute){
-        if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("modelmute", &modelmute) == INPARSE_ERR) status = true;
+    if(modelmute){
+        if(Inpar->getPar("Modelmutefile", &Modelmutefile) == INPARSE_ERR) status = true;
+    }
+
+    if(Inpar->getPar("residualmute", &residualmute) == INPARSE_ERR) status = true;
+    if(residualmute){
+        if(Inpar->getPar("Residualmutefile", &Residualmutefile) == INPARSE_ERR) status = true;
     }
 
     if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
@@ -276,10 +285,12 @@ int main(int argc, char** argv) {
     wva->setLpml(lpml);
     wva->setFs(fs);
     wva->setSnapinc(snapinc);
-
     wva->setPrecordfile(Precordfile);
-    if(mute){
-        wva->setMutefile(Mutefile);
+    if(modelmute){
+        wva->setModelmutefile(Modelmutefile);
+    }
+    if(residualmute){
+        wva->setResidualmutefile(Residualmutefile);
     }
     wva->setVpfile(VPLSFILE);
     wva->setRhofile(RHOLSFILE);

@@ -156,8 +156,8 @@ int main(int argc, char** argv) {
             PRINT_DOC();
             PRINT_DOC(#Fwi parameters);
             PRINT_DOC(misfit_type = "0";  # 0- Difference; 1- Correlation; 2- Adaptive with Gaussian; 3- Adaptive with linear);
-            PRINT_DOC(mute = "false";  # Mute gradient and updates);
-            PRINT_DOC(Mutefile = "mute.rss"; # File with mute weights);
+            PRINT_DOC(modelmute = "false";  # Mute gradient and updates);
+            PRINT_DOC(Modelmutefile = "modelmute.rss"; # File with mute weights);
             PRINT_DOC(max_linesearch = "10"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
 	bool fs;
     bool incore = false;
     bool reciprocity;
-    bool mute;
+    bool modelmute;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
@@ -226,7 +226,7 @@ int main(int argc, char** argv) {
     std::string Snapfile;
     std::string Uxrecordfile;
     std::string Uzrecordfile;
-    std::string Mutefile;
+    std::string Modelmutefile;
 
 
     /* Get parameters from configuration file */
@@ -274,9 +274,9 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
     rockseis::rs_wemvamisfit wemvamisfit = static_cast<rockseis::rs_wemvamisfit>(misfit_type);
 
-    if(Inpar->getPar("mute", &mute) == INPARSE_ERR) status = true;
-    if(mute){
-        if(Inpar->getPar("Mutefile", &Mutefile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("modelmute", &modelmute) == INPARSE_ERR) status = true;
+    if(modelmute){
+        if(Inpar->getPar("Modelmutefile", &Modelmutefile) == INPARSE_ERR) status = true;
     }
 
     if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
@@ -302,8 +302,8 @@ int main(int argc, char** argv) {
     wva->setUxrecordfile(Uxrecordfile);
     wva->setUzrecordfile(Uzrecordfile);
 
-    if(mute){
-        wva->setMutefile(Mutefile);
+    if(modelmute){
+        wva->setModelmutefile(Modelmutefile);
     }
     wva->setVpfile(VPLSFILE);
     wva->setVsfile(VSLSFILE);

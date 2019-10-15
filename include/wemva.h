@@ -195,8 +195,11 @@ public:
     void setPrecordfile(std::string file) { Precordfile = file; }
     std::string getPrecordfile() { return Precordfile; }
 
-    void setMutefile(std::string file) { Mutefile = file; }
-    std::string getMutefile() { return Mutefile; }
+    void setModelmutefile(std::string file) { Modelmutefile = file; }
+    std::string getModelmutefile() { return Modelmutefile; }
+
+    void setResidualmutefile(std::string file) { Residualmutefile = file; }
+    std::string getResidualmutefile() { return Residualmutefile; }
 
     void setApertx(T val) { apertx = val; }
     T getApertx() { return apertx; }
@@ -253,7 +256,8 @@ private:
     std::string Misfitfile;
     std::string Snapfile;
     std::string Precordfile;
-    std::string Mutefile;
+    std::string Modelmutefile;
+    std::string Residualmutefile;
     T apertx;
     T kvp;
     T reg_eps[2];
@@ -304,8 +308,8 @@ public:
     void setUzrecordfile(std::string file) { Uzrecordfile = file; }
     std::string getUzrecordfile() { return Uzrecordfile; }
 
-    void setMutefile(std::string file) { Mutefile = file; }
-    std::string getMutefile() { return Mutefile; }
+    void setModelmutefile(std::string file) { Modelmutefile = file; }
+    std::string getModelmutefile() { return Modelmutefile; }
 
     void setApertx(T val) { apertx = val; }
     T getApertx() { return apertx; }
@@ -392,7 +396,7 @@ private:
     std::string Uxrecordfile;
     std::string Uzrecordfile;
     std::string Snapfile;
-    std::string Mutefile;
+    std::string Modelmutefile;
     std::string Pimagefile;
     std::string Simagefile;
     T apertx;
