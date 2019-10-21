@@ -836,6 +836,16 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                     }
                 }
             }
+            // Apply mute
+            for (ihz=0; ihz<nhz; ihz++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (iz=0; iz<nz; iz++){
+                        for (ix=0; ix<nx; ix++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] *= mutedata[km2D(ix,iz)];
+                        }
+                    }
+                }
+            }
             break;
         case DS:
             for (ihx=0; ihx<nhx; ihx++){
@@ -860,6 +870,16 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                             imagedata[ki2D(ix,iz,ihx,ihz)] = -1.0*G2*wrk[iz];
                         }
                         imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
+                    }
+                }
+            }
+            // Apply mute
+            for (ihz=0; ihz<nhz; ihz++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (iz=0; iz<nz; iz++){
+                        for (ix=0; ix<nx; ix++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] *= mutedata[km2D(ix,iz)];
+                        }
                     }
                 }
             }
@@ -903,6 +923,17 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                             imagedata[ki2D(ix,iz,ihx,ihz)] = (f1/(f2*f2))*G2*wrk[iz] - (((hx*hx) +  (hz*hz))*1.0/f2)*wrk[iz]; 
                         }	
                         imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
+                    }
+                }
+            }
+
+            // Apply mute
+            for (ihz=0; ihz<nhz; ihz++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (iz=0; iz<nz; iz++){
+                        for (ix=0; ix<nx; ix++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] *= mutedata[km2D(ix,iz)];
+                        }
                     }
                 }
             }
