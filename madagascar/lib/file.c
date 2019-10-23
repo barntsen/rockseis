@@ -278,6 +278,11 @@ sf_file sf_output (/*@null@*/ const char* tag)
     dataname = sf_getstring("out");
     if (NULL == dataname)
 	dataname = sf_getstring("--out");
+
+    if (NULL == dataname){
+	dataname = sf_charalloc (7);
+	memcpy(dataname,"stdout",7);
+    }
 	
     if (file->pipe) {
 	file->dataname = sf_charalloc (7);
