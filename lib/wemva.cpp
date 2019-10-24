@@ -791,7 +791,6 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
     }
 
 
-
     /* Variables for DS_hmax misfit and residual computation*/
     T *cip = (T *) calloc(nz*nhx*nhz, sizeof(T));
     T *env = (T *) calloc(nz*nhx*nhz, sizeof(T));
@@ -3110,15 +3109,52 @@ void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> imag
     T G2 = 0.;
     T f1 = 0.;
     T f2 = 0.;
+    T f3 = 0.;
+
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute;
+    int N;
+    T *mutedata;
+    // If mute
+    if(!Residualmutefile.empty()){
+        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Residualmutefile, Residualmutefile, 1 ,0);
+        int Nmute = (mute->getGeom())->getNtot();
+        N = (nx*nz);
+        if(N != Nmute) rs_error("WemvaAcoustic2D<T>::computeMisfit(): Geometry in Residualmutefile does not match geometry in the image.");
+        mute->readModel();
+        mutedata = mute->getVp();
+    }else{
+        N = (nx*nz);
+        mutedata = (T *) calloc(N, sizeof(T)); 
+        for(ix=0; ix < N; ix++){
+            mutedata[ix] = 1.0;
+        }
+    }
+
+    /* Variables for DS_hmax misfit and residual computation*/
+    T *cip = (T *) calloc(nz*nhx*nhz, sizeof(T));
+    T *env = (T *) calloc(nz*nhx*nhz, sizeof(T));
+    T *hmax = (T *) calloc(nz, sizeof(T));
+    T *hsort = (T *) calloc(nz, sizeof(T));
+    T *hwrk = (T *) calloc(nhx, sizeof(T));
+    int *imax = (int *) calloc(nz, sizeof(int));
+    std::shared_ptr<Hilbert<T>> hilb_cip1 (new Hilbert<T>(nz, nhx, nhz, nz));
+    std::shared_ptr<Hilbert<T>> hilb_cip2 (new Hilbert<T>(nz, nhx, nhz, nz));
+    T pclip;
+    T *imag;
+    int pos;
+    T num, den;
+    T rms=0;
+    size_t fold=0;
+
 
     switch(this->getMisfit_type()){
         case SI:
             for (ihx=0; ihx<nhx; ihx++){
                 hx= -(nhx-1)/2 + ihx;
-                G1 = GAUSS(hx, 0.1*nhx);
+                G1 = WEIGHT((T) hx, (T) ((nhx-1)/2));
                 for (ihz=0; ihz<nhz; ihz++){
                     hz= -(nhz-1)/2 + ihz;
-                    G2 = G1*GAUSS(hz, 0.1*nhz);
+                    G2 = G1*WEIGHT((T) hz, (T) ((nhz-1)/2));
                     for (ix=0; ix<nx; ix++){
                         // Misfit
                         for (iz=0; iz<nz-1; iz++){
@@ -3135,6 +3171,16 @@ void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> imag
                             imagedata[ki2D(ix,iz,ihx,ihz)] = G2*wrk[iz];
                         }
                         imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
+                    }
+                }
+            }
+            // Apply mute
+            for (ihz=0; ihz<nhz; ihz++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (iz=0; iz<nz; iz++){
+                        for (ix=0; ix<nx; ix++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] *= mutedata[km2D(ix,iz)];
+                        }
                     }
                 }
             }
@@ -3165,15 +3211,25 @@ void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> imag
                     }
                 }
             }
+            // Apply mute
+            for (ihz=0; ihz<nhz; ihz++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (iz=0; iz<nz; iz++){
+                        for (ix=0; ix<nx; ix++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] *= mutedata[km2D(ix,iz)];
+                        }
+                    }
+                }
+            }
             break;
         case DS_PLUS_SI:
             // Misfit
             for (ihx=0; ihx<nhx; ihx++){
                 hx= -(nhx-1)/2 + ihx;
-                G1 = GAUSS(hx, 0.1*nhx);
+                G1 = WEIGHT((T) hx, (T) ((nhx-1)/2));
                 for (ihz=0; ihz<nhz; ihz++){
                     hz= -(nhz-1)/2 + ihz;
-                    G2 = G1*GAUSS(hz, 0.1*nhz);
+                    G2 = G1*WEIGHT((T) hz, (T) ((nhz-1)/2));
                     for (ix=0; ix<nx; ix++){
                         for (iz=0; iz<nz-1; iz++){
                             wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
@@ -3193,10 +3249,10 @@ void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> imag
             //Residual
             for (ihx=0; ihx<nhx; ihx++){
                 hx= -(nhx-1)/2 + ihx;
-                G1 = GAUSS(hx, 0.1*nhx);
+                G1 = WEIGHT((T) hx, (T) ((nhx-1)/2));
                 for (ihz=0; ihz<nhz; ihz++){
                     hz= -(nhz-1)/2 + ihz;
-                    G2 = G1*GAUSS(hz, 0.1*nhz);
+                    G2 = G1*WEIGHT((T) hz, (T) ((nhz-1)/2));
                     for (ix=0; ix<nx; ix++){
                         for (iz=1; iz<nz-1; iz++){
                             wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
@@ -3208,7 +3264,210 @@ void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> imag
                     }
                 }
             }
+            // Apply mute
+            for (ihz=0; ihz<nhz; ihz++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (iz=0; iz<nz; iz++){
+                        for (ix=0; ix<nx; ix++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] *= mutedata[km2D(ix,iz)];
+                        }
+                    }
+                }
+            }
             break;
+        case DS_HMAX:
+            // Misfit
+            // Get a CIP gather
+            for (ix=0; ix<nx; ix++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        // Derivative
+                        for (iz=1; iz<nz-1; iz++){
+                            cip[kres2D(iz,ihx,ihz)] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                        }
+                    }
+                }
+                // Hilbert transform over first non-singleton axis
+                hilb_cip1->hilbertx(cip);
+                imag = hilb_cip1->getDf();
+
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (iz=0; iz<nz; iz++){
+                           env[kres2D(iz,ihx,ihz)] = SQ(cip[kres2D(iz,ihx,ihz)]) + SQ(imag[kres2D(iz,ihx,ihz)]);
+                        }
+                    }
+                }
+                // Find maximum and index of maximum along hx axis and store in an array
+                for (iz=0; iz<nz; iz++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (ihx=0; ihx<nhx; ihx++){
+                            hwrk[ihx] = env[kres2D(iz,ihx,ihz)];
+                        }
+                    }
+                    this->find_max(hwrk, &hmax[iz], &imax[iz], nhx);
+                }
+
+                // Threshold 
+                for (iz=0; iz<nz; iz++){
+                    hsort[iz] = hmax[iz];
+                }
+                std::sort(hsort, hsort+nz); 
+                pos = (int) (THRES*nz/100);
+                pclip = hsort[pos];
+                for (iz=0; iz<nz; iz++){
+                    if(hmax[iz] < pclip){
+                        hmax[iz] = 0;
+                        imax[iz] = (nhx-1)/2;
+                    }
+                }
+                // Calculate delta h, and misfit. 
+                for (iz=0; iz<nz; iz++){
+                    f1 += 0.5*SQ(imax[iz]-((nhx-1)/2));
+                    f2 += 0.5*SQ(cip[kres2D(iz,(nhx-1)/2,(nhz-1)/2)]);
+                }
+
+                for (iz=0; iz<nz; iz++){
+                    if(imax[iz] >1 && imax[iz] < nhx-1){
+                        rms += SQ((env[kres2D(iz,imax[iz]+2,0)] - 2.0*env[kres2D(iz,imax[iz],0)] + env[kres2D(iz,imax[iz]-2,0)])/4.0);
+                        fold++;
+                    }
+                }
+            }
+            for (ihx=0; ihx<nhx; ihx++){
+                hx= -(nhx-1)/2 + ihx;
+                G1 = (hx*hx);
+                for (ihz=0; ihz<nhz; ihz++){
+                    hz= -(nhz-1)/2 + ihz;
+                    G2 = G1 + (hz*hz);
+                    for (ix=0; ix<nx; ix++){
+                        // Misfit
+                        for (iz=0; iz<nz-1; iz++){
+                            wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                        }
+                        for (iz=0; iz<nz; iz++){
+                            f3 += 0.5*G2*wrk[iz]*wrk[iz];
+                        }
+                                            }
+                }
+            }
+
+            f = f1*f3/f2;
+
+            if(fold >0){
+                rms = (T) std::sqrt(rms)/fold;
+            }
+
+            // Residual
+            for (ix=0; ix<nx; ix++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        // Derivative
+                        for (iz=1; iz<nz-1; iz++){
+                            cip[kres2D(iz,ihx,ihz)] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - imagedata[ki2D(ix,iz,ihx,ihz)];
+                        }
+                    }
+                }
+                // Hilbert transform over first non-singleton axis
+                hilb_cip1->hilbertx(cip);
+                imag = hilb_cip1->getDf();
+
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (iz=0; iz<nz; iz++){
+                           env[kres2D(iz,ihx,ihz)] = SQ(cip[kres2D(iz,ihx,ihz)]) + SQ(imag[kres2D(iz,ihx,ihz)]);
+                        }
+                    }
+                }
+                // Find maximum and index of maximum along hx axis and store in an array
+                for (iz=0; iz<nz; iz++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (ihx=0; ihx<nhx; ihx++){
+                            hwrk[ihx] = env[kres2D(iz,ihx,ihz)];
+                        }
+                    }
+                    this->find_max(hwrk, &hmax[iz], &imax[iz], nhx);
+                }
+
+                // Threshold 
+                for (iz=0; iz<nz; iz++){
+                    hsort[iz] = hmax[iz];
+                }
+                std::sort(hsort, hsort+nz); 
+                pos = (int) (THRES*nz/100);
+                pclip = hsort[pos];
+                for (iz=0; iz<nz; iz++){
+                    if(hmax[iz] < pclip){
+                        hmax[iz] = 0;
+                        imax[iz] = (nhx-1)/2;
+                    }
+                }
+
+                // Calculate second derivative
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (iz=1; iz<nz-1; iz++){
+                            cip[kres2D(iz,ihx,ihz)] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
+                        }
+                    }
+                }
+
+                // Calculate double Hilbert transform
+                hilb_cip1->hilbertx(cip);
+                imag = hilb_cip1->getDf();
+                hilb_cip2->hilbertx(imag);
+                imag = hilb_cip2->getDf();
+
+                //Build residual
+                for (iz=0; iz<nz; iz++){
+                    den = 0.0;
+                    num = 0.0;
+                    if(imax[iz] >1 && imax[iz] < nhx-1){
+                        den = (env[kres2D(iz,imax[iz]+2,0)] - 2.0*env[kres2D(iz,imax[iz],0)] + env[kres2D(iz,imax[iz]-2,0)])/4.0;
+                    }
+                    if(imax[iz] >1 && imax[iz] < nhx-1){
+                        num = -2.0*(cip[kres2D(iz,imax[iz]+1,0)] - cip[kres2D(iz,imax[iz]-1,0)])/2.0;
+                        num += 2.0*(imag[kres2D(iz,imax[iz]+1,0)] - imag[kres2D(iz,imax[iz]-1,0)])/2.0;
+                    }
+
+                    // Zero out residual data not in hmax
+                    for (ihz=0; ihz<nhz; ihz++){
+                        for (ihx=0; ihx<nhx; ihx++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] = 0.0;
+                        }
+                    }
+
+                    if(den != 0.0){
+                        imagedata[ki2D(ix,iz,imax[iz],0)] = (f3/f2)*(imax[iz]-((nhx-1)/2))*num*den/(SQ(den) + (rms*1.0e-6));
+                    }
+                    // SI residual
+                    imagedata[ki2D(ix,iz,(nhx-1)/2,(nhz-1)/2)] += (f1*f3/(f2*f2))*cip[kres2D(iz,(nhx-1)/2,(nhz-1)/2)];
+
+                    // DS resudual
+                    for (ihx=0; ihx<nhx; ihx++){
+                        hx= -(nhx-1)/2 + ihx;
+                        G1 = (hx*hx);
+                        for (ihz=0; ihz<nhz; ihz++){
+                            hz= -(nhz-1)/2 + ihz;
+                            G2 = G1 + (hz*hz);
+                            imagedata[ki2D(ix,iz,ihx,ihz)] -= (f1/f2)*G2*cip[kres2D(iz,ihx,ihz)];
+
+                        }
+                    }
+                }
+            }
+            // Apply mute
+            for (ihz=0; ihz<nhz; ihz++){
+                for (ihx=0; ihx<nhx; ihx++){
+                    for (iz=0; iz<nz; iz++){
+                        for (ix=0; ix<nx; ix++){
+                            imagedata[ki2D(ix,iz,ihx,ihz)] *= mutedata[km2D(ix,iz)];
+                        }
+                    }
+                }
+            }
+            break;
+
         default:
             f = 0;
             break;

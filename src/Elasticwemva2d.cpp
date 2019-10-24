@@ -198,6 +198,7 @@ int main(int argc, char** argv) {
     bool incore = false;
     bool reciprocity;
     bool modelmute;
+    bool residualmute;
 	int order;
 	int snapinc;
 	int nsnaps = 0;
@@ -227,6 +228,7 @@ int main(int argc, char** argv) {
     std::string Uxrecordfile;
     std::string Uzrecordfile;
     std::string Modelmutefile;
+    std::string Residualmutefile;
 
 
     /* Get parameters from configuration file */
@@ -279,6 +281,11 @@ int main(int argc, char** argv) {
         if(Inpar->getPar("Modelmutefile", &Modelmutefile) == INPARSE_ERR) status = true;
     }
 
+    if(Inpar->getPar("residualmute", &residualmute) == INPARSE_ERR) status = true;
+    if(residualmute){
+        if(Inpar->getPar("Residualmutefile", &Residualmutefile) == INPARSE_ERR) status = true;
+    }
+
     if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
     if(Inpar->getPar("vsregalpha", &vsregalpha) == INPARSE_ERR) status = true;
     if(Inpar->getPar("max_linesearch", &max_linesearch) == INPARSE_ERR) status = true;
@@ -304,6 +311,10 @@ int main(int argc, char** argv) {
 
     if(modelmute){
         wva->setModelmutefile(Modelmutefile);
+    }
+
+    if(residualmute){
+        wva->setResidualmutefile(Residualmutefile);
     }
     wva->setVpfile(VPLSFILE);
     wva->setVsfile(VSLSFILE);

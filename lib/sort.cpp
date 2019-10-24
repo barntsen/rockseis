@@ -1,6 +1,5 @@
 #include "sort.h"
 
-#define SQ(x) ((x)*(x))
 namespace rockseis {
 // constructor
 template<typename T>

@@ -311,6 +311,9 @@ public:
     void setModelmutefile(std::string file) { Modelmutefile = file; }
     std::string getModelmutefile() { return Modelmutefile; }
 
+    void setResidualmutefile(std::string file) { Residualmutefile = file; }
+    std::string getResidualmutefile() { return Residualmutefile; }
+
     void setApertx(T val) { apertx = val; }
     T getApertx() { return apertx; }
 
@@ -397,6 +400,7 @@ private:
     std::string Uzrecordfile;
     std::string Snapfile;
     std::string Modelmutefile;
+    std::string Residualmutefile;
     std::string Pimagefile;
     std::string Simagefile;
     T apertx;
