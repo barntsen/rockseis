@@ -8,7 +8,6 @@
  **************************************************************/
 
 #include "picks.h"
-#define SQ(x) ((x) * (x))
 
 // Member function implementations
 Picks::Picks(int maxp, int nc, int n, float d, float o, int tp)

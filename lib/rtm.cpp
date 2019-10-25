@@ -1154,6 +1154,10 @@ int RtmElastic2D<T>::run(){
     	// Time stepping stress 
     	waves->forwardstepStress(model, der);
 
+    	// Inserting source 
+    	waves->insertPressuresource(model, dataUx, GMAP, (nt - 1 - it));
+    	waves->insertPressuresource(model, dataUz, GMAP, (nt - 1 - it));
+
     	// Time stepping displacement
     	waves->forwardstepDisplacement(model, der);
 
@@ -1282,6 +1286,7 @@ int RtmElastic2D<T>::run_optimal(){
             // Inserting pressure source 
             waves_fw->insertPressuresource(model, source, SMAP, capo);
 
+
             // Time stepping displacement
             waves_fw->forwardstepDisplacement(model, der);
 
@@ -1289,6 +1294,9 @@ int RtmElastic2D<T>::run_optimal(){
             waves_fw->insertForcesource(model, source, SMAP, capo);
 
             // Inserting data
+            // Inserting data
+            waves_bw->insertPressuresource(model, dataUx, GMAP, capo);
+            waves_bw->insertPressuresource(model, dataUz, GMAP, capo);
             waves_bw->insertForcesource(model, dataUx, GMAP, capo);
             waves_bw->insertForcesource(model, dataUz, GMAP, capo);
 
@@ -1297,7 +1305,6 @@ int RtmElastic2D<T>::run_optimal(){
             T *wsz = waves_fw->getUz1();
             T *wrx = waves_bw->getUx1();
             T *wrz = waves_bw->getUz1();
-
             crossCorr(wsx, wsz, waves_fw->getLpml(), wrx, wrz, waves_bw->getLpml(), Vp, Vs, Rho);
 
             // Roll pointers
@@ -1319,6 +1326,10 @@ int RtmElastic2D<T>::run_optimal(){
         {
             // Time stepping stress
             waves_bw->forwardstepStress(model, der);
+
+            // Inserting data
+            waves_bw->insertPressuresource(model, dataUx, GMAP, capo);
+            waves_bw->insertPressuresource(model, dataUz, GMAP, capo);
 
             // Time stepping displacement 
             waves_bw->forwardstepDisplacement(model, der);

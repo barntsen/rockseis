@@ -995,6 +995,10 @@ int PPmvaElastic2D<T>::run_optimal(){
                 // Inserting pressure source 
                 waves_fw1->insertPressuresource(model, source, SMAP, it);
 
+                // Inserting data
+                waves_bw1->insertPressuresource(model, dataUx, GMAP, nt-1-it);
+                waves_bw1->insertPressuresource(model, dataUz, GMAP, nt-1-it);
+
                 // Time stepping displacement
                 waves_fw1->forwardstepDisplacement(model, der);
                 waves_bw1->forwardstepDisplacement(model, der);
@@ -1031,6 +1035,13 @@ int PPmvaElastic2D<T>::run_optimal(){
             // Inserting pressure source 
             waves_fw1->insertPressuresource(model, source, SMAP, capo);
             waves_fw2->insertPressuresource(model, source, SMAP, nt-1-capo);
+
+            // Inserting data
+            waves_bw1->insertPressuresource(model, dataUx, GMAP, nt-1-capo);
+            waves_bw1->insertPressuresource(model, dataUz, GMAP, nt-1-capo);
+            waves_bw2->insertPressuresource(model, dataUx, GMAP, capo);
+            waves_bw2->insertPressuresource(model, dataUz, GMAP, capo);
+
 
             // Inserting adjoint sources
             wsx = waves_fw2->getUx1();
@@ -1099,6 +1110,10 @@ int PPmvaElastic2D<T>::run_optimal(){
 
             // Inserting pressure source 
             waves_fw2->insertPressuresource(model, source, SMAP, nt-1-capo);
+
+            // Inserting data
+            waves_bw2->insertPressuresource(model, dataUx, GMAP, capo);
+            waves_bw2->insertPressuresource(model, dataUz, GMAP, capo);
 
             // Inserting adjoint sources
             wsx = waves_fw2->getUx1();
@@ -1555,6 +1570,10 @@ int PSmvaElastic2D<T>::run_optimal(){
                 // Inserting pressure source 
                 waves_fw1->insertPressuresource(model, source, SMAP, it);
 
+                // Inserting data
+                waves_bw1->insertPressuresource(model, dataUx, GMAP, nt-1-it);
+                waves_bw1->insertPressuresource(model, dataUz, GMAP, nt-1-it);
+
                 // Time stepping displacement
                 waves_fw1->forwardstepDisplacement(model, der);
                 waves_bw1->forwardstepDisplacement(model, der);
@@ -1588,6 +1607,10 @@ int PSmvaElastic2D<T>::run_optimal(){
             // Inserting pressure source 
             waves_fw1->insertPressuresource(model, source, SMAP, capo);
             waves_fw2->insertPressuresource(model, source, SMAP, nt-1-capo);
+
+            // Inserting data
+            waves_bw1->insertPressuresource(model, dataUx, GMAP, nt-1-capo);
+            waves_bw1->insertPressuresource(model, dataUz, GMAP, nt-1-capo);
 
             // Inserting adjoint sources
             wsx = waves_fw2->getUx1();
