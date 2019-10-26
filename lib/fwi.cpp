@@ -3282,7 +3282,7 @@ int FwiElastic2D<T>::run_optimal(){
             // Time stepping displacement
             waves_fw->forwardstepDisplacement(model, der);
 
-            // Inserting source 
+            // Inserting force source 
             waves_fw->insertForcesource(model, source, SMAP, capo);
 
             // Recording data (Ux)

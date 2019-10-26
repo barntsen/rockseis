@@ -1286,14 +1286,12 @@ int RtmElastic2D<T>::run_optimal(){
             // Inserting pressure source 
             waves_fw->insertPressuresource(model, source, SMAP, capo);
 
-
             // Time stepping displacement
             waves_fw->forwardstepDisplacement(model, der);
 
             // Inserting force source 
             waves_fw->insertForcesource(model, source, SMAP, capo);
 
-            // Inserting data
             // Inserting data
             waves_bw->insertPressuresource(model, dataUx, GMAP, capo);
             waves_bw->insertPressuresource(model, dataUz, GMAP, capo);
