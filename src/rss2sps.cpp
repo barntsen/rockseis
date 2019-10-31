@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
     Spstation = 1001.0;
     int i;
     for(i = 0; i < ns; i++){
-        fprintf(fp, "X%14d11%10.1f%10.1f%d%5d%5d%d%10.1f%10.1f%10.1f%d\n", 1,1000.1,Spstation,1,1,nr*3,3, 1001.0, 1001.0, 1001.0+(nr-1), 1);
+        fprintf(fp, "X%14d11%10.1f%10.1f%d%5d%5d%d%10.1f%10.1f%10.1f%d\n", 1,1001.0,Spstation,1,1,nr*3,3, 1001.0, 1001.0, 1001.0+(nr-1), 1);
         Spstation += 1.0;
     }
     fclose(fp);
