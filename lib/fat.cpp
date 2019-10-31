@@ -344,7 +344,7 @@ int FatAcoustic3D<T>::run()
      // Compute misfit
      computeMisfit();
 
-     /////// Run adjoint modelling
+     // Run adjoint modelling
      this->writeLog("Doing adjoint Loop.");
      rays->createRecmask(Tres, GMAP);
      rays->insertResiduals(Tres, GMAP);

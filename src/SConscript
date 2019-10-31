@@ -69,6 +69,9 @@ env.Install('../bin/',segy2rss)
 rss2segy = env.Program(prefix + 'rss2segy','rss2segy.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'rsfcpp', 'rsfc', 'inparse', 'fft'])
 env.Install('../bin/',rss2segy)
 
+rss2sps = env.Program(prefix + 'rss2sps','rss2sps.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'rsfcpp', 'rsfc', 'inparse', 'fft'])
+env.Install('../bin/',rss2sps)
+
 info = env.Program(prefix + 'info','info.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
 env.Install('../bin/',info)
 

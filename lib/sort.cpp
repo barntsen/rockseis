@@ -59,7 +59,11 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
 {
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
-    status = Fdata->input(filename);
+    if(strcmp(filename.c_str(), "stdin")){
+        status = Fdata->input(filename);
+    }else{
+        status = Fdata->input();
+    }
     if(status == FILE_ERR) rs_error("Sort::createSort: Error reading input file: ", filename);
     rs_datatype datatype = Fdata->getType(); 
     if(datatype != DATA2D && datatype != DATA3D) rs_error("Sort::createSort: Only DATA2D and DATA3D types are supported.");
@@ -325,7 +329,11 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather()
         // Found a shot
         bool status;
         std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
-        status = Fdata->input(this->datafile);
+        if(strcmp(this->datafile.c_str(), "stdin")){
+            status = Fdata->input(this->datafile);
+        }else{
+            status = Fdata->input();
+        }
         if(status == FILE_ERR) rs_error("Sort::get2DGather: Error reading input data file: ", this->datafile);
         rs_datatype datatype = Fdata->getType(); 
         if(datatype != DATA2D) rs_error("Sort::get2DGather: Datafile must be of type Data2D.");
@@ -533,7 +541,11 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather()
         // Found a shot
         bool status;
         std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
-        status = Fdata->input(this->datafile);
+        if(strcmp(this->datafile.c_str(), "stdin")){
+            status = Fdata->input(this->datafile);
+        }else{
+            status = Fdata->input();
+        }
         if(status == FILE_ERR) rs_error("Sort::get3DGather: Error reading input data file: ", this->datafile);
         rs_datatype datatype = Fdata->getType(); 
         if(datatype != DATA3D) rs_error("Sort::get3DGather: Datafile must be of type Data3D.");

@@ -12,7 +12,6 @@ int main()
 {
     std::string filename;
     filename = "Shots.rss";
-	// Setup a 2d Wavelet 
 	std::shared_ptr<rockseis::Data3D<float>> Shots (new rockseis::Data3D<float>(filename));
 	std::shared_ptr<rockseis::Data3D<float>> OneShot;
 	std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());

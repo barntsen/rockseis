@@ -316,6 +316,31 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
     }
 }
 
+template<typename T>
+void RaysAcoustic2D<T>::clearTT() {
+    /* Re-initialize TT array */
+
+    int nx = model->getNx_pml();
+    int ny = model->getNz_pml();
+
+    /* Initialize TT */
+    for (int i=0; i < nx*ny; i++){
+        TT[i] = 2.0*TMAX;
+    }
+}
+
+template<typename T>
+void RaysAcoustic2D<T>::clearLam() {
+    /* Re-initialize lam array */
+
+    int nx = model->getNx_pml();
+    int ny = model->getNz_pml();
+
+    /* Initialize TT */
+    for (int i=0; i < nx*ny; i++){
+        lam[i] = 10.0*TMAX;
+    }
+}
 
 template<typename T>
 void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype){
@@ -337,7 +362,6 @@ void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source
     int i;
     //Indexes 
     Index I(nx, nz); //Model and Field indexes
-    Index Idat(1, ntrace); // Data indexes
     for (i=0; i < ntrace; i++) 
     {
         if(map[i].x >= 0 && map[i].y >=0)
@@ -347,6 +371,34 @@ void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source
     }
 }
 
+template<typename T>
+void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int traceno){
+    Point2D<int> *map;
+    int ntrace = source->getNtrace();
+    if(traceno < 0 || traceno > ntrace-1){
+        rs_error("RaysAcoustic2D<T>::insertSource: traceno out of bounds.");
+    }
+    int nx, nz;
+    int lpml;
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    nz = this->getNz_pml();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+    }else{
+        map = (source->getGeom())->getGmap();
+    }
+
+    int i = traceno;
+    //Indexes 
+    Index I(nx, nz); //Model and Field indexes
+    if(map[i].x >= 0 && map[i].y >=0)
+    { 
+        TT[I(lpml+map[i].x, lpml+map[i].y)] = 0.0;
+    }
+}
 
 template<typename T>
 void RaysAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype){
@@ -1118,6 +1170,38 @@ void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source
     }
 }
 
+template<typename T>
+void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int traceno){
+    Point3D<int> *map;
+    size_t ntrace = source->getNtrace();
+
+    if(traceno < 0 || traceno > ntrace-1){
+        rs_error("RaysAcoustic3D<T>::insertSource: traceno out of bounds.");
+    }
+
+    size_t nx, ny, nz;
+    int lpml;
+
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    ny = this->getNy_pml();
+    nz = this->getNz_pml();
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+    }else{
+        map = (source->getGeom())->getGmap();
+    }
+
+    size_t i = traceno;
+    //Indexes 
+    Index I(nx, ny, nz); //Model and Field indexes
+    if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+    { 
+        TT[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = 0.0;
+    }
+}
 
 template<typename T>
 void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype){
@@ -1186,6 +1270,34 @@ void RaysAcoustic3D<T>::createRecmask(std::shared_ptr<rockseis::Data3D<T>> sourc
         { 
             recmask[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = true;
         }
+    }
+}
+
+template<typename T>
+void RaysAcoustic3D<T>::clearTT() {
+    /* Re-initialize TT array */
+
+    int nx = model->getNx_pml();
+    int ny = model->getNy_pml();
+    int nz = model->getNz_pml();
+
+    /* Initialize TT */
+    for (int i=0; i < nx*ny*nz; i++){
+        TT[i] = 2.0*TMAX;
+    }
+}
+
+template<typename T>
+void RaysAcoustic3D<T>::clearLam() {
+    /* Re-initialize lam array */
+
+    int nx = model->getNx_pml();
+    int ny = model->getNy_pml();
+    int nz = model->getNz_pml();
+
+    /* Initialize TT */
+    for (int i=0; i < nx*ny*nz; i++){
+        lam[i] = 10.0*TMAX;
     }
 }
 
