@@ -45,9 +45,12 @@ class Sort {
 public:
     Sort(); ///<Constructor
     virtual ~Sort();	///< Destructor
-    bool createShotmap(std::string filename) { return createSort(filename, SOURCE, 0., 0.); } ///< Create a shot map using a data file
-    bool createReceivermap(std::string filename) { return createSort(filename, RECEIVER, 0., 0.); } ///< Create a receiver map using a data file
-    bool createCMPmap(std::string filename, T dx, T dy) { return createSort(filename, CMP, dx, dy); } ///< Create a CMP map using a data file
+    bool createShotmap(std::string filename) { return createSort(filename, SOURCE, 0., 0., 0); } ///< Create a shot map using a data file
+    bool createShotmap(std::string filename, int sort_order) { return createSort(filename, SOURCE, 0., 0., sort_order); } ///< Create a shot map using a data file
+    bool createReceivermap(std::string filename) { return createSort(filename, RECEIVER, 0., 0., 0); } ///< Create a receiver map using a data file
+    bool createReceivermap(std::string filename, int sort_order) { return createSort(filename, RECEIVER, 0., 0., sort_order); } ///< Create a receiver map using a data file
+    bool createCMPmap(std::string filename, T dx, T dy) { return createSort(filename, CMP, dx, dy, 0); } ///< Create a CMP map using a data file
+    bool createCMPmap(std::string filename, T dx, T dy, int sort_order) { return createSort(filename, CMP, dx, dy, sort_order); } ///< Create a CMP map using a data file
     std::shared_ptr<Data2D<T>> get2DGather(); ///< Get a gather using the keymap and sortmap
     std::shared_ptr<Data2D<T>> get2DGather(size_t num); ///< Get gather number using the keymap and sortmap
     void put2DGather(std::shared_ptr<Data2D<T>>, size_t num); ///< Put 2d gather into a data file number using the keymap and sortmap
@@ -94,7 +97,7 @@ private:
     bool reciprocity;
     bool sortset;
 
-    bool createSort(std::string filename, rs_key _sortkey, T dx, T dy); ///< Create a sort map using a data file
+    bool createSort(std::string filename, rs_key _sortkey, T dx, T dy, int sort_order); ///< Create a sort map using a data file
 };
 }
 #endif //SORT_H

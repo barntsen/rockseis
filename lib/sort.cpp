@@ -30,14 +30,79 @@ int sort_sr_0(void const *a, void const *b)
 	pa = (position_t *) a;
 	pb = (position_t *) b;
 
+
+	if( pa->x < pb->x) return -1;
+	if( pa->x > pb->x) return 1;
+
+	if( pa->y < pb->y) return -1;
+	if( pa->y > pb->y) return 1;
+
 	if( pa->z < pb->z) return -1;
 	if( pa->z > pb->z) return 1;
+
+	if( pa->foff < pb->foff) return -1;
+	if( pa->foff > pb->foff) return 1;
+
+	if( pa->offz < pb->offz) return -1;
+	if( pa->offz > pb->offz) return 1;
+
+	if( pa->offy < pb->offy) return -1;
+	if( pa->offy > pb->offy) return 1;
+
+	if( pa->offx < pb->offx) return -1;
+	if( pa->offx > pb->offx) return 1;
+
+	return 0;
+}
+
+//Sort with y as primary key and x as secondary key 
+int sort_sr_1(void const *a, void const *b)
+{
+	position_t *pa, *pb;
+
+	pa = (position_t *) a;
+	pb = (position_t *) b;
 
 	if( pa->y < pb->y) return -1;
 	if( pa->y > pb->y) return 1;
 
 	if( pa->x < pb->x) return -1;
 	if( pa->x > pb->x) return 1;
+
+	if( pa->z < pb->z) return -1;
+	if( pa->z > pb->z) return 1;
+
+	if( pa->foff < pb->foff) return -1;
+	if( pa->foff > pb->foff) return 1;
+
+	if( pa->offz < pb->offz) return -1;
+	if( pa->offz > pb->offz) return 1;
+
+	if( pa->offy < pb->offy) return -1;
+	if( pa->offy > pb->offy) return 1;
+
+	if( pa->offx < pb->offx) return -1;
+	if( pa->offx > pb->offx) return 1;
+
+	return 0;
+}
+
+//Sort with z as primary key and y as secondary key 
+int sort_sr_2(void const *a, void const *b)
+{
+	position_t *pa, *pb;
+
+	pa = (position_t *) a;
+	pb = (position_t *) b;
+
+	if( pa->z < pb->z) return -1;
+	if( pa->z > pb->z) return 1;
+
+	if( pa->x < pb->x) return -1;
+	if( pa->x > pb->x) return 1;
+
+	if( pa->y < pb->y) return -1;
+	if( pa->y > pb->y) return 1;
 
 	if( pa->foff < pb->foff) return -1;
 	if( pa->foff > pb->foff) return 1;
@@ -55,7 +120,7 @@ int sort_sr_0(void const *a, void const *b)
 }
 
 template<typename T>
-bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
+bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy, int sort_order)
 {
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
@@ -238,7 +303,20 @@ bool Sort<T>::createSort(std::string filename, rs_key _sortkey, T dx, T dy)
     }
 
 	// Sort list
-	qsort(positions, n2, sizeof(position_t), sort_sr_0);
+    switch(sort_order){
+        case 0:
+	        qsort(positions, n2, sizeof(position_t), sort_sr_0);
+            break;
+        case 1:
+	        qsort(positions, n2, sizeof(position_t), sort_sr_1);
+            break;
+        case 2:
+	        qsort(positions, n2, sizeof(position_t), sort_sr_2);
+            break;
+        default:
+	        qsort(positions, n2, sizeof(position_t), sort_sr_0);
+            break;
+    }
 
     nensembles = 1;
     size_t ntraces = 1;
@@ -385,7 +463,11 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather(size_t number)
 
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
-    status = Fdata->input(this->datafile);
+    if(strcmp(this->datafile.c_str(), "stdin")){
+        status = Fdata->input(this->datafile);
+    }else{
+        status = Fdata->input();
+    }
     if(status == FILE_ERR) rs_error("Sort::get2DGather: Error reading input data file: ", this->datafile);
     rs_datatype datatype = Fdata->getType(); 
     if(datatype != DATA2D) rs_error("Sort::get2DGather: Datafile must be of type Data2D.");
@@ -602,7 +684,11 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather(size_t number)
     // Found a shot
     bool status;
     std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
-    status = Fdata->input(this->datafile);
+    if(strcmp(this->datafile.c_str(), "stdin")){
+        status = Fdata->input(this->datafile);
+    }else{
+        status = Fdata->input();
+    }
     if(status == FILE_ERR) rs_error("Sort::get3DGather: Error reading input data file: ", this->datafile);
     rs_datatype datatype = Fdata->getType(); 
     if(datatype != DATA3D) rs_error("Sort::get3DGather: Datafile must be of type Data3D.");

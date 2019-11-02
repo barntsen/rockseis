@@ -34,8 +34,8 @@ private:
     unsigned long n[3];
     unsigned long nfft[3];
     int ndim;
-    T *data; // Array to store the fourier trasnform
-    void four1(T *data, unsigned long nn, int isign); ///< Fast fourier trasnform in one dimension
+    T *data; // Array to store the fourier transform
+    void four1(T *data, unsigned long nn, int isign); ///< Fast fourier transform in one dimension
     void fourn(T *data, unsigned long *nn, int ndim, int isign); ///< Fast fourier transform in n dimensions
 };
 

@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 {
 
     /* Variables */
-    std::string Cproj;
+    int sort_order = 0;
     std::string Surveyname;
     FILE *fp;
 
@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
     parser.LongPrefix("");
     parser.LongSeparator("=");
     args::HelpFlag help(parser, "help", "Display this help menu", {"h", "help"});
-    args::ValueFlag<std::string> parproj(parser, "ex. UTM32N", "Projection", {"proj"});
+    args::ValueFlag<int> parsort(parser, "0 - x,y,z; 1 - y,x,z; 2 - z,x,y", "Sort order", {"sort"});
     args::ValueFlag<std::string> parname(parser, "ex. Line1_Hafrsfjord", "Survey name", {"name"});
     try
     {
@@ -45,11 +45,11 @@ int main(int argc, char* argv[])
         std::cerr << parser;
         return 1;
     }
-    if (parproj){
-         Cproj = args::get(parproj);
+    if (parsort){
+         sort_order = args::get(parsort);
     }else{
         std::cerr << parser;
-        rockseis::rs_error("Missing projection.");
+        rockseis::rs_error("Missing sort order.");
     }
 
     if (parname){
@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
     std::string filename = "stdin";
 	std::shared_ptr<rockseis::Data3D<float>> OneShot;
 	std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
-    Sort->createShotmap(filename); 
+    Sort->createShotmap(filename,sort_order); 
     int ns = Sort->getNensemb();
     std::cerr << "Number of shot gathers: " << ns << std::endl;
     rockseis::Point3D<float> *scoords;
@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
     fprintf(fp,"H26       |         | || |   |   |   | |     |        |         |     |  | | | |; \n");
     fclose(fp);
 
-    Sort->createReceivermap(filename); 
+    Sort->createReceivermap(filename,sort_order); 
     int nr = Sort->getNensemb();
     std::cerr << "Number of receiver gathers: " << nr << std::endl;
     rockseis::Point3D<float> *gcoords;
