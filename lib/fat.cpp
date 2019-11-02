@@ -145,8 +145,8 @@ int FatAcoustic2D<T>::run()
 {
      int result = FAT_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -314,8 +314,8 @@ int FatAcoustic3D<T>::run()
 {
      int result = FAT_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();

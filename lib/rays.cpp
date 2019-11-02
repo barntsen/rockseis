@@ -270,10 +270,10 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
 
     /* local variables */
     int i, j, h, k;
-    float app, amp, apm, amm;
-    float bpp, bmp, bpm, bmm;
-    float ap, am , bp, bm;
-    float lhs, rhs, lamt;
+    T app, amp, apm, amm;
+    T bpp, bmp, bpm, bmm;
+    T ap, am , bp, bm;
+    T lhs, rhs, lamt;
 
     /* sweep over FD-grid */
     h = nx1;
@@ -975,11 +975,11 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
 
     /* local variables */
     int i, j, k, m, n, l;
-    float app, amp, apm, amm;
-    float bpp, bmp, bpm, bmm;
-    float cpp, cmp, cpm, cmm;
-    float ap, am , bp, bm, cp, cm;
-    float lhs, rhs, lamt;
+    T app, amp, apm, amm;
+    T bpp, bmp, bpm, bmm;
+    T cpp, cmp, cpm, cmm;
+    T ap, am , bp, bm, cp, cm;
+    T lhs, rhs, lamt;
 
     /* sweep over FD-grid */
     m = nx1;

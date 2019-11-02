@@ -193,8 +193,8 @@ template<typename T>
 int ModellingAcoustic2D<T>::run(){
      int result = MOD_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -345,8 +345,8 @@ template<typename T>
 int ModellingAcoustic3D<T>::run(){
      int result = MOD_ERR;
      int nt;
-     float dt;
-     float ot;
+     T dt;
+     T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -513,8 +513,8 @@ template<typename T>
 int ModellingElastic2D<T>::run(){
      int result = MOD_ERR;
      int nt;
-     float dt;
-     float ot;
+     T dt;
+     T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -676,8 +676,8 @@ template<typename T>
 int ModellingElastic3D<T>::run(){
      int result = MOD_ERR;
      int nt;
-     float dt;
-     float ot;
+     T dt;
+     T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -846,8 +846,8 @@ template<typename T>
 int ModellingElastic2D_DS<T>::run(){
      int result = MOD_ERR;
      int nt;
-     float dt;
-     float ot;
+     T dt;
+     T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1018,8 +1018,8 @@ template<typename T>
 int ModellingElastic3D_DS<T>::run(){
      int result = MOD_ERR;
      int nt;
-     float dt;
-     float ot;
+     T dt;
+     T ot;
 
      nt = source->getNt();
      dt = source->getDt();

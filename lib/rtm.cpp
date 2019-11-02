@@ -222,8 +222,8 @@ template<typename T>
 int RtmAcoustic2D<T>::run(){
      int result = RTM_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -334,8 +334,8 @@ template<typename T>
 int RtmAcoustic2D<T>::run_edge(){
      int result = RTM_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -436,8 +436,8 @@ template<typename T>
 int RtmAcoustic2D<T>::run_optimal(){
      int result = RTM_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -663,8 +663,8 @@ template<typename T>
 int RtmAcoustic3D<T>::run(){
      int result = RTM_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -764,8 +764,8 @@ template<typename T>
 int RtmAcoustic3D<T>::run_optimal(){
      int result = RTM_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1054,8 +1054,8 @@ int RtmElastic2D<T>::run(){
 		return result;
 	}
 	int nt;
-	float dt;
-	float ot;
+	T dt;
+	T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1210,8 +1210,8 @@ int RtmElastic2D<T>::run_optimal(){
          return result;
      }
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1572,8 +1572,8 @@ int RtmElastic3D<T>::run(){
          return result;
      }
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1719,8 +1719,8 @@ int RtmElastic3D<T>::run_optimal(){
          return result;
      }
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();

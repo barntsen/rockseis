@@ -976,8 +976,8 @@ template<typename T>
 int FwiAcoustic2D<T>::run(){
      int result = FWI_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1091,8 +1091,8 @@ template<typename T>
 int FwiAcoustic2D<T>::run_optimal(){
      int result = FWI_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1705,8 +1705,8 @@ template<typename T>
 int FwiAcoustic3D<T>::run(){
      int result = FWI_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1824,8 +1824,8 @@ template<typename T>
 int FwiAcoustic3D<T>::run_optimal(){
      int result = FWI_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -3056,8 +3056,8 @@ int FwiElastic2D<T>::run(){
 		return result;
 	}
 	int nt;
-	float dt;
-	float ot;
+	T dt;
+	T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -3200,8 +3200,8 @@ int FwiElastic2D<T>::run_optimal(){
          return result;
      }
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -4290,8 +4290,8 @@ int FwiElastic3D<T>::run(){
          return result;
      }
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -4459,8 +4459,8 @@ int FwiElastic3D<T>::run_optimal(){
          return result;
      }
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
 
      nt = source->getNt();
      dt = source->getDt();

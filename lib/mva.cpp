@@ -288,8 +288,8 @@ template<typename T>
 int MvaAcoustic2D<T>::run(){
      int result = MVA_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
      T *wrp;
      T *wrx;
      T *wrz;
@@ -391,8 +391,8 @@ template<typename T>
 int MvaAcoustic2D<T>::run_optimal(){
      int result = MVA_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
      T *wsp;
      T *wrp;
      T *wrx;
@@ -812,8 +812,8 @@ int PPmvaElastic2D<T>::run(){
 		return result;
 	}
 	int nt;
-	float dt;
-	float ot;
+	T dt;
+	T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -932,8 +932,8 @@ template<typename T>
 int PPmvaElastic2D<T>::run_optimal(){
      int result = MVA_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
      T *wsx;
      T *wrx;
      T *wsz;
@@ -1398,8 +1398,8 @@ int PSmvaElastic2D<T>::run(){
 		return result;
 	}
 	int nt;
-	float dt;
-	float ot;
+	T dt;
+	T ot;
 
      nt = source->getNt();
      dt = source->getDt();
@@ -1507,8 +1507,8 @@ template<typename T>
 int PSmvaElastic2D<T>::run_optimal(){
      int result = MVA_ERR;
      int nt;
-     float dt;
-	 float ot;
+     T dt;
+	 T ot;
      T *wsx;
      T *wrx;
      T *wsz;

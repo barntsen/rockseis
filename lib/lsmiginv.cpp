@@ -1069,7 +1069,6 @@ void LsmiginvAcoustic2D<T>::computeRegularisation(double *x)
             {
                 dvpdz[i] = df[i]*kvp;
             }
-            der->ddx_fw(&x[N]);
             break;
         default:
             rs_error("LsmiginvAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
