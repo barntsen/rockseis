@@ -61,6 +61,8 @@ public:
     bool createLog(std::string name); ///< Set name of logfile and open for writing
     void writeLog(std::string text);  ///< Write string to log file
     void writeLog(const char * text); ///< Write c_string to log file
+    int getFreqinc() { return freqinc; } ///< Get freq increment
+    void setFreqinc(int _freqinc) {freqinc = _freqinc;} ///< Set freq increment for recording freqshots
     void writeProgressbar(int x, int n, int r, int w);
     void writeProgress(int x, int n, int r, int w);
 
@@ -69,6 +71,7 @@ private:
     std::ofstream Flog; ///< Logfile
 	Progress prog; ///< Progress counter
     std::string snapfile;
+    int freqinc;  ///< Frequency decimation interval
 };
 
 /** The 2D Acoustic Kdmig class

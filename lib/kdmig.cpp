@@ -10,6 +10,7 @@ Kdmig<T>::Kdmig() {
 	prog.previous = 0;
 	prog.current = 0;
     prog.persec = 0;
+    freqinc=1;
 }
 
 template<typename T>
@@ -237,7 +238,7 @@ void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, 
                         if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
                             TTsum = TT_sou[kt2D(ix-hx+pad, iz-hz+pad)] + TT_rec[kt2D(ix-hx+pad, iz-hz+pad)] - ot;
 
-                            for (iw=0; iw<nfs; iw++){
+                            for (iw=0; iw<nfs; iw += this->getFreqinc()){
                                 omega = iw*df;
                                 wsr = cos(-omega*TTsum);
                                 wsi = sin(-omega*TTsum);

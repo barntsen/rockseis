@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
 			PRINT_DOC();
 			PRINT_DOC(# Migration parameters);
+			PRINT_DOC(freqinc = "4"; # Integer frequency interval to sum over);
 			PRINT_DOC(nhx = "1";);
 			PRINT_DOC(nhz = "1";);
 			PRINT_DOC();
@@ -54,6 +55,7 @@ int main(int argc, char** argv) {
 	int lpml;
     float apertx;
     int nhx=1, nhz=1;
+	int freqinc;
     std::string Vpfile;
     std::string Pimagefile;
     std::string Precordfile;
@@ -72,6 +74,7 @@ int main(int argc, char** argv) {
     }
     status = false; 
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("freqinc", &freqinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Pimagefile", &Pimagefile) == INPARSE_ERR) status = true;
@@ -168,6 +171,9 @@ int main(int argc, char** argv) {
 
                 // Create imaging class
                 kdmig = std::make_shared<rockseis::KdmigAcoustic2D<float>>(lmodel, shot2D, pimage);
+
+                // Set frequency decimation 
+                kdmig->setFreqinc(freqinc);
 
                 // Set logfile
                 kdmig->setLogfile("log.txt-" + std::to_string(work.id));
