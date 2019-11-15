@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(# MPI 2d acoustic full-waveform inversion configuration file);
             PRINT_DOC();
             PRINT_DOC(# Modelling parameters);
-            PRINT_DOC(freesurface = "true"; # True if free surface should be on);
+            PRINT_DOC(freesurface = "false"; # True if free surface should be on);
             PRINT_DOC(order = "8"; # Order of finite difference stencil);
             PRINT_DOC(lpml = "8"; # Size of pml absorbing boundary (should be larger than order + 5 ));
             PRINT_DOC(snapinc = "1"; # Snap interval in multiples of modelling interval);

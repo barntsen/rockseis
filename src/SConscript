@@ -177,3 +177,6 @@ if(env['MPI']):
 
     mpiAcoustickdmig2d = mpi.Program(prefix + 'mpiAcoustickdmig2d','mpiAcoustickdmig2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
     mpi.Install('../bin/',mpiAcoustickdmig2d)
+
+    mpiElastickdmig2d = mpi.Program(prefix + 'mpiElastickdmig2d','mpiElastickdmig2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
+    mpi.Install('../bin/',mpiElastickdmig2d)

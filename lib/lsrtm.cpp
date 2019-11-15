@@ -794,7 +794,7 @@ int LsrtmAcoustic2D<T>::run(){
      T* adjsrc;
      adjsrc = (T *) calloc(waves_adj->getNx()*waves_adj->getNz(), sizeof(T));
 
-     this->writeLog("Running 2D Acoustic full-waveform inversion gradient with full checkpointing.");
+     this->writeLog("Running 2D Acoustic least-squares rtm gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -949,7 +949,7 @@ int LsrtmAcoustic2D<T>::run_optimal(){
     T* adjsrc;
     adjsrc = (T *) calloc(waves_adj->getNx()*waves_adj->getNz(), sizeof(T));
 
-     this->writeLog("Running 2D Acoustic full-waveform inversion gradient with optimal checkpointing.");
+     this->writeLog("Running 2D Acoustic least-squares rtm gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
      bool reverse = false;
     // Loop over forward time
@@ -1598,7 +1598,7 @@ int LsrtmAcoustic3D<T>::run(){
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
      Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
 
-     this->writeLog("Running 3D Acoustic full-waveform inversion gradient with full checkpointing.");
+     this->writeLog("Running 3D Acoustic least-squares rtm gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -1722,7 +1722,7 @@ int LsrtmAcoustic3D<T>::run_optimal(){
      vpgrad->allocateImage();
 
 
-     this->writeLog("Running 3D Acoustic full-waveform inversion gradient with optimal checkpointing.");
+     this->writeLog("Running 3D Acoustic least-squares rtm gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
      bool reverse = false;
     // Loop over forward time
@@ -2954,7 +2954,7 @@ int LsrtmElastic2D<T>::run(){
      Uzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
      Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
 
-     this->writeLog("Running 2D Elastic full-waveform inversion gradient with full checkpointing.");
+     this->writeLog("Running 2D Elastic least-squares rtm gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -3099,7 +3099,7 @@ int LsrtmElastic2D<T>::run_optimal(){
     if(this->vsgradset) vsgrad->allocateImage();
     if(this->rhogradset) rhograd->allocateImage();
 
-     this->writeLog("Running 2D Elastic full-waveform inversion gradient with optimal checkpointing.");
+     this->writeLog("Running 2D Elastic least-squares rtm gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
      bool reverse = false;
     // Loop over forward time
@@ -4193,7 +4193,7 @@ int LsrtmElastic3D<T>::run(){
      Uzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
      Uzsnap->setData(waves->getUz1(), 0); //Set Uz as snap field
 
-     this->writeLog("Running 3D Elastic full-waveform inversion gradient with full checkpointing.");
+     this->writeLog("Running 3D Elastic least-squares rtm gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
     // Loop over forward time
     for(int it=0; it < nt; it++)
@@ -4359,7 +4359,7 @@ int LsrtmElastic3D<T>::run_optimal(){
     if(this->vsgradset) vsgrad->allocateImage();
     if(this->rhogradset) rhograd->allocateImage();
 
-     this->writeLog("Running 3D Elastic full-waveform inversion gradient with optimal checkpointing.");
+     this->writeLog("Running 3D Elastic least-squares rtm gradient with optimal checkpointing.");
      this->writeLog("Doing forward Loop.");
      bool reverse = false;
     // Loop over forward time

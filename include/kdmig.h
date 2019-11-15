@@ -100,5 +100,34 @@ private:
     bool pimageset;
 };
 
+/** The 2D Elastic Kdmig class
+ *
+ */
+template<typename T>
+class KdmigElastic2D: public Kdmig<T> {
+public:
+    KdmigElastic2D();					///< Constructor
+    KdmigElastic2D(std::shared_ptr<ModelAcoustic2D<T>> vpmodel, std::shared_ptr<ModelAcoustic2D<T>> vsmodel, std::shared_ptr<Data2D<T>> data, std::shared_ptr<Image2D<T>> pimage);					///< Constructor 
+    int solve(); ///< Runs forward eikonal solver
+    int solve_adj(); ///< Runs adjoint eikonal solver
+    void setVpmodel(std::shared_ptr<ModelAcoustic2D<T>> _vpmodel) { vpmodel = _vpmodel; vpmodelset = true; }
+    void setVsmodel(std::shared_ptr<ModelAcoustic2D<T>> _vsmodel) { vsmodel = _vsmodel; vsmodelset = true; }
+    void setData(std::shared_ptr<Data2D<T>> _data) { data = _data; dataset = true; }
+    void crossCorr(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T* cdata, unsigned long nfs, T df, T ot, int pad);
+    int run();
+
+    ~KdmigElastic2D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelAcoustic2D<T>> vpmodel;
+    std::shared_ptr<ModelAcoustic2D<T>> vsmodel;
+    std::shared_ptr<Data2D<T>> data;
+    std::shared_ptr<Image2D<T>> simage;
+    bool vpmodelset;
+    bool vsmodelset;
+    bool dataset;
+    bool simageset;
+};
+
 }
 #endif //KDMIG_H

@@ -39,6 +39,7 @@ snap = env.Library(builddir + 'snap',['snap.cpp', 'waves.cpp', 'file.cpp'])
 image = env.Library(builddir + 'image',['image.cpp', 'model.cpp'])
 opt = env.Library(builddir + 'opt',['opt.cpp'])
 bspl = env.Library(builddir + 'bspl',['bspl.cpp'])
+kdtree = env.Library(builddir + 'kdtree',['kdtree.cpp'])
 if(env['MPI']):
     parallel = mpi.Library(builddir + 'parallel',['parallel.cpp'])
     inversion = mpi.Library(builddir + 'inversion',['inversion.cpp'])

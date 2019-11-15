@@ -32,6 +32,7 @@ public:
     std::shared_ptr<File> getFdata() { return Fdata; } ///< Get Fdata handle
     int getNtrace() { return ntrace; }	///< Get number of traces
     int getRecinc() { return recinc; }	///< Get recording interval
+    bool getAlloc() { return allocated; }	///< Get status if data is allocated
     std::string getFile() { return datafile; } ///< Get filename
     rs_field getField() { return field; } ///< Get data type
     bool open(std::string flag); ///< Open file. Flags can be "i", "o" or "a".
@@ -46,6 +47,7 @@ public:
     void setFdata(std::shared_ptr<File> Fd) { Fdata = Fd; } ///< Set file handle
     void setField(rs_field _field) { field = _field; } ///< Set data type 
     void setRecinc(const int inc) { recinc = inc; }	///< Set Nx
+    void setAlloc(bool val) {allocated = val; }	///< Set status if data is allocated
 
     // Filter
     void Filter1D(T f0, T f1, T f2, T f3, T df, unsigned long nf, T* W, T *cdata);
@@ -63,6 +65,7 @@ private:
     rs_datatype datatype;
     std::shared_ptr<File> Fdata;
     int recinc;
+    bool allocated;
 };
 
 // =============== 2D DATA CLASS =============== //
@@ -75,6 +78,7 @@ public:
     Data2D(const int _ntrace, const int _nt, const T _dt, const T _ot); 	///< Constructor
     Data2D(std::string datafile, const int _nt, const T _dt, const T _ot); 	///< Constructor
     Data2D(std::string datafile); ///< Constructor
+    Data2D(std::string datafile, bool allocate); ///< Constructor
     ~Data2D();       	///< Destructor
 
     // Get functions
@@ -99,6 +103,7 @@ public:
     bool write(); ///< Writes data and coordinates
     bool writeTraces(); ///< Writes data and coordinates to the end of the file
     void createEmpty(size_t ntr); ///< Create empty dataset with ntr traces
+    void getTrace(std::string filename, size_t number); ///< Writes a trace with a specific number to a file
     void putTrace(std::string filename, size_t number); ///< Writes a trace with a specific number to a file
     void putImage(std::string imagefile); ///< Output an image to the end of the datafile
     
@@ -123,6 +128,7 @@ public:
     Data3D(const int _ntrace, const int _nt, const T _dt, const T _ot); 	///< Constructor
     Data3D(std::string datafile, const int _nt, const T _dt, const T _ot); 	///< Constructor
     Data3D(std::string datafile); 	///< Constructor
+    Data3D(std::string datafile, bool allocate); 	///< Constructor
     virtual ~Data3D();       	///< Destructor
 
     // Get functions

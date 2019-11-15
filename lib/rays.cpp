@@ -343,11 +343,12 @@ void RaysAcoustic2D<T>::clearLam() {
 }
 
 template<typename T>
-void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype){
+int RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype){
     Point2D<int> *map;
     int ntrace = source->getNtrace();
     int nx, nz;
     int lpml;
+    int nr = 0;
     lpml = this->getLpml();
     nx = this->getNx_pml();
     nz = this->getNz_pml();
@@ -367,12 +368,14 @@ void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source
         if(map[i].x >= 0 && map[i].y >=0)
         { 
             TT[I(lpml+map[i].x, lpml+map[i].y)] = 0.0;
+            nr++;
         }
     }
+    return nr;
 }
 
 template<typename T>
-void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int traceno){
+int RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int traceno){
     Point2D<int> *map;
     int ntrace = source->getNtrace();
     if(traceno < 0 || traceno > ntrace-1){
@@ -383,6 +386,7 @@ void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source
     lpml = this->getLpml();
     nx = this->getNx_pml();
     nz = this->getNz_pml();
+    int nr = 0;
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
@@ -397,7 +401,9 @@ void RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source
     if(map[i].x >= 0 && map[i].y >=0)
     { 
         TT[I(lpml+map[i].x, lpml+map[i].y)] = 0.0;
+        nr++;
     }
+    return nr;
 }
 
 template<typename T>
@@ -1140,10 +1146,11 @@ T RaysAcoustic3D<T>::norm1(T *TT, T *TTold)
 }
 
 template<typename T>
-void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
+int RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
     Point3D<int> *map;
     size_t ntrace = source->getNtrace();
     size_t nx, ny, nz;
+    int nr = 0;
     int lpml;
 
     lpml = this->getLpml();
@@ -1166,12 +1173,14 @@ void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source
         if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
         { 
             TT[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = 0.0;
+            nr++;
         }
     }
+    return nr;
 }
 
 template<typename T>
-void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int traceno){
+int RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int traceno){
     Point3D<int> *map;
     size_t ntrace = source->getNtrace();
 
@@ -1181,6 +1190,7 @@ void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source
 
     size_t nx, ny, nz;
     int lpml;
+    int nr = 0;
 
     lpml = this->getLpml();
     nx = this->getNx_pml();
@@ -1200,7 +1210,9 @@ void RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source
     if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
     { 
         TT[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = 0.0;
+        nr++;
     }
+    return nr;
 }
 
 template<typename T>

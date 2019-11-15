@@ -8,6 +8,7 @@ Data<T>::Data(const std::string file)
     datafile=file;
     field = PRESSURE;
     Fdata = std::make_shared<File>(); 
+    allocated = false;
 }
 
 template<typename T>
@@ -19,6 +20,7 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt)
     ot = 0.0;
     field = PRESSURE;
     Fdata = std::make_shared<File>(); 
+    allocated = false;
 }
 
 template<typename T>
@@ -30,6 +32,7 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt, const T _ot)
     ot = _ot;
     field = PRESSURE;
     Fdata = std::make_shared<File>(); 
+    allocated = false;
 }
 
 template<typename T>
@@ -219,6 +222,56 @@ Data2D<T>::Data2D(std::string datafile): Data<T>(datafile)
 
     // Allocate the memory for the data
     data = (T *) calloc(ntrace*nt, sizeof(T));
+    if(data != NULL){
+        this->setAlloc(true);
+    }
+}
+
+template<typename T>
+Data2D<T>::Data2D(std::string datafile, bool allocate): Data<T>(datafile)
+{
+    bool status;
+
+    size_t ntrace;
+    size_t nt;
+    T dt;
+    T ot;
+    //Opening file for reading
+    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
+    status = Fin->input(datafile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("Data2D::Error reading from ", datafile );
+    }
+    if(Fin->getData_format() != sizeof(T))
+    {
+        rs_error("Data2D::Numerical precision in ", datafile, " mismatch with data class contructor.");
+    }
+    if(Fin->getNheader() != NHEAD2D)
+    {
+        rs_error("Data2D:: " , datafile , " is not a 2d data file.");
+    }
+
+    ntrace = Fin->getN(2);
+    nt = Fin->getN(1);
+    dt = Fin->getD(1);
+    ot = Fin->getO(1);
+
+    // Setting variables
+    this->setNtrace(ntrace);
+    this->setNt(nt);
+    this->setDt(dt);
+    this->setOt(ot);
+
+    // Create a 2D data geometry
+    geometry = std::make_shared<Geometry2D<T>>(ntrace); 
+
+    if(allocate){
+        // Allocate the memory for the data
+        data = (T *) calloc(ntrace*nt, sizeof(T));
+        if(data != NULL){
+            this->setAlloc(true);
+        }
+    }
 }
 
 template<typename T>
@@ -254,6 +307,9 @@ Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt, const T _ot)
 
     // Allocate the memory for the data
     data = (T *) calloc(ntrace*_nt, sizeof(T));
+    if(data != NULL){
+        this->setAlloc(true);
+    }
 }
 
 template<typename T>
@@ -582,6 +638,46 @@ void Data2D<T>::createEmpty(size_t ntr)
 }
 
 template<typename T>
+void Data2D<T>::getTrace(std::string filename, size_t number)
+{
+    size_t traceno;
+    traceno = number;
+
+    bool status;
+    std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
+    status = Fdata->input(filename);
+    if(status == FILE_ERR) rs_error("Data2D::getTrace: Error opening output data file.");
+    rs_datatype datatype = Fdata->getType(); 
+    if(datatype != DATA2D) rs_error("Data2D::getTrace: Datafile must be of type Data2D.");
+    //Get gather size information
+    size_t n1 = Fdata->getN(1);
+    T d1 = Fdata->getD(1);
+    T o1 = Fdata->getO(1);
+    size_t n2 = 1; // Only write one trace!
+    if(n1 != this->getNt()) rs_error("Data2D::getTrace: Number of samples in trace and datafile mismatch.");
+    if(d1 != this->getDt()) rs_error("Data2D::getTrace: Sampling interval in trace and datafile mismatch.");
+    if(o1 != this->getOt()) rs_error("Data2D::getTrace: Origin in trace and datafile mismatch.");
+
+    if(traceno > (Fdata->getN(2)-1)) rs_error("Data2D::getTrace: Trying to get a trace with number that is larger than number of traces in file. ", std::to_string(traceno));
+
+    //Read gather
+    Point2D<T> *scoords = (this->getGeom())->getScoords();
+    Point2D<T> *gcoords = (this->getGeom())->getGcoords();
+    T *tracedata = this->getData();
+    for (size_t j=0; j < n2; j++){
+        Fdata->seekg(Fdata->getStartofdata() + traceno*(n1+NHEAD2D)*sizeof(T));
+        Fdata->read(&scoords[j].x, 1);
+        Fdata->read(&scoords[j].y, 1);
+        Fdata->read(&gcoords[j].x, 1);
+        Fdata->read(&gcoords[j].y, 1);
+        Fdata->read(&tracedata[j*n1], n1);
+    }
+
+    if(Fdata->getFail()) rs_error("Data2D::PutTrace: Error writting gather to output file");
+}
+
+
+template<typename T>
 void Data2D<T>::putTrace(std::string filename, size_t number)
 {
     size_t traceno;
@@ -764,6 +860,58 @@ Data3D<T>::Data3D(std::string datafile): Data<T>(datafile)
 
     // Allocate the memory for the data
     data = (T *) calloc(ntrace*nt, sizeof(T));
+    if(data != NULL){
+        this->setAlloc(true);
+    }
+}
+
+template<typename T>
+Data3D<T>::Data3D(std::string datafile, bool allocate): Data<T>(datafile)
+{
+    bool status;
+    this->setFile(datafile);
+
+    size_t ntrace;
+    size_t nt;
+    T dt;
+    T ot;
+
+    //Opening file for reading
+    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
+    status = Fin->input(datafile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("Data3D::Error reading from " , datafile ,". ");
+    }
+    if(Fin->getData_format() != sizeof(T))
+    {
+        rs_error("Data3D::Numerical precision in " , datafile , " mismatch with data class contructor.");
+    }
+    if(Fin->getNheader() != NHEAD3D)
+    {
+        rs_error("Data3D:: " , datafile , " is not a 3d data file.");
+    }
+
+    ntrace = Fin->getN(2);
+    nt = Fin->getN(1);
+    dt = Fin->getD(1);
+    ot = Fin->getO(1);
+
+    // Setting variables
+    this->setNtrace(ntrace);
+    this->setNt(nt);
+    this->setDt(dt);
+    this->setOt(ot);
+
+    // Create a 3D data geometry
+    geometry = std::make_shared<Geometry3D<T>>(ntrace); 
+
+    if(allocate){
+        // Allocate the memory for the data
+        data = (T *) calloc(ntrace*nt, sizeof(T));
+        if(data != NULL){
+            this->setAlloc(true);
+        }
+    }
 }
 
 template<typename T>

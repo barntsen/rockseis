@@ -106,8 +106,8 @@ public:
     bool *getRecmask() { return recmask; } 
 
     // Insert source functions
-    void insertSource(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Insert source position
-    void insertSource(std::shared_ptr<Data2D<T>> source, bool maptype, int traceno); ///< Insert source position for a particular trace number
+    int insertSource(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Insert source position
+    int insertSource(std::shared_ptr<Data2D<T>> source, bool maptype, int traceno); ///< Insert source position for a particular trace number
     void insertResiduals(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Insert source position
     void createRecmask(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Create a mask for adjoint eikonal computation
     void clearTT(); ///< Reset traveltime array 
@@ -147,8 +147,8 @@ public:
     bool *getRecmask() { return recmask; } 
 
     // Insert source functions
-    void insertSource(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
-    void insertSource(std::shared_ptr<Data3D<T>> source, bool maptype, int traceno); ///< Insert source position for a particular trace number
+    int insertSource(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
+    int insertSource(std::shared_ptr<Data3D<T>> source, bool maptype, int traceno); ///< Insert source position for a particular trace number
     void insertResiduals(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
     void createRecmask(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Create a mask for adjoint eikonal computation
     void clearTT(); ///< Reset traveltime array 
