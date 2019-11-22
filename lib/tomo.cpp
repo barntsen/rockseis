@@ -230,14 +230,14 @@ void TomoAcoustic2D<T>::runGrad() {
     std::shared_ptr<rockseis::Data2D<T>> Tres2D;
     std::shared_ptr<rockseis::Data2D<T>> weight2D;
     std::shared_ptr<rockseis::Image2D<T>> vpgrad;
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lmodel;
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> lmodel;
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
     Sort->setDatafile(Trecordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Vpfile, this->getLpml() ,false));
+	std::shared_ptr<rockseis::ModelEikonal2D<T>> gmodel (new rockseis::ModelEikonal2D<T>(Vpfile, this->getLpml()));
 
      // Test for problematic model sampling
     if(gmodel->getDx() != gmodel->getDz()){
@@ -325,7 +325,7 @@ void TomoAcoustic2D<T>::runGrad() {
                 size_t ntr = Tobs2D->getNtrace();
 
                 lmodel = gmodel->getLocal(Tobs2D, -1.0*gmodel->getDx(), SMAP);
-                lmodel->staggerModels_Eikonal();
+                lmodel->Expand();
 
                 //Create source 
                 std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(ntr, 1, 1.0, 0.0));
@@ -414,13 +414,13 @@ void TomoAcoustic2D<T>::runBsproj() {
     }
 
 	// Get gradients
-	std::shared_ptr<rockseis::ModelAcoustic2D<T>> grad (new rockseis::ModelAcoustic2D<T>(vpgradfile, vpgradfile, this->getLpml() ,false));
+	std::shared_ptr<rockseis::ModelEikonal2D<T>> grad (new rockseis::ModelEikonal2D<T>(vpgradfile, this->getLpml()));
 
 	// Read model
-	grad->readModel();
+	grad->readVelocity();
 	
 	T *vpgrad;
-	vpgrad = grad->getVp();
+	vpgrad = grad->getVelocity();
 
     /* Initializing spline */
     std::shared_ptr<rockseis::Bspl2D<T>> spline (new rockseis::Bspl2D<T>(grad->getNx(), grad->getNz(), grad->getDx(), grad->getDz(), this->getDtx(), this->getDtz(), 3, 3));
@@ -516,15 +516,15 @@ void TomoAcoustic2D<T>::runBsproj() {
 template<typename T>
 int TomoAcoustic2D<T>::setInitial(double *x, std::string vpfile)
 {
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> model_in (new rockseis::ModelAcoustic2D<T>(vpfile, vpfile, 1 ,0));
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> model_in (new rockseis::ModelEikonal2D<T>(vpfile, 1));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
-    model_in->readModel();  
+    model_in->readVelocity();  
     // Write initial model files
-    model_in->setVpfile(VP0FILE);
-    model_in->writeVp();
+    model_in->setVelocityfile(VP0FILE);
+    model_in->writeVelocity();
     // Write linesearch model files
-    model_in->setVpfile(VPLSFILE);
-    model_in->writeVp();
+    model_in->setVelocityfile(VPLSFILE);
+    model_in->writeVelocity();
     int N=0;
     switch(this->getParamtype()){
         case PAR_GRID:
@@ -549,44 +549,44 @@ void TomoAcoustic2D<T>::saveResults(int iter)
     std::string dir;
     dir = RESULTDIR;
     // Write out new models
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lsmodel (new rockseis::ModelAcoustic2D<T>(VPLSFILE, VPLSFILE, 1 ,0));
-    lsmodel->readModel();
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> lsmodel (new rockseis::ModelEikonal2D<T>(VPLSFILE, 1));
+    lsmodel->readVelocity();
     name = dir + "/" + VP_UP + "-" + std::to_string(iter);
-    lsmodel->setVpfile(name);
-    lsmodel->writeVp();
+    lsmodel->setVelocityfile(name);
+    lsmodel->writeVelocity();
 }
 
 template<typename T>
 void TomoAcoustic2D<T>::saveLinesearch(double *x)
 {
     // Models
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> model0 (new rockseis::ModelAcoustic2D<T>(VP0FILE, VP0FILE, 1 ,0));
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lsmodel (new rockseis::ModelAcoustic2D<T>(VPLSFILE, VPLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> model0 (new rockseis::ModelEikonal2D<T>(VP0FILE, 1));
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> lsmodel (new rockseis::ModelEikonal2D<T>(VPLSFILE, 1));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute;
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> mute;
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
 
     // Write linesearch model
-    model0->readModel();
-    lsmodel->readModel();
+    model0->readVelocity();
+    lsmodel->readVelocity();
     T *vp0, *vpls;
     T *c, *mod;
     T *vpmutedata;
     T *lbounddata;
     T *ubounddata;
-    vp0 = model0->getVp(); 
-    vpls = lsmodel->getVp(); 
+    vp0 = model0->getVelocity(); 
+    vpls = lsmodel->getVelocity(); 
     int i;
     int N, Nmod;
 
     // If mute
     if(!Mutefile.empty()){
-        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Mutefile, Mutefile, 1 ,0);
+        mute = std::make_shared <rockseis::ModelEikonal2D<T>>(Mutefile, 1);
         long Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
         if(N != Nmute) rs_error("TomoAcoustic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
-        mute->readModel();
-        vpmutedata = mute->getVp();
+        mute->readVelocity();
+        vpmutedata = mute->getVelocity();
     }else{
         N = (lsmodel->getGeom())->getNtot();
         vpmutedata = (T *) calloc(N, sizeof(T)); 
@@ -614,7 +614,7 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
                     if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
                 }
             }
-            lsmodel->writeVp();
+            lsmodel->writeVelocity();
             break;
         case PAR_BSPLINE:
             Nmod = (lsmodel->getGeom())->getNtot();
@@ -636,7 +636,7 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
                     if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
                 }
             }
-            lsmodel->writeVp();
+            lsmodel->writeVelocity();
             break;
         default:
             rs_error("TomoAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
@@ -651,31 +651,31 @@ template<typename T>
 void TomoAcoustic2D<T>::saveHessian(double *x)
 {
     // Models
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lsmodel (new rockseis::ModelAcoustic2D<T>(VPLSFILE, VPLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> lsmodel (new rockseis::ModelEikonal2D<T>(VPLSFILE, 1));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute;
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> mute;
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
 
     // Write linesearch model
-    lsmodel->readModel();
+    lsmodel->readVelocity();
     T *c, *mod;
     T *vpls;
     T *vpmutedata;
     T *lbounddata;
     T *ubounddata;
-    vpls = lsmodel->getVp(); 
-    lsmodel->setVpfile(VPHESSFILE);
+    vpls = lsmodel->getVelocity(); 
+    lsmodel->setVelocityfile(VPHESSFILE);
     int i;
     int N, Nmod;
 
     // If mute
     if(!Mutefile.empty()){
-        mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Mutefile, Mutefile, 1 ,0);
+        mute = std::make_shared <rockseis::ModelEikonal2D<T>>(Mutefile, 1);
         long Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
         if(N != Nmute) rs_error("TomoAcoustic2D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
-        mute->readModel();
-        vpmutedata = mute->getVp();
+        mute->readVelocity();
+        vpmutedata = mute->getVelocity();
     }else{
         N = (lsmodel->getGeom())->getNtot();
         vpmutedata = (T *) calloc(N, sizeof(T)); 
@@ -684,7 +684,7 @@ void TomoAcoustic2D<T>::saveHessian(double *x)
         }
     }
     if(this->getConstrain()){
-        bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
+        bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1, 0);
         bound->readModel();
         long Nbound = (bound->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
@@ -703,7 +703,7 @@ void TomoAcoustic2D<T>::saveHessian(double *x)
                     if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
                 }
             }
-            lsmodel->writeVp();
+            lsmodel->writeVelocity();
             break;
         case PAR_BSPLINE:
             Nmod = (lsmodel->getGeom())->getNtot();
@@ -725,7 +725,7 @@ void TomoAcoustic2D<T>::saveHessian(double *x)
                     if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
                 }
             }
-            lsmodel->writeVp();
+            lsmodel->writeVelocity();
             break;
         default:
             rs_error("TomoAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
@@ -772,14 +772,14 @@ void TomoAcoustic2D<T>::readGrad(double *g)
         vpgradfile = VPGRADMUTEFILE;
     }
 
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> modelgrad (new rockseis::ModelAcoustic2D<T>(vpgradfile, vpgradfile, 1 ,0));
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> modelgrad (new rockseis::ModelEikonal2D<T>(vpgradfile, 1));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
     std::shared_ptr<rockseis::File> Fgrad;
     switch (this->getParamtype()){
         case PAR_GRID:
-            modelgrad->readModel();
+            modelgrad->readVelocity();
             N = (modelgrad->getGeom())->getNtot();
-            gvp = modelgrad->getVp(); 
+            gvp = modelgrad->getVelocity(); 
             for(i=0; i< N; i++)
             {
                 g[i] = gvp[i]*kvp;
@@ -810,17 +810,17 @@ template<typename T>
 void TomoAcoustic2D<T>::combineGradients()
 {
     // Gradients
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> grad;
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> reggrad;
-    grad = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADFILE, VPGRADFILE, 1 ,0);
-    reggrad = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPREGGRADFILE, VPREGGRADFILE, 1 ,0);
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> grad;
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> reggrad;
+    grad = std::make_shared<rockseis::ModelEikonal2D<T>>(VPGRADFILE, 1);
+    reggrad = std::make_shared<rockseis::ModelEikonal2D<T>>(VPREGGRADFILE, 1);
 
     // Read gradients
-    grad->readModel();
-    reggrad->readModel();
+    grad->readVelocity();
+    reggrad->readVelocity();
     T *vp, *regvp;
-    vp = grad->getVp(); 
-    regvp = reggrad->getVp(); 
+    vp = grad->getVelocity(); 
+    regvp = reggrad->getVelocity(); 
     int i;
     int N;
 
@@ -830,9 +830,8 @@ void TomoAcoustic2D<T>::combineGradients()
     {
         vp[i] = vp[i] + reg_alpha[0]*regvp[i];
     }
-    grad->setVpfile(VPGRADCOMBFILE);
-    grad->setRfile(VPGRADCOMBFILE);
-    grad->writeVp();
+    grad->setVelocityfile(VPGRADCOMBFILE);
+    grad->writeVelocity();
 }
 
 template<typename T>
@@ -840,17 +839,17 @@ void TomoAcoustic2D<T>::applyMute()
 {
     if(!Mutefile.empty()){
         // Models
-        std::shared_ptr<rockseis::ModelAcoustic2D<T>> model;
-        model = std::make_shared<rockseis::ModelAcoustic2D<T>>(VPGRADCOMBFILE, VPGRADCOMBFILE, 1 ,0);
+        std::shared_ptr<rockseis::ModelEikonal2D<T>> model;
+        model = std::make_shared<rockseis::ModelEikonal2D<T>>(VPGRADCOMBFILE, 1);
         // Mute
-        std::shared_ptr<rockseis::ModelAcoustic2D<T>> mute (new rockseis::ModelAcoustic2D<T>(Mutefile, Mutefile, 1 ,0));
+        std::shared_ptr<rockseis::ModelEikonal2D<T>> mute (new rockseis::ModelEikonal2D<T>(Mutefile, 1));
 
         // Mute model and write
-        model->readModel();
-        mute->readModel();
+        model->readVelocity();
+        mute->readVelocity();
         T *vp, *vpmute;
-        vp = model->getVp(); 
-        vpmute = mute->getVp(); 
+        vp = model->getVelocity(); 
+        vpmute = mute->getVelocity(); 
         int i;
         int N;
 
@@ -859,9 +858,8 @@ void TomoAcoustic2D<T>::applyMute()
         {
             vp[i] = vp[i]*vpmute[i];
         }
-        model->setVpfile(VPGRADMUTEFILE);
-        model->setRfile(VPGRADMUTEFILE);
-        model->writeVp();
+        model->setVelocityfile(VPGRADMUTEFILE);
+        model->writeVelocity();
     }
 }
 
@@ -869,12 +867,12 @@ template<typename T>
 void TomoAcoustic2D<T>::computeRegularisation(double *x)
 {
     // Models
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> model (new rockseis::ModelAcoustic2D<T>(VPLSFILE, VPLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> model (new rockseis::ModelEikonal2D<T>(VPLSFILE, 1));
     std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
     std::shared_ptr<rockseis::Bspl2D<double>> spline;
 
     // Write linesearch model
-    model->readModel();
+    model->readVelocity();
     double *dvpdx, *dvpdz;
     T *vpgrad;
     double *gwrk;
@@ -887,10 +885,9 @@ void TomoAcoustic2D<T>::computeRegularisation(double *x)
     dvpdx = (double *) calloc(Nmod, sizeof(double));
     dvpdz = (double *) calloc(Nmod, sizeof(double));
     gwrk = (double *) calloc(Nmod, sizeof(double));
-    model->readModel();
-    model->setVpfile(VPREGGRADFILE);
-    model->setRfile(VPREGGRADFILE);
-    vpgrad = model->getVp();
+    model->readVelocity();
+    model->setVelocityfile(VPREGGRADFILE);
+    vpgrad = model->getVelocity();
     switch (this->getParamtype()){
         case PAR_GRID:
             N = (model->getGeom())->getNtot();
@@ -980,7 +977,7 @@ void TomoAcoustic2D<T>::computeRegularisation(double *x)
     Fmisfit->close();
 
     /* Write out gradient */
-    model->writeVp();
+    model->writeVelocity();
 
     // Free variables
     free(dvpdx);
@@ -1055,14 +1052,14 @@ void TomoAcoustic3D<T>::runGrad() {
     std::shared_ptr<rockseis::Data3D<T>> Tres3D;
     std::shared_ptr<rockseis::Data3D<T>> weight3D;
     std::shared_ptr<rockseis::Image3D<T>> vpgrad;
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> lmodel;
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> lmodel;
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
     Sort->setDatafile(Trecordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic3D<T>> gmodel (new rockseis::ModelAcoustic3D<T>(Vpfile, Vpfile, this->getLpml(), false));
+	std::shared_ptr<rockseis::ModelEikonal3D<T>> gmodel (new rockseis::ModelEikonal3D<T>(Vpfile, this->getLpml()));
 
      // Test for problematic model sampling
     if(gmodel->getDx() != gmodel->getDy() || gmodel->getDx() != gmodel->getDz()){
@@ -1150,7 +1147,7 @@ void TomoAcoustic3D<T>::runGrad() {
                 size_t ntr = Tobs3D->getNtrace();
 
                 lmodel = gmodel->getLocal(Tobs3D, -1.0*gmodel->getDx(), -1.0*gmodel->getDx(), SMAP);
-                lmodel->staggerModels_Eikonal();
+                lmodel->Expand();
 
                 //Create source 
                 std::shared_ptr<rockseis::Data3D<T>> source (new rockseis::Data3D<T>(ntr, 1, 1.0, 0.0));
@@ -1239,13 +1236,13 @@ void TomoAcoustic3D<T>::runBsproj() {
     }
 
 	// Get gradients
-	std::shared_ptr<rockseis::ModelAcoustic3D<T>> grad (new rockseis::ModelAcoustic3D<T>(vpgradfile, vpgradfile, this->getLpml() ,false));
+	std::shared_ptr<rockseis::ModelEikonal3D<T>> grad (new rockseis::ModelEikonal3D<T>(vpgradfile, this->getLpml()));
 
 	// Read model
-	grad->readModel();
+	grad->readVelocity();
 	
 	T *vpgrad;
-	vpgrad = grad->getVp();
+	vpgrad = grad->getVelocity();
 
     /* Initializing spline */
     std::shared_ptr<rockseis::Bspl3D<T>> spline (new rockseis::Bspl3D<T>(grad->getNx(), grad->getNy(), grad->getNz(), grad->getDx(), grad->getDy(), grad->getDz(), this->getDtx(),this->getDty(), this->getDtz(), 3, 3, 3));
@@ -1341,15 +1338,15 @@ void TomoAcoustic3D<T>::runBsproj() {
 template<typename T>
 int TomoAcoustic3D<T>::setInitial(double *x, std::string vpfile)
 {
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> model_in (new rockseis::ModelAcoustic3D<T>(vpfile, vpfile, 1 ,0));
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> model_in (new rockseis::ModelEikonal3D<T>(vpfile, 1));
     std::shared_ptr<rockseis::Bspl3D<T>> spline;
-    model_in->readModel();  
+    model_in->readVelocity();  
     // Write initial model files
-    model_in->setVpfile(VP0FILE);
-    model_in->writeVp();
+    model_in->setVelocityfile(VP0FILE);
+    model_in->writeVelocity();
     // Write linesearch model files
-    model_in->setVpfile(VPLSFILE);
-    model_in->writeVp();
+    model_in->setVelocityfile(VPLSFILE);
+    model_in->writeVelocity();
     int N=0;
     switch(this->getParamtype()){
         case PAR_GRID:
@@ -1374,44 +1371,44 @@ void TomoAcoustic3D<T>::saveResults(int iter)
     std::string dir;
     dir = RESULTDIR;
     // Write out new models
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> lsmodel (new rockseis::ModelAcoustic3D<T>(VPLSFILE, VPLSFILE, 1 ,0));
-    lsmodel->readModel();
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> lsmodel (new rockseis::ModelEikonal3D<T>(VPLSFILE, 1));
+    lsmodel->readVelocity();
     name = dir + "/" + VP_UP + "-" + std::to_string(iter);
-    lsmodel->setVpfile(name);
-    lsmodel->writeVp();
+    lsmodel->setVelocityfile(name);
+    lsmodel->writeVelocity();
 }
 
 template<typename T>
 void TomoAcoustic3D<T>::saveLinesearch(double *x)
 {
     // Models
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> model0 (new rockseis::ModelAcoustic3D<T>(VP0FILE, VP0FILE, 1 ,0));
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> lsmodel (new rockseis::ModelAcoustic3D<T>(VPLSFILE, VPLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> model0 (new rockseis::ModelEikonal3D<T>(VP0FILE, 1));
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> lsmodel (new rockseis::ModelEikonal3D<T>(VPLSFILE, 1));
     std::shared_ptr<rockseis::Bspl3D<T>> spline;
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> mute;
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> mute;
     std::shared_ptr<rockseis::ModelAcoustic3D<T>> bound;
 
     // Write linesearch model
-    model0->readModel();
-    lsmodel->readModel();
+    model0->readVelocity();
+    lsmodel->readVelocity();
     T *vp0, *vpls;
     T *c, *mod;
     T *vpmutedata;
     T *lbounddata;
     T *ubounddata;
-    vp0 = model0->getVp(); 
-    vpls = lsmodel->getVp(); 
+    vp0 = model0->getVelocity(); 
+    vpls = lsmodel->getVelocity(); 
     int i;
     int N, Nmod;
 
     // If mute
     if(!Mutefile.empty()){
-        mute = std::make_shared <rockseis::ModelAcoustic3D<T>>(Mutefile, Mutefile, 1 ,0);
+        mute = std::make_shared <rockseis::ModelEikonal3D<T>>(Mutefile, 1);
         long Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
         if(N != Nmute) rs_error("TomoAcoustic3D<T>::saveLinesearch(): Geometry in Mutefile does not match geometry in the model.");
-        mute->readModel();
-        vpmutedata = mute->getVp();
+        mute->readVelocity();
+        vpmutedata = mute->getVelocity();
         N = (lsmodel->getGeom())->getNtot();
     }else{
         N = (lsmodel->getGeom())->getNtot();
@@ -1442,7 +1439,7 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
                     if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
                 }
             }
-            lsmodel->writeVp();
+            lsmodel->writeVelocity();
             break;
         case PAR_BSPLINE:
             Nmod = (lsmodel->getGeom())->getNtot();
@@ -1464,7 +1461,7 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
                     if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
                 }
             }
-            lsmodel->writeVp();
+            lsmodel->writeVelocity();
             break;
         default:
             rs_error("TomoAcoustic3D<T>::saveLinesearch(): Unknown parameterisation."); 
@@ -1510,14 +1507,14 @@ void TomoAcoustic3D<T>::readGrad(double *g)
         vpgradfile = VPGRADMUTEFILE;
     }
 
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> modelgrad (new rockseis::ModelAcoustic3D<T>(vpgradfile, vpgradfile, 1 ,0));
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> modelgrad (new rockseis::ModelEikonal3D<T>(vpgradfile, 1));
     std::shared_ptr<rockseis::Bspl3D<T>> spline;
     std::shared_ptr<rockseis::File> Fgrad;
     switch (this->getParamtype()){
         case PAR_GRID:
-            modelgrad->readModel();
+            modelgrad->readVelocity();
             N = (modelgrad->getGeom())->getNtot();
-            gvp = modelgrad->getVp(); 
+            gvp = modelgrad->getVelocity(); 
             for(i=0; i< N; i++)
             {
                 g[i] = gvp[i]*kvp;
@@ -1548,17 +1545,17 @@ template<typename T>
 void TomoAcoustic3D<T>::combineGradients()
 {
     // Gradients
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> grad;
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> reggrad;
-    grad = std::make_shared<rockseis::ModelAcoustic3D<T>>(VPGRADFILE, VPGRADFILE, 1 ,0);
-    reggrad = std::make_shared<rockseis::ModelAcoustic3D<T>>(VPREGGRADFILE, VPREGGRADFILE, 1 ,0);
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> grad;
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> reggrad;
+    grad = std::make_shared<rockseis::ModelEikonal3D<T>>(VPGRADFILE, 1);
+    reggrad = std::make_shared<rockseis::ModelEikonal3D<T>>(VPREGGRADFILE, 1);
 
     // Read gradients
-    grad->readModel();
-    reggrad->readModel();
+    grad->readVelocity();
+    reggrad->readVelocity();
     T *vp, *regvp;
-    vp = grad->getVp(); 
-    regvp = reggrad->getVp(); 
+    vp = grad->getVelocity(); 
+    regvp = reggrad->getVelocity(); 
     int i;
     int N;
 
@@ -1568,9 +1565,8 @@ void TomoAcoustic3D<T>::combineGradients()
     {
         vp[i] = vp[i] + reg_alpha[0]*regvp[i];
     }
-    grad->setVpfile(VPGRADCOMBFILE);
-    grad->setRfile(VPGRADCOMBFILE);
-    grad->writeVp();
+    grad->setVelocityfile(VPGRADCOMBFILE);
+    grad->writeVelocity();
 }
 
 template<typename T>
@@ -1578,17 +1574,17 @@ void TomoAcoustic3D<T>::applyMute()
 {
     if(!Mutefile.empty()){
         // Models
-        std::shared_ptr<rockseis::ModelAcoustic3D<T>> model;
-        model = std::make_shared<rockseis::ModelAcoustic3D<T>>(VPGRADCOMBFILE, VPGRADCOMBFILE, 1 ,0);
+        std::shared_ptr<rockseis::ModelEikonal3D<T>> model;
+        model = std::make_shared<rockseis::ModelEikonal3D<T>>(VPGRADCOMBFILE, 1);
         // Mute
-        std::shared_ptr<rockseis::ModelAcoustic3D<T>> mute (new rockseis::ModelAcoustic3D<T>(Mutefile, Mutefile, 1 ,0));
+        std::shared_ptr<rockseis::ModelEikonal3D<T>> mute (new rockseis::ModelEikonal3D<T>(Mutefile, 1));
 
         // Mute model and write
-        model->readModel();
-        mute->readModel();
+        model->readVelocity();
+        mute->readVelocity();
         T *vp, *vpmute;
-        vp = model->getVp(); 
-        vpmute = mute->getVp(); 
+        vp = model->getVelocity(); 
+        vpmute = mute->getVelocity(); 
         int i;
         int N;
 
@@ -1597,9 +1593,8 @@ void TomoAcoustic3D<T>::applyMute()
         {
             vp[i] = vp[i]*vpmute[i];
         }
-        model->setVpfile(VPGRADMUTEFILE);
-        model->setRfile(VPGRADMUTEFILE);
-        model->writeVp();
+        model->setVelocityfile(VPGRADMUTEFILE);
+        model->writeVelocity();
     }
 }
 
@@ -1607,12 +1602,12 @@ template<typename T>
 void TomoAcoustic3D<T>::computeRegularisation(double *x)
 {
     // Models
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> model (new rockseis::ModelAcoustic3D<T>(VPLSFILE, VPLSFILE, 1 ,0));
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> model (new rockseis::ModelEikonal3D<T>(VPLSFILE, 1));
     std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), model->getNy(), model->getNz(), model->getDx(), model->getDy(), model->getDz(), 8));
     std::shared_ptr<rockseis::Bspl3D<double>> spline;
 
     // Write linesearch model
-    model->readModel();
+    model->readVelocity();
     double *dvpdx, *dvpdy, *dvpdz;
     T *vpgrad;
     double *gwrk;
@@ -1626,10 +1621,9 @@ void TomoAcoustic3D<T>::computeRegularisation(double *x)
     dvpdy = (double *) calloc(Nmod, sizeof(double));
     dvpdz = (double *) calloc(Nmod, sizeof(double));
     gwrk = (double *) calloc(Nmod, sizeof(double));
-    model->readModel();
-    model->setVpfile(VPREGGRADFILE);
-    model->setRfile(VPREGGRADFILE);
-    vpgrad = model->getVp();
+    model->readVelocity();
+    model->setVelocityfile(VPREGGRADFILE);
+    vpgrad = model->getVelocity();
     switch (this->getParamtype()){
         case PAR_GRID:
             N = (model->getGeom())->getNtot();
@@ -1742,7 +1736,7 @@ void TomoAcoustic3D<T>::computeRegularisation(double *x)
     Fmisfit->close();
 
     /* Write out gradient */
-    model->writeVp();
+    model->writeVelocity();
 
     // Free variables
     free(dvpdx);

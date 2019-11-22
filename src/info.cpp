@@ -56,7 +56,9 @@ int main(int argc, char* argv[])
         case rockseis::SORTMAP:
             std::cerr << "SORTMAP.";
             break;
-
+        case rockseis::TTABLE:
+            std::cerr << "TTABLE.";
+            break;
     }
     std::cerr <<  std::endl;
     std::cerr << "Nheader: " << in->getNheader() << "\n"; 

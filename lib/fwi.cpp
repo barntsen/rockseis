@@ -706,7 +706,6 @@ void FwiAcoustic2D<T>::computeResiduals(){
     if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
     if(dataresP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
     size_t nt = datamodP->getNt();
-    T dt = datamodP->getDt();
     if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
     if(dataresP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 

@@ -224,6 +224,61 @@ Snapshot<T>::~Snapshot() {
 // =============== 2D SNAPSHOT CLASS =============== //
 
 template<typename T>
+Snapshot2D<T>::Snapshot2D(std::shared_ptr<ModelEikonal2D<T>> model, int snapinc)
+{
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _nt;
+    T _dt, _ot;
+    int _lpml;
+    int _dim;
+    int snapnt, enddiff;
+    T snapdt, snapot;
+
+/* Get necessary parameters from model class */
+    _nx=model->getNx();
+    _ny=model->getNy();
+    _nz=model->getNz();
+    _dx=model->getDx();
+    _dy=model->getDy();
+    _dz=model->getDz();
+    _ox=model->getOx();
+    _oy=model->getOy();
+    _oz=model->getOz();
+    _lpml = model->getLpml();
+    _dim = model->getDim();
+    _nt = 1;
+    _dt = 1;
+    _ot = 0;
+
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setLpml(_lpml);
+    this->setDim(_dim);
+    this->setSnapinc(snapinc);
+
+    snapnt = (_nt-1)/snapinc + 1;
+    snapdt = _dt*snapinc;
+    snapot = _ot;
+    enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
+    this->setSnapnt(snapnt);
+    this->setSnapdt(snapdt);
+    this->setSnapot(snapot);
+    this->setEnddiff(enddiff);
+    for(int i=0; i<NPTR; i++){
+        this->setData(NULL, i);
+    }
+}
+
+template<typename T>
 Snapshot2D<T>::Snapshot2D(std::shared_ptr<WavesAcoustic2D<T>> waves, int snapinc)
 {
     int _nx, _ny, _nz;
@@ -545,6 +600,60 @@ Snapshot2D<T>::~Snapshot2D()
 }
 
 // =============== 3D SNAPSHOT CLASS =============== //
+template<typename T>
+Snapshot3D<T>::Snapshot3D(std::shared_ptr<ModelEikonal3D<T>> model, int snapinc)
+{
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _nt;
+    T _dt, _ot;
+    int _lpml;
+    int _dim;
+    int snapnt, enddiff;
+    T snapdt, snapot;
+
+/* Get necessary parameters from model class */
+    _nx=model->getNx();
+    _ny=model->getNy();
+    _nz=model->getNz();
+    _dx=model->getDx();
+    _dy=model->getDy();
+    _dz=model->getDz();
+    _ox=model->getOx();
+    _oy=model->getOy();
+    _oz=model->getOz();
+    _lpml = model->getLpml();
+    _nt = 1;
+    _dt = 1;
+    _ot = 0;
+    _dim = model->getDim();
+
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setLpml(_lpml);
+    this->setDim(_dim);
+    this->setSnapinc(snapinc);
+
+    snapnt = (_nt-1)/snapinc + 1;
+    snapdt = _dt*snapinc;
+    snapot = _ot;
+    enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
+    this->setSnapnt(snapnt);
+    this->setSnapdt(snapdt);
+    this->setSnapot(snapot);
+    this->setEnddiff(enddiff);
+    for(int i=0; i<NPTR; i++){
+        this->setData(NULL, i);
+    }
+}
 
 template<typename T>
 Snapshot3D<T>::Snapshot3D(std::shared_ptr<WavesAcoustic3D<T>> waves, int snapinc)

@@ -262,6 +262,652 @@ T Model<T>::getMin(T *model){
     return min;
 }
 
+// =============== 2D EIKONAL MODEL CLASS =============== //
+template<typename T>
+ModelEikonal2D<T>::ModelEikonal2D(): Model<T>(2) {
+    /* Allocate variables */
+    Velocity = (T *) calloc(1,1);
+    L = (T *) calloc(1,1);
+}
+
+template<typename T>
+ModelEikonal2D<T>::ModelEikonal2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 0.0, _oz, false) {
+    /* Allocate variables */
+    Velocity = (T *) calloc(1,1);
+    L = (T *) calloc(1,1);
+}
+
+template<typename T>
+ModelEikonal2D<T>::ModelEikonal2D(std::string _Velocityfile, const int _lpml): Model<T>(2) {
+    bool status;
+    int nx, nz;
+    T dx, dz;
+    T ox, oz;
+    Velocityfile = _Velocityfile;
+
+    std::shared_ptr<rockseis::File> Fmod (new rockseis::File());
+    status = Fmod->input(Velocityfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelEikonal2D::Error reading from Velocity file: ", Velocityfile);
+    }
+
+    // Read geometry from file
+    nx = Fmod->getN(1);
+    dx = (T) Fmod->getD(1);
+    ox = (T) Fmod->getO(1);
+    nz = Fmod->getN(3);
+    dz = (T) Fmod->getD(3);
+    oz = (T) Fmod->getO(3);
+    
+    // Close files
+    Fmod->close();
+
+    // Store geometry in model class
+    this->setNx(nx);
+    this->setDx(dx);
+    this->setOx(ox);
+
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(false);
+
+    /* Allocate variables */
+    Velocity = (T *) calloc(1,1);
+    L = (T *) calloc(1,1);
+}
+
+template<typename T>
+ModelEikonal2D<T>::~ModelEikonal2D() {
+    // Freeing all variables
+    free(Velocity);
+    free(L);
+}
+
+template<typename T>
+void ModelEikonal2D<T>::readVelocity() {
+    bool status;
+    // Get file names
+    std::string Velocityfile = this->getVelocityfile();
+    // Open files for reading
+    std::shared_ptr<rockseis::File> Fmod (new rockseis::File());
+    status = Fmod->input(Velocityfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelEikonal2D::readVelocity : Error reading from Velocity file: ", Velocityfile);
+    }
+
+    // Read models
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    // Reallocate variables to correct size
+    free(Velocity); 
+    Velocity = (T *) calloc(nx*nz,sizeof(T));
+    if(Velocity == NULL) rs_error("ModelEikonal2D::readVelocity: Failed to allocate memory.");
+    this->setRealized(true);
+
+    Velocity = this->getVelocity();
+    Fmod->read(Velocity, nx*nz);
+    Fmod->close();
+
+}
+
+template<typename T>
+void ModelEikonal2D<T>::writeVelocity() {
+    if(!this->getRealized()) {
+        rs_error("ModelEikonal2D::writeVelocity: Model is not allocated.");
+    }
+    // Get file names
+    std::string Velocityfile = this->getVelocityfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Fmod (new rockseis::File());
+    Fmod->output(Velocityfile);
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Fmod->setN(1,nx);
+    Fmod->setN(3,nz);
+    Fmod->setD(1,dx);
+    Fmod->setD(3,dz);
+    Fmod->setO(1,ox);
+    Fmod->setO(3,oz);
+    Fmod->setType(REGULAR);
+    Fmod->setData_format(sizeof(T));
+    Fmod->writeHeader();
+    Velocity = this->getVelocity();
+    Fmod->write(Velocity, nx*nz, 0);
+    Fmod->close();
+}
+
+
+template<typename T>
+void ModelEikonal2D<T>::Expand(){
+    if(!this->getRealized()) {
+        rs_error("ModelEikonal2D::staggerModels_Eikonal: Model is not allocated.");
+    }
+    int nx, nz, lpml, nx_pml, nz_pml;
+    nx = this->getNx();
+    nz = this->getNz();
+    lpml = this->getLpml();
+    
+    nx_pml = this->getNx_pml();
+    nz_pml = this->getNz_pml();
+    
+    // Reallocate necessary variables 
+    free(L); 
+    L = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(L == NULL) rs_error("ModelEikonal2D::staggerModels_Eikonal: Failed to allocate memory.");
+    
+    // Padding
+    this->padmodel2d(L, Velocity, nx, nz, lpml);
+}
+
+template<typename T>
+void ModelEikonal2D<T>::createModel() {
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    /* Reallocate Model and R */
+    free(Velocity); 
+    Velocity = (T *) calloc(nx*nz,sizeof(T));
+    if(Velocity == NULL) rs_error("ModelEikonal2D::createModel: Failed to allocate memory.");
+    this->setRealized(true);
+}
+
+template<typename T>
+std::shared_ptr<rockseis::ModelEikonal2D<T>> ModelEikonal2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) {
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> local;
+    /* Get source or receiver min and max positions */
+    Point2D<T> *scoords;
+    Point2D<T> *gcoords;
+    size_t ntr = data->getNtrace();
+    double min, max; 
+    double off;
+    double sx, gx;
+    double daperture = aperture;
+    T dx = this->getDx();
+    T ox = this->getOx();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+    size_t size;
+    off_t start;
+
+    /* Determine grid positions and sizes */
+    if(aperture >= 0){
+        if(map == SMAP){
+            scoords = (data->getGeom())->getScoords();
+            gcoords = (data->getGeom())->getGcoords();
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min = sx;
+            max = sx;
+            off = fabs(gx - sx);
+            for (long long i=1; i < ntr; i++){
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(sx < min) min = sx;
+                if(sx > max) max = sx;
+                if(fabs(gx - sx) > off) off = fabs(gx - sx);
+            }
+        }else{
+            scoords = (data->getGeom())->getScoords();
+            gcoords = (data->getGeom())->getGcoords();
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min = gx;
+            max = gx;
+            off = fabs(gx - sx);
+            for (long long i=1; i < ntr; i++){
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(gx < min) min = gx;
+                if(gx > max) max = gx;
+                if(fabs(gx - sx) > off) off = fabs(gx - sx);
+            }
+        }
+        if(aperture > 0){
+            size = (size_t) (rintf((max-min + aperture)/dx) + 1);
+            if( size % 2 == 0 ) size++; // Get odd size due to symmetry
+        }else{
+            size = (size_t) (2*rintf(off/dx) + 1);
+        }
+        start = (off_t) (rintf((min - ox)/dx) - (size - 1)/2); 
+    }else{
+        scoords = (data->getGeom())->getScoords();
+        gcoords = (data->getGeom())->getGcoords();
+        sx = scoords[0].x;
+        gx = gcoords[0].x;
+        min = sx;
+        max = sx;
+        for (long long i=0; i < ntr; i++){
+            sx = scoords[i].x;
+            gx = gcoords[i].x;
+            if(sx < min) min = sx;
+            if(sx > max) max = sx;
+            if(gx < min) min = gx;
+            if(gx > max) max = gx;
+        }
+        size = (size_t) (rintf((max-min + 2*fabs(daperture))/dx) + 2);
+        start = (off_t) (rintf((min - ox)/dx) - rintf(fabs(daperture/dx))) - 1; 
+    }
+
+    /* Create local model */
+    local = std::make_shared<rockseis::ModelEikonal2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz());
+
+    /*Realizing local model */
+    local->createModel();
+
+	/* Copying from big model into local model */
+    T *Velocity = local->getVelocity();
+
+    /* Allocate two traces to read models from file */
+    T *veltrace = (T *) calloc(nx, sizeof(T));
+    if(veltrace == NULL) rs_error("ModelEikonal2d::getLocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<rockseis::File> Fmod (new rockseis::File());
+    status = Fmod->input(Velocityfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelEikonal2D::getLocal : Error reading from Velocity file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+    rockseis::Index l2d(size,nz);
+    rockseis::Index f2d(nx,nz);
+    for(size_t i1=0; i1<nz; i1++) {
+        fpos = f2d(0, i1)*sizeof(T);
+        Fmod->read(veltrace, nx, fpos);
+        if(Fmod->getFail()) rs_error("ModelEikonal2D::getLocal: Error reading from model file");
+        for(size_t i2=0; i2<size; i2++) {
+            lpos = i + i2;
+            if(lpos < 0) lpos = 0;
+            if(lpos > (nx-1)) lpos = nx - 1;
+            Velocity[l2d(i2,i1)] = veltrace[lpos];
+        }
+    }
+
+    /* Free traces */
+    free(veltrace);
+
+    return local;
+}
+
+// =============== 3D EIKONAL MODEL CLASS =============== //
+template<typename T>
+ModelEikonal3D<T>::ModelEikonal3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz): Model<T>(3, _nx, _ny, _nz, _lpml, _dx, _dy, _dz, _ox, _oy, _oz, false) {
+    
+    /* Allocate minimally the variables */
+    Velocity = (T *) calloc(1,1);
+    L = (T *) calloc(1,1);
+}
+
+template<typename T>
+ModelEikonal3D<T>::ModelEikonal3D(std::string _Velocityfile, const int _lpml): Model<T>(3) {
+    bool status;
+    int nx, ny, nz;
+    T dx, dy, dz;
+    T ox, oy, oz;
+    Velocityfile = _Velocityfile;
+
+    std::shared_ptr<rockseis::File> Fmodel (new rockseis::File());
+    status = Fmodel->input(Velocityfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelEikonal3D::Error reading from Velocity file: ", Velocityfile);
+    }
+
+    // Read geometry from file
+    nx = Fmodel->getN(1);
+    dx = (T) Fmodel->getD(1);
+    ox = (T) Fmodel->getO(1);
+    ny = Fmodel->getN(2);
+    dy = (T) Fmodel->getD(2);
+    oy = (T) Fmodel->getO(2);
+    nz = Fmodel->getN(3);
+    dz = (T) Fmodel->getD(3);
+    oz = (T) Fmodel->getO(3);
+    
+    // Close files
+    Fmodel->close();
+
+    // Store geometry in model class
+    this->setNx(nx);
+    this->setDx(dx);
+    this->setOx(ox);
+
+    this->setNy(ny);
+    this->setDy(dy);
+    this->setOy(oy);
+
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(false);
+
+    /* Allocate variables */
+    Velocity = (T *) calloc(1,1);
+    L = (T *) calloc(1,1);
+}
+
+
+template<typename T>
+void ModelEikonal3D<T>::readVelocity() {
+    bool status;
+    // Get file names
+    std::string Velocityfile = this->getVelocityfile();
+    // Open files for reading
+    std::shared_ptr<rockseis::File> Fmodel (new rockseis::File());
+    status = Fmodel->input(Velocityfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelEikonal3D::readVelocity : Error reading from Velocity file: ", Velocityfile);
+    }
+
+    // Read models
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    // Allocate models before reading
+    free(Velocity); 
+    Velocity = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Velocity == NULL) rs_error("ModelEikonal3D::readVelocity: Failed to allocate memory.");
+    this->setRealized(true);
+
+    Velocity = this->getVelocity();
+    Fmodel->read(Velocity, nx*ny*nz);
+    Fmodel->close();
+}
+
+template<typename T>
+void ModelEikonal3D<T>::writeVelocity() {
+    if(!this->getRealized()) {
+        rs_error("ModelEikonal3D::writeVelocity: Model is not allocated.");
+    }
+    // Get file names
+    std::string Velocityfile = this->getVelocityfile();
+    // Open files for writting
+    std::shared_ptr<rockseis::File> Fmodel (new rockseis::File());
+    Fmodel->output(Velocityfile.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Fmodel->setN(1,nx);
+    Fmodel->setN(2,ny);
+    Fmodel->setN(3,nz);
+    Fmodel->setD(1,dx);
+    Fmodel->setD(2,dy);
+    Fmodel->setD(3,dz);
+    Fmodel->setO(1,ox);
+    Fmodel->setO(2,oy);
+    Fmodel->setO(3,oz);
+    Fmodel->setType(REGULAR);
+    Fmodel->setData_format(sizeof(T));
+    Fmodel->writeHeader();
+    Velocity = this->getVelocity();
+    Fmodel->write(Velocity, nx*ny*nz, 0);
+    Fmodel->close();
+}
+
+template<typename T>
+ModelEikonal3D<T>::~ModelEikonal3D() {
+    // Freeing all variables
+    free(Velocity);
+    free(L);
+}
+
+template<typename T>
+void ModelEikonal3D<T>::Expand(){
+    if(!this->getRealized()) {
+        rs_error("ModelEikonal3D::staggerModels_Eikonal: Model is not allocated.");
+    }
+    int nx, ny, nz, lpml, nx_pml, ny_pml, nz_pml;
+    nx = this->getNx();
+    ny = this->getNy();
+    nz = this->getNz();
+    lpml = this->getLpml();
+    
+    nx_pml = nx + 2*lpml;
+    ny_pml = ny + 2*lpml;
+    nz_pml = nz + 2*lpml;
+    
+    // Reallocate necessary variables 
+    free(L); 
+    L = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    if(L == NULL) rs_error("ModelEikonal3D::staggerModels_Eikonal: Failed to allocate memory.");
+    
+    // Padding
+    this->padmodel3d(L, Velocity, nx, ny, nz, lpml);
+}
+
+
+template<typename T>
+void ModelEikonal3D<T>::createModel() {
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    /* Reallocate Model and R */
+    free(Velocity);
+    Velocity = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Velocity == NULL) rs_error("ModelEikonal3D::createModel: Failed to allocate memory.");
+    this->setRealized(true);
+}
+
+template<typename T>
+std::shared_ptr<rockseis::ModelEikonal3D<T>> ModelEikonal3D<T>::getLocal(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
+
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> local;
+    /* Get source or receiver min and max positions */
+    Point3D<T> *scoords;
+    Point3D<T> *gcoords;
+    size_t ntr = data->getNtrace();
+    double sx, gx, sy, gy;
+    double min_x, max_x; 
+    double min_y, max_y; 
+    double off_x, off_y;
+    double daperture_x = aperture_x;
+    double daperture_y = aperture_y;
+    T dx = this->getDx();
+    T dy = this->getDy();
+    T ox = this->getOx();
+    T oy = this->getOy();
+    size_t nx = this->getNx();
+    size_t ny = this->getNy();
+    size_t nz = this->getNz();
+    size_t size_x;
+    off_t start_x;
+    size_t size_y;
+    off_t start_y;
+
+    /* Determine grid positions and sizes */
+    if(aperture_x >= 0){
+        if(map == SMAP){
+            scoords = (data->getGeom())->getScoords();
+            gcoords = (data->getGeom())->getGcoords();
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min_x = sx;
+            max_x = sx;
+            off_x = fabs(gx - sx);
+            for (int i=1; i < ntr; i++){
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(sx < min_x) min_x = sx;
+                if(sx > max_x) max_x = sx;
+                if(fabs(gx - sx) > off_x) off_x = fabs(gx - sx);
+            }
+        }else{
+            scoords = (data->getGeom())->getScoords();
+            gcoords = (data->getGeom())->getGcoords();
+            sx = scoords[0].x;
+            gx = gcoords[0].x;
+            min_x = gx;
+            max_x = gx;
+            off_x = fabs(gx - sx);
+            for (size_t i=1; i < ntr; i++){
+                sx = scoords[i].x;
+                gx = gcoords[i].x;
+                if(gx < min_x) min_x = gx;
+                if(gx > max_x) max_x = gx;
+                if(fabs(gx - sx) > off_x) off_x = fabs(gx - sx);
+            }
+        }
+        if(aperture_x > 0){
+            size_x = (size_t) (rintf((max_x-min_x + aperture_x)/dx) + 1);
+            if( size_x % 2 == 0 ) size_x++; // Get odd size due to symmetry
+        }else{
+            size_x = (size_t) (2*rintf(off_x/dx) + 1);
+        }
+        start_x = (off_t) (rintf((min_x - ox)/dx) - (size_x - 1)/2); 
+    }else{
+        scoords = (data->getGeom())->getScoords();
+        gcoords = (data->getGeom())->getGcoords();
+        sx = scoords[0].x;
+        gx = gcoords[0].x;
+        min_x = sx;
+        max_x = sx;
+        for (int i=0; i < ntr; i++){
+            sx = scoords[i].x;
+            gx = gcoords[i].x;
+            if(scoords[i].x < min_x) min_x = scoords[i].x;
+            if(scoords[i].x > max_x) max_x = scoords[i].x;
+            if(gcoords[i].x < min_x) min_x = gcoords[i].x;
+            if(gcoords[i].x > max_x) max_x = gcoords[i].x;
+        }
+        size_x = (size_t) (rintf((max_x-min_x + 2*fabs(daperture_x))/dx) + 2);
+        start_x = (off_t) (rintf((min_x - ox)/dx) - rintf(fabs(daperture_x/dx))) - 1; 
+    }
+    if(aperture_y >= 0){
+        if(map == SMAP){
+            scoords = (data->getGeom())->getScoords();
+            gcoords = (data->getGeom())->getGcoords();
+            sy = scoords[0].y;
+            gy = gcoords[0].y;
+            min_y = sy;
+            max_y = sy;
+            off_y = fabs(gy - sy);
+            for (int i=1; i < ntr; i++){
+                sy = scoords[i].y;
+                gy = gcoords[i].y;
+                if(sy < min_y) min_y = sy;
+                if(sy > max_y) max_y = sy;
+                if(fabs(gy - sy) > off_y) off_y = fabs(gy - sy);
+            }
+        }else{
+            scoords = (data->getGeom())->getScoords();
+            gcoords = (data->getGeom())->getGcoords();
+            sy = scoords[0].y;
+            gy = gcoords[0].y;
+            min_y = gy;
+            max_y = gy;
+            off_y = fabs(gy - sy);
+            for (size_t i=1; i < ntr; i++){
+                sy = scoords[i].y;
+                gy = gcoords[i].y;
+                if(gy < min_y) min_y = gy;
+                if(gy > max_y) max_y = gy;
+                if(fabs(gy - sy) > off_y) off_y = fabs(gy - sy);
+            }
+        }
+        if(aperture_y > 0){
+            size_y = (size_t) (rintf((max_y-min_y + aperture_y)/dy) + 1);
+            if( size_y % 2 == 0 ) size_y++; // Get odd size due to symmetry
+        }else{
+            size_y = (size_t) (2*rintf(off_y/dy) + 1);
+        }
+        start_y = (off_t) (rintf((min_y - oy)/dy) - (size_y - 1)/2); 
+    }else{
+        scoords = (data->getGeom())->getScoords();
+        gcoords = (data->getGeom())->getGcoords();
+            sy = scoords[0].y;
+            gy = gcoords[0].y;
+            min_y = sy;
+            max_y = sy;
+        for (int i=0; i < ntr; i++){
+            sy = scoords[i].y;
+            gy = gcoords[i].y;
+            if(sy < min_y) min_y = sy;
+            if(sy > max_y) max_y = sy;
+            if(gy < min_y) min_y = gy;
+            if(gy > max_y) max_y = gy;
+        }
+        size_y = (size_t) (rintf((max_y-min_y + 2*fabs(daperture_y))/dy) + 2);
+        start_y = (off_t) (rintf((min_y - oy)/dy) - rintf(fabs(daperture_y/dy))) - 1; 
+    }
+
+    double oxl, oyl; 
+    oxl = (ox + start_x*dx);
+    oyl = (oy + start_y*dy);
+
+    /* Create local model */
+    local = std::make_shared<rockseis::ModelEikonal3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz());
+
+    /*Realizing local model */
+    local->createModel();
+
+	/* Copying from big model into local model */
+    T *Velocity = local->getVelocity();
+
+    /* Allocate two traces to read models from file */
+    T *veltrace = (T *) calloc(nx*ny, sizeof(T));
+    if(veltrace == NULL) rs_error("ModelEikonal3D::getLocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<rockseis::File> Fmodel (new rockseis::File());
+    status = Fmodel->input(Velocityfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelEikonal3D::getLocal : Error reading from Velocity file.");
+    }
+    off_t i = start_x;
+    off_t j = start_y;
+    off_t lpos_x, lpos_y, fpos;
+    rockseis::Index l3d(size_x, size_y, nz);
+    rockseis::Index f3d(nx, ny, nz);
+    rockseis::Index l2d(nx, ny);
+    for(size_t i1=0; i1<nz; i1++) {
+        fpos = f3d(0, 0, i1)*sizeof(T);
+        Fmodel->read(veltrace, nx*ny, fpos);
+        if(Fmodel->getFail()) rs_error("ModelEikonal3D::getLocal: Error reading from model file");
+        for(size_t i3=0; i3<size_y; i3++) {
+            lpos_y = j + i3;
+                if(lpos_y < 0) lpos_y = 0;
+                if(lpos_y > (ny-1)) lpos_y = ny - 1;
+            for(size_t i2=0; i2<size_x; i2++) {
+                lpos_x = i + i2;
+                if(lpos_x < 0) lpos_x = 0;
+                if(lpos_x > (nx-1)) lpos_x = nx - 1;
+                Velocity[l3d(i2,i3,i1)] = veltrace[l2d(lpos_x, lpos_y)];
+            }
+        }
+    }
+
+    /* Free traces */
+    free(veltrace);
+
+    return local;
+}
+
+
 // =============== 1D ACOUSTIC MODEL CLASS =============== //
 template<typename T>
 ModelAcoustic1D<T>::ModelAcoustic1D(): Model<T>(2) {
@@ -2563,11 +3209,15 @@ ModelElastic3D<T>::~ModelElastic3D() {
 template class Model<float>;
 template class Model<double>;
 
+template class ModelEikonal2D<float>;
+template class ModelEikonal3D<float>;
 template class ModelAcoustic2D<float>;
 template class ModelAcoustic3D<float>;
 template class ModelElastic2D<float>;
 template class ModelElastic3D<float>;
 
+template class ModelEikonal2D<double>;
+template class ModelEikonal3D<double>;
 template class ModelAcoustic2D<double>;
 template class ModelAcoustic3D<double>;
 template class ModelElastic2D<double>;

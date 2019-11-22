@@ -66,8 +66,8 @@ int main(int argc, char** argv) {
     bool Gather;
     std::string Sgatherfile;
     std::shared_ptr<rockseis::Data2D<float>> sgather;
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> vplmodel;
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> vslmodel;
+	std::shared_ptr<rockseis::ModelEikonal2D<float>> vplmodel;
+	std::shared_ptr<rockseis::ModelEikonal2D<float>> vslmodel;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -99,8 +99,8 @@ int main(int argc, char** argv) {
     Sort->setDatafile(Vxrecordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> vpgmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Vpfile, lpml ,false));
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> vsgmodel (new rockseis::ModelAcoustic2D<float>(Vsfile, Vsfile, lpml ,false));
+	std::shared_ptr<rockseis::ModelEikonal2D<float>> vpgmodel (new rockseis::ModelEikonal2D<float>(Vpfile, lpml));
+	std::shared_ptr<rockseis::ModelEikonal2D<float>> vsgmodel (new rockseis::ModelEikonal2D<float>(Vsfile, lpml));
 
     // Test for the compatibility of the models
     if((vpgmodel->getGeom())->compare(vsgmodel->getGeom()) == true){
@@ -170,10 +170,10 @@ int main(int argc, char** argv) {
 
                 // Make local model
                 vplmodel = vpgmodel->getLocal(shot2D, apertx, SMAP);
-                vplmodel->staggerModels_Eikonal();
+                vplmodel->Expand();
 
                 vslmodel = vsgmodel->getLocal(shot2D, apertx, SMAP);
-                vslmodel->staggerModels_Eikonal();
+                vslmodel->Expand();
 
                 // Make image class
                 simage = std::make_shared<rockseis::Image2D<float>>(Simagefile + "-" + std::to_string(work.id), vplmodel, nhx, nhz);

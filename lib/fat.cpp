@@ -127,7 +127,7 @@ FatAcoustic2D<T>::FatAcoustic2D(){
 }
 
 template<typename T>
-FatAcoustic2D<T>::FatAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _Tdata):Fat<T>(){
+FatAcoustic2D<T>::FatAcoustic2D(std::shared_ptr<ModelEikonal2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _Tdata):Fat<T>(){
     source = _source;
     Tdata = _Tdata;
     model = _model;
@@ -191,7 +191,7 @@ int FatAcoustic2D<T>::run()
 }
 
 template<typename T>
-void FatAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, T *lam, T *grad) {
+void FatAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelEikonal2D<T>> model, T *lam, T *grad) {
     int nx, nz;
     int nx_pml, nz_pml;
     int lpml = model->getLpml();
@@ -199,7 +199,7 @@ void FatAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic2D<T>> m
     nz = model->getNz();
     nx_pml = model->getNx_pml();
     nz_pml = model->getNz_pml();
-    T * vp = model->getVp();
+    T * vp = model->getVelocity();
     Index Ilam(nx_pml, nz_pml);
     Index Igrad(nx, nz);
     for (int i=0; i<nx; i++){
@@ -296,7 +296,7 @@ FatAcoustic3D<T>::FatAcoustic3D(){
 }
 
 template<typename T>
-FatAcoustic3D<T>::FatAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> _model, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _Tdata):Fat<T>(){
+FatAcoustic3D<T>::FatAcoustic3D(std::shared_ptr<ModelEikonal3D<T>> _model, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _Tdata):Fat<T>(){
     source = _source;
     Tdata = _Tdata;
     model = _model;
@@ -360,7 +360,7 @@ int FatAcoustic3D<T>::run()
 }
 
 template<typename T>
-void FatAcoustic3D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, T *lam, T *grad) {
+void FatAcoustic3D<T>::scaleGrad(std::shared_ptr<rockseis::ModelEikonal3D<T>> model, T *lam, T *grad) {
     int nx, ny, nz;
     int nx_pml, ny_pml, nz_pml;
     int lpml = model->getLpml();
@@ -372,7 +372,7 @@ void FatAcoustic3D<T>::scaleGrad(std::shared_ptr<rockseis::ModelAcoustic3D<T>> m
     ny_pml = model->getNy_pml();
     nz_pml = model->getNz_pml();
 
-    T * vp = model->getVp();
+    T * vp = model->getVelocity();
     Index Ilam(nx_pml, ny_pml, nz_pml);
     Index Igrad(nx, ny, nz);
     for (int i=0; i<nx; i++){

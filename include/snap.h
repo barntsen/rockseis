@@ -106,6 +106,7 @@ public:
 template<typename T>
 class Snapshot2D: public Snapshot<T> {
 public:
+    Snapshot2D(std::shared_ptr<ModelEikonal2D<T>> model, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesAcoustic2D<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesElastic2D<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesElastic2D_DS<T>> waves, int snapinc); 	///< Constructor
@@ -121,6 +122,7 @@ public:
 template<typename T>
 class Snapshot3D: public Snapshot<T> {
 public:
+    Snapshot3D(std::shared_ptr<ModelEikonal3D<T>> model, int snapinc); 	///< Constructor
     Snapshot3D(std::shared_ptr<WavesAcoustic3D<T>> waves, int snapinc); 	///< Constructor
     Snapshot3D(std::shared_ptr<WavesElastic3D<T>> waves, int snapinc); 	///< Constructor
     Snapshot3D(std::shared_ptr<WavesElastic3D_DS<T>> waves, int snapinc); 	///< Constructor

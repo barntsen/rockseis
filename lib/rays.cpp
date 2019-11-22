@@ -96,7 +96,7 @@ RaysAcoustic2D<T>::RaysAcoustic2D(const int _nx, const int _nz, const int _lpml,
 
 
 template<typename T>
-RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>> _model): Rays<T>(){
+RaysAcoustic2D<T>::RaysAcoustic2D(std::shared_ptr<rockseis::ModelEikonal2D<T>> _model): Rays<T>(){
 
     int _nx, _ny, _nz, _lpml;
     int nx_pml, nz_pml;
@@ -656,7 +656,7 @@ RaysAcoustic3D<T>::RaysAcoustic3D(const int _nx, const int _ny, const int _nz, c
 
 
 template<typename T>
-RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>> _model): Rays<T>(){
+RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelEikonal3D<T>> _model): Rays<T>(){
 
     size_t _nx, _ny, _nz;
     T _dx, _dy, _dz; 

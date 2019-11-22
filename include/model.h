@@ -109,6 +109,88 @@ private:
     bool realized;  // Set to 1 when the model is allocated to the correct size
 };
 
+// =============== 2D EIKONAL MODEL CLASS =============== //
+/** The 2D Eikonal model class
+ *
+ */
+template<typename T>
+class ModelEikonal2D: public Model<T> {
+public:
+    ModelEikonal2D();	///< Constructor
+    ModelEikonal2D(const int _nx, const int _nz, const int lpml, const T _dx, const T _dz, const T _ox, const T _oz);	///< Constructor
+    ModelEikonal2D(std::string _Velocityfile, const int lpml);	///< Constructor
+    ~ModelEikonal2D();	///< Destructor
+    
+    // I/O functions
+    void readVelocity();	 ///< Read a model from file
+    void writeVelocity(); ///< Write the model to file
+    // Get functions
+    T *getVelocity() { return Velocity; }	///< Get Velocity
+    T *getL() { return L; }		///< Get L
+    std::string getVelocityfile() { return Velocityfile; }
+    void setVelocityfile(std::string name) { Velocityfile = name; }
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
+    T getMinvel() {return this->getMin(Velocity); } ///< Returns min of model
+    T getMaxvel() {return this->getMax(Velocity); } ///< Returns max of model
+
+    /** Stagger model functions. 
+    It creates the padded model from the non-padded model. 
+    */
+    void Expand(); 
+
+    /** Create model
+    It creates an empty model 
+    */
+    void createModel();
+    
+private:
+    T *Velocity;  ///< Velocity
+    T *L;   ///< Expanded model
+    std::string Velocityfile; ///< Filename to model
+};
+
+// =============== 3D EIKONAL MODEL CLASS =============== //
+/** The 3D Eikonal model class
+ *
+ */
+template<typename T>
+class ModelEikonal3D: public Model<T> {
+public:
+    ModelEikonal3D();	///< Default constructor (Not to be used)
+    ModelEikonal3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz); ///< Constructor
+    ModelEikonal3D(std::string _Velocityfile, const int lpml);	///< Constructor
+    ~ModelEikonal3D();	///< Destructor
+    
+    // I/O functions
+    void readVelocity();	 ///< Read a model from file
+    void writeVelocity(); ///< Write the model to file
+    // Get functions
+    T *getVelocity() { return Velocity; }	///< Get Velocity
+    T *getL() { return L; }		///< Get L
+    std::string getVelocityfile() { return Velocityfile; }
+    void setVelocityfile(std::string name) { Velocityfile = name; }
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperturex, T aperturey, bool map);
+    T getMinvel() {return this->getMin(Velocity); } ///< Returns min of model
+    T getMaxvel() {return this->getMax(Velocity); } ///< Returns max of model
+
+    /** Stagger model functions. 
+    It creates the padded model from the non-padded model. 
+    */
+    void Expand(); 
+
+    /** Create model
+    It creates an empty model 
+    */
+    void createModel();
+    
+private:
+    T *Velocity;  ///< Velocity
+    T *L;   ///< Expanded model
+    std::string Velocityfile; ///< Filename to model
+};
+
+
+
 // =============== 1D ACOUSTIC MODEL CLASS =============== //
 /** The 1D acoustic model class
  *

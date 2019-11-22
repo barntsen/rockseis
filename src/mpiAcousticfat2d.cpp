@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Data2D<float>> TTdata2D;
 
     // Create a local model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> lmodel;
+	std::shared_ptr<rockseis::ModelEikonal2D<float>> lmodel;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     Sort->setDatafile(Surveyfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<float>> gmodel (new rockseis::ModelAcoustic2D<float>(Vpfile, Vpfile, 10 ,false));
+	std::shared_ptr<rockseis::ModelEikonal2D<float>> gmodel (new rockseis::ModelEikonal2D<float>(Vpfile, 10));
 
     // Test for problematic model sampling
     if(gmodel->getDx() != gmodel->getDz()){
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
                 Shotgeom = Sort->get2DGather(work.id);
                 size_t ntr = Shotgeom->getNtrace();
                 lmodel = gmodel->getLocal(Shotgeom, -1.0*gmodel->getDx(), SMAP);
-                lmodel->staggerModels_Eikonal();
+                lmodel->Expand();
 
                 // Set shot coordinates and make a map
 	            std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(1, 1, 1.0, 0.0));
@@ -165,12 +165,12 @@ int main(int argc, char** argv) {
 
                 // Create snapshots
                 if(TTsnap){ 
-                    std::shared_ptr<WavesAcoustic2D<float>> waves (new WavesAcoustic2D<float>(lmodel, 1, 1.0, 0.0));
                     std::shared_ptr<rockseis::Snapshot2D<float>> Ttimes;
-                    Ttimes = std::make_shared<rockseis::Snapshot2D<float>>(waves, 1);
+                    Ttimes = std::make_shared<rockseis::Snapshot2D<float>>(lmodel, 1);
                     Ttimes->openSnap(TTsnapfile + "-" + std::to_string(work.id), 'w'); // Create a new snapshot file
                     Ttimes->setData(rays->getTT(), 0); //Set field to snap
                     Ttimes->writeSnap(0);
+                    Ttimes.reset();
                 }
                 
                 // Reset all classes

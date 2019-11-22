@@ -23,7 +23,7 @@
 namespace rockseis {
 
 // =============== ENUMS =============== //
-typedef enum {GENERIC, REGULAR, DATA2D, DATA3D, SNAPSHOT, EDGESNAP, CHECKPOINT, KEYMAP, SORTMAP} rs_datatype; ///< Information about the file content (Regular model, 2D data, 3D data, etc.)
+typedef enum {GENERIC, REGULAR, DATA2D, DATA3D, SNAPSHOT, EDGESNAP, CHECKPOINT, KEYMAP, SORTMAP, TTABLE} rs_datatype; ///< Information about the file content (Regular model, 2D data, 3D data, etc.)
 // =============== ABSTRACT FILE CLASS =============== //
 /** The file class
  *
