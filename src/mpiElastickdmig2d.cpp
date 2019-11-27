@@ -59,6 +59,9 @@ int main(int argc, char** argv) {
 	int freqinc;
     std::string Vpfile;
     std::string Vsfile;
+
+    std::string sou_ttablefile;
+    std::string rec_ttablefile;
     std::string Simagefile;
     std::string Vxrecordfile;
     std::shared_ptr<rockseis::Data2D<float>> shot2D;
@@ -68,6 +71,9 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Data2D<float>> sgather;
 	std::shared_ptr<rockseis::ModelEikonal2D<float>> vplmodel;
 	std::shared_ptr<rockseis::ModelEikonal2D<float>> vslmodel;
+
+	std::shared_ptr<rockseis::Ttable<float>> sou_ttable;
+	std::shared_ptr<rockseis::Ttable<float>> rec_ttable;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -80,6 +86,8 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("freqinc", &freqinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vs", &Vsfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Sou_ttable", &sou_ttablefile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Rec_ttable", &rec_ttablefile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Simagefile", &Simagefile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vxrecordfile", &Vxrecordfile) == INPARSE_ERR) status = true;
@@ -175,15 +183,22 @@ int main(int argc, char** argv) {
                 vslmodel = vsgmodel->getLocal(shot2D, apertx, SMAP);
                 vslmodel->Expand();
 
+                // Create traveltime table classes
+                sou_ttable = std::make_shared<rockseis::Ttable<float>>(sou_ttablefile);
+                sou_ttable->allocTtable();
+
+                rec_ttable = std::make_shared<rockseis::Ttable<float>>(rec_ttablefile);
+                rec_ttable->allocTtable();
+
                 // Make image class
                 simage = std::make_shared<rockseis::Image2D<float>>(Simagefile + "-" + std::to_string(work.id), vplmodel, nhx, nhz);
 
                 // Map coordinates to model
                 shot2D->makeMap(vplmodel->getGeom(), SMAP);
-                shot2D->makeMap(vplmodel->getGeom(), GMAP);
+                shot2D->makeMap(vslmodel->getGeom(), GMAP);
 
                 // Create imaging class
-                kdmig = std::make_shared<rockseis::KdmigElastic2D<float>>(vplmodel, vslmodel, shot2D, simage);
+                kdmig = std::make_shared<rockseis::KdmigElastic2D<float>>(vplmodel, vslmodel, sou_ttable, rec_ttable, shot2D, simage);
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(freqinc);
@@ -203,6 +218,8 @@ int main(int argc, char** argv) {
                 vslmodel.reset();
                 simage.reset();
                 kdmig.reset();
+                sou_ttable.reset();
+                rec_ttable.reset();
                 work.status = WORK_FINISHED;
 
                 // Send result back

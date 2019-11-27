@@ -120,6 +120,7 @@ KdmigAcoustic2D<T>::KdmigAcoustic2D(){
     dataset = false;
     modelset = false;
     pimageset = false;
+    ttableset = false;
 }
 
 template<typename T>
@@ -265,10 +266,12 @@ KdmigElastic2D<T>::KdmigElastic2D(){
     vpmodelset = false;
     vsmodelset = false;
     simageset = false;
+    sou_ttableset = false;
+    rec_ttableset = false;
 }
 
 template<typename T>
-KdmigElastic2D<T>::KdmigElastic2D(std::shared_ptr<ModelEikonal2D<T>> _vpmodel, std::shared_ptr<ModelEikonal2D<T>> _vsmodel, std::shared_ptr<Data2D<T>> _data, std::shared_ptr<Image2D<T>> _simage):Kdmig<T>(){
+KdmigElastic2D<T>::KdmigElastic2D(std::shared_ptr<ModelEikonal2D<T>> _vpmodel, std::shared_ptr<ModelEikonal2D<T>> _vsmodel, std::shared_ptr<Ttable<T>> _sou_ttable, std::shared_ptr<Ttable<T>> _rec_ttable, std::shared_ptr<Data2D<T>> _data, std::shared_ptr<Image2D<T>> _simage):Kdmig<T>(){
     data = _data;
     vpmodel = _vpmodel;
     vsmodel = _vsmodel;
@@ -277,6 +280,8 @@ KdmigElastic2D<T>::KdmigElastic2D(std::shared_ptr<ModelEikonal2D<T>> _vpmodel, s
     vpmodelset = true;
     vsmodelset = true;
     simageset = true;
+    sou_ttable = _sou_ttable;
+    rec_ttable = _rec_ttable;
 }
 
 template<typename T>
@@ -294,8 +299,8 @@ int KdmigElastic2D<T>::run()
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<RaysAcoustic2D<T>> rays_sou (new RaysAcoustic2D<T>(vpmodel));
-     std::shared_ptr<RaysAcoustic2D<T>> rays_rec (new RaysAcoustic2D<T>(vsmodel));
+     std::shared_ptr<Ttable<T>> sou_ttable_i (new Ttable<T>(vpmodel, 1));
+     std::shared_ptr<Ttable<T>> rec_ttable_i (new Ttable<T>(vsmodel, 1));
 
      /* Prepare FFT of data */
      int ntr = data->getNtrace();
@@ -311,30 +316,30 @@ int KdmigElastic2D<T>::run()
      T *cdata_array;
      cdata_array = fft1d->getData();
 
-
      // Create image
      simage->allocateImage();
+
+     // Create ttable arrays
+     sou_ttable_i->allocTtable();
+     rec_ttable_i->allocTtable();
 
      this->writeLog("Running 2D Acoustic first arrival tomography gradient with fast sweeping method.");
 
      this->writeLog("Doing forward Loop.");
      // Inserting source point
-     rays_sou->insertSource(data, SMAP, 0);
+     sou_ttable_i->insertSource(data, SMAP, 0);
 
      // Solving Eikonal equation for source traveltime
-     rays_sou->solve();
+     sou_ttable->interpTtable(sou_ttable_i);
 
      //Loop over data traces
      int i,j;
      for (i=0; i<ntr; i++){
-         // Reset traveltime for receiver
-         rays_rec->clearTT();
-
          // Inserting new receiver point
-         rays_rec->insertSource(data, GMAP, i);
+         rec_ttable_i->insertSource(data, GMAP, i);
 
          // Solving Eikonal equation for receiver traveltime
-         rays_rec->solve();
+         rec_ttable->interpTtable(rec_ttable_i);
 
          /* Applying forward fourier transform over data trace */
          for(j=0; j<nt; j++){
@@ -348,9 +353,8 @@ int KdmigElastic2D<T>::run()
          fft1d->fft1d(1);
 
          // Build image contribution
-         this->crossCorr(rays_sou, rays_rec, cdata_array, nfs, df, ot, vpmodel->getLpml());
+         this->crossCorr(sou_ttable_i, rec_ttable_i, cdata_array, nfs, df, ot);
      }
-
         
     result=KDMIG_OK;
     return result;
@@ -358,17 +362,16 @@ int KdmigElastic2D<T>::run()
 
 
 template<typename T>
-void KdmigElastic2D<T>::crossCorr(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T *cdata, unsigned long nfs, T df, T ot, int pad) {
+void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::shared_ptr<Ttable<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
     /* Build image */
     if(!simage->getAllocated()) simage->allocateImage();
 	int ix, iz, ihx, ihz, iw;
-    T *TT_sou = rays_sou->getTT();
-    T *TT_rec = rays_rec->getTT();
+    T *TT_sou = ttable_sou->getData();
+    T *TT_rec = ttable_rec->getData();
 	T *imagedata = simage->getImagedata();
 	int nhx = simage->getNhx();
 	int nhz = simage->getNhz();
 	int nx = simage->getNx();
-	int nxt = nx+2*pad;
 	int nz = simage->getNz();
 	int hx, hz;
     T dx0 = simage->getDx();
@@ -396,29 +399,25 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, s
         hx= -(nhx-1)/2 + ihx;
         for (ihz=0; ihz<nhz; ihz++){
             hz= -(nhz-1)/2 + ihz;
-            for (ix=0; ix<nx; ix++){
+            for (ix=1; ix<nx-1; ix++){
                 if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
                 {
-                    for (iz=0; iz<nz; iz++){
+                    for (iz=1; iz<nz-1; iz++){
                         if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
-                            //TTsum = TT_sou[kt2D(ix-hx+pad, iz-hz+pad)] + TT_rec[kt2D(ix-hx+pad, iz-hz+pad)] - ot;
                             
                             for (iw=1; iw<nfs; iw += this->getFreqinc()){
                                 omega = iw*df;
-                                //wsr = cos(-omega*TTsum);
-                                //wsi = sin(-omega*TTsum);
-                                //imagedata[ki2D(ix,iz,ihx,ihz)] -= cdata[2*iw]*wsr - cdata[2*iw+1]*wsi;
                                 dx = dx0*omega;
                                 dz = dz0*omega;
-                                vzzsr =  (cos(-omega*TT_sou[kt2D(ix-hx+pad, iz-hz+pad+1)]) - 2*cos(-omega*TT_sou[kt2D(ix-hx+pad, iz-hz+pad)]) + cos(-omega*TT_sou[kt2D(ix-hx+pad, iz-hz+pad-1)]))/(dz*dz);
-                                vxzsr =  ((cos(-omega*TT_sou[kt2D(ix-hx+pad+1, iz-hz+pad+1)]) - cos(-omega*TT_sou[kt2D(ix-hx+pad-1, iz-hz+pad+1)]))/(2*dx) - (cos(-omega*TT_sou[kt2D(ix-hx+pad+1, iz-hz+pad-1)]) - cos(-omega*TT_sou[kt2D(ix-hx+pad-1, iz-hz+pad-1)]))/(2*dx))/(2*dz); 
-                                vxxrr =  cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx+pad+1, iz-hz+pad)]) - cos(-omega*TT_rec[kt2D(ix-hx+pad-1, iz-hz+pad)]))/(2*dx);
-                                vxzrr = cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx+pad, iz-hz+pad+1)]) - cos(-omega*TT_rec[kt2D(ix-hx+pad, iz-hz+pad-1)]))/(2*dz);
+                                vzzsr =  (cos(-omega*TT_sou[kt2D(ix-hx, iz-hz+1)]) - 2*cos(-omega*TT_sou[kt2D(ix-hx, iz-hz)]) + cos(-omega*TT_sou[kt2D(ix-hx, iz-hz-1)]))/(dz*dz);
+                                vxzsr =  ((cos(-omega*TT_sou[kt2D(ix-hx+1, iz-hz+1)]) - cos(-omega*TT_sou[kt2D(ix-hx-1, iz-hz+1)]))/(2*dx) - (cos(-omega*TT_sou[kt2D(ix-hx+1, iz-hz-1)]) - cos(-omega*TT_sou[kt2D(ix-hx-1, iz-hz-1)]))/(2*dx))/(2*dz); 
+                                vxxrr =  cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx+1, iz-hz)]) - cos(-omega*TT_rec[kt2D(ix-hx-1, iz-hz)]))/(2*dx);
+                                vxzrr = cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx, iz-hz+1)]) - cos(-omega*TT_rec[kt2D(ix-hx, iz-hz-1)]))/(2*dz);
 
-                                vzzsi =  (sin(-omega*TT_sou[kt2D(ix-hx+pad, iz-hz+pad+1)]) - 2*sin(-omega*TT_sou[kt2D(ix-hx+pad, iz-hz+pad)]) + sin(-omega*TT_sou[kt2D(ix-hx+pad, iz-hz+pad-1)]))/(dz*dz);
-                                vxzsi =  ((sin(-omega*TT_sou[kt2D(ix-hx+pad+1, iz-hz+pad+1)]) - sin(-omega*TT_sou[kt2D(ix-hx+pad-1, iz-hz+pad+1)]))/(2*dx) - (sin(-omega*TT_sou[kt2D(ix-hx+pad+1, iz-hz+pad-1)]) - sin(-omega*TT_sou[kt2D(ix-hx+pad-1, iz-hz+pad-1)]))/(2*dx))/(2*dz); 
-                                vxxri =  cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx+pad+1, iz-hz+pad)]) - sin(-omega*TT_rec[kt2D(ix-hx+pad-1, iz-hz+pad)]))/(2*dx);
-                                vxzri = cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx+pad, iz-hz+pad+1)]) - sin(-omega*TT_rec[kt2D(ix-hx+pad, iz-hz+pad-1)]))/(2*dz);
+                                vzzsi =  (sin(-omega*TT_sou[kt2D(ix-hx, iz-hz+1)]) - 2*sin(-omega*TT_sou[kt2D(ix-hx, iz-hz)]) + sin(-omega*TT_sou[kt2D(ix-hx, iz-hz-1)]))/(dz*dz);
+                                vxzsi =  ((sin(-omega*TT_sou[kt2D(ix-hx+1, iz-hz+1)]) - sin(-omega*TT_sou[kt2D(ix-hx-1, iz-hz+1)]))/(2*dx) - (sin(-omega*TT_sou[kt2D(ix-hx+1, iz-hz-1)]) - sin(-omega*TT_sou[kt2D(ix-hx-1, iz-hz-1)]))/(2*dx))/(2*dz); 
+                                vxxri =  cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx+1, iz-hz)]) - sin(-omega*TT_rec[kt2D(ix-hx-1, iz-hz)]))/(2*dx);
+                                vxzri = cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx, iz-hz+1)]) - sin(-omega*TT_rec[kt2D(ix-hx, iz-hz-1)]))/(2*dz);
                                 imagedata[ki2D(ix,iz,ihx,ihz)] +=  (-2.0*CMULR(vzzsr,vzzsi,vxxrr,vxxri) + CMULR(vxzsr,vxzsi,vxzrr,vxzri));
                             }
                         }

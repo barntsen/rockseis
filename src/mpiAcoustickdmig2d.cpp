@@ -70,7 +70,6 @@ int main(int argc, char** argv) {
 	std::shared_ptr<rockseis::ModelEikonal2D<float>> lmodel;
 
 	std::shared_ptr<rockseis::Ttable<float>> ttable;
-	std::shared_ptr<rockseis::Ttable<float>> local_ttable;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
