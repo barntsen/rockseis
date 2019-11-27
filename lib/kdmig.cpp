@@ -378,8 +378,8 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::sh
     T dz0 = simage->getDz();
     T dx,dz;
 
-    T vxxsr;
-    T vxxsi;
+    //T vxxsr;
+    //T vxxsi;
 
     T vzzsr;
     T vzzsi;
@@ -392,8 +392,7 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::sh
     T vxzrr;
     T vxzri;
 
-    T wsr,wsi;
-    //T TTsum=0;
+    //T wsr,wsi;
     T omega=0;
     for (ihx=0; ihx<nhx; ihx++){
         hx= -(nhx-1)/2 + ihx;
