@@ -123,11 +123,13 @@ KdmigAcoustic2D<T>::KdmigAcoustic2D(){
 }
 
 template<typename T>
-KdmigAcoustic2D<T>::KdmigAcoustic2D(std::shared_ptr<ModelEikonal2D<T>> _model, std::shared_ptr<Data2D<T>> _data, std::shared_ptr<Image2D<T>> _pimage):Kdmig<T>(){
+KdmigAcoustic2D<T>::KdmigAcoustic2D(std::shared_ptr<ModelEikonal2D<T>> _model, std::shared_ptr<Ttable<T>> _ttable, std::shared_ptr<Data2D<T>> _data, std::shared_ptr<Image2D<T>> _pimage):Kdmig<T>(){
     data = _data;
+    ttable = _ttable;
     model = _model;
     pimage = _pimage;
     dataset = true;
+    ttableset = true;
     modelset = true;
     pimageset = true;
 }
@@ -147,8 +149,8 @@ int KdmigAcoustic2D<T>::run()
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<RaysAcoustic2D<T>> rays_sou (new RaysAcoustic2D<T>(model));
-     std::shared_ptr<RaysAcoustic2D<T>> rays_rec (new RaysAcoustic2D<T>(model));
+     std::shared_ptr<Ttable<T>> ttable_sou (new Ttable<T>(model, 1));
+     std::shared_ptr<Ttable<T>> ttable_rec (new Ttable<T>(model, 1));
 
      /* Prepare FFT of data */
      int ntr = data->getNtrace();
@@ -164,30 +166,30 @@ int KdmigAcoustic2D<T>::run()
      T *cdata_array;
      cdata_array = fft1d->getData();
 
-
      // Create image
      pimage->allocateImage();
+
+     // Create ttable arrays
+     ttable_sou->allocTtable();
+     ttable_rec->allocTtable();
 
      this->writeLog("Running 2D Acoustic first arrival tomography gradient with fast sweeping method.");
 
      this->writeLog("Doing forward Loop.");
      // Inserting source point
-     rays_sou->insertSource(data, SMAP, 0);
+     ttable_sou->insertSource(data, SMAP, 0);
 
      // Solving Eikonal equation for source traveltime
-     rays_sou->solve();
+     ttable->interpTtable(ttable_sou);
 
      //Loop over data traces
      int i,j;
      for (i=0; i<ntr; i++){
-         // Reset traveltime for receiver
-         rays_rec->clearTT();
-
          // Inserting new receiver point
-         rays_rec->insertSource(data, GMAP, i);
+         ttable_rec->insertSource(data, GMAP, i);
 
          // Solving Eikonal equation for receiver traveltime
-         rays_rec->solve();
+         ttable->interpTtable(ttable_rec);
 
          /* Applying forward fourier transform over data trace */
          for(j=0; j<nt; j++){
@@ -201,9 +203,8 @@ int KdmigAcoustic2D<T>::run()
          fft1d->fft1d(1);
 
          // Build image contribution
-         this->crossCorr(rays_sou, rays_rec, cdata_array, nfs, df, ot, model->getLpml());
+         this->crossCorr(ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
      }
-
         
     result=KDMIG_OK;
     return result;
@@ -211,17 +212,16 @@ int KdmigAcoustic2D<T>::run()
 
 
 template<typename T>
-void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T *cdata, unsigned long nfs, T df, T ot, int pad) {
+void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::shared_ptr<Ttable<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
     /* Build image */
     if(!pimage->getAllocated()) pimage->allocateImage();
 	int ix, iz, ihx, ihz, iw;
-    T *TT_sou = rays_sou->getTT();
-    T *TT_rec = rays_rec->getTT();
+    T *TT_sou = ttable_sou->getData();
+    T *TT_rec = ttable_rec->getData();
 	T *imagedata = pimage->getImagedata();
 	int nhx = pimage->getNhx();
 	int nhz = pimage->getNhz();
 	int nx = pimage->getNx();
-	int nxt = nx+2*pad;
 	int nz = pimage->getNz();
 	int hx, hz;
     T wsr,wsi;
@@ -236,7 +236,7 @@ void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, 
                 {
                     for (iz=0; iz<nz; iz++){
                         if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
-                            TTsum = TT_sou[kt2D(ix-hx+pad, iz-hz+pad)] + TT_rec[kt2D(ix-hx+pad, iz-hz+pad)] - ot;
+                            TTsum = TT_sou[kt2D(ix-hx, iz-hz)] + TT_rec[kt2D(ix-hx, iz-hz)] - ot;
 
                             for (iw=0; iw<nfs; iw += this->getFreqinc()){
                                 omega = iw*df;

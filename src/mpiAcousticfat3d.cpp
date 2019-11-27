@@ -161,6 +161,7 @@ int main(int argc, char** argv) {
 
                     TTdata3D->setFile(TTrecordfile);
                     Sort->put3DGather(TTdata3D, work.id);
+                    TTdata3D.reset();
                 }
 
                 // Create snapshots
@@ -174,9 +175,10 @@ int main(int argc, char** argv) {
                 }
                 
                 // Reset all classes
+                source.reset();
+                rays.reset();
                 Shotgeom.reset();
                 lmodel.reset();
-                TTdata3D.reset();
                 work.status = WORK_FINISHED;
 
                 // Send result back

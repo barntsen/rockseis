@@ -175,8 +175,14 @@ if(env['MPI']):
     mpiElasticrtm3d = mpi.Program(prefix + 'mpiElasticrtm3d','mpiElasticrtm3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
     mpi.Install('../bin/',mpiElasticrtm3d)
 
-    mpiAcoustickdmig2d = mpi.Program(prefix + 'mpiAcoustickdmig2d','mpiAcoustickdmig2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
+    mpiAcousticttable2d = mpi.Program(prefix + 'mpiAcousticttable2d','mpiAcousticttable2d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'ttable', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'fft', 'kdtree'])
+    mpi.Install('../bin/',mpiAcousticttable2d)
+
+    mpiElasticttable2d = mpi.Program(prefix + 'mpiElasticttable2d','mpiElasticttable2d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'ttable', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'fft', 'kdtree'])
+    mpi.Install('../bin/',mpiElasticttable2d)
+
+    mpiAcoustickdmig2d = mpi.Program(prefix + 'mpiAcoustickdmig2d','mpiAcoustickdmig2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'ttable', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft', 'kdtree'])
     mpi.Install('../bin/',mpiAcoustickdmig2d)
 
-    mpiElastickdmig2d = mpi.Program(prefix + 'mpiElastickdmig2d','mpiElastickdmig2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
+    mpiElastickdmig2d = mpi.Program(prefix + 'mpiElastickdmig2d','mpiElastickdmig2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'ttable', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft', 'kdtree'])
     mpi.Install('../bin/',mpiElastickdmig2d)

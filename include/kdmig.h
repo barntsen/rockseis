@@ -12,8 +12,8 @@
 #include "file.h"
 #include "model.h"
 #include "data.h"
-#include "waves.h"
 #include "rays.h"
+#include "ttable.h"
 #include "der.h"
 #include "snap.h"
 #include "image.h"
@@ -26,8 +26,7 @@
 #define SMAP 0
 
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
-#define km2D(i,j) ((j)*nx + (i))
-#define kt2D(i,j) ((j)*nxt + (i))
+#define kt2D(i,j) ((j)*nx + (i))
 
 #define ki3D(i,j,k,l,m,n) ((n)*nhy*nhx*nx*ny*nz + (m)*nhx*nx*ny*nz + (l)*nx*ny*nz + (k)*nx*ny + (j)*nx + (i))
 #define km3D(i,j,k) ((k)*nx*ny + (j)*nx + (i))
@@ -83,22 +82,25 @@ template<typename T>
 class KdmigAcoustic2D: public Kdmig<T> {
 public:
     KdmigAcoustic2D();					///< Constructor
-    KdmigAcoustic2D(std::shared_ptr<ModelEikonal2D<T>> model, std::shared_ptr<Data2D<T>> data, std::shared_ptr<Image2D<T>> pimage);					///< Constructor 
+    KdmigAcoustic2D(std::shared_ptr<ModelEikonal2D<T>> model, std::shared_ptr<Ttable<T>> ttable, std::shared_ptr<Data2D<T>> data, std::shared_ptr<Image2D<T>> pimage);					///< Constructor 
     int solve(); ///< Runs forward eikonal solver
     int solve_adj(); ///< Runs adjoint eikonal solver
     void setModel(std::shared_ptr<ModelEikonal2D<T>> _model) { model = _model; modelset = true; }
     void setData(std::shared_ptr<Data2D<T>> _data) { data = _data; dataset = true; }
-    void crossCorr(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T* cdata, unsigned long nfs, T df, T ot, int pad);
+    void setTtable(std::shared_ptr<Ttable<T>> _ttable) { ttable = _ttable; ttableset = true; }
+    void crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::shared_ptr<Ttable<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     int run();
 
     ~KdmigAcoustic2D();	///< Destructor
 
 private:
     std::shared_ptr<ModelEikonal2D<T>> model;
+    std::shared_ptr<Ttable<T>> ttable;
     std::shared_ptr<Data2D<T>> data;
     std::shared_ptr<Image2D<T>> pimage;
     bool modelset;
     bool dataset;
+    bool ttableset;
     bool pimageset;
 };
 

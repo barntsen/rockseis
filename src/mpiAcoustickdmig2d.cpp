@@ -6,8 +6,9 @@
 #include <inparse.h>
 #include "model.h"
 #include "kdmig.h"
+#include "ttable.h"
+#include "rays.h"
 #include "pml.h"
-#include "waves.h"
 #include "utils.h"
 #include "der.h"
 #include "sort.h"
@@ -43,6 +44,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC();
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp2d.rss";);
+			PRINT_DOC(Ttable = "Ttable2d.rss";);
 			PRINT_DOC(Precordfile = "Pshots2d.rss";);
 			PRINT_DOC(Pimagefile = "Pimage2d.rss";);
 			PRINT_DOC(Pgatherfile = "Pgather2d.rss";);
@@ -57,6 +59,7 @@ int main(int argc, char** argv) {
     int nhx=1, nhz=1;
 	int freqinc;
     std::string Vpfile;
+    std::string Ttablefile;
     std::string Pimagefile;
     std::string Precordfile;
     std::shared_ptr<rockseis::Data2D<float>> shot2D;
@@ -65,6 +68,9 @@ int main(int argc, char** argv) {
     std::string Pgatherfile;
     std::shared_ptr<rockseis::Data2D<float>> pgather;
 	std::shared_ptr<rockseis::ModelEikonal2D<float>> lmodel;
+
+	std::shared_ptr<rockseis::Ttable<float>> ttable;
+	std::shared_ptr<rockseis::Ttable<float>> local_ttable;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -76,6 +82,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freqinc", &freqinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Ttable", &Ttablefile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Pimagefile", &Pimagefile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
@@ -169,8 +176,12 @@ int main(int argc, char** argv) {
                 shot2D->makeMap(lmodel->getGeom(), SMAP);
                 shot2D->makeMap(lmodel->getGeom(), GMAP);
 
+                // Create traveltime table class
+                ttable = std::make_shared<rockseis::Ttable<float>>(Ttablefile);
+                ttable->allocTtable();
+
                 // Create imaging class
-                kdmig = std::make_shared<rockseis::KdmigAcoustic2D<float>>(lmodel, shot2D, pimage);
+                kdmig = std::make_shared<rockseis::KdmigAcoustic2D<float>>(lmodel, ttable, shot2D, pimage);
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(freqinc);
@@ -189,6 +200,7 @@ int main(int argc, char** argv) {
                 lmodel.reset();
                 pimage.reset();
                 kdmig.reset();
+                ttable.reset();
                 work.status = WORK_FINISHED;
 
                 // Send result back

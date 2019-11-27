@@ -351,7 +351,6 @@ void ModelEikonal2D<T>::readVelocity() {
     Velocity = this->getVelocity();
     Fmod->read(Velocity, nx*nz);
     Fmod->close();
-
 }
 
 template<typename T>
@@ -385,7 +384,6 @@ void ModelEikonal2D<T>::writeVelocity() {
     Fmod->write(Velocity, nx*nz, 0);
     Fmod->close();
 }
-
 
 template<typename T>
 void ModelEikonal2D<T>::Expand(){

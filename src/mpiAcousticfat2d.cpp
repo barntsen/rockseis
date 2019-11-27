@@ -161,6 +161,7 @@ int main(int argc, char** argv) {
 
                     TTdata2D->setFile(TTrecordfile);
                     Sort->put2DGather(TTdata2D, work.id);
+                    TTdata2D.reset();
                 }
 
                 // Create snapshots
@@ -174,9 +175,10 @@ int main(int argc, char** argv) {
                 }
                 
                 // Reset all classes
+                source.reset();
+                rays.reset();
                 Shotgeom.reset();
                 lmodel.reset();
-                TTdata2D.reset();
                 work.status = WORK_FINISHED;
 
                 // Send result back
