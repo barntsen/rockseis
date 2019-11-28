@@ -181,10 +181,8 @@ int KdmigAcoustic2D<T>::run()
      // Inserting source point
      ttable_sou->insertSource(data, SMAP, 0);
 
-     this->writeLog("Running source interpolation.");
      // Solving Eikonal equation for source traveltime
      ttable->interpTtable(ttable_sou);
-     this->writeLog("Source interpolation finished.");
 
      //Loop over data traces
      int i,j;
@@ -192,12 +190,9 @@ int KdmigAcoustic2D<T>::run()
          // Inserting new receiver point
          ttable_rec->insertSource(data, GMAP, i);
 
-         this->writeLog("Running receiver interpolation.");
          // Solving Eikonal equation for receiver traveltime
          ttable->interpTtable(ttable_rec);
-         this->writeLog("Receiver interpolation finished.");
 
-         this->writeLog("Running fourier transform.");
          /* Applying forward fourier transform over data trace */
          for(j=0; j<nt; j++){
              cdata_array[2*j] = rdata_array[Idata(j,i)];
@@ -208,12 +203,9 @@ int KdmigAcoustic2D<T>::run()
              cdata_array[2*j+1] = 0.0;
          }
          fft1d->fft1d(1);
-         this->writeLog("Fourier transform finished.");
 
-         this->writeLog("Running crosscorrelation.");
          // Build image contribution
          this->crossCorr(ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
-         this->writeLog("Crosscorrelation finished.");
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -335,16 +327,14 @@ int KdmigElastic2D<T>::run()
      sou_ttable_i->allocTtable();
      rec_ttable_i->allocTtable();
 
-     this->writeLog("Running 2D Acoustic first arrival tomography gradient with fast sweeping method.");
+     this->writeLog("Running 2D PS Kirchhoff migration.");
 
      this->writeLog("Doing forward Loop.");
      // Inserting source point
      sou_ttable_i->insertSource(data, SMAP, 0);
 
-     this->writeLog("Running source interpolation.");
      // Solving Eikonal equation for source traveltime
      sou_ttable->interpTtable(sou_ttable_i);
-     this->writeLog("Source interpolation finished.");
 
      //Loop over data traces
      int i,j;
@@ -352,12 +342,9 @@ int KdmigElastic2D<T>::run()
          // Inserting new receiver point
          rec_ttable_i->insertSource(data, GMAP, i);
 
-         this->writeLog("Running receiver interpolation.");
          // Solving Eikonal equation for receiver traveltime
          rec_ttable->interpTtable(rec_ttable_i);
-         this->writeLog("Receiver interpolation finished.");
 
-         this->writeLog("Running fourier transform.");
          /* Applying forward fourier transform over data trace */
          for(j=0; j<nt; j++){
              cdata_array[2*j] = rdata_array[Idata(j,i)];
@@ -368,12 +355,9 @@ int KdmigElastic2D<T>::run()
              cdata_array[2*j+1] = 0.0;
          }
          fft1d->fft1d(1);
-         this->writeLog("Fourier transform finished.");
 
-         this->writeLog("Running crosscorrelation.");
          // Build image contribution
          this->crossCorr(sou_ttable_i, rec_ttable_i, cdata_array, nfs, df, ot);
-         this->writeLog("Crosscorrelation finished.");
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -442,26 +426,6 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::sh
             }
         }
     }
-
-    /*
-    for (iw=1; iw<nfs; iw += this->getFreqinc()){
-        omega = iw*df;
-        if(omega < (2.0*PI*this->getMaxfreq())){
-            dx = dx0*omega;
-            dz = dz0*omega;
-            vzzsr =  (cos(-omega*TT_sou[kt2D(ix-hx, iz-hz+1)]) - 2*cos(-omega*TT_sou[kt2D(ix-hx, iz-hz)]) + cos(-omega*TT_sou[kt2D(ix-hx, iz-hz-1)]))/(dz*dz);
-            vxzsr =  ((cos(-omega*TT_sou[kt2D(ix-hx+1, iz-hz+1)]) - cos(-omega*TT_sou[kt2D(ix-hx-1, iz-hz+1)]))/(2*dx) - (cos(-omega*TT_sou[kt2D(ix-hx+1, iz-hz-1)]) - cos(-omega*TT_sou[kt2D(ix-hx-1, iz-hz-1)]))/(2*dx))/(2*dz); 
-            vxxrr =  cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx+1, iz-hz)]) - cos(-omega*TT_rec[kt2D(ix-hx-1, iz-hz)]))/(2*dx);
-            vxzrr = cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx, iz-hz+1)]) - cos(-omega*TT_rec[kt2D(ix-hx, iz-hz-1)]))/(2*dz);
-
-            vzzsi =  (sin(-omega*TT_sou[kt2D(ix-hx, iz-hz+1)]) - 2*sin(-omega*TT_sou[kt2D(ix-hx, iz-hz)]) + sin(-omega*TT_sou[kt2D(ix-hx, iz-hz-1)]))/(dz*dz);
-            vxzsi =  ((sin(-omega*TT_sou[kt2D(ix-hx+1, iz-hz+1)]) - sin(-omega*TT_sou[kt2D(ix-hx-1, iz-hz+1)]))/(2*dx) - (sin(-omega*TT_sou[kt2D(ix-hx+1, iz-hz-1)]) - sin(-omega*TT_sou[kt2D(ix-hx-1, iz-hz-1)]))/(2*dx))/(2*dz); 
-            vxxri =  cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx+1, iz-hz)]) - sin(-omega*TT_rec[kt2D(ix-hx-1, iz-hz)]))/(2*dx);
-            vxzri = cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx, iz-hz+1)]) - sin(-omega*TT_rec[kt2D(ix-hx, iz-hz-1)]))/(2*dz);
-            imagedata[ki2D(ix,iz,ihx,ihz)] +=  (-2.0*CMULR(vzzsr,vzzsi,vxxrr,vxxri) + CMULR(vxzsr,vxzsi,vxzrr,vxzri));
-        }
-    }
-    */
 }
 
 template<typename T>
