@@ -36,6 +36,8 @@ int main(int argc, char** argv) {
 			PRINT_DOC();
 			PRINT_DOC(# Migration parameters);
 			PRINT_DOC(freqinc = "4"; # Integer frequency interval to sum over);
+			PRINT_DOC(maxfreq = "100.0"; # Maximum frequency to migrate);
+			PRINT_DOC(radius = "50.0"; # Radius of traveltime interpolation);
 			PRINT_DOC(nhx = "1";);
 			PRINT_DOC(nhz = "1";);
 			PRINT_DOC();
@@ -59,6 +61,7 @@ int main(int argc, char** argv) {
     int nhx=1, nhz=1;
 	int freqinc;
     float maxfreq;
+    float radius;
     std::string Vpfile;
     std::string Ttablefile;
     std::string Pimagefile;
@@ -82,6 +85,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freqinc", &freqinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("maxfreq", &maxfreq) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("radius", &radius) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Ttable", &Ttablefile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
@@ -113,6 +117,11 @@ int main(int argc, char** argv) {
 
         // Get number of shots
         size_t ngathers =  Sort->getNensemb();
+
+        // Image
+        pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
+        pimage->createEmpty();
+
         
 		// Create work queue
 		for(long int i=0; i<ngathers; i++) {
@@ -133,16 +142,10 @@ int main(int argc, char** argv) {
             pgather->open("o");
             for(long int i=0; i<ngathers; i++) {
                 pgather->putImage(Pimagefile + "-" + std::to_string(i));
+                remove_file(Pimagefile + "-" + std::to_string(i));
             }
             pgather->close();
             Fimg->close();
-        }
-        // Image
-        pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
-        pimage->createEmpty();
-		for(long int i=0; i<ngathers; i++) {
-            pimage->stackImage(Pimagefile + "-" + std::to_string(i));
-            remove_file(Pimagefile + "-" + std::to_string(i));
         }
     }
     else {
@@ -190,6 +193,9 @@ int main(int argc, char** argv) {
                 // Set maximum frequency
                 kdmig->setMaxfreq(maxfreq);
 
+                // Set radius of interpolation
+                kdmig->setRadius(radius);
+
                 // Set logfile
                 kdmig->setLogfile("log.txt-" + std::to_string(work.id));
 
@@ -197,17 +203,26 @@ int main(int argc, char** argv) {
                 kdmig->run();
 
                 // Output image
-                pimage->write();
-                
+                if(Gather){
+                    pimage->write();
+                }
+
+                // Send result back
+                work.status = PARALLEL_IO;
+                mpi.sendResult(work);		
+
+                // Stack image
+                pimage->stackImage_parallel(Pimagefile);
+
                 // Reset all classes
                 shot2D.reset();
                 lmodel.reset();
                 pimage.reset();
                 kdmig.reset();
                 ttable.reset();
-                work.status = WORK_FINISHED;
 
                 // Send result back
+                work.status = WORK_FINISHED;
                 mpi.sendResult(work);		
             }
         }

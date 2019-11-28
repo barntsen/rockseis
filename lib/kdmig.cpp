@@ -414,10 +414,17 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::sh
                             for (iw=1; iw<nfs; iw += this->getFreqinc()){
                                 omega = iw*df;
                                 if(omega < (2.0*PI*this->getMaxfreq())){
+                                    /*
                                     vzzsr = omega*d2Tsoudz2*sin(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*cos(-omega*TTs);
                                     vzzsi = -omega*d2Tsoudz2*cos(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*sin(-omega*TTs);
                                     vxxrr = omega*cdata[2*iw]*dTrecdx*sin(-omega*TTr);
                                     vxxri = -omega*cdata[2*iw+1]*dTrecdx*cos(-omega*TTr);
+                                    */
+
+                                    vzzsr = d2Tsoudz2*sin(-omega*TTs) - omega*SQ(dTsoudz)*cos(-omega*TTs);
+                                    vzzsi = -d2Tsoudz2*cos(-omega*TTs) - omega*SQ(dTsoudz)*sin(-omega*TTs);
+                                    vxxrr = cdata[2*iw]*dTrecdx*sin(-omega*TTr);
+                                    vxxri = -cdata[2*iw+1]*dTrecdx*cos(-omega*TTr);
                                     imagedata[ki2D(ix,iz,ihx,ihz)] +=  -2.0*CMULR(vzzsr,vzzsi,vxxrr,vxxri);
                                 }
                             }	
