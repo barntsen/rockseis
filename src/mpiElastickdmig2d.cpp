@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC();
 			PRINT_DOC(# Migration parameters);
 			PRINT_DOC(freqinc = "4"; # Integer frequency interval to sum over);
+			PRINT_DOC(maxfreq = "100.0"; # Maximum frequency to migrate);
 			PRINT_DOC(nhx = "1";);
 			PRINT_DOC(nhz = "1";);
 			PRINT_DOC();
@@ -57,6 +58,7 @@ int main(int argc, char** argv) {
     float apertx;
     int nhx=1, nhz=1;
 	int freqinc;
+    float maxfreq;
     std::string Vpfile;
     std::string Vsfile;
 
@@ -84,6 +86,7 @@ int main(int argc, char** argv) {
     status = false; 
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freqinc", &freqinc) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("maxfreq", &maxfreq) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vs", &Vsfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Sou_ttable", &sou_ttablefile) == INPARSE_ERR) status = true;
@@ -202,6 +205,9 @@ int main(int argc, char** argv) {
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(freqinc);
+
+                // Set maximum frequency
+                kdmig->setMaxfreq(maxfreq);
 
                 // Set logfile
                 kdmig->setLogfile("log.txt-" + std::to_string(work.id));

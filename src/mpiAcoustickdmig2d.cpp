@@ -58,6 +58,7 @@ int main(int argc, char** argv) {
     float apertx;
     int nhx=1, nhz=1;
 	int freqinc;
+    float maxfreq;
     std::string Vpfile;
     std::string Ttablefile;
     std::string Pimagefile;
@@ -80,6 +81,7 @@ int main(int argc, char** argv) {
     status = false; 
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freqinc", &freqinc) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("maxfreq", &maxfreq) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Ttable", &Ttablefile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
@@ -184,6 +186,9 @@ int main(int argc, char** argv) {
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(freqinc);
+
+                // Set maximum frequency
+                kdmig->setMaxfreq(maxfreq);
 
                 // Set logfile
                 kdmig->setLogfile("log.txt-" + std::to_string(work.id));

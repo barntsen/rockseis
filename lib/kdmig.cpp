@@ -11,6 +11,7 @@ Kdmig<T>::Kdmig() {
 	prog.current = 0;
     prog.persec = 0;
     freqinc=1;
+    maxfreq = 100;
 }
 
 template<typename T>
@@ -360,7 +361,6 @@ int KdmigElastic2D<T>::run()
     return result;
 }
 
-
 template<typename T>
 void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::shared_ptr<Ttable<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
     /* Build image */
@@ -392,8 +392,7 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::sh
     T vxzrr;
     T vxzri;
 
-    //T wsr,wsi;
-    T omega=0;
+    T omega;
     for (ihx=0; ihx<nhx; ihx++){
         hx= -(nhx-1)/2 + ihx;
         for (ihz=0; ihz<nhz; ihz++){
@@ -403,21 +402,22 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::sh
                 {
                     for (iz=1; iz<nz-1; iz++){
                         if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
-                            
                             for (iw=1; iw<nfs; iw += this->getFreqinc()){
                                 omega = iw*df;
-                                dx = dx0*omega;
-                                dz = dz0*omega;
-                                vzzsr =  (cos(-omega*TT_sou[kt2D(ix-hx, iz-hz+1)]) - 2*cos(-omega*TT_sou[kt2D(ix-hx, iz-hz)]) + cos(-omega*TT_sou[kt2D(ix-hx, iz-hz-1)]))/(dz*dz);
-                                vxzsr =  ((cos(-omega*TT_sou[kt2D(ix-hx+1, iz-hz+1)]) - cos(-omega*TT_sou[kt2D(ix-hx-1, iz-hz+1)]))/(2*dx) - (cos(-omega*TT_sou[kt2D(ix-hx+1, iz-hz-1)]) - cos(-omega*TT_sou[kt2D(ix-hx-1, iz-hz-1)]))/(2*dx))/(2*dz); 
-                                vxxrr =  cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx+1, iz-hz)]) - cos(-omega*TT_rec[kt2D(ix-hx-1, iz-hz)]))/(2*dx);
-                                vxzrr = cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx, iz-hz+1)]) - cos(-omega*TT_rec[kt2D(ix-hx, iz-hz-1)]))/(2*dz);
+                                if(omega < (2.0*PI*this->getMaxfreq())){
+                                    dx = dx0*omega;
+                                    dz = dz0*omega;
+                                    vzzsr =  (cos(-omega*TT_sou[kt2D(ix-hx, iz-hz+1)]) - 2*cos(-omega*TT_sou[kt2D(ix-hx, iz-hz)]) + cos(-omega*TT_sou[kt2D(ix-hx, iz-hz-1)]))/(dz*dz);
+                                    vxzsr =  ((cos(-omega*TT_sou[kt2D(ix-hx+1, iz-hz+1)]) - cos(-omega*TT_sou[kt2D(ix-hx-1, iz-hz+1)]))/(2*dx) - (cos(-omega*TT_sou[kt2D(ix-hx+1, iz-hz-1)]) - cos(-omega*TT_sou[kt2D(ix-hx-1, iz-hz-1)]))/(2*dx))/(2*dz); 
+                                    vxxrr =  cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx+1, iz-hz)]) - cos(-omega*TT_rec[kt2D(ix-hx-1, iz-hz)]))/(2*dx);
+                                    vxzrr = cdata[2*iw]*(cos(-omega*TT_rec[kt2D(ix-hx, iz-hz+1)]) - cos(-omega*TT_rec[kt2D(ix-hx, iz-hz-1)]))/(2*dz);
 
-                                vzzsi =  (sin(-omega*TT_sou[kt2D(ix-hx, iz-hz+1)]) - 2*sin(-omega*TT_sou[kt2D(ix-hx, iz-hz)]) + sin(-omega*TT_sou[kt2D(ix-hx, iz-hz-1)]))/(dz*dz);
-                                vxzsi =  ((sin(-omega*TT_sou[kt2D(ix-hx+1, iz-hz+1)]) - sin(-omega*TT_sou[kt2D(ix-hx-1, iz-hz+1)]))/(2*dx) - (sin(-omega*TT_sou[kt2D(ix-hx+1, iz-hz-1)]) - sin(-omega*TT_sou[kt2D(ix-hx-1, iz-hz-1)]))/(2*dx))/(2*dz); 
-                                vxxri =  cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx+1, iz-hz)]) - sin(-omega*TT_rec[kt2D(ix-hx-1, iz-hz)]))/(2*dx);
-                                vxzri = cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx, iz-hz+1)]) - sin(-omega*TT_rec[kt2D(ix-hx, iz-hz-1)]))/(2*dz);
-                                imagedata[ki2D(ix,iz,ihx,ihz)] +=  (-2.0*CMULR(vzzsr,vzzsi,vxxrr,vxxri) + CMULR(vxzsr,vxzsi,vxzrr,vxzri));
+                                    vzzsi =  (sin(-omega*TT_sou[kt2D(ix-hx, iz-hz+1)]) - 2*sin(-omega*TT_sou[kt2D(ix-hx, iz-hz)]) + sin(-omega*TT_sou[kt2D(ix-hx, iz-hz-1)]))/(dz*dz);
+                                    vxzsi =  ((sin(-omega*TT_sou[kt2D(ix-hx+1, iz-hz+1)]) - sin(-omega*TT_sou[kt2D(ix-hx-1, iz-hz+1)]))/(2*dx) - (sin(-omega*TT_sou[kt2D(ix-hx+1, iz-hz-1)]) - sin(-omega*TT_sou[kt2D(ix-hx-1, iz-hz-1)]))/(2*dx))/(2*dz); 
+                                    vxxri =  cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx+1, iz-hz)]) - sin(-omega*TT_rec[kt2D(ix-hx-1, iz-hz)]))/(2*dx);
+                                    vxzri = cdata[2*iw+1]*(sin(-omega*TT_rec[kt2D(ix-hx, iz-hz+1)]) - sin(-omega*TT_rec[kt2D(ix-hx, iz-hz-1)]))/(2*dz);
+                                    imagedata[ki2D(ix,iz,ihx,ihz)] +=  (-2.0*CMULR(vzzsr,vzzsi,vxxrr,vxxri) + CMULR(vxzsr,vxzsi,vxzrr,vxzri));
+                                }
                             }
                         }
                     }	

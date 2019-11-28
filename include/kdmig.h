@@ -64,6 +64,9 @@ public:
     void writeLog(const char * text); ///< Write c_string to log file
     int getFreqinc() { return freqinc; } ///< Get freq increment
     void setFreqinc(int _freqinc) {freqinc = _freqinc;} ///< Set freq increment for recording freqshots
+    T getMaxfreq() { return maxfreq; } ///< Get maximum frequecy to migrate
+    void setMaxfreq(T val) {maxfreq = val;} ///< Set Maximum frequecy to migrate
+
     void writeProgressbar(int x, int n, int r, int w);
     void writeProgress(int x, int n, int r, int w);
 
@@ -73,6 +76,7 @@ private:
 	Progress prog; ///< Progress counter
     std::string snapfile;
     int freqinc;  ///< Frequency decimation interval
+    T maxfreq;
 };
 
 /** The 2D Acoustic Kdmig class
