@@ -8,7 +8,7 @@ Ttable<T>::Ttable()
     allocated = false;
     geometry = std::make_shared<Geometry3D<T>>(1); 
     ptree = kd_create(3);
-    radius=20.0;
+    radius = 500.0;
     this->setDim(2);
 }
 
@@ -50,7 +50,7 @@ Ttable<T>::Ttable(std::shared_ptr<ModelEikonal2D<T>> model, int _ntable)
 
     allocated = false;
     ptree = kd_create(3);
-    radius = 5*_dx;
+    radius = 500.0;
 }
 
 template<typename T>
@@ -100,7 +100,7 @@ Ttable<T>::Ttable(std::string tablefile)
     this->setData(NULL);
     allocated = false;
     ptree = kd_create(3);
-    radius = 5*this->getDx();
+    radius = 500.0;
 
     // Read coordinates and populate tree
     double pos[3];
