@@ -18,8 +18,6 @@
 #define k3D(i,j,k) ((k)*nx*ny + (j)*nx + (i))
 #define k3Di(i,j,k) ((k)*nx_i*ny_i + (j)*nx_i + (i))
 
-#define MAX_INTERP_GATH 5
-
 #define TTABLE_OK 1
 #define TTABLE_ERR 0
 
@@ -91,7 +89,8 @@ public:
     //File functions
     void createEmptyttable(); ///< Create empty dataset
 
-    void interpTtable(std::shared_ptr<Ttable<T>> ttablei); ///< Interpolate to another ttable
+    //Interpolation function
+    void interpTtable(std::shared_ptr<Ttable<T>> ttablei, T rad); ///< Interpolate to another ttable
 
    private:
     std::string filename; ///< filename

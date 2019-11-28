@@ -363,7 +363,23 @@ workResult_t MPImodeling::receiveResult() {
 	return result;
 }
 
+workResult_t MPImodeling::receiveResult(const int rank) {
+	// Variables
+	workResult_t result;
+	MPI_Status status;
+	// Receiving 
+	MPI_Recv(&result,1,MPIresult,rank,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+	// Updating struct
+	result.MPItag = status.MPI_TAG;
+
+	return result;
+}
+
 void MPImodeling::checkResult(workResult_t result) {
+	if(result.status == PARALLEL_IO) {
+        int rank = result.fromRank;
+		result = receiveResult(rank);
+    }
 	if(result.status != WORK_FINISHED) {
         if(result.fromRank != 0){
             // Job failed

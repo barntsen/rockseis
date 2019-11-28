@@ -46,6 +46,7 @@ public:
     void freeImage(); /// Free memory for imagedata
     bool createEmpty(); ///< Create empty image for stacking
     bool stackImage(std::string infile); ///< Stack image
+    bool stackImage_parallel(std::string infile); ///< Stack image in parallel
     std::shared_ptr<rockseis::Image2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map); ///< Get image over aperture
 
 private:

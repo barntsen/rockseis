@@ -17,6 +17,7 @@
 #define WORK_RUNNING 1
 #define WORK_FINISHED 2
 #define WORK_FAILED 3
+#define PARALLEL_IO 5
 #define MPI_TAG_DIE 10
 #define MPI_TAG_NO_WORK 11
 
@@ -110,6 +111,7 @@ private:
 	void sendWork(std::shared_ptr<workModeling_t> work, const int rank);	///< Send work to rank
 	void sendWorkToAll();							///< Send work to all ranks
 	workResult_t receiveResult();						///< Receive result from slaves
+	workResult_t receiveResult(const int rank);				///< Receive result from a particular slave
 	void checkResult(workResult_t result);					///< Check result and update work queue
 	std::shared_ptr<workModeling_t> getWork();				///< Get work that has not started
 	unsigned long int getJobsleft();             ///< Return number of jobs left

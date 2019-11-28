@@ -8,7 +8,6 @@ Ttable<T>::Ttable()
     allocated = false;
     geometry = std::make_shared<Geometry3D<T>>(1); 
     ptree = kd_create(3);
-    radius = 500.0;
     this->setDim(2);
 }
 
@@ -50,7 +49,6 @@ Ttable<T>::Ttable(std::shared_ptr<ModelEikonal2D<T>> model, int _ntable)
 
     allocated = false;
     ptree = kd_create(3);
-    radius = 500.0;
 }
 
 template<typename T>
@@ -100,7 +98,6 @@ Ttable<T>::Ttable(std::string tablefile)
     this->setData(NULL);
     allocated = false;
     ptree = kd_create(3);
-    radius = 500.0;
 
     // Read coordinates and populate tree
     double pos[3];
@@ -307,7 +304,7 @@ void Ttable<T>::writeTtable(const size_t number)
 }
 
 template<typename T>
-void Ttable<T>::interpTtable(std::shared_ptr<Ttable<T>> ttablei) {
+void Ttable<T>::interpTtable(std::shared_ptr<Ttable<T>> ttablei, T rad) {
     // Variables
     bool status;
     struct kdres *presults;
@@ -327,12 +324,11 @@ void Ttable<T>::interpTtable(std::shared_ptr<Ttable<T>> ttablei) {
     posi[0] = (double) scoords[0].x;
     posi[1] = (double) scoords[0].y;
     posi[2] = (double) scoords[0].z;
-    T rad = ttablei->getRadius();
 
     // Find neighbors
     presults = kd_nearest_range( ptree, &posi[0], rad );
     int nr=kd_res_size(presults);
-    if(nr > MAX_INTERP_GATH) nr = MAX_INTERP_GATH;
+    std::cerr << "DEBUG: nr: " << nr << std::endl;
 
     std::string datafile = this->getFilename();
     if(datafile.empty()){
@@ -352,6 +348,7 @@ void Ttable<T>::interpTtable(std::shared_ptr<Ttable<T>> ttablei) {
     // Initialize data
         data[id]=0.0;
     }
+    // TODO: SORT RESULTS BY DISTANCE AND GET THE ONLY CLOSEST 5
     for(int i1=0; i1<nr; i1++){
         /* Fetch index and position of one of the traces in range */
         pch =  kd_res_item( presults, tpos );

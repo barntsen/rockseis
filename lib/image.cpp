@@ -366,6 +366,86 @@ bool Image2D<T>::stackImage(std::string infile)
 }
 
 template<typename T>
+bool Image2D<T>::stackImage_parallel(std::string infile)
+{
+    bool status;
+    if(infile.empty()){
+	    rs_error("Image2D::stackImage: Input filename is empty. ");
+    }
+
+    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
+    status = Fout->append(infile);
+    if(status == FILE_ERR) rs_error("Image2D::stackImage: Failed to open output image.");
+
+    long int nxg, nzg;
+    int nhxg, nhzg;
+	T dxg, dzg, oxg, ozg;
+    nxg = Fout->getN(1);
+    nzg = Fout->getN(3);
+    nhxg = Fout->getN(4);
+    nhzg = Fout->getN(6);
+    dxg = Fout->getD(1);
+    dzg = Fout->getD(3);
+    oxg = Fout->getO(1);
+    ozg = Fout->getO(3);
+
+    long int nxl, nzl;
+    int nhxl, nhzl;
+	T dxl, dzl, oxl, ozl;
+    nxl = this->getNx();
+    nzl = this->getNz();
+    nhxl = this->getNhx();
+    nhzl = this->getNhz();
+	dxl = this->getDx();
+	dzl = this->getDz();
+	oxl = this->getOx();
+	ozl = this->getOz();
+
+
+	if(nhxg != nhxl || nhzg != nhzl || dxg != dxl || dzg != dzl){
+		rs_error("Image2D::stackImage: Images are not compatible. Cannot stack.");
+	}
+
+    T *trcin = this->getImagedata();
+
+    T *trcout;
+    trcout = (T *) calloc(nxg*nzg, sizeof(T));
+    if(trcout == NULL) rs_error("Image2D::stackImage: Failed to allocate memory for input trace.");
+
+	// Stack data
+	int ix, iz, ihx, ihz;
+    int ix_start, iz_start;
+	ix_start = (int) (oxl/dxl - oxg/dxg);
+	iz_start = (int) (ozl/dzl - ozg/dzg);
+	Index Iin(nxl, nzl, nhxl, nhzl);
+	Index Iout(nxg, nzg, nhxl, nhzl);
+	for(ihz=0; ihz<nhzl; ihz++) {
+		for(ihx=0; ihx<nhxl; ihx++) {
+					// Read traces 
+					Fout->read(trcout, nxg*nzg, Iout(0,0,ihx,ihz)*sizeof(T));
+					if(Fout->getFail()) rs_error("Image2D::stackImage: Failed to write data to file");
+                    // Stack
+                    for(iz=0; iz<nzl; iz++) {
+                        if((iz + iz_start) >= 0 && (iz + iz_start) < nzg){
+                            for(ix = 0; ix < nxl; ix++) {
+                                if((ix + ix_start) >= 0 && (ix + ix_start) < nxg){
+                                    trcout[(iz + iz_start)*nxg + (ix + ix_start)] += trcin[Iin(ix,iz,ihx,ihz)];
+                                }
+                            }
+                        }
+                    }
+                    // Write traces
+                    Fout->write(trcout, nxg*nzg, Iout(0, 0, ihx, ihz)*sizeof(T));
+                    if(Fout->getFail()) rs_error("Image2D::stackImage: Failed to write data to file");
+        }
+	}
+	Fout->close();
+	free(trcout);
+	status = FILE_OK;
+    return status;
+}
+
+template<typename T>
 bool Image2D<T>::write()
 {
     bool status;

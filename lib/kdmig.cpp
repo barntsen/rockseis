@@ -12,6 +12,7 @@ Kdmig<T>::Kdmig() {
     prog.persec = 0;
     freqinc=1;
     maxfreq = 100;
+    rad = 50.0;
 }
 
 template<typename T>
@@ -182,7 +183,7 @@ int KdmigAcoustic2D<T>::run()
      ttable_sou->insertSource(data, SMAP, 0);
 
      // Solving Eikonal equation for source traveltime
-     ttable->interpTtable(ttable_sou);
+     ttable->interpTtable(ttable_sou, this->getRadius());
 
      //Loop over data traces
      int i,j;
@@ -191,7 +192,7 @@ int KdmigAcoustic2D<T>::run()
          ttable_rec->insertSource(data, GMAP, i);
 
          // Solving Eikonal equation for receiver traveltime
-         ttable->interpTtable(ttable_rec);
+         ttable->interpTtable(ttable_rec, this->getRadius());
 
          /* Applying forward fourier transform over data trace */
          for(j=0; j<nt; j++){
@@ -334,7 +335,7 @@ int KdmigElastic2D<T>::run()
      sou_ttable_i->insertSource(data, SMAP, 0);
 
      // Solving Eikonal equation for source traveltime
-     sou_ttable->interpTtable(sou_ttable_i);
+     sou_ttable->interpTtable(sou_ttable_i, this->getRadius());
 
      //Loop over data traces
      int i,j;
@@ -343,7 +344,7 @@ int KdmigElastic2D<T>::run()
          rec_ttable_i->insertSource(data, GMAP, i);
 
          // Solving Eikonal equation for receiver traveltime
-         rec_ttable->interpTtable(rec_ttable_i);
+         rec_ttable->interpTtable(rec_ttable_i, this->getRadius());
 
          /* Applying forward fourier transform over data trace */
          for(j=0; j<nt; j++){

@@ -63,9 +63,11 @@ public:
     void writeLog(std::string text);  ///< Write string to log file
     void writeLog(const char * text); ///< Write c_string to log file
     int getFreqinc() { return freqinc; } ///< Get freq increment
-    void setFreqinc(int _freqinc) {freqinc = _freqinc;} ///< Set freq increment for recording freqshots
+    T getRadius() { return rad; } ///< Get radius of traveltime interpolation 
     T getMaxfreq() { return maxfreq; } ///< Get maximum frequecy to migrate
+    void setFreqinc(int _freqinc) {freqinc = _freqinc;} ///< Set freq increment for recording freqshots
     void setMaxfreq(T val) {maxfreq = val;} ///< Set Maximum frequecy to migrate
+    void setRadius(T val) { rad = val; } ///< Set radius of traveltime interpolation 
 
     void writeProgressbar(int x, int n, int r, int w);
     void writeProgress(int x, int n, int r, int w);
@@ -77,6 +79,7 @@ private:
     std::string snapfile;
     int freqinc;  ///< Frequency decimation interval
     T maxfreq;
+    T rad; ///< Radius of interpolation 
 };
 
 /** The 2D Acoustic Kdmig class
