@@ -175,14 +175,16 @@ int KdmigAcoustic2D<T>::run()
      ttable_sou->allocTtable();
      ttable_rec->allocTtable();
 
-     this->writeLog("Running 2D Acoustic first arrival tomography gradient with fast sweeping method.");
+     this->writeLog("Running 2D Kirchhoff migration.");
 
      this->writeLog("Doing forward Loop.");
      // Inserting source point
      ttable_sou->insertSource(data, SMAP, 0);
 
+     this->writeLog("Running source interpolation.");
      // Solving Eikonal equation for source traveltime
      ttable->interpTtable(ttable_sou);
+     this->writeLog("Source interpolation finished.");
 
      //Loop over data traces
      int i,j;
@@ -190,9 +192,12 @@ int KdmigAcoustic2D<T>::run()
          // Inserting new receiver point
          ttable_rec->insertSource(data, GMAP, i);
 
+         this->writeLog("Running receiver interpolation.");
          // Solving Eikonal equation for receiver traveltime
          ttable->interpTtable(ttable_rec);
+         this->writeLog("Receiver interpolation finished.");
 
+         this->writeLog("Running fourier transform.");
          /* Applying forward fourier transform over data trace */
          for(j=0; j<nt; j++){
              cdata_array[2*j] = rdata_array[Idata(j,i)];
@@ -203,9 +208,15 @@ int KdmigAcoustic2D<T>::run()
              cdata_array[2*j+1] = 0.0;
          }
          fft1d->fft1d(1);
+         this->writeLog("Fourier transform finished.");
 
+         this->writeLog("Running crosscorrelation.");
          // Build image contribution
          this->crossCorr(ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
+         this->writeLog("Crosscorrelation finished.");
+
+        // Output progress to logfile
+        this->writeProgress(i, ntr-1, 20, 48);
      }
         
     result=KDMIG_OK;
@@ -330,8 +341,10 @@ int KdmigElastic2D<T>::run()
      // Inserting source point
      sou_ttable_i->insertSource(data, SMAP, 0);
 
+     this->writeLog("Running source interpolation.");
      // Solving Eikonal equation for source traveltime
      sou_ttable->interpTtable(sou_ttable_i);
+     this->writeLog("Source interpolation finished.");
 
      //Loop over data traces
      int i,j;
@@ -339,9 +352,12 @@ int KdmigElastic2D<T>::run()
          // Inserting new receiver point
          rec_ttable_i->insertSource(data, GMAP, i);
 
+         this->writeLog("Running receiver interpolation.");
          // Solving Eikonal equation for receiver traveltime
          rec_ttable->interpTtable(rec_ttable_i);
+         this->writeLog("Receiver interpolation finished.");
 
+         this->writeLog("Running fourier transform.");
          /* Applying forward fourier transform over data trace */
          for(j=0; j<nt; j++){
              cdata_array[2*j] = rdata_array[Idata(j,i)];
@@ -352,9 +368,15 @@ int KdmigElastic2D<T>::run()
              cdata_array[2*j+1] = 0.0;
          }
          fft1d->fft1d(1);
+         this->writeLog("Fourier transform finished.");
 
+         this->writeLog("Running crosscorrelation.");
          // Build image contribution
          this->crossCorr(sou_ttable_i, rec_ttable_i, cdata_array, nfs, df, ot);
+         this->writeLog("Crosscorrelation finished.");
+
+        // Output progress to logfile
+        this->writeProgress(i, ntr-1, 20, 48);
      }
         
     result=KDMIG_OK;

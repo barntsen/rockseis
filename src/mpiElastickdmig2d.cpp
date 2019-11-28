@@ -45,6 +45,8 @@ int main(int argc, char** argv) {
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp2d.rss";);
 			PRINT_DOC(Vs = "Vs2d.rss";);
+			PRINT_DOC(Sou_ttable = "Sou_ttable2d.rss";);
+			PRINT_DOC(Rec_ttable = "Rec_ttable2d.rss";);
 			PRINT_DOC(Vxrecordfile = "Pshots2d.rss";);
 			PRINT_DOC(Simagefile = "Simage2d.rss";);
 			PRINT_DOC(Sgatherfile = "Sgather2d.rss";);
