@@ -136,7 +136,7 @@ void Ttable<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool m
 
     posi = (this->getGeom())->getScoords();
     posi[0].x = pos[traceno].x;
-    posi[0].y = pos[traceno].y;
+    posi[0].y = 0.0;
     posi[0].z = pos[traceno].y;
 }
 
