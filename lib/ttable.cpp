@@ -328,7 +328,6 @@ void Ttable<T>::interpTtable(std::shared_ptr<Ttable<T>> ttablei, T rad) {
     // Find neighbors
     presults = kd_nearest_range( ptree, &posi[0], rad );
     int nr=kd_res_size(presults);
-    std::cerr << "DEBUG: nr: " << nr << std::endl;
 
     std::string datafile = this->getFilename();
     if(datafile.empty()){
