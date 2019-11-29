@@ -12,6 +12,7 @@ Kdmig<T>::Kdmig() {
     prog.persec = 0;
     freqinc=1;
     maxfreq = 100;
+    minfreq = 4;
     rad = 50.0;
 }
 
@@ -246,9 +247,11 @@ void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::s
 
                             for (iw=0; iw<nfs; iw += this->getFreqinc()){
                                 omega = iw*df;
-                                wsr = cos(-omega*TTsum);
-                                wsi = sin(-omega*TTsum);
-                                imagedata[ki2D(ix,iz,ihx,ihz)] -= cdata[2*iw]*wsr - cdata[2*iw+1]*wsi;
+                                if(omega >= (2.0*PI*this->getMinfreq()) &&  omega < (2.0*PI*this->getMaxfreq())){
+                                    wsr = cos(-omega*TTsum);
+                                    wsi = sin(-omega*TTsum);
+                                    imagedata[ki2D(ix,iz,ihx,ihz)] -= cdata[2*iw]*wsr - cdata[2*iw+1]*wsi;
+                                }
                             }
                         }
                     }	
@@ -413,7 +416,7 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::sh
 
                             for (iw=1; iw<nfs; iw += this->getFreqinc()){
                                 omega = iw*df;
-                                if(omega < (2.0*PI*this->getMaxfreq())){
+                                if(omega >= (2.0*PI*this->getMinfreq()) &&  omega < (2.0*PI*this->getMaxfreq())){
                                     /*
                                     vzzsr = omega*d2Tsoudz2*sin(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*cos(-omega*TTs);
                                     vzzsi = -omega*d2Tsoudz2*cos(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*sin(-omega*TTs);

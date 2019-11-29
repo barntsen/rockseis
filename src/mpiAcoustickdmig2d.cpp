@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC();
 			PRINT_DOC(# Migration parameters);
 			PRINT_DOC(freqinc = "4"; # Integer frequency interval to sum over);
+			PRINT_DOC(minfreq = "100.0"; # Minimum frequency to migrate);
 			PRINT_DOC(maxfreq = "100.0"; # Maximum frequency to migrate);
 			PRINT_DOC(radius = "50.0"; # Radius of traveltime interpolation);
 			PRINT_DOC(nhx = "1";);
@@ -60,6 +61,7 @@ int main(int argc, char** argv) {
     float apertx;
     int nhx=1, nhz=1;
 	int freqinc;
+    float minfreq;
     float maxfreq;
     float radius;
     std::string Vpfile;
@@ -84,6 +86,7 @@ int main(int argc, char** argv) {
     status = false; 
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freqinc", &freqinc) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("minfreq", &minfreq) == INPARSE_ERR) status = true;
     if(Inpar->getPar("maxfreq", &maxfreq) == INPARSE_ERR) status = true;
     if(Inpar->getPar("radius", &radius) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
@@ -121,7 +124,6 @@ int main(int argc, char** argv) {
         // Image
         pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
         pimage->createEmpty();
-
         
 		// Create work queue
 		for(long int i=0; i<ngathers; i++) {
@@ -176,10 +178,6 @@ int main(int argc, char** argv) {
                 // Make image class
                 pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
 
-                // Map coordinates to model
-                shot2D->makeMap(lmodel->getGeom(), SMAP);
-                shot2D->makeMap(lmodel->getGeom(), GMAP);
-
                 // Create traveltime table class
                 ttable = std::make_shared<rockseis::Ttable<float>>(Ttablefile);
                 ttable->allocTtable();
@@ -190,7 +188,8 @@ int main(int argc, char** argv) {
                 // Set frequency decimation 
                 kdmig->setFreqinc(freqinc);
 
-                // Set maximum frequency
+                // Set minimum and maximum frequency to migrate
+                kdmig->setMinfreq(minfreq);
                 kdmig->setMaxfreq(maxfreq);
 
                 // Set radius of interpolation

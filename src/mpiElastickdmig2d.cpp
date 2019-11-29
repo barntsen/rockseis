@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
 			PRINT_DOC();
 			PRINT_DOC(# Migration parameters);
 			PRINT_DOC(freqinc = "4"; # Integer frequency interval to sum over);
+			PRINT_DOC(minfreq = "100.0"; # Minimum frequency to migrate);
 			PRINT_DOC(maxfreq = "100.0"; # Maximum frequency to migrate);
 			PRINT_DOC(radius = "100.0"; # Radius of traveltime interpolation);
 			PRINT_DOC(nhx = "1";);
@@ -62,6 +63,7 @@ int main(int argc, char** argv) {
     int nhx=1, nhz=1;
 	int freqinc;
     float maxfreq;
+    float minfreq;
     float radius;
     std::string Vpfile;
     std::string Vsfile;
@@ -90,6 +92,7 @@ int main(int argc, char** argv) {
     status = false; 
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freqinc", &freqinc) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("minfreq", &minfreq) == INPARSE_ERR) status = true;
     if(Inpar->getPar("maxfreq", &maxfreq) == INPARSE_ERR) status = true;
     if(Inpar->getPar("radius", &radius) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
@@ -199,17 +202,14 @@ int main(int argc, char** argv) {
                 // Make image class
                 simage = std::make_shared<rockseis::Image2D<float>>(Simagefile + "-" + std::to_string(work.id), vplmodel, nhx, nhz);
 
-                // Map coordinates to model
-                shot2D->makeMap(vplmodel->getGeom(), SMAP);
-                shot2D->makeMap(vslmodel->getGeom(), GMAP);
-
                 // Create imaging class
                 kdmig = std::make_shared<rockseis::KdmigElastic2D<float>>(vplmodel, vslmodel, sou_ttable, rec_ttable, shot2D, simage);
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(freqinc);
 
-                // Set maximum frequency
+                // Set minimum and maximum frequency to migrate
+                kdmig->setMinfreq(minfreq);
                 kdmig->setMaxfreq(maxfreq);
 
                 // Set radius of interpolation

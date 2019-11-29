@@ -65,8 +65,10 @@ public:
     int getFreqinc() { return freqinc; } ///< Get freq increment
     T getRadius() { return rad; } ///< Get radius of traveltime interpolation 
     T getMaxfreq() { return maxfreq; } ///< Get maximum frequecy to migrate
+    T getMinfreq() { return minfreq; } ///< Get minimum frequecy to migrate
     void setFreqinc(int _freqinc) {freqinc = _freqinc;} ///< Set freq increment for recording freqshots
     void setMaxfreq(T val) {maxfreq = val;} ///< Set Maximum frequecy to migrate
+    void setMinfreq(T val) {minfreq = val;} ///< Set Minimum frequecy to migrate
     void setRadius(T val) { rad = val; } ///< Set radius of traveltime interpolation 
 
     void writeProgressbar(int x, int n, int r, int w);
@@ -79,6 +81,7 @@ private:
     std::string snapfile;
     int freqinc;  ///< Frequency decimation interval
     T maxfreq;
+    T minfreq;
     T rad; ///< Radius of interpolation 
 };
 
