@@ -2824,10 +2824,7 @@ void InversionElastic2D<T>::runGrad() {
 			// Work struct
 			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
 			mpi->addWork(work);
-		}
-
-		// Perform work in parallel
-		mpi->performWork();
+        }
 
         // Images
         vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
@@ -2839,20 +2836,8 @@ void InversionElastic2D<T>::runGrad() {
         rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile, gmodel, 1, 1);
         rhograd->createEmpty();
 
-        for(long int i=0; i<ngathers; i++) {
-            if(update_vp){
-                vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-                remove_file(Vpgradfile + "-" + std::to_string(i));
-            }
-            if(update_vs){
-                vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
-                remove_file(Vsgradfile + "-" + std::to_string(i));
-            }
-            if(update_rho){
-                rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
-                remove_file(Rhogradfile + "-" + std::to_string(i));
-            }
-        }
+		// Perform work in parallel
+		mpi->performWork();
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -3128,19 +3113,6 @@ void InversionElastic2D<T>::runGrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Output gradients
-                if(update_vp){
-                    vpgrad->write();
-                }
-                if(update_vs){
-                    vsgrad->write();
-                }
-                if(update_rho){
-                    rhograd->write();
-                }
-                if(update_source){
-                    wavgrad->putTrace(Wavgradfile, work.id);
-                }
 
                 // Output misfit
                 Fmisfit->append(Misfitfile);
@@ -3198,6 +3170,24 @@ void InversionElastic2D<T>::runGrad() {
                     }
                 }
 
+                // Output gradients
+                if(update_source){
+                    wavgrad->putTrace(Wavgradfile, work.id);
+                }
+
+                // Send IO signal
+                work.status = PARALLEL_IO;
+                mpi->sendResult(work);
+
+                if(update_vp){
+                    vpgrad->stackImage_parallel(Vpgradfile);
+                }
+                if(update_vs){
+                    vsgrad->stackImage_parallel(Vsgradfile);
+                }
+                if(update_rho){
+                    rhograd->stackImage_parallel(Rhogradfile);
+                }
 
                 // Reset all classes
                 Uxdata2D.reset();
@@ -3218,10 +3208,11 @@ void InversionElastic2D<T>::runGrad() {
                 rhograd.reset();
                 wavgrad.reset();
                 fwi.reset();
-                work.status = WORK_FINISHED;
 
                 // Send result back
+                work.status = WORK_FINISHED;
                 mpi->sendResult(work);		
+
             }
         }
     }
@@ -4646,9 +4637,6 @@ void InversionElastic3D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
-		// Perform work in parallel
-		mpi->performWork();
-
         // Images
         vpgrad = std::make_shared<rockseis::Image3D<T>>(Vpgradfile, gmodel, 1, 1, 1);
         vpgrad->createEmpty();
@@ -4659,20 +4647,8 @@ void InversionElastic3D<T>::runGrad() {
         rhograd = std::make_shared<rockseis::Image3D<T>>(Rhogradfile, gmodel, 1, 1, 1);
         rhograd->createEmpty();
 
-        for(long int i=0; i<ngathers; i++) {
-            if(update_vp){
-                vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-                remove_file(Vpgradfile + "-" + std::to_string(i));
-            }
-            if(update_vs){
-                vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
-                remove_file(Vsgradfile + "-" + std::to_string(i));
-            }
-            if(update_rho){
-                rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
-                remove_file(Rhogradfile + "-" + std::to_string(i));
-            }
-        }
+		// Perform work in parallel
+		mpi->performWork();
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -5048,19 +5024,7 @@ void InversionElastic3D<T>::runGrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Output gradients
-                if(update_vp){
-                    vpgrad->write();
-                }
-                if(update_vs){
-                    vsgrad->write();
-                }
-                if(update_rho){
-                    rhograd->write();
-                }
-                if(update_source){
-                    wavgrad->putTrace(Wavgradfile, work.id);
-                }
+                
 
                 // Output misfit
                 Fmisfit->append(Misfitfile);
@@ -5139,6 +5103,25 @@ void InversionElastic3D<T>::runGrad() {
                     }
                 }
 
+                // Output gradients
+                if(update_source){
+                    wavgrad->putTrace(Wavgradfile, work.id);
+                }
+
+                // Send IO signal
+                work.status = PARALLEL_IO;
+                mpi->sendResult(work);
+
+                if(update_vp){
+                    vpgrad->stackImage_parallel(Vpgradfile);
+                }
+                if(update_vs){
+                    vsgrad->stackImage_parallel(Vsgradfile);
+                }
+                if(update_rho){
+                    rhograd->stackImage_parallel(Rhogradfile);
+                }
+
                 // Reset all classes
                 Uxdata3D.reset();
                 Uxdata3Di.reset();
@@ -5164,9 +5147,9 @@ void InversionElastic3D<T>::runGrad() {
                 rhograd.reset();
                 wavgrad.reset();
                 fwi.reset();
-                work.status = WORK_FINISHED;
 
                 // Send result back
+                work.status = WORK_FINISHED;
                 mpi->sendResult(work);		
             }
         }

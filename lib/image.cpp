@@ -1138,6 +1138,99 @@ bool Image3D<T>::stackImage(std::string infile)
 }
 
 template<typename T>
+bool Image3D<T>::stackImage_parallel(std::string infile)
+{
+    bool status;
+    if(infile.empty()){
+	    rs_error("Image3D::stackImage: Input filename is empty. ");
+    }
+
+    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
+    Fout->append(infile.c_str());
+    if ( !Fout->is_open()) rs_error("Image3D::stackImage: Failed to open output image.");
+
+    long int nxg, nyg,nzg;
+    int nhxg, nhyg, nhzg;
+	T dxg, dyg, dzg, oxg, oyg, ozg;
+    nxg = Fout->getN(1);
+    nyg = Fout->getN(2);
+    nzg = Fout->getN(3);
+    nhxg = Fout->getN(4);
+    nhyg = Fout->getN(5);
+    nhzg = Fout->getN(6);
+	dxg = Fout->getD(1);
+	dyg = Fout->getD(2);
+	dzg = Fout->getD(3);
+	oxg = Fout->getO(1);
+	oyg = Fout->getO(2);
+	ozg = Fout->getO(3);
+
+    long int nxl, nyl, nzl;
+    int nhxl, nhyl, nhzl;
+	T dxl, dyl, dzl, oxl, oyl, ozl;
+    nxl = this->getNx();
+    nyl = this->getNy();
+    nzl = this->getNz();
+    nhxl = this->getNhx();
+    nhyl = this->getNhy();
+    nhzl = this->getNhz();
+    dxl = this->getDx();
+    dyl = this->getDy();
+    dzl = this->getDz();
+    oxl = this->getOx();
+    oyl = this->getOy();
+    ozl = this->getOz();
+
+	if(nhxg != nhxl || nhyg != nhyl || nhzg != nhzl || dxg != dxl || dyg != dyl || dzg != dzl){
+		rs_error("Image3D::stackImage: Images are not compatible. Cannot stack.");
+	}
+
+    T *trcin = this->getImagedata();
+
+    T *trcout;
+    trcout = (T *) calloc(nxg, sizeof(T));
+    if(trcout == NULL) rs_error("Image3D::stackImage: Failed to allocate memory for input trace.");
+
+	// Stack data
+	int ix, iy, iz, ihx, ihy, ihz;
+    int ix_start, iy_start, iz_start;
+	ix_start = (int) (oxl/dxl - oxg/dxg);
+	iy_start = (int) (oyl/dyl - oyg/dyg);
+	iz_start = (int) (ozl/dzl - ozg/dzg);
+	Index Iin(nxl, nyl, nzl, nhxl, nhyl, nhzl);
+	Index Iout(nxg, nyg, nzg, nhxl, nhyl, nhzl);
+    for(ihz=0; ihz<nhzl; ihz++) {
+        for(ihy=0; ihy<nhyl; ihy++) {
+            for(ihx=0; ihx<nhxl; ihx++) {
+                for(iz=0; iz<nzl; iz++) {
+                    if((iz + iz_start) >= 0 && (iz + iz_start) < nzg){
+                        for(iy=0; iy<nyl; iy++) {
+                            if((iy + iy_start) >= 0 && (iy + iy_start) < nyg){
+                                // Read traces 
+                                Fout->read(trcout, nxg, Iout(0, (iy+iy_start), (iz+iz_start),ihx,ihy,ihz)*sizeof(T));
+                                if(Fout->getFail()) rs_error("Image3D::stackImage: Failed to write data to file");
+                                for(ix = 0; ix < nxl; ix++) {
+                                    if((ix + ix_start) >= 0 && (ix + ix_start) < nxg){
+                                        trcout[ix + ix_start] += trcin[Iin(ix,iy,iz,ihx,ihy,ihz)];
+                                    }
+                                }
+                                // Write trc 
+                                Fout->write(trcout, nxg, Iout(0, (iy+iy_start), (iz+iz_start),ihx,ihy,ihz)*sizeof(T));
+                                if(Fout->getFail()) rs_error("Image3D::stackImage: Failed to write data to file");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+	Fout->close();
+	free(trcout);
+	status = FILE_OK;
+    return status;
+}
+
+template<typename T>
 std::shared_ptr<rockseis::Image3D<T>> Image3D<T>::getLocal(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
 
     std::shared_ptr<rockseis::Image3D<T>> local;

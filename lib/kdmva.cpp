@@ -1,11 +1,11 @@
-#include "wemva.h"
+#include "kdmva.h"
 
 
 namespace rockseis {
 
-// =============== ABSTRACT WEMVA CLASS =============== //
+// =============== ABSTRACT KDMVA CLASS =============== //
 template<typename T>
-Wemva<T>::Wemva() {
+Kdmva<T>::Kdmva() {
     //Set default parameters
     fs = false;
     lpml = 10;
@@ -23,19 +23,19 @@ Wemva<T>::Wemva() {
     nhy = 1;
     nhz = 1;
     fnorm = 0.0;
-    if(createLog() == WVA_ERR)
+    if(createLog() == KVA_ERR)
     {
-        rs_error("Wemva<T>::Wemva(): Error creating logfile for writting.");
+        rs_error("Kdmva<T>::Kdmva(): Error creating logfile for writting.");
     }
-    if(createProglog() == WVA_ERR)
+    if(createProglog() == KVA_ERR)
     {
-        rs_error("Wemva<T>::Wemva(): Error creating progress logfile for writting.");
+        rs_error("Kdmva<T>::Kdmva(): Error creating progress logfile for writting.");
     }
     noreverse = false;
 }
 
 template<typename T>
-Wemva<T>::Wemva(MPImodeling *_mpi) {
+Kdmva<T>::Kdmva(MPImodeling *_mpi) {
     mpi = _mpi;
 
     //Set default parameters
@@ -55,19 +55,19 @@ Wemva<T>::Wemva(MPImodeling *_mpi) {
     nhy = 1;
     nhz = 1;
     fnorm = 0.0;
-    if(createLog() == WVA_ERR)
+    if(createLog() == KVA_ERR)
     {
-        rs_error("Wemva<T>::Wemva(): Error creating logfile for writting.");
+        rs_error("Kdmva<T>::Kdmva(): Error creating logfile for writting.");
     }
-    if(createProglog() == WVA_ERR)
+    if(createProglog() == KVA_ERR)
     {
-        rs_error("Wemva<T>::Wemva(): Error creating progress logfile for writting.");
+        rs_error("Kdmva<T>::Kdmva(): Error creating progress logfile for writting.");
     }
     noreverse = false;
 }
 
 template<typename T>
-void Wemva<T>::normalize(double *v, double *f, int n){
+void Kdmva<T>::normalize(double *v, double *f, int n){
 	int i;
     if(fnorm == 0.0) {
         fnorm = 1.0;
@@ -79,7 +79,7 @@ void Wemva<T>::normalize(double *v, double *f, int n){
 }
 
 template<typename T>
-double Wemva<T>::vector_norm(double *v, const int type, const int n){
+double Kdmva<T>::vector_norm(double *v, const int type, const int n){
 	// Variables
 	int i;
 	double norm;
@@ -103,7 +103,7 @@ double Wemva<T>::vector_norm(double *v, const int type, const int n){
 }
 
 template<typename T>
-void Wemva<T>::find_max(T *v, T* max, int *imax, int n){
+void Kdmva<T>::find_max(T *v, T* max, int *imax, int n){
 	// Variables
 	int i;
 
@@ -119,33 +119,33 @@ void Wemva<T>::find_max(T *v, T* max, int *imax, int n){
 }
 
 template<typename T>
-bool Wemva<T>::createLog(){
+bool Kdmva<T>::createLog(){
 	logfile = LOGFILE;
 	Flog.open(logfile.c_str());
 	if(Flog.fail()){
 		Flog.close();
-		return WVA_ERR;
+		return KVA_ERR;
 	}else{
 		Flog.close();
-		return WVA_OK;
+		return KVA_OK;
 	}
 }
 
 template<typename T>
-bool Wemva<T>::createProglog(){
+bool Kdmva<T>::createProglog(){
 	progresslogfile = PROGLOGFILE;
 	Flog.open(progresslogfile.c_str());
 	if(Flog.fail()){
 		Flog.close();
-		return WVA_ERR;
+		return KVA_ERR;
 	}else{
 		Flog.close();
-		return WVA_OK;
+		return KVA_OK;
 	}
 }
 
 template<typename T>
-void Wemva<T>::writeLog(std::string text){
+void Kdmva<T>::writeLog(std::string text){
     char tempo[256];
 	time_t now;
     now = time(NULL);
@@ -160,7 +160,7 @@ void Wemva<T>::writeLog(std::string text){
 }
 
 template<typename T>
-void Wemva<T>::writeProgress(std::string text){
+void Kdmva<T>::writeProgress(std::string text){
     if(!progresslogfile.empty()){
         Flog.open(progresslogfile.c_str(), std::ios::app);
         if(!Flog.fail())
@@ -170,7 +170,7 @@ void Wemva<T>::writeProgress(std::string text){
 }
 
 template<typename T>
-void Wemva<T>::createResult(){
+void Kdmva<T>::createResult(){
     struct stat s;
     // Checking if result folder is present, and creates it if not
     if(stat(RESULTDIR,&s) != 0) {
@@ -180,14 +180,14 @@ void Wemva<T>::createResult(){
 }
 
 template<typename T>
-Wemva<T>::~Wemva() {
+Kdmva<T>::~Kdmva() {
     //Do nothing
 }
 
-// =============== 2D ACOUSTIC WEMVA CLASS =============== //
+// =============== 2D ACOUSTIC KDMVA CLASS =============== //
 //
 template<typename T>
-WemvaAcoustic2D<T>::WemvaAcoustic2D() {
+KdmvaAcoustic2D<T>::KdmvaAcoustic2D() {
     // Set default parameters
     apertx = -1;
 
@@ -198,7 +198,7 @@ WemvaAcoustic2D<T>::WemvaAcoustic2D() {
 }
 
 template<typename T>
-WemvaAcoustic2D<T>::WemvaAcoustic2D(MPImodeling *mpi): Wemva<T>(mpi) {
+KdmvaAcoustic2D<T>::KdmvaAcoustic2D(MPImodeling *mpi): Kdmva<T>(mpi) {
     // Set default parameters
     apertx = -1;
 
@@ -208,274 +208,20 @@ WemvaAcoustic2D<T>::WemvaAcoustic2D(MPImodeling *mpi): Wemva<T>(mpi) {
 }
 
 template<typename T>
-WemvaAcoustic2D<T>::~WemvaAcoustic2D() {
+KdmvaAcoustic2D<T>::~KdmvaAcoustic2D() {
     //Do nothing
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::runGrad() {
+void KdmvaAcoustic2D<T>::runGrad() {
     MPImodeling *mpi = this->getMpi();
-    std::shared_ptr<rockseis::Data2D<T>> shot2D;
-    std::shared_ptr<rockseis::Data2D<T>> shot2Di;
-    std::shared_ptr<rockseis::Image2D<T>> pimage;
-    std::shared_ptr<rockseis::Image2D<T>> lpimage;
-    std::shared_ptr<rockseis::Image2D<T>> vpgrad;
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> lmodel;
-
-    // Create a sort class
-    std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
-    Sort->setDatafile(Precordfile);
-	
-    // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
-
-    // Create a data class for the source wavelet
-	std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(Waveletfile));
-
-    // Create an interpolation class
-    std::shared_ptr<rockseis::Interp<T>> interp (new rockseis::Interp<T>(SINC));
-
-    // Create a file to output data misfit values
-    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
-
-	if(mpi->getRank() == 0) {
-		// Master
-
-        // Get shot map
-        Sort->readKeymap();
-        Sort->readSortmap();
-        size_t ngathers =  Sort->getNensemb();
-
-        // Create a data class for the recorded data
-        std::shared_ptr<rockseis::Data2D<T>> shot2D (new rockseis::Data2D<T>(Precordfile));
-       
-        //Migration
-		// Create work queue
-		for(long int i=0; i<ngathers; i++) {
-			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
-			mpi->addWork(work);
-		}
-
-        // Image
-        pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile, gmodel, this->getNhx(), this->getNhz());
-        pimage->createEmpty();
-
-		// Perform work in parallel
-		mpi->performWork();
-
-        //Calculate and output misfit
-        this->computeMisfit(pimage);
-
-		//Clear work vector 
-		mpi->clearWork();
-
-        // Gradient computation
-		// Create work queue
-		for(long int i=0; i<ngathers; i++) {
-			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
-			mpi->addWork(work);
-		}
-
-        vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
-        vpgrad->createEmpty();
-
-		// Perform work in parallel
-		mpi->performWork();
-
-
-		//Clear work vector 
-		mpi->clearWork();
-
-    }
-    else {
-        /* Slave */
-        std::shared_ptr<rockseis::RtmAcoustic2D<T>> rtm;
-        while(1) {
-            workModeling_t work = mpi->receiveWork();
-
-            if(work.MPItag == MPI_TAG_DIE) {
-                break;
-            }
-
-            if(work.MPItag == MPI_TAG_NO_WORK) {
-                mpi->sendNoWork(0);
-            }
-            else {
-                // Do migration
-                Sort->readKeymap();
-                Sort->readSortmap();
-
-                // Get the shot
-                Sort->setDatafile(Precordfile);
-                shot2D = Sort->get2DGather(work.id);
-                size_t ntr = shot2D->getNtrace();
-
-                lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
-
-                // Read wavelet data, set shot coordinates and make a map
-                source->read();
-                source->copyCoords(shot2D);
-                source->makeMap(lmodel->getGeom(), SMAP);
-
-                // Interpolate shot
-                shot2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(shot2D, shot2Di);
-                shot2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                // Creating image object
-                pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile + "-" + std::to_string(work.id), lmodel, this->getNhx(), this->getNhz());
-
-                // Create rtm object
-                rtm = std::make_shared<rockseis::RtmAcoustic2D<T>>(lmodel, pimage, source, shot2Di, this->getOrder(), this->getSnapinc());
-
-                // Setting Snapshot file 
-                rtm->setSnapfile(Snapfile + "-" + std::to_string(work.id));
-
-                // Setting MVA flag
-                rtm ->setRunmva(true);
-
-                // Setting Snapshot parameters
-                rtm->setNcheck(this->getNsnaps());
-                rtm->setIncore(this->getIncore());
-
-                // Set logfile
-                rtm->setLogfile("log.txt-" + std::to_string(work.id));
-
-                // Stagger model
-                lmodel->staggerModels();
-
-                // Run simulation
-                switch(this->getSnapmethod()){
-                    case rockseis::FULL:
-                        rtm->run();
-                        break;
-                    case rockseis::OPTIMAL:
-                        rtm->run_optimal();
-                        break;
-                    default:
-                        rockseis::rs_error("Invalid option of snapshot saving."); 
-                }
-
-                // Send result back
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);		
-
-                // Stack image
-                pimage->stackImage_parallel(Pimagefile);
-
-                // Reset all classes
-                shot2D.reset();
-                shot2Di.reset();
-                lmodel.reset();
-                pimage.reset();
-                rtm.reset();
-
-                // Send result back
-                work.status = WORK_FINISHED;
-                mpi->sendResult(work);		
-            }
-        }
-
-        std::shared_ptr<rockseis::MvaAcoustic2D<T>> mva;
-        while(1) {
-            workModeling_t work = mpi->receiveWork();
-
-            if(work.MPItag == MPI_TAG_DIE) {
-                break;
-            }
-
-            if(work.MPItag == MPI_TAG_NO_WORK) {
-                mpi->sendNoWork(0);
-            }
-            else {
-                // Compute gradient
-                // Get the shot
-                Sort->setDatafile(Precordfile);
-                shot2D = Sort->get2DGather(work.id);
-                size_t ntr = shot2D->getNtrace();
-
-                lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
-
-                // Read wavelet data, set shot coordinates and make a map
-                source->read();
-                source->copyCoords(shot2D);
-                source->makeMap(lmodel->getGeom(), SMAP);
-
-                // Interpolate shot
-                shot2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(shot2D, shot2Di);
-                shot2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                // Create image object
-                pimage = std::make_shared<rockseis::Image2D<T>>(PIMAGERESFILE);
-                lpimage = pimage->getLocal(shot2D, apertx, SMAP);
-
-                // Create mva object
-                mva = std::make_shared<rockseis::MvaAcoustic2D<T>>(lmodel, lpimage, source, shot2Di, this->getOrder(), this->getSnapinc());
-
-                // Setting misfit type
-                mva->setMisfit_type(this->getMisfit_type());
-
-                // Creating gradient object
-                vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
-
-                // Setting up gradient objects in wemvafwi class
-                mva->setVpgrad(vpgrad);
-
-                // Setting Snapshot files
-                mva->setSnapfile(Snapfile + "-" + std::to_string(work.id));
-
-                // Setting Snapshot parameters
-                mva->setNcheck(this->getNsnaps());
-                mva->setIncore(this->getIncore());
-
-                // Set logfile
-                mva->setLogfile("log.txt-" + std::to_string(work.id));
-
-                // Stagger model
-                lmodel->staggerModels();
-
-                // Run simulation
-                switch(this->getSnapmethod()){
-                    case rockseis::FULL:
-                        mva->run();
-                        break;
-                    case rockseis::OPTIMAL:
-                        mva->run_optimal();
-                        break;
-                    default:
-                        rockseis::rs_error("Invalid option of snapshot saving."); 
-                }
-
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
-
-                // Stack gradient
-                vpgrad->stackImage_parallel(Vpgradfile);
-
-                // Reset all classes
-                shot2D.reset();
-                shot2Di.reset();
-                lmodel.reset();
-                pimage.reset();
-                lpimage.reset();
-                vpgrad.reset();
-                mva.reset();
-
-                // Send result back
-                work.status = WORK_FINISHED;
-                mpi->sendResult(work);		
-            }
-
-        }
-    }
+    // Calculate traveltimes
+    // Migrate data
+    // Compute Adjoint
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::runBsproj() {
+void KdmvaAcoustic2D<T>::runBsproj() {
     MPImodeling *mpi = this->getMpi();
 	T vpsum = 0.0; // Sum over splines
 	float *global_stack;
@@ -506,7 +252,7 @@ void WemvaAcoustic2D<T>::runBsproj() {
 	/* Allocating projection arrays */
 	float *vpproj= (float *) calloc(nc, sizeof(float));
 	if(vpproj==NULL){
-		rs_error("WemvaAcoustic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
+		rs_error("KdmvaAcoustic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
 	}
 
     if(mpi->getRank() == 0) {
@@ -528,7 +274,7 @@ void WemvaAcoustic2D<T>::runBsproj() {
 
 		global_stack= (float *) calloc(nc, sizeof(float));
 		if(global_stack==NULL){
-			rs_error("WemvaAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
+			rs_error("KdmvaAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
 		}
 
 		/* Starting reduce operation */
@@ -578,7 +324,7 @@ void WemvaAcoustic2D<T>::runBsproj() {
 
 		global_stack= (float *) calloc(nc, sizeof(float));
 		if(global_stack==NULL){
-			rs_error("WemvaAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
+			rs_error("KdmvaAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
 		}
 
 		/* Starting reduce operation */
@@ -591,7 +337,7 @@ void WemvaAcoustic2D<T>::runBsproj() {
 }
 
 template<typename T>
-int WemvaAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile)
+int KdmvaAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile)
 {
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> model_in (new rockseis::ModelAcoustic2D<T>(vpfile, rhofile, 1 ,0));
     std::shared_ptr<rockseis::Data2D<T>> source_in (new rockseis::Data2D<T>(sourcefile));
@@ -622,7 +368,7 @@ int WemvaAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::string rh
             N=spline->getNc();
             break;
         default:
-            rs_error("WemvaAcoustic2D<T>::setInitial(): Unknown parameterisation."); 
+            rs_error("KdmvaAcoustic2D<T>::setInitial(): Unknown parameterisation."); 
             break;
     }
 
@@ -630,7 +376,7 @@ int WemvaAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::string rh
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::saveResults(int iter)
+void KdmvaAcoustic2D<T>::saveResults(int iter)
 {
     std::string name;
     std::string dir;
@@ -654,7 +400,7 @@ void WemvaAcoustic2D<T>::saveResults(int iter)
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::saveLinesearch(double *x)
+void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
 {
     // Models
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> model0 (new rockseis::ModelAcoustic2D<T>(VP0FILE, RHO0FILE, 1 ,0));
@@ -686,7 +432,7 @@ void WemvaAcoustic2D<T>::saveLinesearch(double *x)
         mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Modelmutefile, Modelmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
-        if(N != Nmute) rs_error("WemvaAcoustic2D<T>::saveLinesearch(): Geometry in Modelmutefile does not match geometry in the model.");
+        if(N != Nmute) rs_error("KdmvaAcoustic2D<T>::saveLinesearch(): Geometry in Modelmutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         N = (lsmodel->getGeom())->getNtot();
@@ -740,7 +486,7 @@ void WemvaAcoustic2D<T>::saveLinesearch(double *x)
             lssource->write();
             break;
         default:
-            rs_error("WemvaAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
+            rs_error("KdmvaAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
             break;
     }
     if(Modelmutefile.empty()){
@@ -749,7 +495,7 @@ void WemvaAcoustic2D<T>::saveLinesearch(double *x)
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pimage)
+void KdmvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pimage)
 {
     T f=0;
     if(!pimage->getAllocated()) pimage->allocateImage();
@@ -778,7 +524,7 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
         mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Residualmutefile, Residualmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (nx*nz);
-        if(N != Nmute) rs_error("WemvaAcoustic2D<T>::computeMisfit(): Geometry in Residualmutefile does not match geometry in the image.");
+        if(N != Nmute) rs_error("KdmvaAcoustic2D<T>::computeMisfit(): Geometry in Residualmutefile does not match geometry in the image.");
         mute->readModel();
         mutedata = mute->getVp();
     }else{
@@ -1154,7 +900,7 @@ void WemvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::readMisfit(double *f)
+void KdmvaAcoustic2D<T>::readMisfit(double *f)
 {
     // Data misfit
     *f = 0.0;
@@ -1175,7 +921,7 @@ void WemvaAcoustic2D<T>::readMisfit(double *f)
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::readGrad(double *g)
+void KdmvaAcoustic2D<T>::readGrad(double *g)
 {
     int i;
     int N;
@@ -1217,13 +963,13 @@ void WemvaAcoustic2D<T>::readGrad(double *g)
             free(g_in);
             break;
         default:
-            rs_error("WemvaAcoustic2D<T>::readGrad(): Unknown parameterisation."); 
+            rs_error("KdmvaAcoustic2D<T>::readGrad(): Unknown parameterisation."); 
             break;
     }
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::combineGradients()
+void KdmvaAcoustic2D<T>::combineGradients()
 {
     // Gradients
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> grad;
@@ -1252,7 +998,7 @@ void WemvaAcoustic2D<T>::combineGradients()
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::applyMute()
+void KdmvaAcoustic2D<T>::applyMute()
 {
     if(!Modelmutefile.empty()){
         // Models
@@ -1282,7 +1028,7 @@ void WemvaAcoustic2D<T>::applyMute()
 }
 
 template<typename T>
-void WemvaAcoustic2D<T>::computeRegularisation(double *x)
+void KdmvaAcoustic2D<T>::computeRegularisation(double *x)
 {
     // Models
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> model (new rockseis::ModelAcoustic2D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
@@ -1346,7 +1092,7 @@ void WemvaAcoustic2D<T>::computeRegularisation(double *x)
 
             break;
         default:
-            rs_error("WemvaAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
+            rs_error("KdmvaAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
             break;
     }
     // Computing misfit
@@ -1404,9 +1150,9 @@ void WemvaAcoustic2D<T>::computeRegularisation(double *x)
     free(gwrk);
 }
 
-// =============== 2D ELASTIC WEMVA CLASS =============== //
+// =============== 2D ELASTIC KDMVA CLASS =============== //
 template<typename T>
-WemvaElastic2D<T>::WemvaElastic2D() {
+KdmvaElastic2D<T>::KdmvaElastic2D() {
     // Set default parameters
     apertx = -1;
     sourcetype = 0;
@@ -1425,7 +1171,7 @@ WemvaElastic2D<T>::WemvaElastic2D() {
 }
 
 template<typename T>
-WemvaElastic2D<T>::WemvaElastic2D(MPImodeling *mpi): Wemva<T>(mpi) {
+KdmvaElastic2D<T>::KdmvaElastic2D(MPImodeling *mpi): Kdmva<T>(mpi) {
     // Set default parameters
     apertx = -1;
     sourcetype = 0;
@@ -1443,13 +1189,13 @@ WemvaElastic2D<T>::WemvaElastic2D(MPImodeling *mpi): Wemva<T>(mpi) {
 }
 
 template<typename T>
-WemvaElastic2D<T>::~WemvaElastic2D() {
+KdmvaElastic2D<T>::~KdmvaElastic2D() {
     //Do nothing
 }
 
 template<typename T>
-void WemvaElastic2D<T>::setWavemode(int mode) {
-    if(mode != 0 && mode != 1) rs_error("WemvaElastic2D<T>::setWavemod: Invalid wavemode.");
+void KdmvaElastic2D<T>::setWavemode(int mode) {
+    if(mode != 0 && mode != 1) rs_error("KdmvaElastic2D<T>::setWavemod: Invalid wavemode.");
     this->wavemode = mode;
     if(this->wavemode == 1){
         update_vp = false;
@@ -1461,814 +1207,24 @@ void WemvaElastic2D<T>::setWavemode(int mode) {
 }
 
 template<typename T>
-void WemvaElastic2D<T>::runPPgrad() {
+void KdmvaElastic2D<T>::runPPgrad() {
     MPImodeling *mpi = this->getMpi();
-    std::shared_ptr<rockseis::Data2D<T>> Uxdata2D;
-    std::shared_ptr<rockseis::Data2D<T>> Uxdata2Di;
-    std::shared_ptr<rockseis::Data2D<T>> Uzdata2D;
-    std::shared_ptr<rockseis::Data2D<T>> Uzdata2Di;
-    std::shared_ptr<rockseis::Image2D<T>> pimage;
-    std::shared_ptr<rockseis::Image2D<T>> lpimage;
-    std::shared_ptr<rockseis::Image2D<T>> vpgrad;
-    std::shared_ptr<rockseis::Image2D<T>> vsgrad;
-    std::shared_ptr<rockseis::ModelElastic2D<T>> lmodel;
-
-    // Create a sort class
-    std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
-    Sort->setDatafile(Uxrecordfile);
-	
-    // Create a global model class
-	std::shared_ptr<rockseis::ModelElastic2D<T>> gmodel (new rockseis::ModelElastic2D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
-
-    // Create a data class for the source wavelet
-	std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(Waveletfile));
-
-    // Create an interpolation class
-    std::shared_ptr<rockseis::Interp<T>> interp (new rockseis::Interp<T>(SINC));
-
-    // Create a file to output data misfit values
-    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
-
-	if(mpi->getRank() == 0) {
-		// Master
-
-        // Get shot map
-        Sort->readKeymap();
-        Sort->readSortmap();
-        size_t ngathers =  Sort->getNensemb();
-        if(Sort->getReciprocity()){
-            ngathers *= 2;
-        }
-
-        //Migration
-		// Create work queue
-		for(long int i=0; i<ngathers; i++) {
-			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
-			mpi->addWork(work);
-		}
-
-        pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile, gmodel, this->getNhx(), this->getNhz());
-        pimage->createEmpty();
-
-		// Perform work in parallel
-		mpi->performWork();
-
-        //Calculate and output misfit
-        this->computeMisfit(pimage, PIMAGERESFILE);
-
-		//Clear work vector 
-		mpi->clearWork();
-
-        // Gradient computation
-		// Create work queue
-		for(long int i=0; i<ngathers; i++) {
-			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
-			mpi->addWork(work);
-		}
-
-       // Images
-       vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
-       vpgrad->createEmpty();
-
-       vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile, gmodel, 1, 1);
-       vsgrad->createEmpty();
-
-		// Perform work in parallel
-		mpi->performWork();
-
-		//Clear work vector 
-		mpi->clearWork();
-
-    }
-    else {
-        /* Slave */
-        std::shared_ptr<rockseis::RtmElastic2D<T>> rtm;
-        while(1) {
-            workModeling_t work = mpi->receiveWork();
-
-            if(work.MPItag == MPI_TAG_DIE) {
-                break;
-            }
-
-            if(work.MPItag == MPI_TAG_NO_WORK) {
-                mpi->sendNoWork(0);
-            }
-            else {
-                // Do migration
-                Sort->readKeymap();
-                Sort->readSortmap();
-
-                int gatherid;
-                if(!Sort->getReciprocity()){
-                    gatherid = work.id;
-                }else{
-                    gatherid = work.id/2;
-                }
-
-                // Get the shot
-                Sort->setDatafile(Uxrecordfile);
-                Uxdata2D = Sort->get2DGather(gatherid);
-                size_t ntr = Uxdata2D->getNtrace();
-
-                Sort->setDatafile(Uzrecordfile);
-                Uzdata2D = Sort->get2DGather(gatherid);
-
-                // Creating local model
-                lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
-
-                // Read wavelet data, set shot coordinates and make a map
-                source->read();
-                source->copyCoords(Uxdata2D);
-                source->makeMap(lmodel->getGeom(), SMAP);
-
-                //Setting sourcetype 
-                if(!Sort->getReciprocity()){
-                    switch(this->getSourcetype()){
-                        case 0:
-                            source->setField(PRESSURE);
-                            break;
-                        case 1:
-                            source->setField(VX);
-                            break;
-                        case 3:
-                            source->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                            break;
-                    }
-                }else{
-                    if(work.id % 2 == 0){
-                            source->setField(VX);
-                    }else{
-                            source->setField(VZ);
-                    }
-                }
-
-                // Interpolate shot
-                Uxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Uxdata2D, Uxdata2Di);
-                Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                Uzdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Uzdata2D, Uzdata2Di);
-                Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                if(!Sort->getReciprocity()){
-                    Uxdata2Di->setField(VX);
-                    Uzdata2Di->setField(VZ);
-                }else{
-                    switch(this->getSourcetype()){
-                        case 0:
-                            Uxdata2Di->setField(PRESSURE);
-                            Uzdata2Di->setField(PRESSURE);
-                            break;
-                        case 1:
-                            Uxdata2Di->setField(VX);
-                            Uzdata2Di->setField(VX);
-                            break;
-                        case 3:
-                            Uxdata2Di->setField(VZ);
-                            Uzdata2Di->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                            break;
-                    }
-                }
-
-
-                // Read wavelet data, set shot coordinates and make a map
-                source->read();
-                source->copyCoords(Uxdata2D);
-                source->makeMap(lmodel->getGeom(), SMAP);
-
-                // Creating image object
-                pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile + "-" + std::to_string(work.id), lmodel, this->getNhx(), this->getNhz());
-
-                // Create rtm object
-                rtm = std::make_shared<rockseis::RtmElastic2D<T>>(lmodel, source, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
-
-                // Setting Snapshot file 
-                rtm->setSnapfile(Snapfile + "-" + std::to_string(work.id));
-
-                // Setting MVA flag
-                rtm ->setRunmva(true);
-
-                // Setting Image objects
-                rtm->setPimage(pimage);
-
-                // Setting Snapshot parameters
-                rtm->setNcheck(this->getNsnaps());
-                rtm->setIncore(this->getIncore());
-
-                // Set logfile
-                rtm->setLogfile("log.txt-" + std::to_string(work.id));
-
-                // Stagger model
-                lmodel->staggerModels();
-
-                // Run simulation
-                switch(this->getSnapmethod()){
-                    case rockseis::FULL:
-                        rtm->run();
-                        break;
-                    case rockseis::OPTIMAL:
-                        rtm->run_optimal();
-                        break;
-                    default:
-                        rockseis::rs_error("Invalid option of snapshot saving."); 
-                }
-                // Send parallel io signal 
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);		
-
-                // Stack image
-                pimage->stackImage_parallel(Pimagefile);
-
-                // Reset all classes
-                Uxdata2D.reset();
-                Uxdata2Di.reset();
-                Uzdata2D.reset();
-                Uzdata2Di.reset();
-                lmodel.reset();
-                pimage.reset();
-                rtm.reset();
-
-                // Send result back
-                work.status = WORK_FINISHED;
-                mpi->sendResult(work);		
-            }
-        }
-        // Compute gradient 
-        std::shared_ptr<rockseis::PPmvaElastic2D<T>> mva;
-        while(1) {
-            workModeling_t work = mpi->receiveWork();
-
-            if(work.MPItag == MPI_TAG_DIE) {
-                break;
-            }
-
-            if(work.MPItag == MPI_TAG_NO_WORK) {
-                mpi->sendNoWork(0);
-            }
-            else {
-                int gatherid;
-                // Compute gradient
-                if(!Sort->getReciprocity()){
-                    gatherid = work.id;
-                }else{
-                    gatherid = work.id/2;
-                }
-
-                // Get the shot
-                Sort->setDatafile(Uxrecordfile);
-                Uxdata2D = Sort->get2DGather(gatherid);
-                size_t ntr = Uxdata2D->getNtrace();
-
-                Sort->setDatafile(Uzrecordfile);
-                Uzdata2D = Sort->get2DGather(gatherid);
-
-                // Creating local model
-                lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
-
-                // Read wavelet data, set shot coordinates and make a map
-                source->read();
-                source->copyCoords(Uxdata2D);
-                source->makeMap(lmodel->getGeom(), SMAP);
-
-                //Setting sourcetype 
-                if(!Sort->getReciprocity()){
-                    switch(this->getSourcetype()){
-                        case 0:
-                            source->setField(PRESSURE);
-                            break;
-                        case 1:
-                            source->setField(VX);
-                            break;
-                        case 3:
-                            source->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                            break;
-                    }
-                }else{
-                    if(work.id % 2 == 0){
-                        source->setField(VX);
-                    }else{
-                        source->setField(VZ);
-                    }
-                }
-
-                // Interpolate shot
-                Uxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Uxdata2D, Uxdata2Di);
-                Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                Uzdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Uzdata2D, Uzdata2Di);
-                Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                if(!Sort->getReciprocity()){
-                    Uxdata2Di->setField(VX);
-                    Uzdata2Di->setField(VZ);
-                }else{
-                    switch(this->getSourcetype()){
-                        case 0:
-                            Uxdata2Di->setField(PRESSURE);
-                            Uzdata2Di->setField(PRESSURE);
-                            break;
-                        case 1:
-                            Uxdata2Di->setField(VX);
-                            Uzdata2Di->setField(VX);
-                            break;
-                        case 3:
-                            Uxdata2Di->setField(VZ);
-                            Uzdata2Di->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                            break;
-                    }
-                }
-
-                // Create image object
-                pimage = std::make_shared<rockseis::Image2D<T>>(PIMAGERESFILE);
-                lpimage = pimage->getLocal(Uxdata2D, apertx, SMAP);
-
-                // Create mva object
-                mva = std::make_shared<rockseis::PPmvaElastic2D<T>>(lmodel, lpimage, source, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
-
-                // Setting misfit type
-                mva->setMisfit_type(this->getMisfit_type());
-
-                // Creating gradient object
-                vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
-
-                // Setting up gradient objects in wemvafwi class
-                mva->setVpgrad(vpgrad);
-
-                // Setting Snapshot files
-                mva->setSnapfile(Snapfile + "-" + std::to_string(work.id));
-
-                // Setting Snapshot parameters
-                mva->setNcheck(this->getNsnaps());
-                mva->setIncore(this->getIncore());
-
-                // Set logfile
-                mva->setLogfile("log.txt-" + std::to_string(work.id));
-
-                // Stagger model
-                lmodel->staggerModels();
-
-                // Run simulation
-                switch(this->getSnapmethod()){
-                    case rockseis::FULL:
-                        mva->run();
-                        break;
-                    case rockseis::OPTIMAL:
-                        mva->run_optimal();
-                        break;
-                    default:
-                        rockseis::rs_error("Invalid option of snapshot saving."); 
-                }
-
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
-
-                // Stack gradient
-                vpgrad->stackImage_parallel(Vpgradfile);
-
-                // Reset all classes
-                Uxdata2D.reset();
-                Uxdata2Di.reset();
-                Uzdata2D.reset();
-                Uzdata2Di.reset();
-                lmodel.reset();
-                pimage.reset();
-                lpimage.reset();
-                vpgrad.reset();
-                mva.reset();
-
-                // Send result back
-                work.status = WORK_FINISHED;
-                mpi->sendResult(work);
-            }
-        }
-    }
+    // Calculate traveltimes
+    // Migrate data
+    // Compute Adjoint
 }
 
 template<typename T>
-void WemvaElastic2D<T>::runPSgrad() {
+void KdmvaElastic2D<T>::runPSgrad() {
     MPImodeling *mpi = this->getMpi();
-    std::shared_ptr<rockseis::Data2D<T>> Uxdata2D;
-    std::shared_ptr<rockseis::Data2D<T>> Uxdata2Di;
-    std::shared_ptr<rockseis::Data2D<T>> Uzdata2D;
-    std::shared_ptr<rockseis::Data2D<T>> Uzdata2Di;
-    std::shared_ptr<rockseis::Image2D<T>> simage;
-    std::shared_ptr<rockseis::Image2D<T>> lsimage;
-    std::shared_ptr<rockseis::Image2D<T>> vpgrad;
-    std::shared_ptr<rockseis::Image2D<T>> vsgrad;
-    std::shared_ptr<rockseis::ModelElastic2D<T>> lmodel;
-
-    // Create a sort class
-    std::shared_ptr<rockseis::Sort<T>> Sort (new rockseis::Sort<T>());
-    Sort->setDatafile(Uxrecordfile);
-	
-    // Create a global model class
-	std::shared_ptr<rockseis::ModelElastic2D<T>> gmodel (new rockseis::ModelElastic2D<T>(Vpfile, Vsfile, Rhofile, this->getLpml() ,this->getFs()));
-
-    // Create a data class for the source wavelet
-	std::shared_ptr<rockseis::Data2D<T>> source (new rockseis::Data2D<T>(Waveletfile));
-
-    // Create an interpolation class
-    std::shared_ptr<rockseis::Interp<T>> interp (new rockseis::Interp<T>(SINC));
-
-    // Create a file to output data misfit values
-    std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
-
-	if(mpi->getRank() == 0) {
-		// Master
-
-        // Get shot map
-        Sort->readKeymap();
-        Sort->readSortmap();
-        size_t ngathers =  Sort->getNensemb();
-        if(Sort->getReciprocity()){
-            ngathers *= 2;
-        }
-
-        //Migration
-		// Create work queue
-		for(long int i=0; i<ngathers; i++) {
-			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
-			mpi->addWork(work);
-		}
-
-        // Image
-        simage = std::make_shared<rockseis::Image2D<T>>(Simagefile, gmodel, this->getNhx(), this->getNhz());
-        simage->createEmpty();
-
-		// Perform work in parallel
-		mpi->performWork();
-
-        //Calculate and output misfit
-        this->computeMisfit(simage, SIMAGERESFILE);
-
-		//Clear work vector 
-		mpi->clearWork();
-
-        // Gradient computation
-		// Create work queue
-		for(long int i=0; i<ngathers; i++) {
-			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
-			mpi->addWork(work);
-		}
-
-        // Images
-        vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
-        vpgrad->createEmpty();
-
-        vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile, gmodel, 1, 1);
-        vsgrad->createEmpty();
-
-		// Perform work in parallel
-		mpi->performWork();
-             
-		//Clear work vector 
-		mpi->clearWork();
-
-    }
-    else {
-        /* Slave */
-        std::shared_ptr<rockseis::RtmElastic2D<T>> rtm;
-        while(1) {
-            workModeling_t work = mpi->receiveWork();
-
-            if(work.MPItag == MPI_TAG_DIE) {
-                break;
-            }
-
-            if(work.MPItag == MPI_TAG_NO_WORK) {
-                mpi->sendNoWork(0);
-            }
-            else {
-                // Do migration
-                Sort->readKeymap();
-                Sort->readSortmap();
-
-                int gatherid;
-                if(!Sort->getReciprocity()){
-                    gatherid = work.id;
-                }else{
-                    gatherid = work.id/2;
-                }
-
-                // Get the shot
-                Sort->setDatafile(Uxrecordfile);
-                Uxdata2D = Sort->get2DGather(gatherid);
-                size_t ntr = Uxdata2D->getNtrace();
-
-                Sort->setDatafile(Uzrecordfile);
-                Uzdata2D = Sort->get2DGather(gatherid);
-
-                // Creating local model
-                lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
-
-                // Read wavelet data, set shot coordinates and make a map
-                source->read();
-                source->copyCoords(Uxdata2D);
-                source->makeMap(lmodel->getGeom(), SMAP);
-
-                //Setting sourcetype 
-                if(!Sort->getReciprocity()){
-                    switch(this->getSourcetype()){
-                        case 0:
-                            source->setField(PRESSURE);
-                            break;
-                        case 1:
-                            source->setField(VX);
-                            break;
-                        case 3:
-                            source->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                            break;
-                    }
-                }else{
-                    if(work.id % 2 == 0){
-                            source->setField(VX);
-                    }else{
-                            source->setField(VZ);
-                    }
-                }
-
-                // Interpolate shot
-                Uxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Uxdata2D, Uxdata2Di);
-                Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                Uzdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Uzdata2D, Uzdata2Di);
-                Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                if(!Sort->getReciprocity()){
-                    Uxdata2Di->setField(VX);
-                    Uzdata2Di->setField(VZ);
-                }else{
-                    switch(this->getSourcetype()){
-                        case 0:
-                            Uxdata2Di->setField(PRESSURE);
-                            Uzdata2Di->setField(PRESSURE);
-                            break;
-                        case 1:
-                            Uxdata2Di->setField(VX);
-                            Uzdata2Di->setField(VX);
-                            break;
-                        case 3:
-                            Uxdata2Di->setField(VZ);
-                            Uzdata2Di->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                            break;
-                    }
-                }
-
-
-                // Read wavelet data, set shot coordinates and make a map
-                source->read();
-                source->copyCoords(Uxdata2D);
-                source->makeMap(lmodel->getGeom(), SMAP);
-
-                // Creating image object
-                simage = std::make_shared<rockseis::Image2D<T>>(Simagefile + "-" + std::to_string(work.id), lmodel, this->getNhx(), this->getNhz());
-
-                // Create rtm object
-                rtm = std::make_shared<rockseis::RtmElastic2D<T>>(lmodel, source, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
-
-                // Setting Snapshot file 
-                rtm->setSnapfile(Snapfile + "-" + std::to_string(work.id));
-
-                // Setting MVA flag
-                rtm ->setRunmva(true);
-
-                // Setting Image objects
-                rtm->setSimage(simage);
-
-                // Setting Snapshot parameters
-                rtm->setNcheck(this->getNsnaps());
-                rtm->setIncore(this->getIncore());
-
-                // Set logfile
-                rtm->setLogfile("log.txt-" + std::to_string(work.id));
-
-                // Stagger model
-                lmodel->staggerModels();
-
-                // Run simulation
-                switch(this->getSnapmethod()){
-                    case rockseis::FULL:
-                        rtm->run();
-                        break;
-                    case rockseis::OPTIMAL:
-                        rtm->run_optimal();
-                        break;
-                    default:
-                        rockseis::rs_error("Invalid option of snapshot saving."); 
-                }
-
-                // Send result back
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);		
-
-                // Stack image
-                simage->stackImage_parallel(Simagefile);
-
-                // Reset all classes
-                Uxdata2D.reset();
-                Uxdata2Di.reset();
-                Uzdata2D.reset();
-                Uzdata2Di.reset();
-                lmodel.reset();
-                simage.reset();
-                rtm.reset();
-
-                // Send result back
-                work.status = WORK_FINISHED;
-                mpi->sendResult(work);		
-            }
-        }
-        // Compute gradient 
-        std::shared_ptr<rockseis::PSmvaElastic2D<T>> mva;
-        while(1) {
-            workModeling_t work = mpi->receiveWork();
-
-            if(work.MPItag == MPI_TAG_DIE) {
-                break;
-            }
-
-            if(work.MPItag == MPI_TAG_NO_WORK) {
-                mpi->sendNoWork(0);
-            }
-            else {
-                int gatherid;
-                // Compute gradient
-                if(!Sort->getReciprocity()){
-                    gatherid = work.id;
-                }else{
-                    gatherid = work.id/2;
-                }
-
-                // Get the shot
-                Sort->setDatafile(Uxrecordfile);
-                Uxdata2D = Sort->get2DGather(gatherid);
-                size_t ntr = Uxdata2D->getNtrace();
-
-                Sort->setDatafile(Uzrecordfile);
-                Uzdata2D = Sort->get2DGather(gatherid);
-
-                // Creating local model
-                lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
-
-                // Read wavelet data, set shot coordinates and make a map
-                source->read();
-                source->copyCoords(Uxdata2D);
-                source->makeMap(lmodel->getGeom(), SMAP);
-
-                //Setting sourcetype 
-                if(!Sort->getReciprocity()){
-                    switch(this->getSourcetype()){
-                        case 0:
-                            source->setField(PRESSURE);
-                            break;
-                        case 1:
-                            source->setField(VX);
-                            break;
-                        case 3:
-                            source->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                            break;
-                    }
-                }else{
-                    if(work.id % 2 == 0){
-                        source->setField(VX);
-                    }else{
-                        source->setField(VZ);
-                    }
-                }
-
-                // Interpolate shot
-                Uxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Uxdata2D, Uxdata2Di);
-                Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                Uzdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
-                interp->interp(Uzdata2D, Uzdata2Di);
-                Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
-
-                if(!Sort->getReciprocity()){
-                    Uxdata2Di->setField(VX);
-                    Uzdata2Di->setField(VZ);
-                }else{
-                    switch(this->getSourcetype()){
-                        case 0:
-                            Uxdata2Di->setField(PRESSURE);
-                            Uzdata2Di->setField(PRESSURE);
-                            break;
-                        case 1:
-                            Uxdata2Di->setField(VX);
-                            Uzdata2Di->setField(VX);
-                            break;
-                        case 3:
-                            Uxdata2Di->setField(VZ);
-                            Uzdata2Di->setField(VZ);
-                            break;
-                        default:
-                            rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
-                            break;
-                    }
-                }
-
-                // Create image object
-                simage = std::make_shared<rockseis::Image2D<T>>(SIMAGERESFILE);
-                lsimage = simage->getLocal(Uxdata2D, apertx, SMAP);
-
-                // Create mva object
-                mva = std::make_shared<rockseis::PSmvaElastic2D<T>>(lmodel, lsimage, source, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
-
-                // Setting misfit type
-                mva->setMisfit_type(this->getMisfit_type());
-
-                // Creating gradient object
-                vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
-
-                // Setting up gradient objects in wemvafwi class
-                mva->setVsgrad(vsgrad);
-
-                // Setting Snapshot files
-                mva->setSnapfile(Snapfile + "-" + std::to_string(work.id));
-
-                // Setting Snapshot parameters
-                mva->setNcheck(this->getNsnaps());
-                mva->setIncore(this->getIncore());
-
-                // Set logfile
-                mva->setLogfile("log.txt-" + std::to_string(work.id));
-
-                // Stagger model
-                lmodel->staggerModels();
-
-                // Run simulation
-                switch(this->getSnapmethod()){
-                    case rockseis::FULL:
-                        mva->run();
-                        break;
-                    case rockseis::OPTIMAL:
-                        mva->run_optimal();
-                        break;
-                    default:
-                        rockseis::rs_error("Invalid option of snapshot saving."); 
-                }
-
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
-
-                // Stack gradient
-                vsgrad->stackImage_parallel(Vsgradfile);
-
-                // Reset all classes
-                Uxdata2D.reset();
-                Uxdata2Di.reset();
-                Uzdata2D.reset();
-                Uzdata2Di.reset();
-                lmodel.reset();
-                simage.reset();
-                lsimage.reset();
-                vsgrad.reset();
-                mva.reset();
-
-                // Send result back
-                work.status = WORK_FINISHED;
-                mpi->sendResult(work);
-            }
-        }
-    }
+    // Calculate traveltimes
+    // Migrate data
+    // Compute Adjoint
 }
 
 
 template<typename T>
-void WemvaElastic2D<T>::runBsproj() {
+void KdmvaElastic2D<T>::runBsproj() {
     MPImodeling *mpi = this->getMpi();
 	T vpsum = 0.0; // Sum over splines
 	T vssum = 0.0; // Sum over splines
@@ -2305,11 +1261,11 @@ void WemvaElastic2D<T>::runBsproj() {
     /* Allocating projection arrays */
     vpproj= (float *) calloc(nc, sizeof(float));
     if(vpproj==NULL){
-        rs_error("WemvaElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
+        rs_error("KdmvaElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
     }
     vsproj= (float *) calloc(nc, sizeof(float));
     if(vsproj==NULL){
-        rs_error("WemvaElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (vsproj)");
+        rs_error("KdmvaElastic2D<T>::runBsproj(): Not enough memory to allocate projection array (vsproj)");
     }
 
     if(mpi->getRank() == 0) {
@@ -2331,7 +1287,7 @@ void WemvaElastic2D<T>::runBsproj() {
 
 		global_stack= (float *) calloc(nc, sizeof(float));
 		if(global_stack==NULL){
-			rs_error("WemvaElastic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
+			rs_error("KdmvaElastic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
 		}
 
         std::shared_ptr<File> Fout (new File());
@@ -2409,7 +1365,7 @@ void WemvaElastic2D<T>::runBsproj() {
 
         global_stack= (float *) calloc(nc, sizeof(float));
         if(global_stack==NULL){
-            rs_error("WemvaElastic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
+            rs_error("KdmvaElastic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
         }
 
         /* Starting reduce operation */
@@ -2427,7 +1383,7 @@ void WemvaElastic2D<T>::runBsproj() {
 }
 		
 template<typename T>
-int WemvaElastic2D<T>::setInitial(double *x, std::string vpfile, std::string vsfile, std::string rhofile, std::string sourcefile)
+int KdmvaElastic2D<T>::setInitial(double *x, std::string vpfile, std::string vsfile, std::string rhofile, std::string sourcefile)
 {
     std::shared_ptr<rockseis::ModelElastic2D<T>> model_in (new rockseis::ModelElastic2D<T>(vpfile, vsfile, rhofile, 1 ,0));
     std::shared_ptr<rockseis::Data2D<T>> source_in (new rockseis::Data2D<T>(sourcefile));
@@ -2469,7 +1425,7 @@ int WemvaElastic2D<T>::setInitial(double *x, std::string vpfile, std::string vsf
             if(update_vs) Npar += N;
             break;
         default:
-            rs_error("WemvaElastic2D<T>::setInitial(): Unknown parameterisation."); 
+            rs_error("KdmvaElastic2D<T>::setInitial(): Unknown parameterisation."); 
             break;
     }
 
@@ -2477,7 +1433,7 @@ int WemvaElastic2D<T>::setInitial(double *x, std::string vpfile, std::string vsf
 }
 
 template<typename T>
-void WemvaElastic2D<T>::saveResults(int iter)
+void KdmvaElastic2D<T>::saveResults(int iter)
 {
     std::string name;
     std::string dir;
@@ -2518,7 +1474,7 @@ void WemvaElastic2D<T>::saveResults(int iter)
 }
 
 template<typename T>
-void WemvaElastic2D<T>::saveLinesearch(double *x)
+void KdmvaElastic2D<T>::saveLinesearch(double *x)
 {
     // Models
     std::shared_ptr<rockseis::ModelElastic2D<T>> model0 (new rockseis::ModelElastic2D<T>(VP0FILE, VS0FILE, RHO0FILE, 1 ,0));
@@ -2553,7 +1509,7 @@ void WemvaElastic2D<T>::saveLinesearch(double *x)
         mute = std::make_shared <rockseis::ModelElastic2D<T>>(Modelmutefile, Modelmutefile, Modelmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (lsmodel->getGeom())->getNtot();
-        if(N != Nmute) rs_error("WemvaElastic2D<T>::saveLinesearch(): Geometry in Modelmutefile does not match geometry in the model.");
+        if(N != Nmute) rs_error("KdmvaElastic2D<T>::saveLinesearch(): Geometry in Modelmutefile does not match geometry in the model.");
         mute->readModel();
         vpmutedata = mute->getVp();
         vsmutedata = mute->getVs();
@@ -2671,7 +1627,7 @@ void WemvaElastic2D<T>::saveLinesearch(double *x)
             lsmodel->writeModel();
             break;
         default:
-            rs_error("WemvaAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
+            rs_error("KdmvaAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
             break;
     }
 
@@ -2691,7 +1647,7 @@ void WemvaElastic2D<T>::saveLinesearch(double *x)
 }
 
 template<typename T>
-void WemvaElastic2D<T>::readMisfit(double *f)
+void KdmvaElastic2D<T>::readMisfit(double *f)
 {
     // Data misfit
     *f = 0.0;
@@ -2717,7 +1673,7 @@ void WemvaElastic2D<T>::readMisfit(double *f)
 }
 
 template<typename T>
-void WemvaElastic2D<T>::readGrad(double *g)
+void KdmvaElastic2D<T>::readGrad(double *g)
 {
     int i;
     int N,Npar=0;
@@ -2789,13 +1745,13 @@ void WemvaElastic2D<T>::readGrad(double *g)
             free(g_in);
             break;
         default:
-            rs_error("WemvaElastic2D<T>::readGrad(): Unknown parameterisation."); 
+            rs_error("KdmvaElastic2D<T>::readGrad(): Unknown parameterisation."); 
             break;
     }
 }
 
 template<typename T>
-void WemvaElastic2D<T>::combineGradients()
+void KdmvaElastic2D<T>::combineGradients()
 {
     // Gradients
     std::shared_ptr<rockseis::ModelElastic2D<T>> grad;
@@ -2833,7 +1789,7 @@ void WemvaElastic2D<T>::combineGradients()
 
 
 template<typename T>
-void WemvaElastic2D<T>::applyMute()
+void KdmvaElastic2D<T>::applyMute()
 {
     if(!Modelmutefile.empty()){
         // Models
@@ -2867,7 +1823,7 @@ void WemvaElastic2D<T>::applyMute()
 }
 
 template<typename T>
-void WemvaElastic2D<T>::computeRegularisation(double *x)
+void KdmvaElastic2D<T>::computeRegularisation(double *x)
 {
     // Models
     std::shared_ptr<rockseis::ModelElastic2D<T>> model (new rockseis::ModelElastic2D<T>(VPLSFILE, VSLSFILE, VPLSFILE, 1 ,0));
@@ -2975,7 +1931,7 @@ void WemvaElastic2D<T>::computeRegularisation(double *x)
 
             break;
         default:
-            rs_error("WemvaElastic2D<T>::computeRegularization(): Unknown parameterisation."); 
+            rs_error("KdmvaElastic2D<T>::computeRegularization(): Unknown parameterisation."); 
             break;
     }
     // Computing misfit
@@ -3080,7 +2036,7 @@ void WemvaElastic2D<T>::computeRegularisation(double *x)
 }
 
 template<typename T>
-void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> image, std::string imageresfile)
+void KdmvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> image, std::string imageresfile)
 {
     T f=0;
     if(!image->getAllocated()) image->allocateImage();
@@ -3108,7 +2064,7 @@ void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> imag
         mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Residualmutefile, Residualmutefile, 1 ,0);
         int Nmute = (mute->getGeom())->getNtot();
         N = (nx*nz);
-        if(N != Nmute) rs_error("WemvaAcoustic2D<T>::computeMisfit(): Geometry in Residualmutefile does not match geometry in the image.");
+        if(N != Nmute) rs_error("KdmvaAcoustic2D<T>::computeMisfit(): Geometry in Residualmutefile does not match geometry in the image.");
         mute->readModel();
         mutedata = mute->getVp();
     }else{
@@ -3479,13 +2435,13 @@ void WemvaElastic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> imag
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
-template class Wemva<float>;
-template class Wemva<double>;
+template class Kdmva<float>;
+template class Kdmva<double>;
 
-template class WemvaAcoustic2D<float>;
-template class WemvaAcoustic2D<double>;
+template class KdmvaAcoustic2D<float>;
+template class KdmvaAcoustic2D<double>;
 
-template class WemvaElastic2D<float>;
-template class WemvaElastic2D<double>;
+template class KdmvaElastic2D<float>;
+template class KdmvaElastic2D<double>;
 
 }

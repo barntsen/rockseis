@@ -269,9 +269,6 @@ void LsmiginvAcoustic2D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
-		// Perform work in parallel
-		mpi->performWork();
-
         // Image
         vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
         vpgrad->createEmpty();
@@ -281,15 +278,8 @@ void LsmiginvAcoustic2D<T>::runGrad() {
             srcilum->createEmpty();
         }
 
-        for(long int i=0; i<ngathers; i++) {
-            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-            remove_file(Vpgradfile + "-" + std::to_string(i));
-
-            if(this->srcilumset){
-                srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
-                remove_file(Srcilumfile + "-" + std::to_string(i));
-            }
-        }
+		// Perform work in parallel
+		mpi->performWork();
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -412,14 +402,6 @@ void LsmiginvAcoustic2D<T>::runGrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Output gradients
-                vpgrad->write();
-
-                // Output ilumination
-                if(this->srcilumset){
-                    srcilum->write();
-                }
-
                 // Output misfit
                 Fmisfit->append(Misfitfile);
                 T val = lsrtm->getMisfit();
@@ -437,7 +419,18 @@ void LsmiginvAcoustic2D<T>::runGrad() {
                 interp->interp(shotres2D, shotres2Di);
                 Sort->put2DGather(shotres2Di, work.id);
 
-                
+                // Send IO signal
+                work.status = PARALLEL_IO;
+                mpi->sendResult(work);
+
+                // Output gradients
+                vpgrad->stackImage_parallel(Vpgradfile);
+
+                // Output ilumination
+                if(this->srcilumset){
+                    srcilum->stackImage_parallel(Srcilumfile);
+                }
+
                 // Reset all classes
                 shot2D.reset();
                 shot2Di.reset();
