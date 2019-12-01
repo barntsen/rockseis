@@ -234,15 +234,15 @@ void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::s
     T wsr,wsi;
     T TTsum=0;
     T omega=0;
-    for (ihx=0; ihx<nhx; ihx++){
-        hx= -(nhx-1)/2 + ihx;
-        for (ihz=0; ihz<nhz; ihz++){
-            hz= -(nhz-1)/2 + ihz;
-            for (ix=0; ix<nx; ix++){
-                if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
-                {
-                    for (iz=0; iz<nz; iz++){
-                        if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+    for (ihz=0; ihz<nhz; ihz++){
+        hz= -(nhz-1)/2 + ihz;
+        for (ihx=0; ihx<nhx; ihx++){
+            hx= -(nhx-1)/2 + ihx;
+            for (iz=0; iz<nz; iz++){
+                if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+                    for (ix=0; ix<nx; ix++){
+                        if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+                        {
                             TTsum = TT_sou[kt2D(ix-hx, iz-hz)] + TT_rec[kt2D(ix-hx, iz-hz)] - ot;
 
                             for (iw=0; iw<nfs; iw += this->getFreqinc()){
@@ -398,15 +398,15 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::sh
     T TTr;
 
     T omega;
-    for (ihx=0; ihx<nhx; ihx++){
-        hx= -(nhx-1)/2 + ihx;
-        for (ihz=0; ihz<nhz; ihz++){
-            hz= -(nhz-1)/2 + ihz;
-            for (ix=1; ix<nx-1; ix++){
-                if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
-                {
-                    for (iz=1; iz<nz-1; iz++){
-                        if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+    for (ihz=0; ihz<nhz; ihz++){
+        hz= -(nhz-1)/2 + ihz;
+        for (ihx=0; ihx<nhx; ihx++){
+            hx= -(nhx-1)/2 + ihx;
+            for (iz=1; iz<nz-1; iz++){
+                if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+                    for (ix=1; ix<nx-1; ix++){
+                        if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+                        {
                             dTsoudz = (TT_sou[kt2D(ix-hx, iz-hz+1)] - TT_sou[kt2D(ix-hx, iz-hz-1)])/(2.0*dz);
                             d2Tsoudz2 = (TT_sou[kt2D(ix-hx, iz-hz+1)] - 2.0*TT_sou[kt2D(ix-hx, iz-hz)] + TT_sou[kt2D(ix-hx, iz-hz-1)])/(dz*dz);
 
@@ -418,11 +418,11 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::sh
                                 omega = iw*df;
                                 if(omega >= (2.0*PI*this->getMinfreq()) &&  omega < (2.0*PI*this->getMaxfreq())){
                                     /*
-                                    vzzsr = omega*d2Tsoudz2*sin(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*cos(-omega*TTs);
-                                    vzzsi = -omega*d2Tsoudz2*cos(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*sin(-omega*TTs);
-                                    vxxrr = omega*cdata[2*iw]*dTrecdx*sin(-omega*TTr);
-                                    vxxri = -omega*cdata[2*iw+1]*dTrecdx*cos(-omega*TTr);
-                                    */
+                                       vzzsr = omega*d2Tsoudz2*sin(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*cos(-omega*TTs);
+                                       vzzsi = -omega*d2Tsoudz2*cos(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*sin(-omega*TTs);
+                                       vxxrr = omega*cdata[2*iw]*dTrecdx*sin(-omega*TTr);
+                                       vxxri = -omega*cdata[2*iw+1]*dTrecdx*cos(-omega*TTr);
+                                       */
 
                                     vzzsr = d2Tsoudz2*sin(-omega*TTs) - omega*SQ(dTsoudz)*cos(-omega*TTs);
                                     vzzsi = -d2Tsoudz2*cos(-omega*TTs) - omega*SQ(dTsoudz)*sin(-omega*TTs);
