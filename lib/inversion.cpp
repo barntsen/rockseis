@@ -291,9 +291,6 @@ void InversionAcoustic2D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
-		// Perform work in parallel
-		mpi->performWork();
-
         // Image
         vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
         vpgrad->createEmpty();
@@ -306,17 +303,8 @@ void InversionAcoustic2D<T>::runGrad() {
             srcilum->createEmpty();
         }
 
-        for(long int i=0; i<ngathers; i++) {
-            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-            remove_file(Vpgradfile + "-" + std::to_string(i));
-            rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
-            remove_file(Rhogradfile + "-" + std::to_string(i));
-
-            if(this->srcilumset){
-                srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
-                remove_file(Srcilumfile + "-" + std::to_string(i));
-            }
-        }
+		// Perform work in parallel
+		mpi->performWork();
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -433,19 +421,7 @@ void InversionAcoustic2D<T>::runGrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Output gradients
-                vpgrad->write();
-                rhograd->write();
-                if(this->getFilter()){
-                    wavgrad->apply_filter(this->getFreqs());
-                }
-                wavgrad->putTrace(Wavgradfile, work.id);
-
-                // Output ilumination
-                if(this->srcilumset){
-                    srcilum->write();
-                }
-
+                
                 // Output misfit
                 Fmisfit->append(Misfitfile);
                 T val = fwi->getMisfit();
@@ -463,6 +439,23 @@ void InversionAcoustic2D<T>::runGrad() {
                 interp->interp(shotres2D, shotres2Di);
                 Sort->put2DGather(shotres2Di, work.id);
 
+                // Output gradients
+                if(this->getFilter()){
+                    wavgrad->apply_filter(this->getFreqs());
+                }
+                wavgrad->putTrace(Wavgradfile, work.id);
+
+                // Send IO signal
+                work.status = PARALLEL_IO;
+                mpi->sendResult(work);
+
+                vpgrad->stackImage_parallel(Vpgradfile);
+                rhograd->stackImage_parallel(Rhogradfile);
+
+                // Output ilumination
+                if(this->srcilumset){
+                    srcilum->stackImage_parallel(Srcilumfile);
+                }
                 
                 // Reset all classes
                 shot2D.reset();
@@ -477,9 +470,9 @@ void InversionAcoustic2D<T>::runGrad() {
                 wavgrad.reset();
                 srcilum.reset();
                 fwi.reset();
-                work.status = WORK_FINISHED;
 
                 // Send result back
+                work.status = WORK_FINISHED;
                 mpi->sendResult(work);		
             }
         }
@@ -1616,9 +1609,6 @@ void InversionAcoustic3D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
-		// Perform work in parallel
-		mpi->performWork();
-
         // Image
         vpgrad = std::make_shared<rockseis::Image3D<T>>(Vpgradfile, gmodel, 1, 1, 1);
         vpgrad->createEmpty();
@@ -1626,22 +1616,8 @@ void InversionAcoustic3D<T>::runGrad() {
         rhograd = std::make_shared<rockseis::Image3D<T>>(Rhogradfile, gmodel, 1, 1, 1);
         rhograd->createEmpty();
 
-//        if(this->srcilumset){
-//            srcilum = std::make_shared<rockseis::Image3D<T>>(Srcilumfile, gmodel, 1, 1);
-//            srcilum->createEmpty();
-//        }
-
-        for(long int i=0; i<ngathers; i++) {
-            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-            remove_file(Vpgradfile + "-" + std::to_string(i));
-            rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
-            remove_file(Rhogradfile + "-" + std::to_string(i));
-
-//            if(this->srcilumset){
-//                srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
-//                remove_file(Srcilumfile + "-" + std::to_string(i));
-//            }
-        }
+		// Perform work in parallel
+		mpi->performWork();
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -1758,16 +1734,6 @@ void InversionAcoustic3D<T>::runGrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Output gradients
-                vpgrad->write();
-                rhograd->write();
-                wavgrad->putTrace(Wavgradfile, work.id);
-
-                // Output ilumination
-                if(this->srcilumset){
-                    srcilum->write();
-                }
-
                 // Output misfit
                 Fmisfit->append(Misfitfile);
                 T val = fwi->getMisfit();
@@ -1785,7 +1751,26 @@ void InversionAcoustic3D<T>::runGrad() {
                 interp->interp(shotres3D, shotres3Di);
                 Sort->put3DGather(shotres3Di, work.id);
 
-                
+                // Output gradients
+                if(this->getFilter()){
+                    wavgrad->apply_filter(this->getFreqs());
+                }
+                wavgrad->putTrace(Wavgradfile, work.id);
+
+                // Send IO signal
+                work.status = PARALLEL_IO;
+                mpi->sendResult(work);
+
+                vpgrad->stackImage_parallel(Vpgradfile);
+                rhograd->stackImage_parallel(Rhogradfile);
+
+                // Output ilumination
+                /*
+                if(this->srcilumset){
+                    srcilum->stackImage_parallel(Srcilumfile);
+                }
+                */
+
                 // Reset all classes
                 shot3D.reset();
                 shot3Di.reset();
@@ -1799,9 +1784,9 @@ void InversionAcoustic3D<T>::runGrad() {
                 wavgrad.reset();
                 srcilum.reset();
                 fwi.reset();
-                work.status = WORK_FINISHED;
 
                 // Send result back
+                work.status = WORK_FINISHED;
                 mpi->sendResult(work);		
             }
         }

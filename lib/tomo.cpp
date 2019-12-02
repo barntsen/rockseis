@@ -282,17 +282,12 @@ void TomoAcoustic2D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
-		// Perform work in parallel
-		mpi->performWork();
-
-
+        // Create empty gradient 
         vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
         vpgrad->createEmpty();
 
-        for(long int i=0; i<ngathers; i++) {
-            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-            remove_file(Vpgradfile + "-" + std::to_string(i));
-        }
+		// Perform work in parallel
+		mpi->performWork();
 
         // Clip extreme values from gradient
         //this->clipGrad(vpgrad);
@@ -361,9 +356,6 @@ void TomoAcoustic2D<T>::runGrad() {
                 /////// Run eikonal solver
                 fat->run();
 
-                // Output gradient
-                vpgrad->write();
-
                 // Output misfit
                 Fmisfit->append(Misfitfile);
                 T val = fat->getMisfit();
@@ -376,6 +368,12 @@ void TomoAcoustic2D<T>::runGrad() {
                 Tres2D->setFile(Tresidualfile);
                 Sort->put2DGather(Tres2D, work.id);
 
+                // Send result back
+                work.status = PARALLEL_IO;
+                mpi->sendResult(work);		
+
+                // Stack gradient
+                vpgrad->stackImage_parallel(Vpgradfile);
                 
                 // Reset all classes
                 Tobs2D.reset();
@@ -388,9 +386,9 @@ void TomoAcoustic2D<T>::runGrad() {
                 lmodel.reset();
                 vpgrad.reset();
                 fat.reset();
-                work.status = WORK_FINISHED;
 
                 // Send result back
+                work.status = WORK_FINISHED;
                 mpi->sendResult(work);		
             }
         }
@@ -1104,17 +1102,12 @@ void TomoAcoustic3D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
-		// Perform work in parallel
-		mpi->performWork();
-
-
+        // Create empty gradient 
         vpgrad = std::make_shared<rockseis::Image3D<T>>(Vpgradfile, gmodel, 1, 1, 1);
         vpgrad->createEmpty();
 
-        for(long int i=0; i<ngathers; i++) {
-            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-            remove_file(Vpgradfile + "-" + std::to_string(i));
-        }
+		// Perform work in parallel
+		mpi->performWork();
 
         // Clip extreme values from gradient
         //this->clipGrad(vpgrad);
@@ -1183,9 +1176,6 @@ void TomoAcoustic3D<T>::runGrad() {
                 /////// Run eikonal solver
                 fat->run();
 
-                // Output gradient
-                vpgrad->write();
-
                 // Output misfit
                 Fmisfit->append(Misfitfile);
                 T val = fat->getMisfit();
@@ -1198,6 +1188,12 @@ void TomoAcoustic3D<T>::runGrad() {
                 Tres3D->setFile(Tresidualfile);
                 Sort->put3DGather(Tres3D, work.id);
 
+                // Send result back
+                work.status = PARALLEL_IO;
+                mpi->sendResult(work);		
+
+                // Stack gradient
+                vpgrad->stackImage_parallel(Vpgradfile);
                 
                 // Reset all classes
                 Tobs3D.reset();
@@ -1210,9 +1206,9 @@ void TomoAcoustic3D<T>::runGrad() {
                 lmodel.reset();
                 vpgrad.reset();
                 fat.reset();
-                work.status = WORK_FINISHED;
 
                 // Send result back
+                work.status = WORK_FINISHED;
                 mpi->sendResult(work);		
             }
         }
