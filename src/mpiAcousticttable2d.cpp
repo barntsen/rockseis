@@ -27,6 +27,9 @@ int main(int argc, char** argv) {
         if(mpi.getRank() == 0){
             PRINT_DOC(# MPI 2d acoustic modelling default configuration file);
             PRINT_DOC();
+            PRINT_DOC(# Padding);
+            PRINT_DOC(        Lpml = "3";);
+            PRINT_DOC();
             PRINT_DOC(# Sampling);
             PRINT_DOC(        Souinc = "1";);
             PRINT_DOC(        Recinc = "1";);
@@ -44,12 +47,13 @@ int main(int argc, char** argv) {
 	/* General input parameters */
     int souinc, recinc;
     int nsoufin, nrecfin;
+    int Lpml;
     std::string Surveyfile;
     std::string Vpfile;
     std::string Ttablefile;
     std::shared_ptr<rockseis::Data2D<float>> source;
     std::shared_ptr<rockseis::RaysAcoustic2D<float>> rays;
-    std::shared_ptr<rockseis::Ttable<float>> Ttable;
+    std::shared_ptr<rockseis::Ttable2D<float>> Ttable;
 
 
     /* Get parameters from configuration file */
@@ -61,6 +65,7 @@ int main(int argc, char** argv) {
     status = false; 
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Survey", &Surveyfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Lpml", &Lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Souinc", &souinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Recinc", &recinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Ttablefile", &Ttablefile) == INPARSE_ERR) status = true;
@@ -74,7 +79,7 @@ int main(int argc, char** argv) {
     Sort->setDatafile(Surveyfile);
 
     // Create a global model class
-	std::shared_ptr<rockseis::ModelEikonal2D<float>> gmodel (new rockseis::ModelEikonal2D<float>(Vpfile, 10));
+	std::shared_ptr<rockseis::ModelEikonal2D<float>> gmodel (new rockseis::ModelEikonal2D<float>(Vpfile, Lpml));
 
     // Test for problematic model sampling
     if(gmodel->getDx() != gmodel->getDz()){
@@ -89,14 +94,6 @@ int main(int argc, char** argv) {
 
 	if(mpi.getRank() == 0) {
 		// Master
-         /*
-        if(!type){
-            Sort->createShotmap(Surveyfile); 
-        }else{
-            Sort->createReceivermap(Surveyfile); 
-            Sort->setReciprocity(true);
-        }
-        */
 
         // Get number of receivers
         Sort->createReceivermap(Surveyfile); 
@@ -117,7 +114,7 @@ int main(int argc, char** argv) {
 
         // Create a travel time table class
         size_t ngathers = nsoufin + nrecfin;
-        Ttable = std::make_shared<rockseis::Ttable<float>> (gmodel, ngathers);
+        Ttable = std::make_shared<rockseis::Ttable2D<float>> (gmodel, ngathers);
         Ttable->setFilename(Ttablefile);
         Ttable->createEmptyttable();
         
@@ -197,7 +194,7 @@ int main(int argc, char** argv) {
                 rays->solve();
 
                 // Create traveltime table
-                Ttable = std::make_shared<rockseis::Ttable<float>> (Ttablefile);
+                Ttable = std::make_shared<rockseis::Ttable2D<float>> (Ttablefile);
                 Ttable->fetchTtabledata(rays, source, work.id); //Get traveltime data
                 Ttable->writeTtable(work.id);
                 Ttable.reset();
@@ -246,7 +243,7 @@ int main(int argc, char** argv) {
                 rays->solve();
 
                 // Create traveltime table
-                Ttable = std::make_shared<rockseis::Ttable<float>> (Ttablefile);
+                Ttable = std::make_shared<rockseis::Ttable2D<float>> (Ttablefile);
                 Ttable->fetchTtabledata(rays, source, work.id+nsoufin); //Get traveltime data
                 Ttable->writeTtable(work.id+nsoufin);
                 Ttable.reset();

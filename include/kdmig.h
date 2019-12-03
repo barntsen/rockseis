@@ -92,26 +92,31 @@ template<typename T>
 class KdmigAcoustic2D: public Kdmig<T> {
 public:
     KdmigAcoustic2D();					///< Constructor
-    KdmigAcoustic2D(std::shared_ptr<ModelEikonal2D<T>> model, std::shared_ptr<Ttable<T>> ttable, std::shared_ptr<Data2D<T>> data, std::shared_ptr<Image2D<T>> pimage);					///< Constructor 
+    KdmigAcoustic2D(std::shared_ptr<ModelEikonal2D<T>> model, std::shared_ptr<Ttable2D<T>> ttable, std::shared_ptr<Data2D<T>> data, std::shared_ptr<Image2D<T>> pimage);					///< Constructor 
     int solve(); ///< Runs forward eikonal solver
     int solve_adj(); ///< Runs adjoint eikonal solver
     void setModel(std::shared_ptr<ModelEikonal2D<T>> _model) { model = _model; modelset = true; }
     void setData(std::shared_ptr<Data2D<T>> _data) { data = _data; dataset = true; }
-    void setTtable(std::shared_ptr<Ttable<T>> _ttable) { ttable = _ttable; ttableset = true; }
-    void crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::shared_ptr<Ttable<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
+    void setTtable(std::shared_ptr<Ttable2D<T>> _ttable) { ttable = _ttable; ttableset = true; }
+    void crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void calcAdjointsource(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     int run();
+    int run_adj();
 
     ~KdmigAcoustic2D();	///< Destructor
 
 private:
     std::shared_ptr<ModelEikonal2D<T>> model;
-    std::shared_ptr<Ttable<T>> ttable;
+    std::shared_ptr<Ttable2D<T>> ttable;
     std::shared_ptr<Data2D<T>> data;
     std::shared_ptr<Image2D<T>> pimage;
+    std::shared_ptr<Image2D<T>> vpgrad;
     bool modelset;
     bool dataset;
     bool ttableset;
     bool pimageset;
+    bool vpgradset;
 };
 
 /** The 2D Elastic Kdmig class
@@ -121,13 +126,13 @@ template<typename T>
 class KdmigElastic2D: public Kdmig<T> {
 public:
     KdmigElastic2D();					///< Constructor
-    KdmigElastic2D(std::shared_ptr<ModelEikonal2D<T>> vpmodel, std::shared_ptr<ModelEikonal2D<T>> vsmodel, std::shared_ptr<Ttable<T>> _sou_ttable, std::shared_ptr<Ttable<T>> _rec_ttable, std::shared_ptr<Data2D<T>> data, std::shared_ptr<Image2D<T>> pimage);					///< Constructor 
+    KdmigElastic2D(std::shared_ptr<ModelEikonal2D<T>> vpmodel, std::shared_ptr<ModelEikonal2D<T>> vsmodel, std::shared_ptr<Ttable2D<T>> _sou_ttable, std::shared_ptr<Ttable2D<T>> _rec_ttable, std::shared_ptr<Data2D<T>> data, std::shared_ptr<Image2D<T>> pimage);					///< Constructor 
     int solve(); ///< Runs forward eikonal solver
     int solve_adj(); ///< Runs adjoint eikonal solver
     void setVpmodel(std::shared_ptr<ModelEikonal2D<T>> _vpmodel) { vpmodel = _vpmodel; vpmodelset = true; }
     void setVsmodel(std::shared_ptr<ModelEikonal2D<T>> _vsmodel) { vsmodel = _vsmodel; vsmodelset = true; }
     void setData(std::shared_ptr<Data2D<T>> _data) { data = _data; dataset = true; }
-    void crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::shared_ptr<Ttable<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     int run();
 
     ~KdmigElastic2D();	///< Destructor
@@ -135,8 +140,8 @@ public:
 private:
     std::shared_ptr<ModelEikonal2D<T>> vpmodel;
     std::shared_ptr<ModelEikonal2D<T>> vsmodel;
-    std::shared_ptr<Ttable<T>> sou_ttable;
-    std::shared_ptr<Ttable<T>> rec_ttable;
+    std::shared_ptr<Ttable2D<T>> sou_ttable;
+    std::shared_ptr<Ttable2D<T>> rec_ttable;
     std::shared_ptr<Data2D<T>> data;
     std::shared_ptr<Image2D<T>> simage;
     bool vpmodelset;

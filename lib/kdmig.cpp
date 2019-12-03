@@ -127,7 +127,7 @@ KdmigAcoustic2D<T>::KdmigAcoustic2D(){
 }
 
 template<typename T>
-KdmigAcoustic2D<T>::KdmigAcoustic2D(std::shared_ptr<ModelEikonal2D<T>> _model, std::shared_ptr<Ttable<T>> _ttable, std::shared_ptr<Data2D<T>> _data, std::shared_ptr<Image2D<T>> _pimage):Kdmig<T>(){
+KdmigAcoustic2D<T>::KdmigAcoustic2D(std::shared_ptr<ModelEikonal2D<T>> _model, std::shared_ptr<Ttable2D<T>> _ttable, std::shared_ptr<Data2D<T>> _data, std::shared_ptr<Image2D<T>> _pimage):Kdmig<T>(){
     data = _data;
     ttable = _ttable;
     model = _model;
@@ -153,8 +153,8 @@ int KdmigAcoustic2D<T>::run()
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<Ttable<T>> ttable_sou (new Ttable<T>(model, 1));
-     std::shared_ptr<Ttable<T>> ttable_rec (new Ttable<T>(model, 1));
+     std::shared_ptr<Ttable2D<T>> ttable_sou (new Ttable2D<T>(model, 1));
+     std::shared_ptr<Ttable2D<T>> ttable_rec (new Ttable2D<T>(model, 1));
 
      /* Prepare FFT of data */
      int ntr = data->getNtrace();
@@ -217,9 +217,90 @@ int KdmigAcoustic2D<T>::run()
     return result;
 }
 
+template<typename T>
+int KdmigAcoustic2D<T>::run_adj()
+{
+     int result = KDMIG_ERR;
+     int nt;
+     T dt;
+	 T ot;
+
+     nt = data->getNt();
+     dt = data->getDt();
+     ot = data->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<Ttable2D<T>> ttable_sou (new Ttable2D<T>(model, 1));
+     std::shared_ptr<Ttable2D<T>> ttable_rec (new Ttable2D<T>(model, 1));
+
+     /* Prepare FFT of data */
+     int ntr = data->getNtrace();
+     Index Idata(nt,ntr);
+     T *rdata_array = data->getData();
+     std::shared_ptr<Fft<T>> fft1d (new Fft<T>(2*nt));
+
+     // Compute size of complex array
+     unsigned long nf,nfs;
+     nf=fft1d->getNfft();
+     nfs = nf/2;
+     T df=2.0*PI/(nf*dt);
+     T *cdata_array;
+     cdata_array = fft1d->getData();
+
+     // Create gradient
+     vpgrad->allocateImage();
+
+     // Create ttable arrays
+     ttable_sou->allocTtable();
+     ttable_rec->allocTtable();
+
+     this->writeLog("Running 2D Kirchhoff migration.");
+
+     this->writeLog("Doing forward Loop.");
+     // Inserting source point
+     ttable_sou->insertSource(data, SMAP, 0);
+
+     // Solving Eikonal equation for source traveltime
+     ttable->interpTtable(ttable_sou, this->getRadius());
+
+     //Loop over data traces
+     int i,j;
+     for (i=0; i<ntr; i++){
+         // Inserting new receiver point
+         ttable_rec->insertSource(data, GMAP, i);
+
+         // Solving Eikonal equation for receiver traveltime
+         ttable->interpTtable(ttable_rec, this->getRadius());
+
+         /* Applying forward fourier transform over data trace */
+         for(j=0; j<nt; j++){
+             cdata_array[2*j] = rdata_array[Idata(j,i)];
+             cdata_array[2*j+1] = 0.0;
+         }
+         for(j=nt; j < nf; j++){
+             cdata_array[2*j] = 0.0;
+             cdata_array[2*j+1] = 0.0;
+         }
+         fft1d->fft1d(1);
+
+         // Build adjoint source
+         //this->calcAdjointsource(ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
+
+         // Solve adjoint equation
+
+        // Output progress to logfile
+        this->writeProgress(i, ntr-1, 20, 48);
+     }
+        
+    result=KDMIG_OK;
+    return result;
+}
+
 
 template<typename T>
-void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::shared_ptr<Ttable<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
+void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
     /* Build image */
     if(!pimage->getAllocated()) pimage->allocateImage();
 	int ix, iz, ihx, ihz, iw;
@@ -279,7 +360,7 @@ KdmigElastic2D<T>::KdmigElastic2D(){
 }
 
 template<typename T>
-KdmigElastic2D<T>::KdmigElastic2D(std::shared_ptr<ModelEikonal2D<T>> _vpmodel, std::shared_ptr<ModelEikonal2D<T>> _vsmodel, std::shared_ptr<Ttable<T>> _sou_ttable, std::shared_ptr<Ttable<T>> _rec_ttable, std::shared_ptr<Data2D<T>> _data, std::shared_ptr<Image2D<T>> _simage):Kdmig<T>(){
+KdmigElastic2D<T>::KdmigElastic2D(std::shared_ptr<ModelEikonal2D<T>> _vpmodel, std::shared_ptr<ModelEikonal2D<T>> _vsmodel, std::shared_ptr<Ttable2D<T>> _sou_ttable, std::shared_ptr<Ttable2D<T>> _rec_ttable, std::shared_ptr<Data2D<T>> _data, std::shared_ptr<Image2D<T>> _simage):Kdmig<T>(){
     data = _data;
     vpmodel = _vpmodel;
     vsmodel = _vsmodel;
@@ -307,8 +388,8 @@ int KdmigElastic2D<T>::run()
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<Ttable<T>> sou_ttable_i (new Ttable<T>(vpmodel, 1));
-     std::shared_ptr<Ttable<T>> rec_ttable_i (new Ttable<T>(vsmodel, 1));
+     std::shared_ptr<Ttable2D<T>> sou_ttable_i (new Ttable2D<T>(vpmodel, 1));
+     std::shared_ptr<Ttable2D<T>> rec_ttable_i (new Ttable2D<T>(vsmodel, 1));
 
      /* Prepare FFT of data */
      int ntr = data->getNtrace();
@@ -372,7 +453,7 @@ int KdmigElastic2D<T>::run()
 }
 
 template<typename T>
-void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable<T>> ttable_sou, std::shared_ptr<Ttable<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
+void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
     /* Build image */
     if(!simage->getAllocated()) simage->allocateImage();
 	int ix, iz, ihx, ihz, iw;

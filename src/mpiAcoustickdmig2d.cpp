@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Data2D<float>> pgather;
 	std::shared_ptr<rockseis::ModelEikonal2D<float>> lmodel;
 
-	std::shared_ptr<rockseis::Ttable<float>> ttable;
+	std::shared_ptr<rockseis::Ttable2D<float>> ttable;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
                 pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
 
                 // Create traveltime table class
-                ttable = std::make_shared<rockseis::Ttable<float>>(Ttablefile);
+                ttable = std::make_shared<rockseis::Ttable2D<float>>(Ttablefile);
                 ttable->allocTtable();
 
                 // Create imaging class

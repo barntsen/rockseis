@@ -80,8 +80,8 @@ int main(int argc, char** argv) {
 	std::shared_ptr<rockseis::ModelEikonal2D<float>> vplmodel;
 	std::shared_ptr<rockseis::ModelEikonal2D<float>> vslmodel;
 
-	std::shared_ptr<rockseis::Ttable<float>> sou_ttable;
-	std::shared_ptr<rockseis::Ttable<float>> rec_ttable;
+	std::shared_ptr<rockseis::Ttable2D<float>> sou_ttable;
+	std::shared_ptr<rockseis::Ttable2D<float>> rec_ttable;
 
     /* Get parameters from configuration file */
     std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -193,10 +193,10 @@ int main(int argc, char** argv) {
                 vslmodel->Expand();
 
                 // Create traveltime table classes
-                sou_ttable = std::make_shared<rockseis::Ttable<float>>(sou_ttablefile);
+                sou_ttable = std::make_shared<rockseis::Ttable2D<float>>(sou_ttablefile);
                 sou_ttable->allocTtable();
 
-                rec_ttable = std::make_shared<rockseis::Ttable<float>>(rec_ttablefile);
+                rec_ttable = std::make_shared<rockseis::Ttable2D<float>>(rec_ttablefile);
                 rec_ttable->allocTtable();
 
                 // Make image class

@@ -27,6 +27,9 @@ int main(int argc, char** argv) {
         if(mpi.getRank() == 0){
             PRINT_DOC(# MPI 2d acoustic modelling default configuration file);
             PRINT_DOC();
+            PRINT_DOC(# Padding);
+            PRINT_DOC(        Lpml = "3";);
+            PRINT_DOC();
             PRINT_DOC(# Sampling);
             PRINT_DOC(        Souinc = "1";);
             PRINT_DOC(        Recinc = "1";);
@@ -44,6 +47,7 @@ int main(int argc, char** argv) {
     }
     bool status;
 	/* General input parameters */
+    int Lpml;
     int souinc, recinc;
     int nsoufin, nrecfin;
     std::string Surveyfile;
@@ -53,8 +57,8 @@ int main(int argc, char** argv) {
     std::string Rec_ttablefile;
     std::shared_ptr<rockseis::Data2D<float>> source;
     std::shared_ptr<rockseis::RaysAcoustic2D<float>> rays;
-    std::shared_ptr<rockseis::Ttable<float>> Sou_ttable;
-    std::shared_ptr<rockseis::Ttable<float>> Rec_ttable;
+    std::shared_ptr<rockseis::Ttable2D<float>> Sou_ttable;
+    std::shared_ptr<rockseis::Ttable2D<float>> Rec_ttable;
 
 
     /* Get parameters from configuration file */
@@ -67,6 +71,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vs", &Vsfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Survey", &Surveyfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Lpml", &Lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Souinc", &souinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Recinc", &recinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Sou_ttablefile", &Sou_ttablefile) == INPARSE_ERR) status = true;
@@ -81,8 +86,8 @@ int main(int argc, char** argv) {
     Sort->setDatafile(Surveyfile);
 
     // Create a global model class
-	std::shared_ptr<rockseis::ModelEikonal2D<float>> vpgmodel (new rockseis::ModelEikonal2D<float>(Vpfile, 3));
-	std::shared_ptr<rockseis::ModelEikonal2D<float>> vsgmodel (new rockseis::ModelEikonal2D<float>(Vsfile, 3));
+	std::shared_ptr<rockseis::ModelEikonal2D<float>> vpgmodel (new rockseis::ModelEikonal2D<float>(Vpfile, Lpml));
+	std::shared_ptr<rockseis::ModelEikonal2D<float>> vsgmodel (new rockseis::ModelEikonal2D<float>(Vsfile, Lpml));
 
     // Test for problematic model sampling
     if(vpgmodel->getDx() != vpgmodel->getDz()){
@@ -125,11 +130,11 @@ int main(int argc, char** argv) {
         if(nrecfin > nrecgath) nrecfin = nrecgath;
 
         // Create a travel time table class
-        Sou_ttable = std::make_shared<rockseis::Ttable<float>> (vpgmodel, nsoufin);
+        Sou_ttable = std::make_shared<rockseis::Ttable2D<float>> (vpgmodel, nsoufin);
         Sou_ttable->setFilename(Sou_ttablefile);
         Sou_ttable->createEmptyttable();
 
-        Rec_ttable = std::make_shared<rockseis::Ttable<float>> (vsgmodel, nrecfin);
+        Rec_ttable = std::make_shared<rockseis::Ttable2D<float>> (vsgmodel, nrecfin);
         Rec_ttable->setFilename(Rec_ttablefile);
         Rec_ttable->createEmptyttable();
         
@@ -203,7 +208,7 @@ int main(int argc, char** argv) {
                 rays->solve();
 
                 // Create traveltime table
-                Sou_ttable = std::make_shared<rockseis::Ttable<float>> (Sou_ttablefile);
+                Sou_ttable = std::make_shared<rockseis::Ttable2D<float>> (Sou_ttablefile);
                 Sou_ttable->fetchTtabledata(rays, source, work.id); //Get traveltime data
                 Sou_ttable->writeTtable(work.id);
                 Sou_ttable.reset();
@@ -252,7 +257,7 @@ int main(int argc, char** argv) {
                 rays->solve();
 
                 // Create traveltime table
-                Rec_ttable = std::make_shared<rockseis::Ttable<float>> (Rec_ttablefile);
+                Rec_ttable = std::make_shared<rockseis::Ttable2D<float>> (Rec_ttablefile);
                 Rec_ttable->fetchTtabledata(rays, source, work.id); //Get traveltime data
                 Rec_ttable->writeTtable(work.id);
                 Rec_ttable.reset();
