@@ -177,7 +177,6 @@ int FatAcoustic2D<T>::run()
 
      /////// Run adjoint modelling
      this->writeLog("Doing adjoint Loop.");
-     rays->createRecmask(Tres, GMAP);
      rays->insertResiduals(Tres, GMAP);
      rays->solve_adj();
 
@@ -346,7 +345,6 @@ int FatAcoustic3D<T>::run()
 
      // Run adjoint modelling
      this->writeLog("Doing adjoint Loop.");
-     rays->createRecmask(Tres, GMAP);
      rays->insertResiduals(Tres, GMAP);
      rays->solve_adj();
 

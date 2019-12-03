@@ -103,13 +103,13 @@ public:
     // Get functions
     T *getTT() { return TT; } 
     T *getLam() { return lam; } 
-    bool *getRecmask() { return recmask; } 
+    T *getAdjsource() { return adjsource; } 
 
     // Insert source functions
     int insertSource(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Insert source position
     int insertSource(std::shared_ptr<Data2D<T>> source, bool maptype, int traceno); ///< Insert source position for a particular trace number
     void insertResiduals(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Insert source position
-    void createRecmask(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Create a mask for adjoint eikonal computation
+    void createAdjsource(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Create a mask for adjoint eikonal computation
     void clearTT(); ///< Reset traveltime array 
     void clearLam(); ///< Reset lambda array 
 
@@ -120,7 +120,7 @@ private:
     std::shared_ptr<ModelEikonal2D<T>> model;
     T *TT; // Traveltime
     T *lam; // Adjoint state traveltime
-    bool *recmask; // Boolean array indicating where there are receivers
+    T *adjsource; // Array with adjoint source
 };
 
 /** The 3D Acoustic RAYS class
@@ -144,13 +144,12 @@ public:
     // Get functions
     T *getTT() { return TT; } 
     T *getLam() { return lam; } 
-    bool *getRecmask() { return recmask; } 
+    bool *getAdjsource() { return adjsource; } 
 
     // Insert source functions
     int insertSource(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
     int insertSource(std::shared_ptr<Data3D<T>> source, bool maptype, int traceno); ///< Insert source position for a particular trace number
     void insertResiduals(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
-    void createRecmask(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Create a mask for adjoint eikonal computation
     void clearTT(); ///< Reset traveltime array 
     void clearLam(); ///< Reset lambda array 
 
@@ -161,7 +160,7 @@ private:
     std::shared_ptr<ModelEikonal3D<T>> model;
     T *TT; // Traveltime
     T *lam; // Adjoint state traveltime
-    bool *recmask; // Boolean array indicating where there are receivers
+    bool *adjsource; // Boolean array indicating where there are receivers
 };
 
 
