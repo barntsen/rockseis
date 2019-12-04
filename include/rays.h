@@ -144,7 +144,7 @@ public:
     // Get functions
     T *getTT() { return TT; } 
     T *getLam() { return lam; } 
-    bool *getAdjsource() { return adjsource; } 
+    T *getAdjsource() { return adjsource; } 
 
     // Insert source functions
     int insertSource(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
@@ -160,7 +160,7 @@ private:
     std::shared_ptr<ModelEikonal3D<T>> model;
     T *TT; // Traveltime
     T *lam; // Adjoint state traveltime
-    bool *adjsource; // Boolean array indicating where there are receivers
+    T *adjsource; // Boolean array indicating where there are receivers
 };
 
 

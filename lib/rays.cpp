@@ -577,7 +577,7 @@ RaysAcoustic3D<T>::RaysAcoustic3D(){
     /* Allocate memory variables */
     TT = (T *) calloc(nx*ny*nz, sizeof(T));
     lam = (T *) calloc(nx*ny*nz, sizeof(T));
-    adjsource = (bool *) calloc(nx*ny*nz, sizeof(bool));
+    adjsource = (T *) calloc(nx*ny*nz, sizeof(T));
 
     /* Initialize arrays */
     for (size_t i=0; i < nx*ny*nz; i++){
@@ -604,7 +604,7 @@ RaysAcoustic3D<T>::RaysAcoustic3D(const int _nx, const int _ny, const int _nz, c
     /* Allocate memory variables */
     TT = (T *) calloc(nx*ny*nz, sizeof(T));
     lam = (T *) calloc(nx*ny*nz, sizeof(T));
-    adjsource = (bool *) calloc(nx*ny*nz, sizeof(bool));
+    adjsource = (T *) calloc(nx*ny*nz, sizeof(T));
 
     /* Initialize TT */
     for (size_t i=0; i < nx*ny*nz; i++){
@@ -664,7 +664,7 @@ RaysAcoustic3D<T>::RaysAcoustic3D(std::shared_ptr<rockseis::ModelEikonal3D<T>> _
     /* Allocate memory variables */
     TT = (T *) calloc(nx*ny*nz, sizeof(T));
     lam = (T *) calloc(nx*ny*nz, sizeof(T));
-    adjsource = (bool *) calloc(nx*ny*nz, sizeof(bool));
+    adjsource = (T *) calloc(nx*ny*nz, sizeof(T));
 
     /* Initialize TT */
     for (size_t i=0; i < nx*ny*nz; i++){
@@ -943,7 +943,7 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
     T dh = model->getDx();
     T *TT = this->getTT();
     T *lam = this->getLam();
-    bool *adjsource = this->getAdjsource();
+    T *adjsource = this->getAdjsource();
 
     /* local variables */
     int i, j, k, m, n, l;
