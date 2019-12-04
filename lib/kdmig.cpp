@@ -156,19 +156,10 @@ int KdmigAcoustic2D<T>::run()
      std::shared_ptr<Ttable2D<T>> ttable_sou (new Ttable2D<T>(model, 1));
      std::shared_ptr<Ttable2D<T>> ttable_rec (new Ttable2D<T>(model, 1));
 
-     /* Prepare FFT of data */
+     /* Get data */
      int ntr = data->getNtrace();
      Index Idata(nt,ntr);
      T *rdata_array = data->getData();
-     std::shared_ptr<Fft<T>> fft1d (new Fft<T>(2*nt));
-
-     // Compute size of complex array
-     unsigned long nf,nfs;
-     nf=fft1d->getNfft();
-     nfs = nf/2;
-     T df=2.0*PI/(nf*dt);
-     T *cdata_array;
-     cdata_array = fft1d->getData();
 
      // Create image
      pimage->allocateImage();
@@ -195,21 +186,7 @@ int KdmigAcoustic2D<T>::run()
          // Solving Eikonal equation for receiver traveltime
          ttable->interpTtable(ttable_rec, this->getRadius());
 
-         /* Applying forward fourier transform over data trace */
-         /*
-         for(j=0; j<nt; j++){
-             cdata_array[2*j] = rdata_array[Idata(j,i)];
-             cdata_array[2*j+1] = 0.0;
-         }
-         for(j=nt; j < nf; j++){
-             cdata_array[2*j] = 0.0;
-             cdata_array[2*j+1] = 0.0;
-         }
-         fft1d->fft1d(1);
-         */
-
          // Build image contribution
-         //this->crossCorr_fd(ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
          this->crossCorr_td(ttable_sou, ttable_rec, &rdata_array[Idata(0,i)], nt, dt, ot);
 
         // Output progress to logfile
@@ -239,19 +216,10 @@ int KdmigAcoustic2D<T>::run_adj()
      std::shared_ptr<Ttable2D<T>> ttable_rec (new Ttable2D<T>(model, 1));
      std::shared_ptr<RaysAcoustic2D<T>> rays_adj (new RaysAcoustic2D<T>(model));
 
-     /* Prepare FFT of data */
+     /* Get data */
      int ntr = data->getNtrace();
      Index Idata(nt,ntr);
      T *rdata_array = data->getData();
-     std::shared_ptr<Fft<T>> fft1d (new Fft<T>(2*nt));
-
-     // Compute size of complex array
-     unsigned long nf,nfs;
-     nf=fft1d->getNfft();
-     nfs = nf/2;
-     T df=2.0*PI/(nf*dt);
-     T *cdata_array;
-     cdata_array = fft1d->getData();
 
      // Create gradient
      vpgrad->allocateImage();
@@ -282,17 +250,6 @@ int KdmigAcoustic2D<T>::run_adj()
 
          // Solving Eikonal equation for receiver traveltime
          ttable->interpTtable(ttable_rec, this->getRadius());
-
-         /* Applying forward fourier transform over data trace */
-         for(j=0; j<nt; j++){
-             cdata_array[2*j] = rdata_array[Idata(j,i)];
-             cdata_array[2*j+1] = 0.0;
-         }
-         for(j=nt; j < nf; j++){
-             cdata_array[2*j] = 0.0;
-             cdata_array[2*j+1] = 0.0;
-         }
-         fft1d->fft1d(1);
 
          // Build adjoint source
          //this->calcAdjointsource(adjsrc_fw, adjsrc_bw, ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
@@ -461,19 +418,11 @@ int KdmigElastic2D<T>::run()
      std::shared_ptr<Ttable2D<T>> sou_ttable_i (new Ttable2D<T>(vpmodel, 1));
      std::shared_ptr<Ttable2D<T>> rec_ttable_i (new Ttable2D<T>(vsmodel, 1));
 
-     /* Prepare FFT of data */
+     /* Prepare variables for derivative of data */
      int ntr = data->getNtrace();
      Index Idata(nt,ntr);
      T *rdata_array = data->getData();
-     std::shared_ptr<Fft<T>> fft1d (new Fft<T>(2*nt));
-
-     // Compute size of complex array
-     unsigned long nf,nfs;
-     nf=fft1d->getNfft();
-     nfs = nf/2;
-     T df=2.0*PI/(nf*dt);
-     T *cdata_array;
-     cdata_array = fft1d->getData();
+     T *data_dt = (T *) calloc(nt, sizeof(T));
 
      // Create image
      simage->allocateImage();
@@ -500,25 +449,13 @@ int KdmigElastic2D<T>::run()
          // Solving Eikonal equation for receiver traveltime
          rec_ttable->interpTtable(rec_ttable_i, this->getRadius());
 
-         /* Applying forward fourier transform over data trace */
-         //for(j=0; j<nt; j++){
-         //    cdata_array[2*j] = rdata_array[Idata(j,i)];
-         //    cdata_array[2*j+1] = 0.0;
-        // }
-         //for(j=nt; j < nf; j++){
-         //    cdata_array[2*j] = 0.0;
-         //    cdata_array[2*j+1] = 0.0;
-        // }
-         //fft1d->fft1d(1);
-         
          // Derivate data
          for(j=1; j<nt-1; j++){
-             cdata_array[j] =  (rdata_array[Idata(j+1,i)] - rdata_array[Idata(j-1,i)])/(2.0*dt);
+             data_dt[j] =  (rdata_array[Idata(j+1,i)] - rdata_array[Idata(j-1,i)])/(2.0*dt);
          }
 
          // Build image contribution
-         //this->crossCorr_fd(sou_ttable_i, rec_ttable_i, cdata_array, nfs, df, ot);
-         this->crossCorr_td(sou_ttable_i, rec_ttable_i, &rdata_array[Idata(0,i)], cdata_array, nt, dt, ot);
+         this->crossCorr_td(sou_ttable_i, rec_ttable_i, &rdata_array[Idata(0,i)], data_dt, nt, dt, ot);
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
