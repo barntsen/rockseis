@@ -134,6 +134,7 @@ public:
     void setVsmodel(std::shared_ptr<ModelEikonal2D<T>> _vsmodel) { vsmodel = _vsmodel; vsmodelset = true; }
     void setData(std::shared_ptr<Data2D<T>> _data) { data = _data; dataset = true; }
     void crossCorr_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* data, T* data_dt, unsigned long nt, T dt, T ot);
     int run();
 
     ~KdmigElastic2D();	///< Destructor

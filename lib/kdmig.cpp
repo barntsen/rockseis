@@ -501,18 +501,24 @@ int KdmigElastic2D<T>::run()
          rec_ttable->interpTtable(rec_ttable_i, this->getRadius());
 
          /* Applying forward fourier transform over data trace */
-         for(j=0; j<nt; j++){
-             cdata_array[2*j] = rdata_array[Idata(j,i)];
-             cdata_array[2*j+1] = 0.0;
+         //for(j=0; j<nt; j++){
+         //    cdata_array[2*j] = rdata_array[Idata(j,i)];
+         //    cdata_array[2*j+1] = 0.0;
+        // }
+         //for(j=nt; j < nf; j++){
+         //    cdata_array[2*j] = 0.0;
+         //    cdata_array[2*j+1] = 0.0;
+        // }
+         //fft1d->fft1d(1);
+         
+         // Derivate data
+         for(j=1; j<nt-1; j++){
+             cdata_array[j] =  (rdata_array[Idata(j+1,i)] - rdata_array[Idata(j-1,i)])/(2.0*dt);
          }
-         for(j=nt; j < nf; j++){
-             cdata_array[2*j] = 0.0;
-             cdata_array[2*j+1] = 0.0;
-         }
-         fft1d->fft1d(1);
 
          // Build image contribution
-         this->crossCorr_fd(sou_ttable_i, rec_ttable_i, cdata_array, nfs, df, ot);
+         //this->crossCorr_fd(sou_ttable_i, rec_ttable_i, cdata_array, nfs, df, ot);
+         this->crossCorr_td(sou_ttable_i, rec_ttable_i, &rdata_array[Idata(0,i)], cdata_array, nt, dt, ot);
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -589,6 +595,68 @@ void KdmigElastic2D<T>::crossCorr_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, st
         }
     }
 }
+
+template<typename T>
+void KdmigElastic2D<T>::crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *data, T *data_dt, unsigned long nt, T dt, T ot) {
+    /* Build image */
+    if(!simage->getAllocated()) simage->allocateImage();
+	int ix, iz, ihx, ihz, iw;
+    T *TT_sou = ttable_sou->getData();
+    T *TT_rec = ttable_rec->getData();
+	T *imagedata = simage->getImagedata();
+	int nhx = simage->getNhx();
+	int nhz = simage->getNhz();
+	int nx = simage->getNx();
+	int nz = simage->getNz();
+	int hx, hz;
+    T dx = simage->getDx();
+    T dz = simage->getDz();
+
+    T wrk1,wrk2;
+    T dTsoudz;
+    T d2Tsoudz2;
+    T dTrecdx;
+    T TTs;
+    T TTr;
+    T TTsum; 
+
+    int it0, it1;
+
+    T omega;
+    for (ihz=0; ihz<nhz; ihz++){
+        hz= -(nhz-1)/2 + ihz;
+        for (ihx=0; ihx<nhx; ihx++){
+            hx= -(nhx-1)/2 + ihx;
+            for (iz=1; iz<nz-1; iz++){
+                if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+                    for (ix=1; ix<nx-1; ix++){
+                        if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+                        {
+                            dTsoudz = (TT_sou[kt2D(ix-hx, iz-hz+1)] - TT_sou[kt2D(ix-hx, iz-hz-1)])/(2.0*dz);
+                            d2Tsoudz2 = (TT_sou[kt2D(ix-hx, iz-hz+1)] - 2.0*TT_sou[kt2D(ix-hx, iz-hz)] + TT_sou[kt2D(ix-hx, iz-hz-1)])/(dz*dz);
+
+                            dTrecdx = (TT_rec[kt2D(ix-hx+1, iz-hz)] - TT_rec[kt2D(ix-hx-1, iz-hz)])/(2.0*dx);
+                            TTs = TT_sou[kt2D(ix-hx, iz-hz)];
+                            TTr = TT_rec[kt2D(ix-hx, iz-hz)];
+                            TTsum = TTs + TTr;
+
+                            it0 = (int) ((TTsum -ot)/dt);
+                            it1 = it0 + 1;
+
+                            if(it0 > 0 && it1 < nt){
+                                omega = (TTsum - it0*dt + ot)/dt;
+                                wrk1 = -((1.0-omega)*data_dt[it0] + omega*data_dt[it1])*SQ(dTsoudz)*dTrecdx;
+                                wrk2 = ((1.0-omega)*data[it0] + omega*data[it1])*d2Tsoudz2*dTrecdx;
+                                imagedata[ki2D(ix,iz,ihx,ihz)] +=  -2.0*(wrk1+wrk2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 template<typename T>
 KdmigElastic2D<T>::~KdmigElastic2D() {
