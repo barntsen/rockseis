@@ -329,8 +329,8 @@ void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std:
                             for (iw=0; iw<nfs; iw += this->getFreqinc()){
                                 omega = iw*df;
                                 if(omega >= (2.0*PI*this->getMinfreq()) &&  omega < (2.0*PI*this->getMaxfreq())){
-                                    wsr = cos(-omega*TTsum);
-                                    wsi = sin(-omega*TTsum);
+                                    wsr = std::cos(-omega*TTsum);
+                                    wsi = std::sin(-omega*TTsum);
                                     imagedata[ki2D(ix,iz,ihx,ihz)] -= cdata[2*iw]*wsr - cdata[2*iw+1]*wsi;
                                 }
                             }
@@ -499,16 +499,16 @@ void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std::
                                 omega = iw*df;
                                 if(omega >= (2.0*PI*this->getMinfreq()) &&  omega < (2.0*PI*this->getMaxfreq())){
                                     /*
-                                       vzzsr = omega*d2Tsoudz2*sin(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*cos(-omega*TTs);
-                                       vzzsi = -omega*d2Tsoudz2*cos(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*sin(-omega*TTs);
-                                       vxxrr = omega*cdata[2*iw]*dTrecdx*sin(-omega*TTr);
-                                       vxxri = -omega*cdata[2*iw+1]*dTrecdx*cos(-omega*TTr);
+                                       vzzsr = omega*d2Tsoudz2*std::sin(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*std::cos(-omega*TTs);
+                                       vzzsi = -omega*d2Tsoudz2*std::cos(-omega*TTs) - SQ(omega)*SQ(dTsoudz)*std::sin(-omega*TTs);
+                                       vxxrr = omega*cdata[2*iw]*dTrecdx*std::sin(-omega*TTr);
+                                       vxxri = -omega*cdata[2*iw+1]*dTrecdx*std::cos(-omega*TTr);
                                        */
 
-                                    vzzsr = d2Tsoudz2*sin(-omega*TTs) - omega*SQ(dTsoudz)*cos(-omega*TTs);
-                                    vzzsi = -d2Tsoudz2*cos(-omega*TTs) - omega*SQ(dTsoudz)*sin(-omega*TTs);
-                                    vxxrr = cdata[2*iw]*dTrecdx*sin(-omega*TTr);
-                                    vxxri = -cdata[2*iw+1]*dTrecdx*cos(-omega*TTr);
+                                    vzzsr = d2Tsoudz2*std::sin(-omega*TTs) - omega*SQ(dTsoudz)*std::cos(-omega*TTs);
+                                    vzzsi = -d2Tsoudz2*std::cos(-omega*TTs) - omega*SQ(dTsoudz)*std::sin(-omega*TTs);
+                                    vxxrr = cdata[2*iw]*dTrecdx*std::sin(-omega*TTr);
+                                    vxxri = -cdata[2*iw+1]*dTrecdx*std::cos(-omega*TTr);
                                     imagedata[ki2D(ix,iz,ihx,ihz)] +=  -2.0*CMULR(vzzsr,vzzsi,vxxrr,vxxri);
                                 }
                             }	
