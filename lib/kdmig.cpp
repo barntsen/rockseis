@@ -196,6 +196,7 @@ int KdmigAcoustic2D<T>::run()
          ttable->interpTtable(ttable_rec, this->getRadius());
 
          /* Applying forward fourier transform over data trace */
+         /*
          for(j=0; j<nt; j++){
              cdata_array[2*j] = rdata_array[Idata(j,i)];
              cdata_array[2*j+1] = 0.0;
@@ -205,9 +206,11 @@ int KdmigAcoustic2D<T>::run()
              cdata_array[2*j+1] = 0.0;
          }
          fft1d->fft1d(1);
+         */
 
          // Build image contribution
-         this->crossCorr(ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
+         //this->crossCorr_fd(ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
+         this->crossCorr_td(ttable_sou, ttable_rec, &rdata_array[Idata(0,i)], nt, dt, ot);
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -234,6 +237,7 @@ int KdmigAcoustic2D<T>::run_adj()
      // Create the classes 
      std::shared_ptr<Ttable2D<T>> ttable_sou (new Ttable2D<T>(model, 1));
      std::shared_ptr<Ttable2D<T>> ttable_rec (new Ttable2D<T>(model, 1));
+     std::shared_ptr<RaysAcoustic2D<T>> rays_adj (new RaysAcoustic2D<T>(model));
 
      /* Prepare FFT of data */
      int ntr = data->getNtrace();
@@ -255,6 +259,11 @@ int KdmigAcoustic2D<T>::run_adj()
      // Create ttable arrays
      ttable_sou->allocTtable();
      ttable_rec->allocTtable();
+
+    // Allocate memory for adjoint sources 
+    T* adjsrc_fw, *adjsrc_bw;
+    adjsrc_fw = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
+    adjsrc_bw = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
 
      this->writeLog("Running 2D Kirchhoff migration.");
 
@@ -286,9 +295,25 @@ int KdmigAcoustic2D<T>::run_adj()
          fft1d->fft1d(1);
 
          // Build adjoint source
-         //this->calcAdjointsource(ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
+         //this->calcAdjointsource(adjsrc_fw, adjsrc_bw, ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
 
-         // Solve adjoint equation
+         // Solve the source side adjoint equation
+         //rays_adj->getTT(ttable_sou->getData());
+         //rays_adj->insertImageresiduals(adjsrc_fw);
+         //rays_adj->solve_adj();
+
+         // Calculate gradient
+         //this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+         //rays->clearLam();
+
+         // Solve the receiver side equation
+         //rays_adj->getTT(ttable_rec->getData());
+         //rays_adj->insertImageresiduals(adjsrc_bw);
+         //rays_adj->solve_adj();
+
+         // Calculate gradient
+         //this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+         //rays->clearLam();
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -300,7 +325,7 @@ int KdmigAcoustic2D<T>::run_adj()
 
 
 template<typename T>
-void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
+void KdmigAcoustic2D<T>::crossCorr_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
     /* Build image */
     if(!pimage->getAllocated()) pimage->allocateImage();
 	int ix, iz, ihx, ihz, iw;
@@ -341,6 +366,51 @@ void KdmigAcoustic2D<T>::crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std:
         }
     }
 }
+
+template<typename T>
+void KdmigAcoustic2D<T>::crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *data, unsigned long nt, T dt, T ot) {
+    /* Build image */
+    if(!pimage->getAllocated()) pimage->allocateImage();
+	int ix, iz, ihx, ihz, iw;
+    T *TT_sou = ttable_sou->getData();
+    T *TT_rec = ttable_rec->getData();
+	T *imagedata = pimage->getImagedata();
+	int nhx = pimage->getNhx();
+	int nhz = pimage->getNhz();
+	int nx = pimage->getNx();
+	int nz = pimage->getNz();
+	int hx, hz;
+    T wsr,wsi;
+    int it0, it1;
+    T TTsum=0;
+    T omega=0;
+    for (ihz=0; ihz<nhz; ihz++){
+        hz= -(nhz-1)/2 + ihz;
+        for (ihx=0; ihx<nhx; ihx++){
+            hx= -(nhx-1)/2 + ihx;
+            for (iz=0; iz<nz; iz++){
+                if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+                    for (ix=0; ix<nx; ix++){
+                        if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+                        {
+                            TTsum = TT_sou[kt2D(ix-hx, iz-hz)] + TT_rec[kt2D(ix-hx, iz-hz)] - ot;
+                            it0 = (int) ((TTsum -ot)/dt);
+                            it1 = it0 + 1;
+
+                            if(it0 > 0 && it1 < nt){
+                                wsr = data[it0];
+                                wsi = data[it1];
+                                omega = (TTsum - it0*dt + ot)/dt;
+                                imagedata[ki2D(ix,iz,ihx,ihz)] -= (1.0-omega)*wsr + omega*wsi;
+                            }
+                        }
+                    }
+                }	
+            }
+        }
+    }
+}
+
 
 template<typename T>
 KdmigAcoustic2D<T>::~KdmigAcoustic2D() {
@@ -442,7 +512,7 @@ int KdmigElastic2D<T>::run()
          fft1d->fft1d(1);
 
          // Build image contribution
-         this->crossCorr(sou_ttable_i, rec_ttable_i, cdata_array, nfs, df, ot);
+         this->crossCorr_fd(sou_ttable_i, rec_ttable_i, cdata_array, nfs, df, ot);
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -453,7 +523,7 @@ int KdmigElastic2D<T>::run()
 }
 
 template<typename T>
-void KdmigElastic2D<T>::crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
+void KdmigElastic2D<T>::crossCorr_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
     /* Build image */
     if(!simage->getAllocated()) simage->allocateImage();
 	int ix, iz, ihx, ihz, iw;

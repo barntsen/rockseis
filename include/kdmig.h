@@ -99,7 +99,8 @@ public:
     void setData(std::shared_ptr<Data2D<T>> _data) { data = _data; dataset = true; }
     void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setTtable(std::shared_ptr<Ttable2D<T>> _ttable) { ttable = _ttable; ttableset = true; }
-    void crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void crossCorr_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
     void calcAdjointsource(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     int run();
     int run_adj();
@@ -132,7 +133,7 @@ public:
     void setVpmodel(std::shared_ptr<ModelEikonal2D<T>> _vpmodel) { vpmodel = _vpmodel; vpmodelset = true; }
     void setVsmodel(std::shared_ptr<ModelEikonal2D<T>> _vsmodel) { vsmodel = _vsmodel; vsmodelset = true; }
     void setData(std::shared_ptr<Data2D<T>> _data) { data = _data; dataset = true; }
-    void crossCorr(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void crossCorr_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     int run();
 
     ~KdmigElastic2D();	///< Destructor
