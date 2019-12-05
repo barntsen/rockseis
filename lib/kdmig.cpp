@@ -564,10 +564,10 @@ void KdmigElastic2D<T>::crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, st
         hz= -(nhz-1)/2 + ihz;
         for (ihx=0; ihx<nhx; ihx++){
             hx= -(nhx-1)/2 + ihx;
-            for (iz=1; iz<nz-1; iz++){
-                if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
-                    for (ix=1; ix<nx-1; ix++){
-                        if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+            for (iz=0; iz<nz; iz++){
+                if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1)){
+                    for (ix=0; ix<nx; ix++){
+                        if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
                         {
                             dTsoudz = (TT_sou[kt2D(ix-hx, iz-hz+1)] - TT_sou[kt2D(ix-hx, iz-hz-1)])/(2.0*dz);
                             d2Tsoudz2 = (TT_sou[kt2D(ix-hx, iz-hz+1)] - 2.0*TT_sou[kt2D(ix-hx, iz-hz)] + TT_sou[kt2D(ix-hx, iz-hz-1)])/(dz*dz);
