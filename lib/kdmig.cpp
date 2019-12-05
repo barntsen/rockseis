@@ -350,7 +350,7 @@ void KdmigAcoustic2D<T>::crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, s
                     for (ix=0; ix<nx; ix++){
                         if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
                         {
-                            TTsum = TT_sou[kt2D(ix-hx, iz-hz)] + TT_rec[kt2D(ix-hx, iz-hz)] - ot;
+                            TTsum = TT_sou[kt2D(ix-hx, iz-hz)] + TT_rec[kt2D(ix+hx, iz+hz)] - ot;
                             it0 = (int) ((TTsum -ot)/dt);
                             it1 = it0 + 1;
 
@@ -572,9 +572,9 @@ void KdmigElastic2D<T>::crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, st
                             dTsoudz = (TT_sou[kt2D(ix-hx, iz-hz+1)] - TT_sou[kt2D(ix-hx, iz-hz-1)])/(2.0*dz);
                             d2Tsoudz2 = (TT_sou[kt2D(ix-hx, iz-hz+1)] - 2.0*TT_sou[kt2D(ix-hx, iz-hz)] + TT_sou[kt2D(ix-hx, iz-hz-1)])/(dz*dz);
 
-                            dTrecdx = (TT_rec[kt2D(ix-hx+1, iz-hz)] - TT_rec[kt2D(ix-hx-1, iz-hz)])/(2.0*dx);
+                            dTrecdx = (TT_rec[kt2D(ix+hx+1, iz+hz)] - TT_rec[kt2D(ix+hx-1, iz+hz)])/(2.0*dx);
                             TTs = TT_sou[kt2D(ix-hx, iz-hz)];
-                            TTr = TT_rec[kt2D(ix-hx, iz-hz)];
+                            TTr = TT_rec[kt2D(ix+hx, iz+hz)];
                             TTsum = TTs + TTr;
 
                             it0 = (int) ((TTsum -ot)/dt);
