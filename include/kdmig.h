@@ -26,6 +26,7 @@
 #define SMAP 0
 
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
+#define km2D(i,j) ((j)*nx + (i))
 #define kt2D(i,j) ((j)*nx + (i))
 
 #define ki3D(i,j,k,l,m,n) ((n)*nhy*nhx*nx*ny*nz + (m)*nhx*nx*ny*nz + (l)*nx*ny*nz + (k)*nx*ny + (j)*nx + (i))
@@ -101,7 +102,8 @@ public:
     void setTtable(std::shared_ptr<Ttable2D<T>> _ttable) { ttable = _ttable; ttableset = true; }
     void crossCorr_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     void crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
-    void calcAdjointsource(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void calcAdjointsource(T *adj_sou, T *adj_rec, std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void scaleGrad(std::shared_ptr<rockseis::ModelEikonal2D<T>> model, T *lam, T *grad);
     int run();
     int run_adj();
 

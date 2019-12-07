@@ -27,9 +27,6 @@ int main(int argc, char** argv) {
         if(mpi.getRank() == 0){
             PRINT_DOC(# MPI 2d acoustic modelling default configuration file);
             PRINT_DOC();
-            PRINT_DOC(# Padding);
-            PRINT_DOC(        Lpml = "3";);
-            PRINT_DOC();
             PRINT_DOC(# Sampling);
             PRINT_DOC(        Souinc = "1";);
             PRINT_DOC(        Recinc = "1";);
@@ -47,7 +44,7 @@ int main(int argc, char** argv) {
 	/* General input parameters */
     int souinc, recinc;
     int nsoufin, nrecfin;
-    int Lpml;
+    int Lpml = 0;
     std::string Surveyfile;
     std::string Vpfile;
     std::string Ttablefile;
@@ -65,7 +62,6 @@ int main(int argc, char** argv) {
     status = false; 
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Survey", &Surveyfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Lpml", &Lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Souinc", &souinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Recinc", &recinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Ttablefile", &Ttablefile) == INPARSE_ERR) status = true;

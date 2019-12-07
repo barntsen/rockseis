@@ -21,6 +21,8 @@
 #define TTABLE_OK 1
 #define TTABLE_ERR 0
 
+#define MAXINTERP 5
+
 
 namespace rockseis {
 
@@ -105,6 +107,7 @@ public:
     //File functions
     void createEmptyttable(); ///< Create empty dataset
     void fetchTtabledata(std::shared_ptr<RaysAcoustic2D<T>> rays, std::shared_ptr<Data2D<T>> source, const size_t number);
+    void putTtabledata(std::shared_ptr<RaysAcoustic2D<T>> rays);
     void writeTtable(const size_t it); ///< Write travel time table
     void readTtable(const size_t it); ///< Read travel time table
 
@@ -113,6 +116,8 @@ public:
     void setData(T *ptr) {data = ptr; } ///< Set data pointer
     T* getData() {return data;} ///< Get data pointer
     T* getWrk() {return wrk;} ///< Get wrk pointer
+    T* getDist() {return interpdist;} ///< Get interp dist array pointer
+    size_t* getPch() {return interpch;} ///< Get pch pointer
 
     // Memory functions
     void freeTtable(); ///< Free data in travel time table
@@ -128,6 +133,8 @@ public:
     T interpoint1D[2];
     T *data;
     T *wrk;
+    T *interpdist;
+    size_t *interpch;
 
 };
 
@@ -145,6 +152,7 @@ public:
 
     void createEmptyttable(); ///< Create empty dataset
     void fetchTtabledata(std::shared_ptr<RaysAcoustic3D<T>> rays, std::shared_ptr<Data3D<T>> source, const size_t number);
+    void putTtabledata(std::shared_ptr<RaysAcoustic3D<T>> rays);
     void writeTtable(const size_t it); ///< Write travel time table
     void readTtable(const size_t it); ///< Read travel time table
 
@@ -153,6 +161,8 @@ public:
     void setData(T *ptr) {data = ptr; } ///< Set data pointer
     T* getData() {return data;} ///< Get data pointer
     T* getWrk() {return wrk;} ///< Get wrk pointer
+    T* getDist() {return interpdist;} ///< Get interp dist array pointer
+    size_t* getPch() {return interpch;} ///< Get pch pointer
 
     // Memory functions
     void freeTtable(); ///< Free data in travel time table
@@ -169,6 +179,8 @@ public:
     T interpoint1D[2];
     T *data;
     T *wrk;
+    T *interpdist;
+    size_t *interpch;
 };
 
 

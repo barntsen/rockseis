@@ -50,8 +50,6 @@ Ttable2D<T>::Ttable2D(std::shared_ptr<ModelEikonal2D<T>> model, int _ntable):Tta
     _ox=model->getOx();
     _oy=model->getOy();
     _oz=model->getOz();
-    // TODO implement the possibility to pad the traveltime table
-    //_lpml = model->getLpml();
     _lpml = 0;
     _dim = model->getDim();
 
@@ -67,6 +65,9 @@ Ttable2D<T>::Ttable2D(std::shared_ptr<ModelEikonal2D<T>> model, int _ntable):Tta
     this->setDim(_dim);
     this->setNtable(_ntable);
     this->setLpml(_lpml);
+
+    interpdist = (T *) calloc(_ntable, sizeof(T));
+    interpch = (size_t *) calloc(_ntable, sizeof(size_t));
 }
 
 template<typename T>
@@ -129,6 +130,10 @@ Ttable2D<T>::Ttable2D(std::string tablefile)
 
     }
     Fpos->close();
+
+    // Variables for sorting results of interpolation 
+    interpdist = (T *) calloc(ntable, sizeof(T));
+    interpch = (size_t *) calloc(ntable, sizeof(size_t));
 }
 
 template<typename T>
@@ -268,6 +273,34 @@ void Ttable2D<T>::fetchTtabledata(std::shared_ptr<RaysAcoustic2D<T>> rays, std::
 }
 
 template<typename T>
+void Ttable2D<T>::putTtabledata(std::shared_ptr<RaysAcoustic2D<T>> rays)
+{
+    size_t nx = rays->getNx();
+    size_t nz = rays->getNz();
+
+    if(this->getNx() != nx) rs_error("Ttable2D::putTtabledata: Nx mismatch.");
+    if(this->getNz() != nz) rs_error("Ttable2D::putTtabledata: Nz mismatch.");
+
+    if(!this->getAllocated()) {
+        this->allocTtable();
+    }
+    T *data = this->getData();
+    T *TT = rays->getTT();
+
+    size_t nx_pml = rays->getNx_pml();
+    size_t nz_pml = rays->getNz_pml();
+    int lpml = rays->getLpml();
+
+    Index Itt(nx,nz);
+    Index Irays(nx_pml, nz_pml);
+    for(size_t ix=0; ix < nx; ix++){
+        for(size_t iz=0; iz < nz; iz++){
+            TT[Irays(ix+lpml, iz+lpml)] = data[Itt(ix,iz)];
+        }
+    }
+}
+
+template<typename T>
 void Ttable2D<T>::writeTtable(const size_t number)
 {
     if(number > this->getNtable()-1) rs_error("Ttable2D::writeTtable: Trying to write a table with number that is larger than ntable");
@@ -319,7 +352,6 @@ void Ttable2D<T>::interpTtable(std::shared_ptr<Ttable2D<T>> ttablei, T rad) {
     bool status;
     struct kdres *presults;
     double weight, weight_sum;
-    int pch;
     double dist;
 
     // Get sizes of table
@@ -350,6 +382,8 @@ void Ttable2D<T>::interpTtable(std::shared_ptr<Ttable2D<T>> ttablei, T rad) {
 
     T *data = this->getData();
     T *wrk = this->getWrk();
+    T *interpdist = this->getDist();
+    size_t *interpch = this->getPch();
     weight_sum=0.0;
     if(!this->getAllocated()) rs_error("Ttable2D::interpTtable2D: Data in source ttable is not allocated.");
     if(!ttablei->getAllocated()) rs_error("Ttable2D::interpTtable2D: Data in target ttable is not allocated.");
@@ -358,15 +392,46 @@ void Ttable2D<T>::interpTtable(std::shared_ptr<Ttable2D<T>> ttablei, T rad) {
     // Initialize data
         data[id]=0.0;
     }
-    // TODO: SORT RESULTS BY DISTANCE AND GET THE ONLY CLOSEST 5
+    // SORT RESULTS BY DISTANCE 
     for(int i1=0; i1<nr; i1++){
         /* Fetch index and position of one of the traces in range */
-        pch =  kd_res_item( presults, tpos );
+        interpch[i1] = (size_t)  kd_res_item( presults, tpos );
+        interpdist[i1] = sqrt(SQ(tpos[0]-posi[0]) + SQ(tpos[1]-posi[1])+ SQ(tpos[2]-posi[2]));
 
+        /* go to the next trace */
+        kd_res_next( presults );
+    }
+
+    // Free results of tree search
+    kd_res_free( presults );
+
+    T swapdist;
+    size_t swappch;
+    for (int i1 = 0 ; i1 < nr - 1; i1++)
+    {
+        for (int i2 = 0 ; i2 < nr - i1 - 1; i2++)
+        {
+            if (interpdist[i2] > interpdist[i2+1]) 
+            {
+                swapdist       = interpdist[i2];
+                interpdist[i2]   = interpdist[i2+1];
+                interpdist[i2+1] = swapdist;
+
+                swappch       = interpch[i2];
+                interpch[i2]   = interpch[i2+1];
+                interpch[i2+1] = swappch;
+            }
+        }
+    }
+
+    // Take only the first results
+    if(nr > MAXINTERP) nr = MAXINTERP;
+
+    for(int i1=0; i1<nr; i1++){
         /* Read trace with the corresponding index */
-        Fdata->seekp(Fdata->getStartofdata() + pch*n1*sizeof(T));
+        Fdata->seekp(Fdata->getStartofdata() + interpch[i1]*n1*sizeof(T));
         Fdata->read(wrk, n1);
-        dist=sqrt(SQ(tpos[0]-posi[0]) + SQ(tpos[1]-posi[1])+ SQ(tpos[2]-posi[2]));
+        dist=interpdist[i1];
         if(dist==0.0){
             for (size_t id=0; id<n1; id++){
                 data[id]=wrk[id];
@@ -374,23 +439,18 @@ void Ttable2D<T>::interpTtable(std::shared_ptr<Ttable2D<T>> ttablei, T rad) {
             weight_sum=0.0;
             break;
         }else{
-            weight= SQ((rad-dist)/(rad*dist));
-            weight_sum+=weight;
+            weight = SQ((rad-dist)/(rad*dist));
+            weight_sum += weight;
             for (size_t id=0; id<n1; id++){
                 data[id]+=weight*wrk[id];
             }
         }
-        /* go to the next trace */
-        kd_res_next( presults );
     }
     if(weight_sum>0){
         for (size_t id=0; id<n1; id++){
             data[id]/=weight_sum;
         }
     }
-
-    // Free results of tree search
-    kd_res_free( presults );
 
 
     // Get regular coordinates of source and target table and do trilinear interpolation  
@@ -465,6 +525,8 @@ Ttable2D<T>::~Ttable2D() {
         free(this->data);
         free(this->wrk);
     }
+    free(interpdist);
+    free(interpch);
 }
 
 // =============== 3D TTABLE CLASS =============== //
@@ -506,6 +568,9 @@ Ttable3D<T>::Ttable3D(std::shared_ptr<ModelEikonal3D<T>> model, int _ntable):Tta
     this->setLpml(_lpml);
     this->setData(NULL);
 
+    // Variables for sorting results of interpolation 
+    interpdist = (T *) calloc(_ntable, sizeof(T));
+    interpch = (size_t *) calloc(_ntable, sizeof(size_t));
 }
 
 template<typename T>
@@ -567,6 +632,10 @@ Ttable3D<T>::Ttable3D(std::string tablefile)
 
     }
     Fpos->close();
+
+    // Variables for sorting results of interpolation 
+    interpdist = (T *) calloc(ntable, sizeof(T));
+    interpch = (size_t *) calloc(ntable, sizeof(size_t));
 }
 
 template<typename T>
@@ -708,7 +777,39 @@ void Ttable3D<T>::fetchTtabledata(std::shared_ptr<RaysAcoustic3D<T>> rays, std::
             }
         }
     }
+}
 
+template<typename T>
+void Ttable3D<T>::putTtabledata(std::shared_ptr<RaysAcoustic3D<T>> rays)
+{
+    size_t nx = rays->getNx();
+    size_t ny = rays->getNy();
+    size_t nz = rays->getNz();
+
+    if(this->getNx() != nx) rs_error("Ttable3D::putTtabledata: Nx mismatch.");
+    if(this->getNy() != ny) rs_error("Ttable3D::putTtabledata: Ny mismatch.");
+    if(this->getNz() != nz) rs_error("Ttable3D::putTtabledata: Nz mismatch.");
+
+    if(!this->getAllocated()) {
+        this->allocTtable();
+    }
+    T *data = this->getData();
+    T *TT = rays->getTT();
+
+    size_t nx_pml = rays->getNx_pml();
+    size_t ny_pml = rays->getNy_pml();
+    size_t nz_pml = rays->getNz_pml();
+    int lpml = rays->getLpml();
+
+    Index Itt(nx,ny,nz);
+    Index Irays(nx_pml, ny_pml, nz_pml);
+    for(size_t ix=0; ix < nx; ix++){
+        for(size_t iy=0; iy < ny; iy++){
+            for(size_t iz=0; iz < nz; iz++){
+                TT[Irays(ix+lpml,iy+lpml,iz+lpml)] = data[Itt(ix,iy,iz)];
+            }
+        }
+    }
 }
 
 template<typename T>
@@ -763,7 +864,6 @@ void Ttable3D<T>::interpTtable(std::shared_ptr<Ttable3D<T>> ttablei, T rad) {
     bool status;
     struct kdres *presults;
     double weight, weight_sum;
-    int pch;
     double dist;
 
     // Get sizes of table
@@ -802,15 +902,46 @@ void Ttable3D<T>::interpTtable(std::shared_ptr<Ttable3D<T>> ttablei, T rad) {
     // Initialize data
         data[id]=0.0;
     }
-    // TODO: SORT RESULTS BY DISTANCE AND GET THE ONLY CLOSEST 5
+    // SORT RESULTS BY DISTANCE 
     for(int i1=0; i1<nr; i1++){
         /* Fetch index and position of one of the traces in range */
-        pch =  kd_res_item( presults, tpos );
+        interpch[i1] = (size_t)  kd_res_item( presults, tpos );
+        interpdist[i1] = sqrt(SQ(tpos[0]-posi[0]) + SQ(tpos[1]-posi[1])+ SQ(tpos[2]-posi[2]));
 
+        /* go to the next trace */
+        kd_res_next( presults );
+    }
+
+    // Free results of tree search
+    kd_res_free( presults );
+
+    T swapdist;
+    size_t swappch;
+    for (int i1 = 0 ; i1 < nr - 1; i1++)
+    {
+        for (int i2 = 0 ; i2 < nr - i1 - 1; i2++)
+        {
+            if (interpdist[i2] > interpdist[i2+1]) 
+            {
+                swapdist       = interpdist[i2];
+                interpdist[i2]   = interpdist[i2+1];
+                interpdist[i2+1] = swapdist;
+
+                swappch       = interpch[i2];
+                interpch[i2]   = interpch[i2+1];
+                interpch[i2+1] = swappch;
+            }
+        }
+    }
+
+    // Take only the first results
+    if(nr > MAXINTERP) nr = MAXINTERP;
+
+    for(int i1=0; i1<nr; i1++){
         /* Read trace with the corresponding index */
-        Fdata->seekp(Fdata->getStartofdata() + pch*n1*sizeof(T));
+        Fdata->seekp(Fdata->getStartofdata() + interpch[i1]*n1*sizeof(T));
         Fdata->read(wrk, n1);
-        dist=sqrt(SQ(tpos[0]-posi[0]) + SQ(tpos[1]-posi[1])+ SQ(tpos[2]-posi[2]));
+        dist=interpdist[i1];
         if(dist==0.0){
             for (size_t id=0; id<n1; id++){
                 data[id]=wrk[id];
@@ -818,14 +949,12 @@ void Ttable3D<T>::interpTtable(std::shared_ptr<Ttable3D<T>> ttablei, T rad) {
             weight_sum=0.0;
             break;
         }else{
-            weight= SQ((rad-dist)/(rad*dist));
-            weight_sum+=weight;
+            weight = SQ((rad-dist)/(rad*dist));
+            weight_sum += weight;
             for (size_t id=0; id<n1; id++){
                 data[id]+=weight*wrk[id];
             }
         }
-        /* go to the next trace */
-        kd_res_next( presults );
     }
     if(weight_sum>0){
         for (size_t id=0; id<n1; id++){
@@ -833,10 +962,7 @@ void Ttable3D<T>::interpTtable(std::shared_ptr<Ttable3D<T>> ttablei, T rad) {
         }
     }
 
-    // Free results of tree search
-    kd_res_free( presults );
-
-
+    
     // Get regular coordinates of source and target table and do trilinear interpolation  
     size_t nx_i = ttablei->getNx();
     size_t ny_i = ttablei->getNy();
@@ -936,6 +1062,8 @@ Ttable3D<T>::~Ttable3D() {
         free(this->data);
         free(this->wrk);
     }
+    free(interpdist);
+    free(interpch);
 }
 
 

@@ -161,6 +161,9 @@ private:
     T dtx, dty, dtz;
     int nhx,nhy,nhz;
     bool noreverse;
+    int souinc;
+    int recinc;
+    T radius;
 };
 
 // ##### ACOUSTIC 2D KDMVA CLASS

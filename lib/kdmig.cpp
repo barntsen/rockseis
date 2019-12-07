@@ -3,7 +3,6 @@
 
 namespace rockseis {
 
-    // Elastic: Derivate V Source gradients inside scaleGrad
 // =============== ABSTRACT KDMIG CLASS =============== //
 template<typename T>
 Kdmig<T>::Kdmig() {
@@ -178,7 +177,7 @@ int KdmigAcoustic2D<T>::run()
      ttable->interpTtable(ttable_sou, this->getRadius());
 
      //Loop over data traces
-     int i,j;
+     int i;
      for (i=0; i<ntr; i++){
          // Inserting new receiver point
          ttable_rec->insertSource(data, GMAP, i);
@@ -220,6 +219,7 @@ int KdmigAcoustic2D<T>::run_adj()
      int ntr = data->getNtrace();
      Index Idata(nt,ntr);
      T *rdata_array = data->getData();
+     T *data_dt = (T *) calloc(nt, sizeof(T));
 
      // Create gradient
      vpgrad->allocateImage();
@@ -229,9 +229,9 @@ int KdmigAcoustic2D<T>::run_adj()
      ttable_rec->allocTtable();
 
     // Allocate memory for adjoint sources 
-    T* adjsrc_fw, *adjsrc_bw;
-    adjsrc_fw = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
-    adjsrc_bw = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
+    T* adjsrc_sou, *adjsrc_rec;
+    adjsrc_sou = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
+    adjsrc_rec = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
 
      this->writeLog("Running 2D Kirchhoff migration.");
 
@@ -251,26 +251,33 @@ int KdmigAcoustic2D<T>::run_adj()
          // Solving Eikonal equation for receiver traveltime
          ttable->interpTtable(ttable_rec, this->getRadius());
 
+         // Derivate data
+         for(j=1; j<nt-1; j++){
+             data_dt[j] =  (rdata_array[Idata(j+1,i)] - rdata_array[Idata(j-1,i)])/(2.0*dt);
+         }
+
          // Build adjoint source
-         //this->calcAdjointsource(adjsrc_fw, adjsrc_bw, ttable_sou, ttable_rec, cdata_array, nfs, df, ot);
+         this->calcAdjointsource(adjsrc_sou, adjsrc_rec, ttable_sou, ttable_rec, data_dt, nt, dt, ot);
 
          // Solve the source side adjoint equation
-         //rays_adj->getTT(ttable_sou->getData());
-         //rays_adj->insertImageresiduals(adjsrc_fw);
-         //rays_adj->solve_adj();
+         rays_adj->clearTT();
+         ttable_sou->putTtabledata(rays_adj);
+         rays_adj->insertImageresiduals(adjsrc_sou);
+         rays_adj->solve_adj();
 
          // Calculate gradient
-         //this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
-         //rays->clearLam();
+         this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+         rays_adj->clearLam();
 
          // Solve the receiver side equation
-         //rays_adj->getTT(ttable_rec->getData());
-         //rays_adj->insertImageresiduals(adjsrc_bw);
-         //rays_adj->solve_adj();
+         rays_adj->clearTT();
+         ttable_rec->putTtabledata(rays_adj);
+         rays_adj->insertImageresiduals(adjsrc_rec);
+         rays_adj->solve_adj();
 
          // Calculate gradient
-         //this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
-         //rays->clearLam();
+         this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+         rays_adj->clearLam();
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -280,6 +287,28 @@ int KdmigAcoustic2D<T>::run_adj()
     return result;
 }
 
+template<typename T>
+void KdmigAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelEikonal2D<T>> model, T *lam, T *grad) {
+    int nx, nz;
+    int nx_pml, nz_pml;
+    int lpml = model->getLpml();
+    nx = model->getNx();
+    nz = model->getNz();
+    nx_pml = model->getNx_pml();
+    nz_pml = model->getNz_pml();
+    T * vp = model->getVelocity();
+    Index Ilam(nx_pml, nz_pml);
+    Index Igrad(nx, nz);
+    for (int i=0; i<nx; i++){
+        for (int j=0; j<nz; j++){
+            if(isnan(lam[Ilam(i+lpml, j+lpml)]) || isinf(lam[Ilam(i+lpml, j+lpml)]) ){
+                grad[Igrad(i,j)] = 0.0;
+            }else{
+                grad[Igrad(i,j)] = -1.0*lam[Ilam(i+lpml,j+lpml)]/CUB(vp[Igrad(i,j)]);
+            }
+        }
+    }
+}
 
 template<typename T>
 void KdmigAcoustic2D<T>::crossCorr_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *cdata, unsigned long nfs, T df, T ot) {
@@ -328,7 +357,7 @@ template<typename T>
 void KdmigAcoustic2D<T>::crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *data, unsigned long nt, T dt, T ot) {
     /* Build image */
     if(!pimage->getAllocated()) pimage->allocateImage();
-	int ix, iz, ihx, ihz, iw;
+	int ix, iz, ihx, ihz;
     T *TT_sou = ttable_sou->getData();
     T *TT_rec = ttable_rec->getData();
 	T *imagedata = pimage->getImagedata();
@@ -359,6 +388,67 @@ void KdmigAcoustic2D<T>::crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, s
                                 wsi = data[it1];
                                 omega = (TTsum - it0*dt + ot)/dt;
                                 imagedata[ki2D(ix,iz,ihx,ihz)] -= (1.0-omega)*wsr + omega*wsi;
+                            }
+                        }
+                    }
+                }	
+            }
+        }
+    }
+}
+
+template<typename T>
+void KdmigAcoustic2D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *data, unsigned long nt, T dt, T ot) {
+	int ix, iz, ihx, ihz;
+    T *TT_sou = ttable_sou->getData();
+    T *TT_rec = ttable_rec->getData();
+	T *imagedata = pimage->getImagedata();
+	int nhx = pimage->getNhx();
+	int nhz = pimage->getNhz();
+	int nx = pimage->getNx();
+	int nz = pimage->getNz();
+	int hx, hz;
+    T wsr,wsi;
+    int it0, it1;
+    T TTsum;
+    T omega=0;
+    //Reset arrays
+    for (ix=0; ix<nx; ix++){
+        for (iz=0; iz<nz; iz++){
+            adjsrc_sou[km2D(ix,iz)] = 0.0;
+            adjsrc_rec[km2D(ix,iz)] = 0.0;
+        }
+    }
+
+    for (ihz=0; ihz<nhz; ihz++){
+        hz= -(nhz-1)/2 + ihz;
+        for (ihx=0; ihx<nhx; ihx++){
+            hx= -(nhx-1)/2 + ihx;
+            for (iz=0; iz<nz; iz++){
+                if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz)){
+                    for (ix=0; ix<nx; ix++){
+                        if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
+                        {
+                            // Source side residual
+                            TTsum = TT_sou[kt2D(ix, iz)] + TT_rec[kt2D(ix+2*hx, iz+2*hz)] - ot;
+                            it0 = (int) ((TTsum -ot)/dt);
+                            it1 = it0 + 1;
+                            if(it0 > 0 && it1 < nt){
+                                wsr = data[it0];
+                                wsi = data[it1];
+                                omega = (TTsum - it0*dt + ot)/dt;
+							    adjsrc_sou[km2D(ix,iz)] += imagedata[ki2D(ix+hx,iz+hz,ihx,ihz)]*((1.0-omega)*wsr + omega*wsi);
+                            }
+
+                            // Receiver side residual
+                            TTsum = TT_sou[kt2D(ix-2*hx, iz-2*hz)] + TT_rec[kt2D(ix, iz)] - ot;
+                            it0 = (int) ((TTsum -ot)/dt);
+                            it1 = it0 + 1;
+                            if(it0 > 0 && it1 < nt){
+                                wsr = data[it0];
+                                wsi = data[it1];
+                                omega = (TTsum - it0*dt + ot)/dt;
+                                adjsrc_rec[km2D(ix,iz)] += imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*((1.0-omega)*wsr + omega*wsi);
                             }
                         }
                     }
@@ -537,7 +627,7 @@ template<typename T>
 void KdmigElastic2D<T>::crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *data, T *data_dt, unsigned long nt, T dt, T ot) {
     /* Build image */
     if(!simage->getAllocated()) simage->allocateImage();
-	int ix, iz, ihx, ihz, iw;
+	int ix, iz, ihx, ihz;
     T *TT_sou = ttable_sou->getData();
     T *TT_rec = ttable_rec->getData();
 	T *imagedata = simage->getImagedata();

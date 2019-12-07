@@ -246,9 +246,6 @@ void WemvaAcoustic2D<T>::runGrad() {
         Sort->readSortmap();
         size_t ngathers =  Sort->getNensemb();
 
-        // Create a data class for the recorded data
-        std::shared_ptr<rockseis::Data2D<T>> shot2D (new rockseis::Data2D<T>(Precordfile));
-       
         //Migration
 		// Create work queue
 		for(long int i=0; i<ngathers; i++) {
@@ -283,7 +280,6 @@ void WemvaAcoustic2D<T>::runGrad() {
 
 		// Perform work in parallel
 		mpi->performWork();
-
 
 		//Clear work vector 
 		mpi->clearWork();

@@ -339,6 +339,19 @@ void RaysAcoustic2D<T>::clearLam() {
 }
 
 template<typename T>
+void RaysAcoustic2D<T>::clearLam(T val) {
+    /* Re-initialize lam array */
+
+    int nx = model->getNx_pml();
+    int ny = model->getNz_pml();
+
+    /* Initialize TT */
+    for (int i=0; i < nx*ny; i++){
+        lam[i] = val;
+    }
+}
+
+template<typename T>
 int RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype){
     Point2D<int> *map;
     int ntrace = source->getNtrace();
@@ -491,6 +504,28 @@ void RaysAcoustic2D<T>::insertResiduals(std::shared_ptr<rockseis::Data2D<T>> sou
         if(map[i].x >= 0 && map[i].y >=0)
         { 
             adjsource[I(lpml+map[i].x, lpml+map[i].y)] =  -res[Idat(0,i)];
+        }
+    }
+}
+
+template<typename T>
+void RaysAcoustic2D<T>::insertImageresiduals(T *res){
+    int nx, nz;
+    int nx_pml, nz_pml;
+    int lpml;
+    lpml = this->getLpml();
+    nx = this->getNx();
+    nz = this->getNz();
+    nx_pml = this->getNx_pml();
+    nz_pml = this->getNz_pml();
+
+    int ix,iz;
+    //Indexes 
+    Index Iray(nx_pml, nz_pml); //Model and Field indexes
+    Index Ires(nx,nz); // Data indexes
+    for (iz=0; iz < nz; iz++) {
+        for (ix=0; ix < nx; ix++) {
+            adjsource[Iray(lpml+ix, lpml+iz)] =  -res[Ires(ix,iz)];
         }
     }
 }
@@ -1247,6 +1282,20 @@ void RaysAcoustic3D<T>::clearLam() {
 }
 
 template<typename T>
+void RaysAcoustic3D<T>::clearLam(T val) {
+    /* Re-initialize lam array */
+
+    int nx = model->getNx_pml();
+    int ny = model->getNy_pml();
+    int nz = model->getNz_pml();
+
+    /* Initialize TT */
+    for (int i=0; i < nx*ny*nz; i++){
+        lam[i] = val;
+    }
+}
+
+template<typename T>
 void RaysAcoustic3D<T>::insertResiduals(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
     Point3D<int> *map;
     int ntrace = source->getNtrace();
@@ -1280,6 +1329,32 @@ void RaysAcoustic3D<T>::insertResiduals(std::shared_ptr<rockseis::Data3D<T>> sou
     }
 }
 
+template<typename T>
+void RaysAcoustic3D<T>::insertImageresiduals(T *res){
+    int nx, ny, nz;
+    int nx_pml, ny_pml, nz_pml;
+    int lpml;
+    lpml = this->getLpml();
+
+    nx = this->getNx();
+    ny = this->getNy();
+    nz = this->getNz();
+    nx_pml = this->getNx_pml();
+    ny_pml = this->getNy_pml();
+    nz_pml = this->getNz_pml();
+
+    int ix,iy,iz;
+    //Indexes 
+    Index Iray(nx_pml, ny_pml, nz_pml); //Model and Field indexes
+    Index Ires(nx, ny, nz); // Data indexes
+    for (iz=0; iz < nz; iz++) {
+        for (iy=0; iy < ny; iy++) {
+            for (ix=0; ix < nx; ix++) {
+                adjsource[Iray(lpml+ix, lpml+iy, lpml+iz)] =  -res[Ires(ix,iy,iz)];
+            }
+        }
+    }
+}
 
 
 

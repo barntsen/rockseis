@@ -31,7 +31,6 @@ int main(int argc, char** argv) {
 			PRINT_DOC(# MPI 2d acoustic reverse-time migration configuration file);
 			PRINT_DOC();
 			PRINT_DOC(# Modelling parameters);
-			PRINT_DOC(lpml = "10"; # Size of pml absorbing boundary (should be larger than order + 5 ));
 			PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
 			PRINT_DOC();
 			PRINT_DOC(# Migration parameters);
@@ -57,7 +56,7 @@ int main(int argc, char** argv) {
     }
     bool status;
 	/* General input parameters */
-	int lpml;
+	int lpml = 3;
     float apertx;
     int nhx=1, nhz=1;
 	int freqinc;

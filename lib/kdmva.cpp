@@ -8,7 +8,7 @@ template<typename T>
 Kdmva<T>::Kdmva() {
     //Set default parameters
     fs = false;
-    lpml = 10;
+    lpml = 0;
     incore = true;
     order = 4;
     snapinc=4;
@@ -40,7 +40,7 @@ Kdmva<T>::Kdmva(MPImodeling *_mpi) {
 
     //Set default parameters
     fs = false;
-    lpml = 10;
+    lpml = 0;
     incore = true;
     order = 4;
     snapinc=4;
@@ -215,12 +215,12 @@ KdmvaAcoustic2D<T>::~KdmvaAcoustic2D() {
 template<typename T>
 void KdmvaAcoustic2D<T>::runGrad() {
     MPImodeling *mpi = this->getMpi();
-
-    
     std::shared_ptr<rockseis::Data2D<T>> source;
+    std::shared_ptr<rockseis::Data2D<T>> shot2D;
     std::shared_ptr<rockseis::RaysAcoustic2D<T>> rays;
     std::shared_ptr<rockseis::Ttable<T>> Ttable;
     std::shared_ptr<rockseis::Image2D<T>> pimage;
+    std::shared_ptr<rockseis::Image2D<T>> lpimage;
 	std::shared_ptr<rockseis::ModelEikonal2D<T>> lmodel;
 
     // Create a sort class
@@ -228,7 +228,7 @@ void KdmvaAcoustic2D<T>::runGrad() {
     Sort->setDatafile(Precordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml() ,this->getFs()));
+	std::shared_ptr<rockseis::ModelAcoustic2D<T>> gmodel (new rockseis::ModelAcoustic2D<T>(Vpfile, Rhofile, this->getLpml(), this->getFs()));
 
     // Create a file to output data misfit values
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
@@ -241,8 +241,6 @@ void KdmvaAcoustic2D<T>::runGrad() {
     // Read and expand global model
     gmodel->readVelocity();
     gmodel->Expand();
-
-
 
 	if(mpi->getRank() == 0) {
 		// Master
@@ -265,13 +263,13 @@ void KdmvaAcoustic2D<T>::runGrad() {
         nrecfin = nrecgath/recinc + 1;
         if(nrecfin > nrecgath) nrecfin = nrecgath;
 
-        // Create a travel time table class
+        // -------------------------------------Create a travel time table class
         size_t ngathers = nsoufin + nrecfin;
         Ttable = std::make_shared<rockseis::Ttable<T>> (gmodel, ngathers);
         Ttable->setFilename(Ttablefile);
         Ttable->createEmptyttable();
 
-        /******************             Creating source side     ***********************/
+        /******************      Creating source side traveltime   ***********************/
 		// Create work queue
 		for(long int i=0; i<nsoufin; i++) {
 			// Work struct
@@ -288,10 +286,9 @@ void KdmvaAcoustic2D<T>::runGrad() {
         // Reset mpi 
         mpi.clearWork();
 
-        /******************             Creating receiver side     ***********************/
-
+        /******************       Creating receiver side traveltime    ***********************/
         // Create new list of positions
-        Sort->createReceivermap(Surveyfile); 
+        Sort->createReceivermap(Precordfile); 
         Sort->setReciprocity(true);
         Sort->writeKeymap();
         Sort->writeSortmap();
@@ -305,6 +302,9 @@ void KdmvaAcoustic2D<T>::runGrad() {
         // Perform work in parallel
         mpi.performWork();
 
+		//Clear work vector 
+		mpi->clearWork();
+
     // -------------------------------------Migrate data
         Sort->createShotmap(Precordfile); 
         Sort->writeKeymap();
@@ -314,7 +314,7 @@ void KdmvaAcoustic2D<T>::runGrad() {
         size_t ngathers =  Sort->getNensemb();
 
         // Image
-        pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile, gmodel, nhx, nhz);
+        pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile, gmodel, this->getNhx(), this->getNhz());
         pimage->createEmpty();
 
         // Create work queue
@@ -326,6 +326,34 @@ void KdmvaAcoustic2D<T>::runGrad() {
 
         // Perform work in parallel
         mpi.performWork();
+
+        //Calculate and output misfit and residual
+        this->computeMisfit(pimage);
+
+		//Clear work vector 
+		mpi->clearWork();
+
+// -------------------------------------Compute gradient
+        Sort->createShotmap(Precordfile); 
+        Sort->writeKeymap();
+        Sort->writeSortmap();
+
+        // Gradient
+        vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
+        vpgrad->createEmpty();
+
+        // Create work queue
+        for(long int i=0; i<ngathers; i++) {
+            // Work struct
+            std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0});
+            mpi.addWork(work);
+        }
+
+        // Perform work in parallel
+        mpi.performWork();
+
+		//Clear work vector 
+		mpi->clearWork();
     }
     else {
         /* Slave */
@@ -347,7 +375,7 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 mpi.sendNoWork(0);
             }
             else {
-                // Do some work
+                // Calculate traveltime
                 Sort->readKeymap();
                 Sort->readSortmap();
 
@@ -469,11 +497,11 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 kdmig = std::make_shared<rockseis::KdmigAcoustic2D<T>>(lmodel, ttable, shot2D, pimage);
 
                 // Set frequency decimation 
-                kdmig->setFreqinc(freqinc);
+                kdmig->setFreqinc(1);
 
                 // Set minimum and maximum frequency to migrate
-                kdmig->setMinfreq(minfreq);
-                kdmig->setMaxfreq(maxfreq);
+                kdmig->setMinfreq(0.0);
+                kdmig->setMaxfreq(125.0);
 
                 // Set radius of interpolation
                 kdmig->setRadius(radius);
@@ -497,6 +525,86 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 pimage.reset();
                 kdmig.reset();
                 ttable.reset();
+                pimage.reset();
+
+                // Send result back
+                work.status = WORK_FINISHED;
+                mpi.sendResult(work);		
+            }
+        }
+
+        // Compute Adjoint
+        while(1) {
+            workModeling_t work = mpi->receiveWork();
+
+            if(work.MPItag == MPI_TAG_DIE) {
+                break;
+            }
+
+            if(work.MPItag == MPI_TAG_NO_WORK) {
+                mpi->sendNoWork(0);
+            }
+            else {
+                // Compute gradient
+                // Get the shot
+                Sort->readKeymap();
+                Sort->readSortmap();
+
+                // Get the shot
+                shot2D = Sort->get2DGather(work.id);
+
+                // Make local model
+                lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
+                lmodel->Expand();
+
+                // Make image class
+                pimage = std::make_shared<rockseis::Image2D<T>>(PIMAGERESFILE);
+                lpimage = pimage->getLocal(shot2D, apertx, SMAP);
+
+                // Create traveltime table class
+                ttable = std::make_shared<rockseis::Ttable<T>>(Ttablefile);
+                ttable->allocTtable();
+
+                // Create imaging class
+                kdmig = std::make_shared<rockseis::KdmigAcoustic2D<T>>(lmodel, ttable, shot2D, lpimage);
+
+                // Set frequency decimation 
+                kdmig->setFreqinc(1);
+
+                // Set minimum and maximum frequency to migrate
+                kdmig->setMinfreq(0.0);
+                kdmig->setMaxfreq(125.0);
+
+                // Set radius of interpolation
+                kdmig->setRadius(radius);
+
+                // Creating gradient object
+                vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+
+                // Setting up gradient objects in wemvafwi class
+                mva->setVpgrad(vpgrad);
+
+                // Set logfile
+                kdmig->setLogfile("log.txt-" + std::to_string(work.id));
+
+                // Run migration
+                kdmig->run_adj();
+
+                // Send result back
+                work.status = PARALLEL_IO;
+                mpi.sendResult(work);		
+
+                // Stack image
+                vpgrad->stackImage_parallel(Vpgradfile);
+
+                // Reset all classes
+                shot2D.reset();
+                lmodel.reset();
+                pimage.reset();
+                kdmig.reset();
+                ttable.reset();
+                vpgrad.reset();
+                lpimage.reset();
 
                 // Send result back
                 work.status = WORK_FINISHED;
@@ -505,7 +613,6 @@ void KdmvaAcoustic2D<T>::runGrad() {
         }
     }
 
-    // Compute Adjoint
 }
 
 template<typename T>
@@ -1439,6 +1546,7 @@ void KdmvaAcoustic2D<T>::computeRegularisation(double *x)
 }
 
 // =============== 2D ELASTIC KDMVA CLASS =============== //
+// 
 template<typename T>
 KdmvaElastic2D<T>::KdmvaElastic2D() {
     // Set default parameters
