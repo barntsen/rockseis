@@ -304,6 +304,7 @@ void KdmvaAcoustic2D<T>::runGrad() {
 		mpi->clearWork();
 
     // -------------------------------------Migrate data
+        Sort->setReciprocity(false);
         Sort->createShotmap(Precordfile); 
         Sort->writeKeymap();
         Sort->writeSortmap();
@@ -332,10 +333,6 @@ void KdmvaAcoustic2D<T>::runGrad() {
 		mpi->clearWork();
 
 // -------------------------------------Compute gradient
-        Sort->createShotmap(Precordfile); 
-        Sort->writeKeymap();
-        Sort->writeSortmap();
-
         // Gradient
         vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
         vpgrad->createEmpty();

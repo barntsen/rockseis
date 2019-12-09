@@ -166,6 +166,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(kvp = "100.0";);
             PRINT_DOC();
             PRINT_DOC(#Migration parameters);
+            PRINT_DOC(apertx = "900"; # Aperture for local model (source is in the middle));
             PRINT_DOC(Souinc = "1"; # Source decimation factor in traveltime table);
             PRINT_DOC(Recinc = "1"; # Receiver decimation factor in traveltime table);
 			PRINT_DOC(radius = "50.0"; # Radius of traveltime interpolation);
@@ -207,6 +208,7 @@ int main(int argc, char** argv) {
     float radius;
     int nhx, nhz;
     int souinc, recinc;
+    float apertx;
     float kvp;
     float vpregalpha;
     int max_linesearch, max_iterations;
@@ -242,6 +244,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("radius", &radius) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Souinc", &souinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Recinc", &recinc) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
 
     if(Inpar->getPar("modelmute", &modelmute) == INPARSE_ERR) status = true;
@@ -289,6 +292,7 @@ int main(int argc, char** argv) {
     kdmva->setVpfile(VPLSFILE);
     kdmva->setTtablefile(TTABLELSFILE);
     kdmva->setMisfitfile(MISFITFILE);
+    kdmva->setApertx(apertx);
 
     if(wemvamisfit == DS_HMAX && nhz > 1) rs_error("DS_HMAX misfit is currently only implemented for the cases where nhz = 1");
     kdmva->setMisfit_type(wemvamisfit);
