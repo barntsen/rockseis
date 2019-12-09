@@ -761,7 +761,7 @@ void Data2D<T>::apply_filter (T *freqs)
         /* Apply backward fourier transform */
         fft1d->fft1d(-1);
         for(j=0; j< nt; j++) {
-            data[Idata(j,i)] = cdata[2*j]/nt;
+            data[Idata(j,i)] = cdata[2*j]/nf;
         }
     }
 
