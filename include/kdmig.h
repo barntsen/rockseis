@@ -28,6 +28,7 @@
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
 #define km2D(i,j) ((j)*nx + (i))
 #define kt2D(i,j) ((j)*nx + (i))
+#define kres2D(i,j,k) ((k)*nz*nhx + (j)*nz + (i))
 
 #define ki3D(i,j,k,l,m,n) ((n)*nhy*nhx*nx*ny*nz + (m)*nhx*nx*ny*nz + (l)*nx*ny*nz + (k)*nx*ny + (j)*nx + (i))
 #define km3D(i,j,k) ((k)*nx*ny + (j)*nx + (i))
@@ -40,6 +41,7 @@
 #define CUB(x) ((x)*(x)*(x) + 1e-2)
 #define CMULR(ra,ia,rb,ib) (((ra)*(rb)) - ((ia)*(ib)))
 #define CMULI(ra,ia,rb,ib) (((ia)*(rb)) + ((ra)*(ib)))
+#define WEIGHT(x,y) ((y) !=0 ? ((1.0/((y)*(y)*(y)*(y)))*((x)*(x)*(x)*(x)) -(2.0/((y)*(y)))*((x)*(x)) + 1) : (1.0) );
 
 namespace rockseis {
 

@@ -26,7 +26,6 @@ Tomo<T>::Tomo() {
     {
         rs_error("Tomo<T>::Tomo(): Error creating progress logfile for writting.");
     }
-    noreverse = false;
 }
 
 template<typename T>
@@ -53,7 +52,6 @@ Tomo<T>::Tomo(MPImodeling *_mpi) {
     {
         rs_error("Tomo<T>::Tomo(): Error creating progress logfile for writting.");
     }
-    noreverse = false;
 }
 
 template<typename T>

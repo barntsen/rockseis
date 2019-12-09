@@ -15,13 +15,11 @@
 #include "file.h"
 #include "model.h"
 #include "data.h"
-#include "waves.h"
 #include "der.h"
-#include "snap.h"
 #include "interp.h"
 #include "parallel.h"
-#include "rtm.h"
-#include "mva.h"
+#include "kdmig.h"
+#include "ttable.h"
 #include "sort.h"
 #include "bspl.h"
 #include "hilbert.h"
@@ -30,20 +28,20 @@
 #define RUN_BS_PROJ 1
 #define BREAK_LOOP 2
 
-#define WVA_ERR 0
-#define WVA_OK 1
+#define KVA_ERR 0
+#define KVA_OK 1
 
 #define LOGFILE "kdmva.log"
 
 #define PROGLOGFILE "progress.log"
 
 #define VPLSFILE "vp_ls.rss"
-#define RHOLSFILE "rho_ls.rss"
 #define VSLSFILE "vs_ls.rss"
 #define SOURCELSFILE "source_ls.rss"
 
+#define TTABLELSFILE "ttable_ls.rss"
+
 #define VP0FILE "vp_0.rss"
-#define RHO0FILE "rho_0.rss"
 #define VS0FILE "vs_0.rss"
 #define SOURCE0FILE "source_0.rss"
 
@@ -110,16 +108,20 @@ public:
     bool getIncore() { return incore; }
     int getOrder() { return order; }
     void setOrder(int val) { order = val; }
+    int getSouinc() { return souinc; }
+    void setSouinc(int val) { souinc = val; }
+    int getRecinc() { return recinc; }
+    void setRecinc(int val) { recinc = val; }
     int getSnapinc() { return snapinc; }
     void setSnapinc(int val) { snapinc = val; }
     int getNsnaps() { return nsnaps; }
     void setNsnaps(int val) { nsnaps = val; }
-    rs_snapmethod getSnapmethod() { return snapmethod; } 
-    void setSnapmethod(rs_snapmethod val) { snapmethod = val; }
     rs_paramtype getParamtype() { return paramtype; } 
     void setParamtype(rs_paramtype val) { paramtype = val; }
     rs_wemvamisfit getMisfit_type() { return misfit_type; } 
     void setMisfit_type(rs_wemvamisfit val) { misfit_type = val; }
+    T getRadius() { return radius; }
+    void setRadius(T val) { radius = val; }
     T getDtx() { return dtx; }
     T getDty() { return dty; }
     T getDtz() { return dtz; }
@@ -135,9 +137,8 @@ public:
     void setFnorm(double norm) { fnorm = norm; }
     double getFnorm() { return fnorm; }
     void normalize(double *v, double *f, int n);
-    void setNoreverse(bool val) { noreverse = val; }
-    bool getNoreverse() { return noreverse; }
-
+    bool getConstrain() { return constrain; }
+    void setConstrain(bool val) { constrain = val; }
 
 private:
 	int lpml;
@@ -154,16 +155,15 @@ private:
     std::ofstream Flog; ///< Log stream
     bool createLog(); ///< Set name of logfile and open for writing
     bool createProglog(); ///< Set name of progress logfile and open for writing
-    rs_snapmethod snapmethod;
     rs_paramtype paramtype;
     rs_wemvamisfit misfit_type;
     MPImodeling *mpi;
     T dtx, dty, dtz;
     int nhx,nhy,nhz;
-    bool noreverse;
     int souinc;
     int recinc;
     T radius;
+    bool constrain;
 };
 
 // ##### ACOUSTIC 2D KDMVA CLASS
@@ -180,8 +180,8 @@ public:
     void setVpfile(std::string file) { Vpfile = file; }
     std::string getVpfile() { return Vpfile; }
 
-    void setRhofile(std::string file) { Rhofile = file; }
-    std::string getRhofile() { return Rhofile; }
+    void setTtablefile(std::string file) { Ttablefile = file; }
+    std::string getTtablefile() { return Ttablefile; }
 
     void setVpgradfile(std::string file) { Vpgradfile = file; }
     std::string getVpgradfile() { return Vpgradfile; }
@@ -206,6 +206,12 @@ public:
 
     void setApertx(T val) { apertx = val; }
     T getApertx() { return apertx; }
+
+    void setLboundfile(std::string file) { Lboundfile = file; }
+    std::string getLboundfile() { return Lboundfile; }
+
+    void setUboundfile(std::string file) { Uboundfile = file; }
+    std::string getUboundfile() { return Uboundfile; }
 
     void setKvp(T val) { kvp = val; }
     T getKvp() { return kvp; }
@@ -235,7 +241,7 @@ public:
     void combineGradients();
 
     // Set initial
-    int setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile);
+    int setInitial(double *x, std::string vpfile);
 
     // Save line search models
     void saveLinesearch(double *x);
@@ -249,11 +255,10 @@ public:
     // Read misfit
     void readMisfit(double *f);
 
-
 private:
     std::string Waveletfile;
     std::string Vpfile;
-    std::string Rhofile;
+    std::string Ttablefile;
     std::string Vpgradfile;
     std::string Pimagefile;
     std::string Misfitfile;
@@ -261,6 +266,8 @@ private:
     std::string Precordfile;
     std::string Modelmutefile;
     std::string Residualmutefile;
+    std::string Lboundfile;
+    std::string Uboundfile;
     T apertx;
     T kvp;
     T reg_eps[2];
@@ -283,9 +290,6 @@ public:
 
     void setVsfile(std::string file) { Vsfile = file; }
     std::string getVsfile() { return Vsfile; }
-
-    void setRhofile(std::string file) { Rhofile = file; }
-    std::string getRhofile() { return Rhofile; }
 
     void setVpgradfile(std::string file) { Vpgradfile = file; }
     std::string getVpgradfile() { return Vpgradfile; }
@@ -369,7 +373,7 @@ public:
     void computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pimage, std::string imageresfile);
 
     // Set initial
-    int setInitial(double *x, std::string vpfile, std::string vsfile, std::string rhofile, std::string sourcefile);
+    int setInitial(double *x, std::string vpfile, std::string vsfile);
 
     // Save line search models
     void saveLinesearch(double *x);
@@ -394,10 +398,8 @@ private:
     std::string Waveletfile;
     std::string Vpfile;
     std::string Vsfile;
-    std::string Rhofile;
     std::string Vpgradfile;
     std::string Vsgradfile;
-    std::string Rhogradfile;
     std::string Misfitfile;
     std::string Uxrecordfile;
     std::string Uzrecordfile;

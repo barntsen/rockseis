@@ -136,6 +136,9 @@ if(env['MPI']):
     Acoustictomo3d = mpi.Program(prefix + 'Acoustictomo3d','Acoustictomo3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'rays', 'utils', 'der', 'geometry', 'sort', 'data', 'tomo', 'fat', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
     mpi.Install('../bin/',Acoustictomo3d)
 
+    Acoustickdmva2d = mpi.Program(prefix + 'Acoustickdmva2d','Acoustickdmva2d.cpp',LIBS=['file', 'model', 'pml', 'ttable', 'kdmig', 'kdtree', 'rays', 'utils', 'der', 'geometry', 'sort', 'data', 'kdmva', 'fat', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft', 'hilbert'])
+    mpi.Install('../bin/',Acoustickdmva2d)
+
     Acousticlsrtm2d = mpi.Program(prefix + 'Acousticlsrtm2d','Acousticlsrtm2d.cpp',LIBS=['lsmiginv', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'lsrtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft', 'hilbert'])
     mpi.Install('../bin/',Acousticlsrtm2d)
 

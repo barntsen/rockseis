@@ -47,3 +47,4 @@ if(env['MPI']):
     wemva = mpi.Library(builddir + 'wemva',['wemva.cpp'])
     tomo = mpi.Library(builddir + 'tomo',['tomo.cpp'])
     lsmiginv = mpi.Library(builddir + 'lsmiginv',['lsmiginv.cpp'])
+    kdmva = mpi.Library(builddir + 'kdmva',['kdmva.cpp'])
