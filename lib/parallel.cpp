@@ -376,22 +376,39 @@ workResult_t MPImodeling::receiveResult(const int rank) {
 }
 
 void MPImodeling::checkResult(workResult_t result) {
-	if(result.status == PARALLEL_IO) {
-        int rank = result.fromRank;
-		result = receiveResult(rank);
+    int rank;
+    switch(result.status){
+        case PARALLEL_IO:
+            rank = result.fromRank;
+            std::cerr << "Rank :" << rank << " doing parallel io." << std::endl; 
+            workResult_t result2;
+            result2 = receiveResult(rank);
+            std::cerr << "Rank :" << rank << " returned a result." << std::endl; 
+            if(result2.status != WORK_FINISHED) {
+                if(result2.fromRank != 0){
+                    // Job failed
+                    work[result2.id]->status = WORK_NOT_STARTED;
+                }
+            }
+            else {
+                // Job finished successfully
+                work[result2.id]->status = WORK_FINISHED;
+                work[result2.id]->end = time(NULL);
+                work[result2.id]->MPItag = result2.fromRank;
+            }
+            break;
+        case WORK_FINISHED:
+            // Job finished successfully
+            work[result.id]->status = WORK_FINISHED;
+            work[result.id]->end = time(NULL);
+            work[result.id]->MPItag = result.fromRank;
+            break;
+        default:
+            if(result.fromRank != 0){
+                // Job failed
+                work[result.id]->status = WORK_NOT_STARTED;
+            }
+            break;
     }
-	if(result.status != WORK_FINISHED) {
-        if(result.fromRank != 0){
-            // Job failed
-            work[result.id]->status = WORK_NOT_STARTED;
-        }
-	}
-	else {
-		// Job finished successfully
-		work[result.id]->status = WORK_FINISHED;
-		work[result.id]->end = time(NULL);
-		work[result.id]->MPItag = result.fromRank;
-	}
 }
-
 }
