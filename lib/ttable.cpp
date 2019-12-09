@@ -549,8 +549,6 @@ Ttable3D<T>::Ttable3D(std::shared_ptr<ModelEikonal3D<T>> model, int _ntable):Tta
     _ox=model->getOx();
     _oy=model->getOy();
     _oz=model->getOz();
-    // TODO implement the possibility to pad the traveltime table
-    //_lpml = model->getLpml();
     _lpml = 0;
     _dim = model->getDim();
 
@@ -560,9 +558,9 @@ Ttable3D<T>::Ttable3D(std::shared_ptr<ModelEikonal3D<T>> model, int _ntable):Tta
     this->setDx(_dx);
     this->setDy(_dy);
     this->setDz(_dz);
-    this->setOx(_ox-(_lpml*_dx));
-    this->setOy(_oy-(_lpml*_dy));
-    this->setOz(_oz-(_lpml*_dz));
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
     this->setDim(_dim);
     this->setNtable(_ntable);
     this->setLpml(_lpml);

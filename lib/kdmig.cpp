@@ -267,7 +267,7 @@ int KdmigAcoustic2D<T>::run_adj()
 
          // Calculate gradient
          this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
-         rays_adj->clearLam();
+         rays_adj->clearLam(1e16);
 
          // Solve the receiver side equation
          rays_adj->clearTT();
@@ -277,7 +277,7 @@ int KdmigAcoustic2D<T>::run_adj()
 
          // Calculate gradient
          this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
-         rays_adj->clearLam();
+         rays_adj->clearLam(1e16);
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -304,7 +304,7 @@ void KdmigAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelEikonal2D<T>> 
             if(isnan(lam[Ilam(i+lpml, j+lpml)]) || isinf(lam[Ilam(i+lpml, j+lpml)]) ){
                 grad[Igrad(i,j)] = 0.0;
             }else{
-                grad[Igrad(i,j)] = -1.0*lam[Ilam(i+lpml,j+lpml)]/CUB(vp[Igrad(i,j)]);
+                grad[Igrad(i,j)] += -1.0*lam[Ilam(i+lpml,j+lpml)]/CUB(vp[Igrad(i,j)]);
             }
         }
     }

@@ -8,7 +8,7 @@ template<typename T>
 Kdmva<T>::Kdmva() {
     //Set default parameters
     fs = false;
-    lpml = 0;
+    lpml = 3;
     incore = true;
     order = 4;
     snapinc=4;
@@ -38,7 +38,7 @@ Kdmva<T>::Kdmva(MPImodeling *_mpi) {
 
     //Set default parameters
     fs = false;
-    lpml = 0;
+    lpml = 3;
     incore = true;
     order = 4;
     snapinc=4;

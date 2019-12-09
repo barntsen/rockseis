@@ -525,7 +525,23 @@ void RaysAcoustic2D<T>::insertImageresiduals(T *res){
     Index Ires(nx,nz); // Data indexes
     for (iz=0; iz < nz; iz++) {
         for (ix=0; ix < nx; ix++) {
-            adjsource[Iray(lpml+ix, lpml+iz)] =  -res[Ires(ix,iz)];
+            adjsource[Iray(lpml+ix, lpml+iz)] =  +res[Ires(ix,iz)];
+        }
+    }
+
+    //Left and right padding
+    for(ix=0; ix < lpml; ix++){
+        for(iz=0; iz < nz_pml; iz++){
+            adjsource[Iray(ix,iz)]=adjsource[Iray(lpml,iz)];
+            adjsource[Iray(nx_pml-lpml+ix,iz)]=adjsource[Iray(nx_pml-lpml-1,iz)];
+        }
+    }
+
+    //Top and bottom padding
+    for(ix=0; ix<nx_pml; ix++){
+        for(iz=0; iz<lpml; iz++){
+            adjsource[Iray(ix,iz)]=adjsource[Iray(ix,lpml)];
+            adjsource[Iray(ix,nz_pml-lpml+iz)]=adjsource[Iray(ix,nz_pml-lpml-1)];
         }
     }
 }
