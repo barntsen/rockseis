@@ -326,6 +326,11 @@ void KdmvaAcoustic2D<T>::runGrad() {
         // Perform work in parallel
         mpi->performWork();
 
+        for(long int i=0; i<ngathers; i++) {
+            pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+            remove_file(Pimagefile + "-" + std::to_string(i));
+        }
+
         //Calculate and output misfit and residual
         this->computeMisfit(pimage);
 
@@ -346,6 +351,12 @@ void KdmvaAcoustic2D<T>::runGrad() {
 
         // Perform work in parallel
         mpi->performWork();
+
+        for(long int i=0; i<ngathers; i++) {
+            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            remove_file(Vpgradfile + "-" + std::to_string(i));
+        }
+
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -507,12 +518,16 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 // Run migration
                 kdmig->run();
 
+                /*
                 // Send result back
                 work.status = PARALLEL_IO;
                 mpi->sendResult(work);		
 
                 // Stack image
                 pimage->stackImage_parallel(Pimagefile);
+                */
+                // Write image
+                pimage->write();
 
                 // Reset all classes
                 shot2D.reset();
@@ -520,7 +535,6 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 pimage.reset();
                 kdmig.reset();
                 ttable.reset();
-                pimage.reset();
 
                 // Send result back
                 work.status = WORK_FINISHED;
@@ -585,12 +599,16 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 // Run migration
                 kdmig->run_adj();
 
+                /*
                 // Send result back
                 work.status = PARALLEL_IO;
                 mpi->sendResult(work);		
 
                 // Stack image
                 vpgrad->stackImage_parallel(Vpgradfile);
+                */
+                // Write gradient
+                vpgrad->write();
 
                 // Reset all classes
                 shot2D.reset();
