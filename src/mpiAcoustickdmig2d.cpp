@@ -120,10 +120,6 @@ int main(int argc, char** argv) {
         // Get number of shots
         size_t ngathers =  Sort->getNensemb();
 
-        // Image
-        pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
-        pimage->createEmpty();
-        
 		// Create work queue
 		for(long int i=0; i<ngathers; i++) {
 			// Work struct
@@ -143,11 +139,19 @@ int main(int argc, char** argv) {
             pgather->open("o");
             for(long int i=0; i<ngathers; i++) {
                 pgather->putImage(Pimagefile + "-" + std::to_string(i));
-                remove_file(Pimagefile + "-" + std::to_string(i));
             }
             pgather->close();
             Fimg->close();
         }
+
+        // Image
+        pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
+        pimage->createEmpty();
+		for(long int i=0; i<ngathers; i++) {
+            pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+            remove_file(Pimagefile + "-" + std::to_string(i));
+        }
+
     }
     else {
         /* Slave */
@@ -201,16 +205,7 @@ int main(int argc, char** argv) {
                 kdmig->run();
 
                 // Output image
-                if(Gather){
-                    pimage->write();
-                }
-
-                // Send result back
-                work.status = PARALLEL_IO;
-                mpi.sendResult(work);		
-
-                // Stack image
-                pimage->stackImage_parallel(Pimagefile);
+                pimage->write();
 
                 // Reset all classes
                 shot2D.reset();

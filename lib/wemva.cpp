@@ -254,12 +254,16 @@ void WemvaAcoustic2D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
+		// Perform work in parallel
+		mpi->performWork();
+
         // Image
         pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile, gmodel, this->getNhx(), this->getNhz());
         pimage->createEmpty();
-
-		// Perform work in parallel
-		mpi->performWork();
+                for(long int i=0; i<ngathers; i++) {
+            pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+            remove_file(Pimagefile + "-" + std::to_string(i));
+        }
 
         //Calculate and output misfit
         this->computeMisfit(pimage);
@@ -275,11 +279,18 @@ void WemvaAcoustic2D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
+		// Perform work in parallel
+		mpi->performWork();
+
+        // Stack gradient
         vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
         vpgrad->createEmpty();
 
-		// Perform work in parallel
-		mpi->performWork();
+        for(long int i=0; i<ngathers; i++) {
+            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            remove_file(Vpgradfile + "-" + std::to_string(i));
+        }
+
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -354,12 +365,9 @@ void WemvaAcoustic2D<T>::runGrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Send result back
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);		
 
                 // Stack image
-                pimage->stackImage_parallel(Pimagefile);
+                pimage->write();
 
                 // Reset all classes
                 shot2D.reset();
@@ -445,12 +453,9 @@ void WemvaAcoustic2D<T>::runGrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
 
                 // Stack gradient
-                vpgrad->stackImage_parallel(Vpgradfile);
+                vpgrad->write();
 
                 // Reset all classes
                 shot2D.reset();
@@ -1504,11 +1509,16 @@ void WemvaElastic2D<T>::runPPgrad() {
 			mpi->addWork(work);
 		}
 
-        pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile, gmodel, this->getNhx(), this->getNhz());
-        pimage->createEmpty();
-
 		// Perform work in parallel
 		mpi->performWork();
+
+        // Image
+        pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile, gmodel, this->getNhx(), this->getNhz());
+        pimage->createEmpty();
+                for(long int i=0; i<ngathers; i++) {
+            pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+            remove_file(Pimagefile + "-" + std::to_string(i));
+        }
 
         //Calculate and output misfit
         this->computeMisfit(pimage, PIMAGERESFILE);
@@ -1524,17 +1534,24 @@ void WemvaElastic2D<T>::runPPgrad() {
 			mpi->addWork(work);
 		}
 
-       // Images
-       vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
-       vpgrad->createEmpty();
+        // Perform work in parallel
+        mpi->performWork();
 
-       vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile, gmodel, 1, 1);
-       vsgrad->createEmpty();
+        // Images
+        vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
+        vpgrad->createEmpty();
 
-		// Perform work in parallel
-		mpi->performWork();
+        vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile, gmodel, 1, 1);
+        vsgrad->createEmpty();
 
-		//Clear work vector 
+        for(long int i=0; i<ngathers; i++) {
+            if(update_vp){
+                vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+                remove_file(Vpgradfile + "-" + std::to_string(i));
+            }
+        }
+
+        //Clear work vector 
 		mpi->clearWork();
 
     }
@@ -1677,12 +1694,9 @@ void WemvaElastic2D<T>::runPPgrad() {
                     default:
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
-                // Send parallel io signal 
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);		
 
                 // Stack image
-                pimage->stackImage_parallel(Pimagefile);
+                pimage->write();
 
                 // Reset all classes
                 Uxdata2D.reset();
@@ -1832,12 +1846,9 @@ void WemvaElastic2D<T>::runPPgrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
 
                 // Stack gradient
-                vpgrad->stackImage_parallel(Vpgradfile);
+                vpgrad->write();
 
                 // Reset all classes
                 Uxdata2D.reset();
@@ -1906,12 +1917,17 @@ void WemvaElastic2D<T>::runPSgrad() {
 			mpi->addWork(work);
 		}
 
+		// Perform work in parallel
+		mpi->performWork();
+
         // Image
         simage = std::make_shared<rockseis::Image2D<T>>(Simagefile, gmodel, this->getNhx(), this->getNhz());
         simage->createEmpty();
+                for(long int i=0; i<ngathers; i++) {
+            simage->stackImage(Simagefile + "-" + std::to_string(i));
+            remove_file(Simagefile + "-" + std::to_string(i));
+        }
 
-		// Perform work in parallel
-		mpi->performWork();
 
         //Calculate and output misfit
         this->computeMisfit(simage, SIMAGERESFILE);
@@ -1927,15 +1943,23 @@ void WemvaElastic2D<T>::runPSgrad() {
 			mpi->addWork(work);
 		}
 
-        // Images
-        vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
-        vpgrad->createEmpty();
-
-        vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile, gmodel, 1, 1);
-        vsgrad->createEmpty();
-
 		// Perform work in parallel
 		mpi->performWork();
+
+       // Stack gradients
+       vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
+       vpgrad->createEmpty();
+
+       vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile, gmodel, 1, 1);
+       vsgrad->createEmpty();
+
+        for(long int i=0; i<ngathers; i++) {
+            if(update_vs){
+                vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
+                remove_file(Vsgradfile + "-" + std::to_string(i));
+            }
+        }
+
              
 		//Clear work vector 
 		mpi->clearWork();
@@ -2081,12 +2105,9 @@ void WemvaElastic2D<T>::runPSgrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Send result back
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);		
 
                 // Stack image
-                simage->stackImage_parallel(Simagefile);
+                simage->write();
 
                 // Reset all classes
                 Uxdata2D.reset();
@@ -2236,12 +2257,9 @@ void WemvaElastic2D<T>::runPSgrad() {
                         rockseis::rs_error("Invalid option of snapshot saving."); 
                 }
 
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
 
                 // Stack gradient
-                vsgrad->stackImage_parallel(Vsgradfile);
+                vsgrad->write();
 
                 // Reset all classes
                 Uxdata2D.reset();

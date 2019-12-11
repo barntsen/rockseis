@@ -518,14 +518,6 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 // Run migration
                 kdmig->run();
 
-                /*
-                // Send result back
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);		
-
-                // Stack image
-                pimage->stackImage_parallel(Pimagefile);
-                */
                 // Write image
                 pimage->write();
 
@@ -599,14 +591,6 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 // Run migration
                 kdmig->run_adj();
 
-                /*
-                // Send result back
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);		
-
-                // Stack image
-                vpgrad->stackImage_parallel(Vpgradfile);
-                */
                 // Write gradient
                 vpgrad->write();
 

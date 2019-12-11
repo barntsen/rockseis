@@ -291,6 +291,9 @@ void InversionAcoustic2D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
+		// Perform work in parallel
+		mpi->performWork();
+
         // Image
         vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
         vpgrad->createEmpty();
@@ -303,8 +306,17 @@ void InversionAcoustic2D<T>::runGrad() {
             srcilum->createEmpty();
         }
 
-		// Perform work in parallel
-		mpi->performWork();
+        for(long int i=0; i<ngathers; i++) {
+            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            remove_file(Vpgradfile + "-" + std::to_string(i));
+            rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+            remove_file(Rhogradfile + "-" + std::to_string(i));
+
+            if(this->srcilumset){
+                srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
+                remove_file(Srcilumfile + "-" + std::to_string(i));
+            }
+        }
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -445,16 +457,12 @@ void InversionAcoustic2D<T>::runGrad() {
                 }
                 wavgrad->putTrace(Wavgradfile, work.id);
 
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
-
-                vpgrad->stackImage_parallel(Vpgradfile);
-                rhograd->stackImage_parallel(Rhogradfile);
+                vpgrad->write();
+                rhograd->write();
 
                 // Output ilumination
                 if(this->srcilumset){
-                    srcilum->stackImage_parallel(Srcilumfile);
+                    srcilum->write();
                 }
                 
                 // Reset all classes
@@ -1609,6 +1617,9 @@ void InversionAcoustic3D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
+        // Perform work in parallel
+        mpi->performWork();
+
         // Image
         vpgrad = std::make_shared<rockseis::Image3D<T>>(Vpgradfile, gmodel, 1, 1, 1);
         vpgrad->createEmpty();
@@ -1616,11 +1627,20 @@ void InversionAcoustic3D<T>::runGrad() {
         rhograd = std::make_shared<rockseis::Image3D<T>>(Rhogradfile, gmodel, 1, 1, 1);
         rhograd->createEmpty();
 
-		// Perform work in parallel
-		mpi->performWork();
+        for(long int i=0; i<ngathers; i++) {
+            vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+            remove_file(Vpgradfile + "-" + std::to_string(i));
+            rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+            remove_file(Rhogradfile + "-" + std::to_string(i));
 
-		//Clear work vector 
-		mpi->clearWork();
+            if(this->srcilumset){
+                srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
+                remove_file(Srcilumfile + "-" + std::to_string(i));
+            }
+        }
+
+        //Clear work vector 
+        mpi->clearWork();
 	}
     else {
         /* Slave */
@@ -1757,17 +1777,13 @@ void InversionAcoustic3D<T>::runGrad() {
                 }
                 wavgrad->putTrace(Wavgradfile, work.id);
 
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
-
-                vpgrad->stackImage_parallel(Vpgradfile);
-                rhograd->stackImage_parallel(Rhogradfile);
+                vpgrad->write();
+                rhograd->write();
 
                 // Output ilumination
                 /*
                 if(this->srcilumset){
-                    srcilum->stackImage_parallel(Srcilumfile);
+                    srcilum->write();
                 }
                 */
 
@@ -2811,6 +2827,9 @@ void InversionElastic2D<T>::runGrad() {
 			mpi->addWork(work);
         }
 
+		// Perform work in parallel
+		mpi->performWork();
+
         // Images
         vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile, gmodel, 1, 1);
         vpgrad->createEmpty();
@@ -2821,8 +2840,20 @@ void InversionElastic2D<T>::runGrad() {
         rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile, gmodel, 1, 1);
         rhograd->createEmpty();
 
-		// Perform work in parallel
-		mpi->performWork();
+        for(long int i=0; i<ngathers; i++) {
+            if(update_vp){
+                vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+                remove_file(Vpgradfile + "-" + std::to_string(i));
+            }
+            if(update_vs){
+                vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
+                remove_file(Vsgradfile + "-" + std::to_string(i));
+            }
+            if(update_rho){
+                rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+                remove_file(Rhogradfile + "-" + std::to_string(i));
+            }
+        }
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -3160,18 +3191,14 @@ void InversionElastic2D<T>::runGrad() {
                     wavgrad->putTrace(Wavgradfile, work.id);
                 }
 
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
-
                 if(update_vp){
-                    vpgrad->stackImage_parallel(Vpgradfile);
+                    vpgrad->write();
                 }
                 if(update_vs){
-                    vsgrad->stackImage_parallel(Vsgradfile);
+                    vsgrad->write();
                 }
                 if(update_rho){
-                    rhograd->stackImage_parallel(Rhogradfile);
+                    rhograd->write();
                 }
 
                 // Reset all classes
@@ -4622,6 +4649,9 @@ void InversionElastic3D<T>::runGrad() {
 			mpi->addWork(work);
 		}
 
+        // Perform work in parallel
+        mpi->performWork();
+
         // Images
         vpgrad = std::make_shared<rockseis::Image3D<T>>(Vpgradfile, gmodel, 1, 1, 1);
         vpgrad->createEmpty();
@@ -4632,8 +4662,20 @@ void InversionElastic3D<T>::runGrad() {
         rhograd = std::make_shared<rockseis::Image3D<T>>(Rhogradfile, gmodel, 1, 1, 1);
         rhograd->createEmpty();
 
-		// Perform work in parallel
-		mpi->performWork();
+        for(long int i=0; i<ngathers; i++) {
+            if(update_vp){
+                vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
+                remove_file(Vpgradfile + "-" + std::to_string(i));
+            }
+            if(update_vs){
+                vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
+                remove_file(Vsgradfile + "-" + std::to_string(i));
+            }
+            if(update_rho){
+                rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
+                remove_file(Rhogradfile + "-" + std::to_string(i));
+            }
+        }
 
 		//Clear work vector 
 		mpi->clearWork();
@@ -5093,18 +5135,14 @@ void InversionElastic3D<T>::runGrad() {
                     wavgrad->putTrace(Wavgradfile, work.id);
                 }
 
-                // Send IO signal
-                work.status = PARALLEL_IO;
-                mpi->sendResult(work);
-
                 if(update_vp){
-                    vpgrad->stackImage_parallel(Vpgradfile);
+                    vpgrad->write();
                 }
                 if(update_vs){
-                    vsgrad->stackImage_parallel(Vsgradfile);
+                    vsgrad->write();
                 }
                 if(update_rho){
-                    rhograd->stackImage_parallel(Rhogradfile);
+                    rhograd->write();
                 }
 
                 // Reset all classes
