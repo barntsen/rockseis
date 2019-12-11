@@ -380,10 +380,8 @@ void MPImodeling::checkResult(workResult_t result) {
     switch(result.status){
         case PARALLEL_IO:
             rank = result.fromRank;
-            std::cerr << "Rank :" << rank << " doing parallel io." << std::endl; 
             workResult_t result2;
             result2 = receiveResult(rank);
-            std::cerr << "Rank :" << rank << " returned a result." << std::endl; 
             if(result2.status != WORK_FINISHED) {
                 if(result2.fromRank != 0){
                     // Job failed
