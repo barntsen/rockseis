@@ -727,7 +727,7 @@ void Image3dframe::PlotZcrosshair(wxDC &dc, int w, int h)
 void Image3dframe::OnXplotwindowMouseMove(wxMouseEvent& event)
 {
 
-    wxPaintDC dc( Xplotwindow );
+    wxClientDC dc( Xplotwindow );
     wxPoint pos;
     pos=event.GetLogicalPosition(dc);
     Xplotwindow->SetFocus();
@@ -790,7 +790,7 @@ void Image3dframe::OnXplotwindowMouseMove(wxMouseEvent& event)
 
 void Image3dframe::OnYplotwindowMouseMove(wxMouseEvent& event)
 {
-    wxPaintDC dc( Yplotwindow );
+    wxClientDC dc( Yplotwindow );
     wxPoint pos;
     pos=event.GetLogicalPosition(dc);
     Yplotwindow->SetFocus();
@@ -854,7 +854,7 @@ void Image3dframe::OnYplotwindowMouseMove(wxMouseEvent& event)
 void Image3dframe::OnZplotwindowMouseMove(wxMouseEvent& event)
 {
 
-    wxPaintDC dc( Zplotwindow );
+    wxClientDC dc( Zplotwindow );
     wxPoint pos;
     pos=event.GetLogicalPosition(dc);
     Zplotwindow->SetFocus();
@@ -917,7 +917,7 @@ void Image3dframe::OnZplotwindowMouseMove(wxMouseEvent& event)
 
 void Image3dframe::OnXplotwindowLeftDown(wxMouseEvent& event)
 {
-    wxPaintDC dc( Xplotwindow );
+    wxClientDC dc( Xplotwindow );
     wxPoint zpos1=event.GetLogicalPosition(dc);
     xslicezoom->Setzpos1(zpos1);
     xslicezoom->Setzooming(true);
@@ -926,7 +926,7 @@ void Image3dframe::OnXplotwindowLeftDown(wxMouseEvent& event)
 void Image3dframe::OnXplotwindowLeftUp(wxMouseEvent& event)
 {
     wxPoint pos;
-    wxPaintDC dc( Xplotwindow );
+    wxClientDC dc( Xplotwindow );
     pos=event.GetLogicalPosition(dc);
     int w,h;
     Xplotwindow->GetSize(&w,&h);
@@ -1029,7 +1029,7 @@ void Image3dframe::OnXplotwindowLeftUp(wxMouseEvent& event)
 
 void Image3dframe::OnYplotwindowLeftDown(wxMouseEvent& event)
 {
-    wxPaintDC dc( Yplotwindow );
+    wxClientDC dc( Yplotwindow );
     wxPoint zpos1=event.GetLogicalPosition(dc);
     yslicezoom->Setzpos1(zpos1);
     yslicezoom->Setzooming(true);
@@ -1038,7 +1038,7 @@ void Image3dframe::OnYplotwindowLeftDown(wxMouseEvent& event)
 void Image3dframe::OnYplotwindowLeftUp(wxMouseEvent& event)
 {
     wxPoint pos;
-    wxPaintDC dc( Yplotwindow );
+    wxClientDC dc( Yplotwindow );
     pos=event.GetLogicalPosition(dc);
     int w,h;
     Yplotwindow->GetSize(&w,&h);
@@ -1141,7 +1141,7 @@ void Image3dframe::OnYplotwindowLeftUp(wxMouseEvent& event)
 
 void Image3dframe::OnZplotwindowLeftDown(wxMouseEvent& event)
 {
-    wxPaintDC dc( Zplotwindow );
+    wxClientDC dc( Zplotwindow );
     wxPoint zpos1=event.GetLogicalPosition(dc);
     zslicezoom->Setzpos1(zpos1);
     zslicezoom->Setzooming(true);
@@ -1150,7 +1150,7 @@ void Image3dframe::OnZplotwindowLeftDown(wxMouseEvent& event)
 void Image3dframe::OnZplotwindowLeftUp(wxMouseEvent& event)
 {
     wxPoint pos;
-    wxPaintDC dc( Zplotwindow );
+    wxClientDC dc( Zplotwindow );
     pos=event.GetLogicalPosition(dc);
     int w,h;
     Zplotwindow->GetSize(&w,&h);

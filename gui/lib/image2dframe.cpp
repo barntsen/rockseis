@@ -317,7 +317,7 @@ void Image2dframe::OnXaxisPaint(wxPaintEvent& event)
 void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
 {
 
-    wxPaintDC dc( Imagewindow );
+    wxClientDC dc( Imagewindow );
     wxPoint pos;
     wxPoint box[5];
     wxPoint zpos1=zoom->Getzpos1();
@@ -409,7 +409,7 @@ void Image2dframe::OnImagewindowMouseMove(wxMouseEvent& event)
 void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
 {
     wxPoint pos;
-    wxPaintDC dc( Imagewindow );
+    wxClientDC dc( Imagewindow );
     pos=event.GetLogicalPosition(dc);
     int w,h;
     Imagewindow->GetSize(&w,&h);
@@ -504,14 +504,14 @@ void Image2dframe::OnImagewindowRightUp(wxMouseEvent& event)
     if(toolbarset){
         if(ToolBarItem3->IsToggled() && nlayers > 0){
             int w,h;
-            float x0, x1, y0, y1;
-            float ax;
-            float ay;
-            float x,y;
+	    float x0, x1, y0, y1;
+	    float ax;
+	    float ay;
+	    float x,y;
 
-            wxPaintDC dc( Imagewindow );
-            wxPoint pos;
-            pos=event.GetLogicalPosition(dc);
+	    wxClientDC dc( Imagewindow );
+	    wxPoint pos;
+	    pos=event.GetLogicalPosition(dc);
             Imagewindow->GetSize(&w,&h);
 
             x0=zoom->Getx0();
@@ -533,8 +533,8 @@ void Image2dframe::OnImagewindowRightUp(wxMouseEvent& event)
 
 void Image2dframe::OnImagewindowLeftDown(wxMouseEvent& event)
 {
-    wxPaintDC dc( Imagewindow );
-    wxPoint zpos1=event.GetLogicalPosition(dc);
+	wxClientDC dc( Imagewindow );
+	wxPoint zpos1=event.GetLogicalPosition(dc);
     bool dozoom = false;
     if(!toolbarset){
         dozoom = true;
