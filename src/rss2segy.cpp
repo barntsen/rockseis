@@ -812,6 +812,11 @@ int main(int argc, char* argv[])
             for (size_t i=0; i < ntr; i++)
             {
                 Bdata2D->readTraces();
+                itrace[0] = i;
+                itrace[1] = i;
+                itrace[2] = i;
+                itrace[38] = ns;
+                itrace[39] = dt;
                 itrace[21] = scoords2D[0].x*SCALCO;
                 itrace[13] = scoords2D[0].y*SCALEL;
                 itrace[23] = gcoords2D[0].x*SCALCO;
@@ -838,6 +843,11 @@ int main(int argc, char* argv[])
             for (size_t i=0; i < ntr; i++)
             {
                 Bdata3D->readTraces();
+                itrace[0] = i;
+                itrace[1] = i;
+                itrace[2] = i;
+                itrace[38] = ns;
+                itrace[39] = dt;
                 itrace[21] = scoords3D[0].x*SCALCO;
                 itrace[22] = scoords3D[0].y*SCALCO;
                 itrace[13] = scoords3D[0].z*SCALEL;
