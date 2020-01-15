@@ -816,7 +816,7 @@ int main(int argc, char* argv[])
                 itrace[1] = i;
                 itrace[2] = i;
                 itrace[38] = ns;
-                itrace[39] = dt;
+                itrace[39] = (int) (dt*1e6);
                 itrace[21] = scoords2D[0].x*SCALCO;
                 itrace[13] = scoords2D[0].y*SCALEL;
                 itrace[23] = gcoords2D[0].x*SCALCO;
@@ -847,7 +847,7 @@ int main(int argc, char* argv[])
                 itrace[1] = i;
                 itrace[2] = i;
                 itrace[38] = ns;
-                itrace[39] = dt;
+                itrace[39] = (dt*1e6);
                 itrace[21] = scoords3D[0].x*SCALCO;
                 itrace[22] = scoords3D[0].y*SCALCO;
                 itrace[13] = scoords3D[0].z*SCALEL;
