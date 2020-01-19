@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Input_Pdata", &Indatafile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Survey", &Surveyfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Datum_survey", &Surveyfile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Psnap", &Psnap) == INPARSE_ERR) status = true;
     if(Psnap){
