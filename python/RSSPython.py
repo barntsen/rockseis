@@ -25,7 +25,7 @@ class RSSdata:
     
         # Check if file has rss identifier
         if(buff != MAGICNUMBER):
-            print 'Not a valid rss file!'
+            print('Not a valid rss file!')
             return -1
     
         # Reading header
