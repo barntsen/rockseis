@@ -144,6 +144,117 @@ void Data<T>::Hilbert1D(T *pulse, unsigned long nt)
 	}
 } 
 
+template<typename T>
+void Data<T>::St1D(T *data, unsigned long len, T d1, int lo, int hi, T *result)
+   /*< Forward S transform >*/
+{
+   int i, i1, k, l2, nw;
+   T s, *g;
+
+   std::shared_ptr<rockseis::Fft<T>> fft1d (new rockseis::Fft<T>(len));
+   std::shared_ptr<rockseis::Fft<T>> ifft1d (new rockseis::Fft<T>(len));
+   T *pp, *qq;
+
+   nw = fft1d->getNfft();
+
+   pp = fft1d->getData();
+   qq = ifft1d->getData();
+   g = (T *) calloc(nw, sizeof(T));
+
+   s = 0.;
+   for (i = 0; i < len; i++) {
+      pp[2*i] = data[i];
+      s += data[i];
+   }
+   s /= len;
+   fft1d->fft1d(1);
+
+   l2 = (nw+1)/2;
+   for (i=1; i < l2; i++) {
+      pp[2*i] *= 2.;
+      pp[2*i+1] *= 2.;
+   }
+   l2 = nw/2+1;
+   for (i=l2; i < nw; i++) {
+      pp[2*i] = 0.;
+      pp[2*i+1] = 0.;
+   }
+
+   for (i1=lo; i1 <= hi; i1++) {
+      if (0 == i1) {
+         for (i=0; i < len; i++) {
+            result[2*((i1-lo)*len+i)] = s;
+         }	
+      } else {
+         g[0] = gauss(i1, 0);
+         l2 = nw/2 + 1;
+         for (i=1; i < l2; i++) {
+            g[i] = g[nw-i] = gauss(i1, i);
+         }
+
+         for (i=0; i < nw; i++) {
+            s = g[i];
+            k = i1 + i;
+            if (k >= nw) k -= nw;
+            qq[2*i] = pp[2*k] * s;
+            qq[2*i+1] = pp[2*k+1] * s;
+         }
+
+         ifft1d->fft1d(1);
+
+         for (i=0; i < len; i++) {
+            result[2*((i1-lo)*len+i)] = (qq[2*i]/len);
+            result[2*((i1-lo)*len+i)+1] = (qq[2*i+1]/len);
+         }
+      }	    
+   }
+   free(g);
+}
+
+template<typename T>
+void Data<T>::iSt1D(T *data, unsigned long len, T d1, int lo, int hi, T *result)
+/*< Inverse S transform >*/
+{
+   int i, i1, l2, nw;
+
+
+   std::shared_ptr<rockseis::Fft<T>> ifft1d (new rockseis::Fft<T>(len));
+   nw = ifft1d->getNfft();
+   T *pp;
+   pp = ifft1d->getData();
+
+   for (i1=lo; i1 <= hi; i1++) {
+      for (i=0; i < len; i++) {
+         pp[2*(i1-lo)] += data[2*((i1-lo)*len+i)];
+         pp[2*(i1-lo)+1] += data[2*((i1-lo)*len+i)+1];
+      }
+   }
+
+   l2 = (nw+1)/2;
+   for (i=1; i < l2; i++) {
+      pp[2*i] /= 2.;
+      pp[2*i+1] /= 2.;
+   }
+   l2 = nw/2+1;
+   for (i=l2; i < nw; i++) {
+      pp[2*i] = pp[2*(nw-i)];
+      pp[2*i+1] = -pp[2*(nw-i)+1];
+   }
+   ifft1d->fft1d(1);
+
+   for (i=0; i < len; i++) {
+      result[i] = pp[2*i]/len;
+   }
+}
+
+template<typename T>
+T Data<T>::gauss(int n, int m)
+/*< Fourier Transform of a Gaussian >*/
+{
+    return exp(-2.*PI*PI*m*m/(n*n));
+}
+
+
 
 template<typename T>
 void Data<T>::close()

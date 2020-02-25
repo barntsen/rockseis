@@ -36,6 +36,7 @@ public:
     std::string getFile() { return datafile; } ///< Get filename
     rs_field getField() { return field; } ///< Get data type
     bool open(std::string flag); ///< Open file. Flags can be "i", "o" or "a".
+    T gauss(int n, int m); ///<Fourier transform of Gaussian
     void close();  ///< Close file
 
     // Set functions
@@ -54,6 +55,10 @@ public:
 
     // Hilbert transform
     void Hilbert1D(T *pulse, unsigned long nt);
+
+    // S-transform
+    void St1D(T *data, unsigned long len, T d1, int lo, int hi, T *result);
+    void iSt1D(T *data, unsigned long len, T d1, int lo, int hi, T *result);
 
 private:
     std::string datafile;
