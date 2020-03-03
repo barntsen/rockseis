@@ -145,11 +145,12 @@ void Data<T>::Hilbert1D(T *pulse, unsigned long nt)
 } 
 
 template<typename T>
-void Data<T>::St1D(T *data, unsigned long len, T d1, int lo, int hi, T *result)
+void Data<T>::St1D(T *data, int lo, int hi, T *result)
    /*< Forward S transform >*/
 {
    int i, i1, k, l2, nw;
    T s, *g;
+   unsigned long len = this->getNt();
 
    std::shared_ptr<rockseis::Fft<T>> fft1d (new rockseis::Fft<T>(len));
    std::shared_ptr<rockseis::Fft<T>> ifft1d (new rockseis::Fft<T>(len));
@@ -212,11 +213,11 @@ void Data<T>::St1D(T *data, unsigned long len, T d1, int lo, int hi, T *result)
 }
 
 template<typename T>
-void Data<T>::iSt1D(T *data, unsigned long len, T d1, int lo, int hi, T *result)
+void Data<T>::iSt1D(T *data, int lo, int hi, T *result)
 /*< Inverse S transform >*/
 {
    int i, i1, l2, nw;
-
+   unsigned long len = this->getNt();
 
    std::shared_ptr<rockseis::Fft<T>> ifft1d (new rockseis::Fft<T>(len));
    nw = ifft1d->getNfft();

@@ -57,8 +57,8 @@ public:
     void Hilbert1D(T *pulse, unsigned long nt);
 
     // S-transform
-    void St1D(T *data, unsigned long len, T d1, int lo, int hi, T *result);
-    void iSt1D(T *data, unsigned long len, T d1, int lo, int hi, T *result);
+    void St1D(T *data, int lo, int hi, T *result);
+    void iSt1D(T *data, int lo, int hi, T *result);
 
 private:
     std::string datafile;
