@@ -145,15 +145,12 @@ void Data<T>::Hilbert1D(T *pulse, unsigned long nt)
 } 
 
 template<typename T>
-void Data<T>::St1D(T *data, int lo, int hi, T *result)
+void Data<T>::St1D(std::shared_ptr<rockseis::Fft<T>> fft1d, std::shared_ptr<rockseis::Fft<T>> ifft1d, T *data, int lo, int hi, T *result)
    /*< Forward S transform >*/
 {
    int i, i1, k, l2, nw;
    T s, *g;
    unsigned long len = this->getNt();
-
-   std::shared_ptr<rockseis::Fft<T>> fft1d (new rockseis::Fft<T>(len));
-   std::shared_ptr<rockseis::Fft<T>> ifft1d (new rockseis::Fft<T>(len));
    T *pp, *qq;
 
    nw = fft1d->getNfft();
@@ -185,12 +182,14 @@ void Data<T>::St1D(T *data, int lo, int hi, T *result)
       if (0 == i1) {
          for (i=0; i < len; i++) {
             result[2*((i1-lo)*len+i)] = s;
+            result[2*((i1-lo)*len+i)+1] = 0;
          }	
       } else {
          g[0] = gauss(i1, 0);
          l2 = nw/2 + 1;
          for (i=1; i < l2; i++) {
-            g[i] = g[nw-i] = gauss(i1, i);
+            g[i] = gauss(i1, i);
+            g[nw-i] = gauss(i1, i); 
          }
 
          for (i=0; i < nw; i++) {
@@ -201,7 +200,7 @@ void Data<T>::St1D(T *data, int lo, int hi, T *result)
             qq[2*i+1] = pp[2*k+1] * s;
          }
 
-         ifft1d->fft1d(1);
+         ifft1d->fft1d(-1);
 
          for (i=0; i < len; i++) {
             result[2*((i1-lo)*len+i)] = (qq[2*i]/len);

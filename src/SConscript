@@ -81,6 +81,9 @@ env.Install('../bin/',window)
 bandpass = env.Program(prefix + 'bandpass','bandpass.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
 env.Install('../bin/',bandpass)
 
+st1d = env.Program(prefix + 'st1d','st1d.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
+env.Install('../bin/',st1d)
+
 makesurvey = env.Program(prefix + 'makesurvey','makesurvey.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
 env.Install('../bin/',makesurvey)
 
