@@ -159,6 +159,15 @@ void Data<T>::St1D(std::shared_ptr<rockseis::Fft<T>> fft1d, std::shared_ptr<rock
    qq = ifft1d->getData();
    g = (T *) calloc(nw, sizeof(T));
 
+
+   for (i=0; i < nw; i++) {
+      pp[2*i] = 0.;
+      pp[2*i+1] = 0.;
+
+      qq[2*i] = 0.;
+      qq[2*i+1] = 0.;
+   }
+
    s = 0.;
    for (i = 0; i < len; i++) {
       pp[2*i] = data[i];
