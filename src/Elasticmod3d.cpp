@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
         }
         if(Vyrecord){
             Vydata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-            Vydata3D->setField(rockseis::VX);
+            Vydata3D->setField(rockseis::VY);
             // Copy geometry to Data
             Vydata3D->copyCoords(Shotgeom);
             Vydata3D->makeMap(lmodel->getGeom());
