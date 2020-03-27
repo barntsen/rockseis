@@ -99,8 +99,8 @@ void Data<T>::Filter1D(T f0, T f1, T f2, T f3, T df, unsigned long nf, T *W, T *
     {
 		a = W[2*i]*cdata[2*i] - W[2*i+1]*cdata[2*i+1]; 
         b = W[2*i]*cdata[2*i+1] + W[2*i+1]*cdata[2*i];
-        cdata[2*i] = a;
-        cdata[2*i+1] = b;
+        cdata[2*i] = a/nf;
+        cdata[2*i+1] = b/nf;
     }
 
 } 
@@ -881,7 +881,7 @@ void Data2D<T>::apply_filter (T *freqs)
         /* Apply backward fourier transform */
         fft1d->fft1d(-1);
         for(j=0; j< nt; j++) {
-            data[Idata(j,i)] = cdata[2*j]/nf;
+            data[Idata(j,i)] = cdata[2*j];
         }
     }
 
