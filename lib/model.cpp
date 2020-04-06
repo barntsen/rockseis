@@ -186,7 +186,7 @@ void Model<T>::staggermodel_x(T *model, const int nx, const int ny, const int nz
     for(iz=0; iz<nz; iz++){
         for(iy=0; iy<ny; iy++){
             for(ix=0; ix<nx-1; ix++){
-                avg = 2.0/(model[ind(ix+1,iy,iz)] + model[ind(ix,iy,iz)]);
+                avg = (model[ind(ix+1,iy,iz)] + model[ind(ix,iy,iz)])/2.0;
                 model[ind(ix,iy,iz)] = avg;
             }
             model[ind(nx-1,iy,iz)] = model[ind(nx-2,iy,iz)];
@@ -205,7 +205,7 @@ void Model<T>::staggermodel_y(T *model, const int nx, const int ny, const int nz
     for(iz=0; iz<nz; iz++){
         for(ix=0; ix<nx; ix++){
             for(iy=0; iy<ny-1; iy++){
-                avg = 2.0/(model[ind(ix,iy+1,iz)] + model[ind(ix,iy,iz)]);
+                avg = (model[ind(ix,iy+1,iz)] + model[ind(ix,iy,iz)])/2.0;
                 model[ind(ix,iy,iz)] = avg;
             }
             model[ind(ix,ny-1,iz)] = model[ind(ix,ny-2,iz)];
@@ -224,7 +224,7 @@ void Model<T>::staggermodel_z(T *model, const int nx, const int ny, const int nz
     for(ix=0; ix<nx; ix++){
         for(iy=0; iy<ny; iy++){
             for(iz=0; iz<nz-1; iz++){
-                avg = 2.0/(model[ind(ix,iy,iz+1)] + model[ind(ix,iy,iz)]);
+                avg = (model[ind(ix,iy,iz+1)] + model[ind(ix,iy,iz)])/2.0;
                 model[ind(ix,iy,iz)] = avg;
             }
             model[ind(ix,iy,nz-1)] = model[ind(ix,iy,nz-2)];
@@ -1105,7 +1105,12 @@ void ModelAcoustic1D<T>::staggerModels(){
 
     // Staggering using arithmetic average
     this->staggermodel_z(Rz, 1, 1, nz_pml);
-    
+
+    for(iz=0; iz < nz_pml; iz++){
+        if(R[iz] == 0.0) rs_error("staggerModels: Zero density found.");
+        Rz[iz] = 1.0/R[iz];
+    }
+
     // In case of free surface
     if(this->getFs()){
             L[lpml] *= 0.0;
@@ -1362,6 +1367,16 @@ void ModelAcoustic2D<T>::staggerModels(){
     // Staggering using arithmetic average
     this->staggermodel_x(Rx, nx_pml, 1, nz_pml);
     this->staggermodel_z(Rz, nx_pml, 1, nz_pml);
+
+    // Inverting the density
+    for(ix=0; ix < nx_pml; ix++){
+        for(iz=0; iz < nz_pml; iz++){
+            if(Rx[ind_pml(ix,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+            if(Rz[ind_pml(ix,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+            Rx[ind_pml(ix,iz)] = 1.0/Rx[ind_pml(ix,iz)];
+            Rz[ind_pml(ix,iz)] = 1.0/Rz[ind_pml(ix,iz)];
+        }
+    }
     
     // In case of free surface
     if(this->getFs()){
@@ -1809,7 +1824,21 @@ void ModelAcoustic3D<T>::staggerModels(){
     this->staggermodel_x(Rx, nx_pml, ny_pml, nz_pml);
     this->staggermodel_y(Ry, nx_pml, ny_pml, nz_pml);
     this->staggermodel_z(Rz, nx_pml, ny_pml, nz_pml);
-    
+
+    // Inverting the density
+    for(ix=0; ix < nx_pml; ix++){
+        for(iy=0; iy < ny_pml; iy++){
+            for(iz=0; iz < nz_pml; iz++){
+                if(Rx[ind_pml(ix,iy,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+                if(Ry[ind_pml(ix,iy,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+                if(Rz[ind_pml(ix,iy,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+                Rx[ind_pml(ix,iy,iz)] = 1.0/Rx[ind_pml(ix,iy,iz)];
+                Ry[ind_pml(ix,iy,iz)] = 1.0/Ry[ind_pml(ix,iy,iz)];
+                Rz[ind_pml(ix,iy,iz)] = 1.0/Rz[ind_pml(ix,iy,iz)];
+            }
+        }
+    }
+
     // In case of free surface
     if(this->getFs()){
         for(ix=0; ix<nx_pml; ix++){
@@ -2394,6 +2423,16 @@ void ModelElastic2D<T>::staggerModels(){
     
     this->staggermodel_z(M, nx_pml, 1, nz_pml); 
     this->staggermodel_x(M, nx_pml, 1, nz_pml); 
+
+    // Inverting the density
+    for(ix=0; ix < nx_pml; ix++){
+        for(iz=0; iz < nz_pml; iz++){
+            if(Rx[ind_pml(ix,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+            if(Rz[ind_pml(ix,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+            Rx[ind_pml(ix,iz)] = 1.0/Rx[ind_pml(ix,iz)];
+            Rz[ind_pml(ix,iz)] = 1.0/Rz[ind_pml(ix,iz)];
+        }
+    }
     
     // In case of free surface
     if(this->getFs()){
@@ -2935,6 +2974,21 @@ void ModelElastic3D<T>::staggerModels(){
 
     this->staggermodel_x(M_xy, nx_pml, ny_pml, nz_pml);
     this->staggermodel_y(M_xy, nx_pml, ny_pml, nz_pml);
+
+    // Inverting the density
+    for(ix=0; ix < nx_pml; ix++){
+        for(iy=0; iy < ny_pml; iy++){
+            for(iz=0; iz < nz_pml; iz++){
+                if(Rx[ind_pml(ix,iy,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+                if(Ry[ind_pml(ix,iy,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+                if(Rz[ind_pml(ix,iy,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+                Rx[ind_pml(ix,iy,iz)] = 1.0/Rx[ind_pml(ix,iy,iz)];
+                Ry[ind_pml(ix,iy,iz)] = 1.0/Ry[ind_pml(ix,iy,iz)];
+                Rz[ind_pml(ix,iy,iz)] = 1.0/Rz[ind_pml(ix,iy,iz)];
+            }
+        }
+    }
+
     
     // In case of free surface
     if(this->getFs()){
