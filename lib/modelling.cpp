@@ -162,9 +162,8 @@ ModellingAcoustic2D<T>::ModellingAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> 
     snapAzset = false;
 }
 
-
 template<typename T>
-bool ModellingAcoustic2D<T>::checkStability(){
+T ModellingAcoustic2D<T>::getVpmax(){
     T *Vp = model->getVp();
     // Find maximum Vp
     T Vpmax;
@@ -175,7 +174,12 @@ bool ModellingAcoustic2D<T>::checkStability(){
             Vpmax = Vp[i];
         }
     }
+    return Vpmax;
+}
 
+template<typename T>
+bool ModellingAcoustic2D<T>::checkStability(){
+    T Vpmax = this->getVpmax(); 
     T dx = model->getDx();
     T dz = model->getDz();
     T dt = source->getDt();
@@ -207,6 +211,11 @@ int ModellingAcoustic2D<T>::run(){
      // Create the finite difference modelling classes 
      std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
+
+     (waves->getPml())->setAmax(0);
+     (waves->getPml())->setKmax(1);
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->computeABC();
 
     // Create snapshots
      std::shared_ptr<Snapshot2D<T>> Psnap;
@@ -315,7 +324,7 @@ ModellingAcoustic3D<T>::ModellingAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> 
 }
 
 template<typename T>
-bool ModellingAcoustic3D<T>::checkStability(){
+T ModellingAcoustic3D<T>::getVpmax(){
     T *Vp = model->getVp();
     // Find maximum Vp
     T Vpmax;
@@ -326,7 +335,12 @@ bool ModellingAcoustic3D<T>::checkStability(){
             Vpmax = Vp[i];
         }
     }
+    return Vpmax;
+}
 
+template<typename T>
+bool ModellingAcoustic3D<T>::checkStability(){
+    T Vpmax = this->getVpmax();
     T dx = model->getDx();
     T dy = model->getDy();
     T dz = model->getDz();
@@ -357,6 +371,11 @@ int ModellingAcoustic3D<T>::run(){
      // Create the classes 
      std::shared_ptr<WavesAcoustic3D<T>> waves (new WavesAcoustic3D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
+
+     (waves->getPml())->setAmax(0);
+     (waves->getPml())->setKmax(1);
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->computeABC();
 
 	// Create log file
     this->createLog(this->getLogfile());
@@ -449,7 +468,6 @@ ModellingAcoustic3D<T>::~ModellingAcoustic3D() {
     // Nothing here
 }
 
-
 // =============== ELASTIC 2D MODELLING CLASS =============== //
 template<typename T>
 ModellingElastic2D<T>::ModellingElastic2D(){
@@ -484,7 +502,7 @@ ModellingElastic2D<T>::ModellingElastic2D(std::shared_ptr<ModelElastic2D<T>> _mo
 }
 
 template<typename T>
-bool ModellingElastic2D<T>::checkStability(){
+T ModellingElastic2D<T>::getVpmax(){
     T *Vp = model->getVp();
     // Find maximum Vp
     T Vpmax;
@@ -495,7 +513,12 @@ bool ModellingElastic2D<T>::checkStability(){
             Vpmax = Vp[i];
         }
     }
+    return Vpmax;
+}
 
+template<typename T>
+bool ModellingElastic2D<T>::checkStability(){
+    T Vpmax = this->getVpmax();
     T dx = model->getDx();
     T dz = model->getDz();
     T dt = source->getDt();
@@ -526,6 +549,11 @@ int ModellingElastic2D<T>::run(){
      // Create the classes 
      std::shared_ptr<WavesElastic2D<T>> waves (new WavesElastic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
+
+     (waves->getPml())->setAmax(0);
+     (waves->getPml())->setKmax(1);
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->computeABC();
 
     // Create snapshots
      std::shared_ptr<Snapshot2D<T>> Psnap;
@@ -646,7 +674,7 @@ ModellingElastic3D<T>::ModellingElastic3D(std::shared_ptr<ModelElastic3D<T>> _mo
 }
 
 template<typename T>
-bool ModellingElastic3D<T>::checkStability(){
+T ModellingElastic3D<T>::getVpmax(){
     T *Vp = model->getVp();
     // Find maximum Vp
     T Vpmax;
@@ -657,7 +685,12 @@ bool ModellingElastic3D<T>::checkStability(){
             Vpmax = Vp[i];
         }
     }
+    return Vpmax;
+}
 
+template<typename T>
+bool ModellingElastic3D<T>::checkStability(){
+    T Vpmax = this->getVpmax();
     T dx = model->getDx();
     T dy = model->getDy();
     T dz = model->getDz();
@@ -688,6 +721,11 @@ int ModellingElastic3D<T>::run(){
      // Create the classes 
      std::shared_ptr<WavesElastic3D<T>> waves (new WavesElastic3D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
+
+     (waves->getPml())->setAmax(0);
+     (waves->getPml())->setKmax(1);
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->computeABC();
 
 	// Create log file
      this->createLog(this->getLogfile());
@@ -817,7 +855,7 @@ ModellingElastic2D_DS<T>::ModellingElastic2D_DS(std::shared_ptr<ModelElastic2D<T
 }
 
 template<typename T>
-bool ModellingElastic2D_DS<T>::checkStability(){
+T ModellingElastic2D_DS<T>::getVpmax(){
     T *Vp = model->getVp();
     // Find maximum Vp
     T Vpmax;
@@ -828,7 +866,12 @@ bool ModellingElastic2D_DS<T>::checkStability(){
             Vpmax = Vp[i];
         }
     }
+    return Vpmax;
+}
 
+template<typename T>
+bool ModellingElastic2D_DS<T>::checkStability(){
+    T Vpmax = this->getVpmax();
     T dx = model->getDx();
     T dz = model->getDz();
     T dt = source->getDt();
@@ -859,6 +902,11 @@ int ModellingElastic2D_DS<T>::run(){
      // Create the classes 
      std::shared_ptr<WavesElastic2D_DS<T>> waves (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
+
+     (waves->getPml())->setAmax(0);
+     (waves->getPml())->setKmax(1);
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->computeABC();
 
     // Create snapshots
      std::shared_ptr<Snapshot2D<T>> Psnap;
@@ -988,7 +1036,7 @@ ModellingElastic3D_DS<T>::ModellingElastic3D_DS(std::shared_ptr<ModelElastic3D<T
 }
 
 template<typename T>
-bool ModellingElastic3D_DS<T>::checkStability(){
+T ModellingElastic3D_DS<T>::getVpmax(){
     T *Vp = model->getVp();
     // Find maximum Vp
     T Vpmax;
@@ -999,7 +1047,12 @@ bool ModellingElastic3D_DS<T>::checkStability(){
             Vpmax = Vp[i];
         }
     }
+    return Vpmax;
+}
 
+template<typename T>
+bool ModellingElastic3D_DS<T>::checkStability(){
+    T Vpmax = this->getVpmax();
     T dx = model->getDx();
     T dy = model->getDy();
     T dz = model->getDz();
@@ -1030,6 +1083,11 @@ int ModellingElastic3D_DS<T>::run(){
      // Create the classes 
      std::shared_ptr<WavesElastic3D_DS<T>> waves (new WavesElastic3D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
+
+     (waves->getPml())->setAmax(0);
+     (waves->getPml())->setKmax(1);
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->computeABC();
 
 	// Create log file
      this->createLog(this->getLogfile());

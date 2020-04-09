@@ -143,6 +143,8 @@ public:
     void setDataresAz(std::shared_ptr<Data2D<T>> _dataresAz) { dataresAz = _dataresAz; dataresAzset = true; }
     void setDataweight(std::shared_ptr<Data2D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
 
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho);
 
     void computeMisfit();
@@ -197,6 +199,8 @@ public:
     void setDataresP(std::shared_ptr<Data3D<T>> _dataresP) { dataresP = _dataresP; dataresPset = true; }
     void setDataresAz(std::shared_ptr<Data3D<T>> _dataresAz) { dataresAz = _dataresAz; dataresAzset = true; }
     void setDataweight(std::shared_ptr<Data3D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wry, T* wrz, int padr, T *vp, T* rho);
     void computeMisfit();
     void computeResiduals();
@@ -251,6 +255,8 @@ public:
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
     void setDataweightx(std::shared_ptr<Data2D<T>> _dataweightx) { dataweightx = _dataweightx; dataweightxset = true; }
     void setDataweightz(std::shared_ptr<Data2D<T>> _dataweightz) { dataweightz = _dataweightz; dataweightzset = true; }
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void crossCorr_rev(std::shared_ptr<WavesElastic2D_DS<T>> waves_fw, std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic2D<T>> model);
@@ -317,6 +323,8 @@ public:
     void setDataweightx(std::shared_ptr<Data3D<T>> _dataweightx) { dataweightx = _dataweightx; dataweightxset = true; }
     void setDataweighty(std::shared_ptr<Data3D<T>> _dataweighty) { dataweighty = _dataweighty; dataweightyset = true; }
     void setDataweightz(std::shared_ptr<Data3D<T>> _dataweightz) { dataweightz = _dataweightz; dataweightzset = true; }
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesElastic3D_DS<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic3D<T>> model);
     void computeMisfit();

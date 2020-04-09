@@ -77,6 +77,7 @@ public:
     void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
     void setSnapAx(std::string _snapAx) { snapAx = _snapAx; snapAxset = true; }
     void setSnapAz(std::string _snapAz) { snapAz = _snapAz; snapAzset = true; }
+    T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingAcoustic2D();	///< Destructor
@@ -114,6 +115,7 @@ public:
     void setSnapAx(std::string _snapAx) { snapAx = _snapAx; snapAxset = true; }
     void setSnapAy(std::string _snapAy) { snapAy = _snapAy; snapAyset = true; }
     void setSnapAz(std::string _snapAz) { snapAz = _snapAz; snapAzset = true; }
+    T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingAcoustic3D();	///< Destructor
@@ -154,6 +156,7 @@ public:
     void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
     void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
     void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingElastic2D();	///< Destructor
@@ -199,6 +202,7 @@ public:
     void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
     void setSnapVy(std::string _snapVy) { snapVy = _snapVy; snapVyset = true; }
     void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingElastic3D();	///< Destructor
@@ -238,6 +242,7 @@ public:
     void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
     void setSnapUx(std::string _snapUx) { snapUx = _snapUx; snapUxset = true; }
     void setSnapUz(std::string _snapUz) { snapUz = _snapUz; snapUzset = true; }
+    T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingElastic2D_DS();	///< Destructor
@@ -281,6 +286,7 @@ public:
     void setSnapUx(std::string _snapUx) { snapUx = _snapUx; snapUxset = true; }
     void setSnapUy(std::string _snapUy) { snapUy = _snapUy; snapUyset = true; }
     void setSnapUz(std::string _snapUz) { snapUz = _snapUz; snapUzset = true; }
+    T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
     ~ModellingElastic3D_DS();	///< Destructor
