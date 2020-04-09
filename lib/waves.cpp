@@ -1373,6 +1373,15 @@ void WavesElastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
         }
     }
     
+    // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            Szz[I2D(ix,iz)] = 0.0;
+        }
+    }
+
+
     // Attenuate left and right using non-staggered variables
     for(iz=0; iz < nz; iz++){
         for(ix=0; ix < lpml; ix++){
@@ -1414,7 +1423,14 @@ void WavesElastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
             Szz[I2D(ix,i)] -= dt*L2M[I2D(ix,i)]*(Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i)]);
         }
     }
-    
+
+        // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            Szz[I2D(ix,iz)] = 0.0;
+        }
+    }
     
     // Derivate Vz forward with respect to x
     der->ddx_fw(Vz);
@@ -2632,6 +2648,15 @@ void WavesElastic2D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElas
             Szz[I2D(ix,iz)] = L[I2D(ix,iz)]*df[I2D(ix,iz)];
         }
     }
+
+
+    // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            Szz[I2D(ix,iz)] = 0.0;
+        }
+    }
     
     // Attenuate left and right using non-staggered variables
     for(iz=0; iz < nz; iz++){
@@ -2658,7 +2683,15 @@ void WavesElastic2D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElas
             Szz[I2D(ix,iz)] += L2M[I2D(ix,iz)]*df[I2D(ix,iz)];
         }
     }
-    
+
+    // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            Szz[I2D(ix,iz)] = 0.0;
+        }
+    }
+
     // Attenuate top and bottom using non-staggered variables
     for(iz=0; iz < lpml; iz++){
         for(ix=0; ix < nx; ix++){
