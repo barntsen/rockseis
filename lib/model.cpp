@@ -2417,6 +2417,15 @@ void ModelElastic2D<T>::staggerModels(){
         }
     }
 
+    // In case of free surface
+    if(this->getFs()){
+        iz=lpml;
+        for(ix=0; ix<nx_pml; ix++){
+            L[ind_pml(ix,iz)] = 0.0;
+            L2M[ind_pml(ix,iz)] = M[ind_pml(ix,iz)];
+        }
+    }
+
     // Staggering using arithmetic average
     this->staggermodel_x(Rx, nx_pml, 1, nz_pml); 
     this->staggermodel_z(Rz, nx_pml, 1, nz_pml); 
@@ -2436,10 +2445,9 @@ void ModelElastic2D<T>::staggerModels(){
     
     // In case of free surface
     if(this->getFs()){
+        iz=lpml;
         for(ix=0; ix<nx_pml; ix++){
-            Rx[ind_pml(ix,lpml)] *= 2.0;
-            L[ind_pml(ix,lpml)] *= 0.0;
-            L2M[ind_pml(ix,lpml)] *= 0.0;
+            Rx[ind_pml(ix,iz)] *= 2.0;
         }
     }
 }

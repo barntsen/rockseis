@@ -22,6 +22,9 @@
 #define GMAP 1
 #define SMAP 0
 
+#define AMAX 0
+#define KMAX 1
+
 namespace rockseis {
 
 // =============== ABSTRACT MODELLING CLASS =============== //
