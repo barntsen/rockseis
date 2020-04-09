@@ -2969,6 +2969,18 @@ void ModelElastic3D<T>::staggerModels(){
         }
     }
 
+    // In case of free surface
+    if(this->getFs()){
+        iz=lpml;
+        for(ix=0; ix<nx_pml; ix++){
+            for(iy=0; iy < ny_pml; iy++){
+                L[ind_pml(ix,iy,iz)] = 0.0;
+                L2M[ind_pml(ix,iy,iz)] = M_xz[ind_pml(ix,iy,iz)];
+            }
+        }
+    }
+
+
     // Staggering using arithmetic average
     this->staggermodel_x(Rx, nx_pml, ny_pml, nz_pml);
     this->staggermodel_y(Ry, nx_pml, ny_pml, nz_pml);
@@ -3004,8 +3016,6 @@ void ModelElastic3D<T>::staggerModels(){
             for(iy=0; iy<ny_pml; iy++){
                 Rx[ind_pml(ix,iy,lpml)] *= 2.0;
                 Ry[ind_pml(ix,iy,lpml)] *= 2.0;
-                L[ind_pml(ix,iy,lpml)] *= 0.0;
-                L2M[ind_pml(ix,iy,lpml)] *= 0.0;
             }
         }
     }

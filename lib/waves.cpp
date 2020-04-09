@@ -1424,7 +1424,7 @@ void WavesElastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
         }
     }
 
-        // Free surface conditions
+    // Free surface conditions
     if(model->getFs()){
         iz = lpml;
         for(ix=0; ix < nx; ix++){
@@ -2019,7 +2019,17 @@ void WavesElastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
             }
         }
     }
-    
+
+    // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            for(iy=0; iy < ny; iy++){
+                Szz[I3D(ix,iy,iz)] = 0.0;
+            }
+        }
+    }
+
     // Attenuate left and right using non-staggered variables
     for(iz=0; iz < nz; iz++){
         for(iy=0; iy < ny; iy++){
@@ -2053,6 +2063,16 @@ void WavesElastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
         }
     }
     
+    // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            for(iy=0; iy < ny; iy++){
+                Szz[I3D(ix,iy,iz)] = 0.0;
+            }
+        }
+    }
+
     // Attenuate front and back using non-staggered variables
     for(iz=0; iz < nz; iz++){
         for(iy=0; iy < lpml; iy++){
@@ -2082,6 +2102,16 @@ void WavesElastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
                 Sxx[I3D(ix,iy,iz)] +=  dt*L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
                 Syy[I3D(ix,iy,iz)] +=  dt*L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
                 Szz[I3D(ix,iy,iz)] +=  dt*L2M[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+            }
+        }
+    }
+
+    // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            for(iy=0; iy < ny; iy++){
+                Szz[I3D(ix,iy,iz)] = 0.0;
             }
         }
     }
@@ -3390,6 +3420,16 @@ void WavesElastic3D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElas
             }
         }
     }
+
+    // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            for(iy=0; iy < ny; iy++){
+                Szz[I3D(ix,iy,iz)] = 0.0;
+            }
+        }
+    }
     
     // Attenuate left and right using non-staggered variables
     for(iz=0; iz < nz; iz++){
@@ -3423,6 +3463,16 @@ void WavesElastic3D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElas
             }
         }
     }
+
+    // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            for(iy=0; iy < ny; iy++){
+                Szz[I3D(ix,iy,iz)] = 0.0;
+            }
+        }
+    }
     
     // Attenuate front and back using non-staggered variables
     for(iz=0; iz < nz; iz++){
@@ -3453,6 +3503,16 @@ void WavesElastic3D_DS<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElas
                 Sxx[I3D(ix,iy,iz)] +=  L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
                 Syy[I3D(ix,iy,iz)] +=  L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
                 Szz[I3D(ix,iy,iz)] +=  L2M[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+            }
+        }
+    }
+
+    // Free surface conditions
+    if(model->getFs()){
+        iz = lpml;
+        for(ix=0; ix < nx; ix++){
+            for(iy=0; iy < ny; iy++){
+                Szz[I3D(ix,iy,iz)] = 0.0;
             }
         }
     }
