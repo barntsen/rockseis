@@ -22,8 +22,8 @@
 #define GMAP 1
 #define SMAP 0
 
-#define AMAX 0
-#define KMAX 1
+#define AMAX 150
+#define KMAX 2
 
 namespace rockseis {
 
