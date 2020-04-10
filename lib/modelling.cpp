@@ -214,7 +214,7 @@ int ModellingAcoustic2D<T>::run(){
 
      (waves->getPml())->setAmax(AMAX);
      (waves->getPml())->setKmax(KMAX);
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
     // Create snapshots
@@ -374,7 +374,7 @@ int ModellingAcoustic3D<T>::run(){
 
      (waves->getPml())->setAmax(AMAX);
      (waves->getPml())->setKmax(KMAX);
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
 	// Create log file
@@ -552,7 +552,7 @@ int ModellingElastic2D<T>::run(){
 
      (waves->getPml())->setAmax(AMAX);
      (waves->getPml())->setKmax(KMAX);
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
     // Create snapshots
@@ -724,7 +724,7 @@ int ModellingElastic3D<T>::run(){
 
      (waves->getPml())->setAmax(AMAX);
      (waves->getPml())->setKmax(KMAX);
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
 	// Create log file
@@ -905,7 +905,7 @@ int ModellingElastic2D_DS<T>::run(){
 
      (waves->getPml())->setAmax(AMAX);
      (waves->getPml())->setKmax(KMAX);
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-4)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
     // Create snapshots
@@ -1086,7 +1086,7 @@ int ModellingElastic3D_DS<T>::run(){
 
      (waves->getPml())->setAmax(AMAX);
      (waves->getPml())->setKmax(KMAX);
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
 	// Create log file
