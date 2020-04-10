@@ -905,7 +905,7 @@ int ModellingElastic2D_DS<T>::run(){
 
      (waves->getPml())->setAmax(AMAX);
      (waves->getPml())->setKmax(KMAX);
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-4)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
     // Create snapshots
