@@ -443,6 +443,61 @@ Snapshot2D<T>::Snapshot2D(std::shared_ptr<WavesElastic2D_DS<T>> waves, int snapi
     }
 }
 
+template<typename T>
+Snapshot2D<T>::Snapshot2D(std::shared_ptr<WavesViscoelastic2D<T>> waves, int snapinc)
+{
+    int _nx, _ny, _nz;
+    T _dx, _dy, _dz; 
+    T _ox, _oy, _oz; 
+    int _nt;
+    T _dt, _ot;
+    int _lpml;
+    int _dim;
+    int snapnt, enddiff;
+    T snapdt, snapot;
+
+/* Get necessary parameters from waves class */
+    _nx=waves->getNx();
+    _ny=waves->getNy();
+    _nz=waves->getNz();
+    _dx=waves->getDx();
+    _dy=waves->getDy();
+    _dz=waves->getDz();
+    _ox=waves->getOx();
+    _oy=waves->getOy();
+    _oz=waves->getOz();
+    _lpml = waves->getLpml();
+    _dim = waves->getDim();
+    _nt = waves->getNt();
+    _dt = waves->getDt();
+    _ot = waves->getOt();
+
+    this->setNx(_nx);
+    this->setNy(_ny);
+    this->setNz(_nz);
+    this->setDx(_dx);
+    this->setDy(_dy);
+    this->setDz(_dz);
+    this->setOx(_ox);
+    this->setOy(_oy);
+    this->setOz(_oz);
+    this->setLpml(_lpml);
+    this->setDim(_dim);
+    this->setSnapinc(snapinc);
+
+    snapnt = (_nt-1)/snapinc + 1;
+    snapdt = _dt*snapinc;
+    snapot = _ot;
+    enddiff = (int) rintf(((_nt-1)*_dt - (snapnt-1)*snapdt)/_dt);
+    this->setSnapnt(snapnt);
+    this->setSnapdt(snapdt);
+    this->setSnapot(snapot);
+    this->setEnddiff(enddiff);
+    for(int i=0; i<NPTR; i++){
+        this->setData(NULL, i);
+    }
+}
+
 // Write Snapshots
 template<typename T>
 void Snapshot2D<T>::writeSnap(const int it){

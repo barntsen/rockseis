@@ -204,7 +204,7 @@ int ModellingAcoustic2D<T>::run(){
      dt = source->getDt();
      ot = source->getOt();
 
-     if(!this->checkStability()) rs_error("ModellingElastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+     if(!this->checkStability()) rs_error("ModellingAcoustic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
 
      this->createLog(this->getLogfile());
 
@@ -1192,6 +1192,168 @@ ModellingElastic3D_DS<T>::~ModellingElastic3D_DS() {
 }
 
 
+// =============== VISCOELASTIC 2D MODELLING CLASS =============== //
+template<typename T>
+ModellingViscoelastic2D<T>::ModellingViscoelastic2D(){
+    sourceset = false;
+    modelset = false;
+    recPset = false;
+    recVxset = false;
+    recVzset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapVxset = false;
+    snapVzset = false;
+}
+
+template<typename T>
+ModellingViscoelastic2D<T>::ModellingViscoelastic2D(std::shared_ptr<ModelViscoelastic2D<T>> _model,std::shared_ptr<Data2D<T>> _source, int order, int snapinc):Modelling<T>(order, snapinc){
+    source = _source;
+    model = _model;
+    sourceset = true;
+    modelset = true;
+    recPset = false;
+    recVxset = false;
+    recVzset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapVxset = false;
+    snapVzset = false;
+}
+
+template<typename T>
+T ModellingViscoelastic2D<T>::getVpmax(){
+    T *Vp = model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+    return Vpmax;
+}
+
+template<typename T>
+bool ModellingViscoelastic2D<T>::checkStability(){
+    T Vpmax = this->getVpmax();
+    T dx = model->getDx();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
+int ModellingViscoelastic2D<T>::run(){
+     int result = MOD_ERR;
+     int nt;
+     T dt;
+     T ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     if(!this->checkStability()) rs_error("ModellingViscoelastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesViscoelastic2D<T>> waves (new WavesViscoelastic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
+
+     (waves->getPml())->setAmax(AMAX);
+     (waves->getPml())->setKmax(KMAX);
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->computeABC();
+
+    // Create snapshots
+     std::shared_ptr<Snapshot2D<T>> Psnap;
+     std::shared_ptr<Snapshot2D<T>> Vxsnap;
+     std::shared_ptr<Snapshot2D<T>> Vzsnap;
+    if(this->snapPset){ 
+        Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
+        Psnap->setData(waves->getSxx(), 0); //Set Stress as first field 
+        Psnap->setData(waves->getSzz(), 1); //Set Stress as second field
+    }
+    if(this->snapVxset){ 
+        Vxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
+        Vxsnap->setData(waves->getVx(), 0); //Set Vx as field to snap
+    }
+    if(this->snapVzset){ 
+        Vzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+        Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
+        Vzsnap->setData(waves->getVz(), 0); //Set Vz as field to snap
+    }
+
+     this->writeLog("Running 2D Viscoelastic modelling.");
+    // Loop over time
+    for(int it=0; it < nt; it++)
+    {
+    	// Time stepping
+    	waves->forwardstepStress(model, der);
+    	waves->forwardstepVelocity(model, der);
+    
+    	// Inserting source 
+    	waves->insertSource(model, source, SMAP, it);
+
+        // Recording data 
+        if(this->recPset){
+            waves->recordData(model,this->recP, GMAP, it);
+        }
+
+        // Recording data (Vx)
+        if(this->recVxset){
+            waves->recordData(model,this->recVx, GMAP, it);
+        }
+
+        // Recording data (Vz)
+        if(this->recVzset){
+            waves->recordData(model,this->recVz, GMAP, it);
+        }
+    
+    	//Writting out results to snapshot file
+        if(this->snapPset){ 
+            Psnap->writeSnap(it);
+        }
+
+        if(this->snapVxset){ 
+            Vxsnap->writeSnap(it);
+        }
+
+        if(this->snapVzset){ 
+            Vzsnap->writeSnap(it);
+        }
+
+        // Output progress to logfile
+        this->writeProgress(it, nt-1, 20, 48);
+    }	
+    
+    this->writeLog("Modelling is complete.");
+    result=MOD_OK;
+    return result;
+}
+
+
+template<typename T>
+ModellingViscoelastic2D<T>::~ModellingViscoelastic2D() {
+    // Nothing here
+}
+
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
@@ -1211,6 +1373,9 @@ template class ModellingElastic2D_DS<double>;
 template class ModellingElastic3D_DS<float>;
 template class ModellingElastic3D_DS<double>;
 
+
+template class ModellingViscoelastic2D<float>;
+template class ModellingViscoelastic2D<double>;
 
 
 }

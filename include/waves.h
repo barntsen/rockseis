@@ -387,5 +387,103 @@ private:
     std::shared_ptr<PmlElastic3D<T>> Pml; // Associated Pml class
 };
 
+/** The 2D Viscoelastic WAVES class
+ *
+ */
+template<typename T>
+class WavesViscoelastic2D: public Waves<T> {
+public:
+    WavesViscoelastic2D();	///< Constructor
+    ~WavesViscoelastic2D();	///< Destructor
+    WavesViscoelastic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
+    WavesViscoelastic2D(std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+
+    // Get functions
+    std::shared_ptr<PmlElastic2D<T>> getPml() { return Pml; } ///< Get Pml 
+    T * getSxx() { return Sxx; }  ///< Get Stress component at time t+1
+    T * getSzz() { return Szz; }  ///< Get Stress component at time t+1
+    T * getSxz() { return Sxz; }  ///< Get Stress component at time t+1
+
+    T * getVx() { return Vx; }  ///< Get Velocity component at time t+1/2
+    T * getVz() { return Vz; }  ///< Get Velocity component at time t+1/2
+
+    // Time stepping functions
+    void forwardstepVelocity(std::shared_ptr<ModelViscoelastic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with particle velocity 
+    void forwardstepStress(std::shared_ptr<ModelViscoelastic2D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with Stress
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelViscoelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+
+    // Record data at receivers functions
+    void recordData(std::shared_ptr<ModelViscoelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
+
+private:
+    T *Sxx;  // Stress component at time t+1
+    T *Szz; // Stress component at time t+1
+    T *Sxz; // Stress component at time t+1
+    T *Mxx;  // Memory component at time t+1
+    T *Mzz; // Memory component at time t+1
+    T *Mxz; // Memory component at time t+1
+    T *Vx; // Velocity component at time t+1/2
+    T *Vz; // Velocity component at time t+1/2
+    std::shared_ptr<PmlElastic2D<T>> Pml; // Associated Pml class
+
+};
+
+/** The 3D Viscoelastic WAVES class
+ *
+ */
+template<typename T>
+class WavesViscoelastic3D: public Waves<T> {
+public:
+    WavesViscoelastic3D();	///< Constructor
+    WavesViscoelastic3D(const int _nx, const int _ny, const int _nz, const int _nt, const int _L, const T _dx, const T _dy, const T _dz, const T _dt, const T _ox, const T _oy, const T _oz, const T _ot);	///< Constructor
+    WavesViscoelastic3D(std::shared_ptr<rockseis::ModelViscoelastic3D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+    ~WavesViscoelastic3D();	///< Destructor
+
+    // Get functions
+    std::shared_ptr<PmlElastic3D<T>> getPml() { return Pml; }
+    T * getSxx() { return Sxx; }    ///< Get Stress component at time t+1
+    T * getSyy() { return Syy; }    ///< Get Stress component at time t+1
+    T * getSzz() { return Szz; }    ///< Get Stress component at time t+1
+    T * getSyz() { return Syz; }    ///< Get Stress component at time t+1
+    T * getSxz() { return Sxz; }    ///< Get Stress component at time t+1
+    T * getSxy() { return Sxy; }    ///< Get Stress component at time t+1
+    T * getVx() { return Vx; }    ///< Get Velocity component at time t+1/2
+    T * getVy() { return Vy; }    ///< Get Velocity component at time t+1/2
+    T * getVz() { return Vz; }    ///< Get Velocity component at time t+1/2
+
+    // Time stepping functions
+    void forwardstepVelocity(std::shared_ptr<ModelViscoelastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity
+    void forwardstepStress(std::shared_ptr<ModelViscoelastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelViscoelastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+    void recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
+
+
+private:
+    T *Sxx;  // Stress component at time t+1
+    T *Syy;  // Stress component at time t+1
+    T *Szz;  // Stress component at time t+1
+    T *Sxz;  // Stress component at time t+1
+    T *Syz;  // Stress component at time t+1
+    T *Sxy;  // Stress component at time t+1
+
+    T *Mxx;  // Memory component at time t+1
+    T *Myy;  // Memory component at time t+1
+    T *Mzz;  // Memory component at time t+1
+    T *Mxz;  // Memory component at time t+1
+    T *Myz;  // Memory component at time t+1
+    T *Mxy;  // Memory component at time t+1
+
+    T *Vx; // Velocity component at time t+1/2
+    T *Vy; // Velocity component at time t+1/2
+    T *Vz; // Velocity component at time t+1/2
+    std::shared_ptr<PmlElastic3D<T>> Pml; // Associated Pml class
+};
+
+
+
 }
 #endif //WAVES_H

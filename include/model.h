@@ -489,6 +489,185 @@ private:
     std::string Rfile; ///< Filename to density model
 };
 
+// =============== 2D VISCO ELASTIC MODEL CLASS =============== //
+/** The 2D visco-elastic model class
+ *
+ */
+template<typename T>
+class ModelViscoelastic2D: public Model<T> {
+public:
+    ModelViscoelastic2D();	///< Constructor
+    ModelViscoelastic2D(const int _nx, const int _nz, const int lpml, const T _dx, const T _dz, const T _ox, const T _oz, const T f0, const bool _fs);	///< Constructor
+    ModelViscoelastic2D(std::string _Vpfile, std::string _Vsfile, std::string _Rfile, std::string _Qpfile, std::string _Qsfile, const int lpml, const T f0, const bool _fs);	///< Constructor
+    ~ModelViscoelastic2D();	///< Destructor
+    
+    // I/O functions
+    void readModel();	///< Read a model from file
+
+    void writeVp(); ///< Write only the Vp model to file
+    void writeVs(); ///< Write only the Vs model to file
+    void writeR(); ///< Write only the Density model to file
+    void writeModel() { writeVp(); writeVs(); writeR(); } ///< Write a model to file
+
+    // Get functions
+    T *getVp() { return Vp; }	///< Get Vp
+    T *getQp() { return Qp; }	///< Get Qp
+    T *getVs() { return Vs; }	///< Get Vs
+    T *getQs() { return Qs; }	///< Get Qs
+    T *getR() { return R; }		///< Get R
+    T *getM() { return M; }		///< Get M
+    T *getL2M() { return L2M; }		///< Get L2M
+    T *getM_xz() { return M_xz; }	///< Get M_xz
+    T *getRx() { return Rx; }		///< Get Rx
+    T *getRz() { return Rz; }		///< Get Rz
+    T *getTp() { return Tp; }		///< Get Tp
+    T *getTs() { return Ts; }		///< Get Ts
+    T *getTs_xz() { return Ts_xz; }		///< Get Ts_xz
+    T getF0() { return f0; } ///< Get the dominant frequency
+    std::string getVpfile() { return Vpfile; }
+    std::string getVsfile() { return Vsfile; }
+    std::string getRfile() { return Rfile; }
+    std::string getQpfile() { return Qpfile; }
+    std::string getQsfile() { return Qsfile; }
+    void setVpfile(std::string name) { Vpfile = name; }
+    void setVsfile(std::string name) { Vsfile = name; }
+    void setRfile(std::string name) { Rfile = name; }
+    void setQpfile(std::string name) { Qpfile = name; }
+    void setQsfile(std::string name) { Qsfile = name; }
+    T getMinVp() {return this->getMin(Vp); } ///< Returns min Vp
+    T getMinVs() {return this->getMin(Vs); } ///< Returns min Vs
+    T getMinR() {return this->getMin(R); } ///< Returns min R
+    T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
+    T getMaxVs() {return this->getMax(Vs); } ///< Returns max Vs
+    T getMaxR() {return this->getMax(R); } ///< Returns max R
+    /** Stagger model functions. 
+    It creates the padded Rx, Rz, M_xz, L2M and M from the non-padded models R, Vp and Vs. 
+    */
+    void staggerModels();
+    std::shared_ptr<rockseis::ModelViscoelastic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
+
+    /** Create model
+    It creates an empty model of Vp, Vs and R
+    */
+    void createModel();
+
+private:
+    T *Vp;  // P-wave velocity
+    T *Vs;  // S-wave velocity
+    T *Qp;  // Quality factor for P-wave
+    T *Qs;  // Quality factor for S-wave
+    T *R;   // Density
+    T *L2M; // Lame lambda + 2 Mu  (padded)
+    T *M;   // Lame Mu  (padded)
+    T *M_xz; // Lame Mu  (staggered)
+    T *Rx;  // Staggered inverse of density in x (padded)
+    T *Rz;  // Staggered inverse of density in z (padded)
+    T *Tp;  // Relaxation time for P-wave
+    T *Ts;  // Relaxation time for S-wave
+    T *Ts_xz;  // Relaxation time for S-wave staggered
+    T f0; // Center frequency
+    std::string Vpfile; ///< Filename to vp model
+    std::string Vsfile; ///< Filename to vs model
+    std::string Rfile; ///< Filename to density model
+    std::string Qpfile; ///< Filename to P-wave Q model
+    std::string Qsfile; ///< Filename to S-wave Q model
+};
+
+// =============== 3D VISCOELASTIC MODEL CLASS =============== //
+/** The 3D elastic model class
+ *
+ */
+template<typename T>
+class ModelViscoelastic3D: public Model<T> {
+public:
+    ModelViscoelastic3D();	///< Constructor
+    ModelViscoelastic3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const T f0, const bool _fs); ///< Constructor
+    ModelViscoelastic3D(std::string _Vpfile, std::string _Vsfile, std::string _Rfile, std::string _Qpfile, std::string _Qsfile, const T f0, const int lpml, const bool _fs);	///< Constructor
+    ~ModelViscoelastic3D();	///< Destructor
+    
+    // I/O functions
+    void readModel();	///< Read a model from files
+    void writeVp(); ///< Write only the Vp model to file
+    void writeVs(); ///< Write only the Vs model to file
+    void writeR(); ///< Write only the Density model to file
+    void writeModel() { writeVp(); writeVs(); writeR(); } ///< Write a model to file
+
+    // Get functions
+    T *getVp() { return Vp; }	///< Get Vp
+    T *getQp() { return Qp; }	///< Get Qp
+    T *getVs() { return Vs; }	///< Get Vs
+    T *getQs() { return Qs; }	///< Get Qs
+    T *getR() { return R; }		///< Get R
+    T *getM() { return M; }		///< Get L
+    T *getL2M() { return L2M; }		///< Get L2M
+    T *getM_xz() { return M_xz; }	///< Get M_xz
+    T *getM_yz() { return M_yz; }	///< Get M_yz
+    T *getM_xy() { return M_xy; }	///< Get M_xy
+    T *getTp() { return Tp; }		///< Get Tp
+    T *getTs() { return Ts; }		///< Get Ts
+    T *getTs_xz() { return Ts_xz; }	///< Get Ts_xz
+    T *getTs_yz() { return Ts_yz; }	///< Get Ts_yz
+    T *getTs_xy() { return Ts_xy; }	///< Get Ts_xy
+    T *getRx() { return Rx; }		///< Get Rx
+    T *getRy() { return Ry; }		///< Get Ry
+    T *getRz() { return Rz; }		///< Get Rz
+    T getF0() { return f0; } ///< Get the dominant frequency
+    std::string getVpfile() { return Vpfile; }
+    std::string getVsfile() { return Vsfile; }
+    std::string getRfile() { return Rfile; }
+    std::string getQpfile() { return Qpfile; }
+    std::string getQsfile() { return Qsfile; }
+    void setVpfile(std::string name) { Vpfile = name; }
+    void setVsfile(std::string name) { Vsfile = name; }
+    void setRfile(std::string name) { Rfile = name; }
+    void setQpfile(std::string name) { Qpfile = name; }
+    void setQsfile(std::string name) { Qsfile = name; }
+    T getMinVp() {return this->getMin(Vp); } ///< Returns min Vp
+    T getMinVs() {return this->getMin(Vs); } ///< Returns min Vs
+    T getMinR() {return this->getMin(R); } ///< Returns min R
+    T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
+    T getMaxVs() {return this->getMax(Vs); } ///< Returns max Vs
+    T getMaxR() {return this->getMax(R); } ///< Returns max R
+
+    std::shared_ptr<rockseis::ModelViscoelastic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperture_x, T aperture_y, bool map);
+
+    /** Stagger model functions. 
+    It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, Vp and Vs. 
+    */
+    void staggerModels();
+
+    /** Create model
+    It creates an empty model of Vp, Vs and R
+    */
+    void createModel();
+
+private:
+    T *Vp;  ///< P-wave velocity
+    T *Vs;  ///< S-wave velocity
+    T *Qp;  // Quality factor for P-wave
+    T *Qs;  // Quality factor for S-wave
+    T *R;   ///< Density 
+    T *M;   // Lame Mu  (padded)
+    T *L2M;   ///< Lame lambda  (padded)
+    T *M_xz;   ///< Lame Mu  (padded)
+    T *M_yz;   ///< Lame Mu  (padded)
+    T *M_xy;   ///< Lame Mu  (padded)
+    T *Tp;  ///< P-wave relax time
+    T *Ts;  ///< S-wave relax time
+    T *Ts_xz;   ///< Relax times S-wave  (staggered)
+    T *Ts_yz;   ///< Relax times S-wave  (staggered)
+    T *Ts_xy;   ///< Relax times S-wave  (staggered)
+    T *Rx;  ///< Staggered inverse of density in x (padded)
+    T *Ry;  ///< Staggered inverse of density in y (padded)
+    T *Rz;  ///< Staggered inverse of density in z (padded)
+    T f0; // Center frequency
+    std::string Vpfile; ///< Filename to vp model
+    std::string Vsfile; ///< Filename to vs model
+    std::string Rfile; ///< Filename to density model
+    std::string Qpfile; ///< Filename to P-wave Q model
+    std::string Qsfile; ///< Filename to S-wave Q model
+};
+
 
 }
 #endif //MODEL_H
