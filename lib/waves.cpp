@@ -4575,6 +4575,12 @@ WavesViscoelastic3D<T>::WavesViscoelastic3D(const int _nx, const int _ny, const 
     Sxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Syz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Sxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Mxx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Myy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Mzz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Mxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Myz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Mxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
@@ -4629,6 +4635,12 @@ WavesViscoelastic3D<T>::WavesViscoelastic3D(std::shared_ptr<rockseis::ModelVisco
     Sxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Syz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Sxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Mxx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Myy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Mzz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Mxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Myz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Mxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
@@ -4643,6 +4655,12 @@ WavesViscoelastic3D<T>::~WavesViscoelastic3D() {
     free(Sxz);
     free(Syz);
     free(Sxy);
+    free(Mxx);
+    free(Myy);
+    free(Mzz);
+    free(Mxz);
+    free(Myz);
+    free(Mxy);
     free(Vx);
     free(Vy);
     free(Vz);
@@ -5015,6 +5033,7 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
         }
     }
     
+
     // Derivate Vy backward with respect to y
     der->ddy_bw(Vy);
     // Compute Sxx,Syy,Szz
@@ -5031,7 +5050,6 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
                 Sxx[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
                 Syy[I3D(ix,iy,iz)] += dt*C11*df[I3D(ix,iy,iz)];
                 Szz[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
-
                 Mxx[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
                 Myy[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
                 Mzz[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
@@ -5150,7 +5168,6 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
                 Sxx[I3D(ix,iy,i)] -= dt*C13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
                 Syy[I3D(ix,iy,i)] -= dt*C13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
                 Szz[I3D(ix,iy,i)] -= dt*C11*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
-
                 Mxx[I3D(ix,iy,i)] += T13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
                 Myy[I3D(ix,iy,i)] += T13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
                 Mzz[I3D(ix,iy,i)] += T11*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
@@ -5205,6 +5222,9 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
                 C44 = M_xz[I3D(ix,iy,iz)]*Ts_xz[I3D(ix,iy,iz)];
                 Sxz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
                 Mxz[I3D(ix,iy,iz)] -= (to*M_xz[I3D(ix,iy,iz)]*(Ts_xz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+
+                // Convolution sum
+                Sxz[I3D(ix,iy,iz)] += dt*Mxz[I3D(ix,iy,iz)];
             }
         }
     }
@@ -5277,6 +5297,9 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
                 C44 = M_yz[I3D(ix,iy,iz)]*Ts_yz[I3D(ix,iy,iz)];
                 Syz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
                 Myz[I3D(ix,iy,iz)] -= (to*M_yz[I3D(ix,iy,iz)]*(Ts_yz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+
+                // Convolution sum
+                Syz[I3D(ix,iy,iz)] += dt*Myz[I3D(ix,iy,iz)];
             }
         }
     }
@@ -5349,6 +5372,9 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
                 C44 = M_xy[I3D(ix,iy,iz)]*Ts_xy[I3D(ix,iy,iz)];
                 Sxy[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
                 Mxy[I3D(ix,iy,iz)] -= (to*M_xy[I3D(ix,iy,iz)]*(Ts_xy[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+
+                // Convolution sum
+                Sxy[I3D(ix,iy,iz)] += dt*Mxy[I3D(ix,iy,iz)];
             }
         }
     }

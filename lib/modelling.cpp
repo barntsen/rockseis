@@ -1514,6 +1514,7 @@ int ModellingViscoelastic3D<T>::run(){
         if(this->recVzset){
             waves->recordData(model, this->recVz, GMAP, it);
         }
+
     
     	//Writting out results to snapshot file
         if(this->snapPset){ 

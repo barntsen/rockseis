@@ -4301,8 +4301,8 @@ void ModelViscoelastic3D<T>::staggerModels(){
     Index ind_pml(nx_pml, ny_pml, nz_pml);
 
     // Reallocate necessary variables 
-    free(M); free(L2M); free(M_xz); free(M_yz); 
-    free(M_xy); free(Rx); free(Ry); free(Rz);
+    free(M); free(L2M); free(M_xz); free(M_yz); free(M_xy); 
+    free(Rx); free(Ry); free(Rz);
     free(Tp); free(Ts); free(Ts_xz); free(Ts_yz); free(Ts_xy);
     M = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     L2M = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
@@ -4343,10 +4343,10 @@ void ModelViscoelastic3D<T>::staggerModels(){
                 M_yz[ind_pml(ix,iy,iz)]=_rho*_vs*_vs;
                 M_xy[ind_pml(ix,iy,iz)]=_rho*_vs*_vs;
                 Tp[ind_pml(ix,iy,iz)] = (Tp[ind_pml(ix,iy,iz)]+1)/(Tp[ind_pml(ix,iy,iz)]-1);
-                Ts_xz[ind_pml(ix,iz)] = (Ts[ind_pml(ix,iz)]+1)/(Ts[ind_pml(ix,iz)]-1);
-                Ts_yz[ind_pml(ix,iz)] = (Ts[ind_pml(ix,iz)]+1)/(Ts[ind_pml(ix,iz)]-1);
-                Ts_xy[ind_pml(ix,iz)] = (Ts[ind_pml(ix,iz)]+1)/(Ts[ind_pml(ix,iz)]-1);
-                Ts[ind_pml(ix,iz)] = (Ts[ind_pml(ix,iz)]+1)/(Ts[ind_pml(ix,iz)]-1);
+                Ts_xz[ind_pml(ix,iy,iz)] = (Ts[ind_pml(ix,iy,iz)]+1)/(Ts[ind_pml(ix,iy,iz)]-1);
+                Ts_yz[ind_pml(ix,iy,iz)] = (Ts[ind_pml(ix,iy,iz)]+1)/(Ts[ind_pml(ix,iy,iz)]-1);
+                Ts_xy[ind_pml(ix,iy,iz)] = (Ts[ind_pml(ix,iy,iz)]+1)/(Ts[ind_pml(ix,iy,iz)]-1);
+                Ts[ind_pml(ix,iy,iz)] = (Ts[ind_pml(ix,iy,iz)]+1)/(Ts[ind_pml(ix,iy,iz)]-1);
             }
         }
     }
@@ -4360,7 +4360,6 @@ void ModelViscoelastic3D<T>::staggerModels(){
             }
         }
     }
-
 
     // Staggering using arithmetic average
     this->staggermodel_x(Rx, nx_pml, ny_pml, nz_pml);
