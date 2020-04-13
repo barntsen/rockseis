@@ -348,6 +348,51 @@ private:
     bool snapPset, snapSxxset, snapSzzset, snapSxzset, snapVxset, snapVzset;
 };
 
+/** The 3D Viscoelastic Modelling class
+ *
+ */
+template<typename T>
+class ModellingViscoelastic3D: public Modelling<T> {
+public:
+    ModellingViscoelastic3D();					///< Constructor
+    ModellingViscoelastic3D(std::shared_ptr<ModelViscoelastic3D<T>> model, std::shared_ptr<Data3D<T>> source, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs modelling
+    void setModel(std::shared_ptr<ModelViscoelastic3D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
+    void setRecP(std::shared_ptr<Data3D<T>> _recP) { recP = _recP; recPset = true; }
+    void setRecVx(std::shared_ptr<Data3D<T>> _recVx) { recVx = _recVx; recVxset = true; }
+    void setRecVy(std::shared_ptr<Data3D<T>> _recVy) { recVy = _recVy; recVyset = true; }
+    void setRecVz(std::shared_ptr<Data3D<T>> _recVz) { recVz = _recVz; recVzset = true; }
+
+    void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
+    void setSnapSxx(std::string _snapSxx) { snapSxx = _snapSxx; snapSxxset = true; }
+    void setSnapSyy(std::string _snapSyy) { snapSyy = _snapSyy; snapSyyset = true; }
+    void setSnapSzz(std::string _snapSzz) { snapSzz = _snapSzz; snapSzzset = true; }
+    void setSnapSyz(std::string _snapSyz) { snapSyz = _snapSyz; snapSyzset = true; }
+    void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
+    void setSnapSxy(std::string _snapSxy) { snapSxy = _snapSxy; snapSxyset = true; }
+    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
+    void setSnapVy(std::string _snapVy) { snapVy = _snapVy; snapVyset = true; }
+    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
+
+    ~ModellingViscoelastic3D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelViscoelastic3D<T>> model;
+    std::shared_ptr<Data3D<T>> source;
+    std::shared_ptr<Data3D<T>> recP;
+    std::shared_ptr<Data3D<T>> recVx;
+    std::shared_ptr<Data3D<T>> recVy;
+    std::shared_ptr<Data3D<T>> recVz;
+    bool modelset;
+    bool sourceset;
+    bool recPset, recVxset, recVyset, recVzset;
+    std::string snapP, snapSxx, snapSyy, snapSzz, snapSyz, snapSxz, snapSxy, snapVx, snapVy, snapVz;
+    bool snapPset, snapSxxset, snapSyyset, snapSzzset, snapSxzset, snapSyzset, snapSxyset, snapVxset, snapVyset, snapVzset;
+};
+
 
 }
 #endif //MODELLING_H
