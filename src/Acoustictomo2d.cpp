@@ -60,10 +60,12 @@ void evaluate(rockseis::OptInstancePtr instance)
     fatt->writeLog("##### Evaluation finished #####");
 
     // Normalize error and gradient
+    /*
     if(fatt->getFnorm() == 0.0){
         fatt->setFnorm(instance->f);
     }
     fatt->normalize(g, &instance->f, instance->n);
+    */
 
     double xnorm, gnorm, step;
     gnorm = fatt->vector_norm(instance->g, 2, instance->n);
@@ -125,7 +127,7 @@ void finalize(rockseis::Opt *opt, rockseis::OptInstancePtr instance)
     {
         fatt->writeLog("Saving diagonal Hessian");
         double *x = instance->diaghessian;
-        fatt->un_normalize(x, instance->f, instance->n);
+        //fatt->un_normalize(x, instance->f, instance->n);
         fatt->saveHessian(x);
     }else{
         // Do nothing
