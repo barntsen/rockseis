@@ -2244,10 +2244,10 @@ void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesEl
                 msxz3 = (wsx[ks2D(ix+pads-1, iz+pads+1)] - wsx[ks2D(ix+pads-1, iz+pads)])/dz + (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads-1, iz+pads)])/dx; 
                 msxz4 = (wsx[ks2D(ix+pads, iz+pads+1)] - wsx[ks2D(ix+pads, iz+pads)])/dz + (wsz[ks2D(ix+pads+1, iz+pads)] - wsz[ks2D(ix+pads, iz+pads)])/dx; 
 
-                mrxz1 = (wrx[ks2D(ix+pads-1, iz+pads)] - wrx[ks2D(ix+pads-1, iz+pads-1)])/dz + (wrz[ks2D(ix+pads, iz+pads-1)] - wrz[ks2D(ix+pads-1, iz+pads-1)])/dx;
-                mrxz2 = (wrx[ks2D(ix+pads, iz+pads)] - wrx[ks2D(ix+pads, iz+pads-1)])/dz + (wrz[ks2D(ix+pads+1, iz+pads-1)] - wrz[ks2D(ix+pads, iz+pads-1)])/dx;  
-                mrxz3 = (wrx[ks2D(ix+pads-1, iz+pads+1)] - wrx[ks2D(ix+pads-1, iz+pads)])/dz + (wrz[ks2D(ix+pads, iz+pads)] - wrz[ks2D(ix+pads-1, iz+pads)])/dx; 
-                mrxz4 = (wrx[ks2D(ix+pads, iz+pads+1)] - wrx[ks2D(ix+pads, iz+pads)])/dz + (wrz[ks2D(ix+pads+1, iz+pads)] - wrz[ks2D(ix+pads, iz+pads)])/dx; 
+                mrxz1 = (wrx[ks2D(ix+padr-1, iz+padr)] - wrx[ks2D(ix+padr-1, iz+padr-1)])/dz + (wrz[ks2D(ix+padr, iz+padr-1)] - wrz[ks2D(ix+padr-1, iz+padr-1)])/dx;
+                mrxz2 = (wrx[ks2D(ix+padr, iz+padr)] - wrx[ks2D(ix+padr, iz+padr-1)])/dz + (wrz[ks2D(ix+padr+1, iz+padr-1)] - wrz[ks2D(ix+padr, iz+padr-1)])/dx;  
+                mrxz3 = (wrx[ks2D(ix+padr-1, iz+padr+1)] - wrx[ks2D(ix+padr-1, iz+padr)])/dz + (wrz[ks2D(ix+padr, iz+padr)] - wrz[ks2D(ix+padr-1, iz+padr)])/dx; 
+                mrxz4 = (wrx[ks2D(ix+padr, iz+padr+1)] - wrx[ks2D(ix+padr, iz+padr)])/dz + (wrz[ks2D(ix+padr+1, iz+padr)] - wrz[ks2D(ix+padr, iz+padr)])/dx; 
                 vsgraddata[ki2D(ix,iz)] -= (2.0*msxx*mrxx + 2.0*mszz*mrzz + 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4));
             }
             if(wavgradset){

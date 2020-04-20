@@ -959,7 +959,10 @@ void RtmElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 	int ix, iz, ihx, ihz;
 	T *pimagedata = NULL; 
 	T *simagedata = NULL;
-	T msxx, mszz, msxz, mrxx, mrzz, mrxz;
+	T msxx, mszz, mrxx, mrzz;
+
+    T mrxz1=0, mrxz2=0, mrxz3=0, mrxz4=0; 
+    T msxz1=0, msxz2=0, msxz3=0, msxz4=0;
 	T C33_minus, C33_plus;
 	T C44_minus, C44_plus;
 	int nhx; 
@@ -1026,18 +1029,29 @@ void RtmElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads, T* wrx, T* wrz, int pa
 								pimagedata[ki2D(ix,iz,ihx,ihz)] += C33_minus*C33_plus*(msxx + mszz) * (mrxx + mrzz);
 							}
 
-							if(simageset){
-								msxz = 0.5*(wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz;
-								msxz += 0.5*(wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz;
-								msxz += 0.5*(wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx;
-								msxz += 0.5*(wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
+                            if(simageset){
+                                msxz1 = (wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz + (wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
+                                msxz2 = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz + (wsz[ks2D(ix-hx+pads+1, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dx;  
+                                msxz3 = (wsx[ks2D(ix-hx+pads-1, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dz + (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx; 
+                                msxz4 = (wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz + (wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx; 
 
-								mrxz = 0.5*(wrx[kr2D(ix+hx+padr, iz+hz+padr+1)] - wrx[kr2D(ix+hx+padr, iz+hz+padr)])/dz;
-								mrxz += 0.5*(wrx[kr2D(ix+hx+padr-1, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dz;
-								mrxz += 0.5*(wrz[kr2D(ix+hx+padr+1, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr)])/dx;
-								mrxz += 0.5*(wrz[kr2D(ix+hx+padr, iz+hz+padr-1)] - wrz[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dx;
-								simagedata[ki2D(ix,iz,ihx,ihz)] += C44_minus*C44_plus*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + msxz*mrxz);
-							}
+                                mrxz1 = (wrx[ks2D(ix+hx+padr-1, iz+hz+padr)] - wrx[ks2D(ix+hx+padr-1, iz+hz+padr-1)])/dz + (wrz[ks2D(ix+hx+padr, iz+hz+padr-1)] - wrz[ks2D(ix+hx+padr-1, iz+hz+padr-1)])/dx;
+                                mrxz2 = (wrx[ks2D(ix+hx+padr, iz+hz+padr)] - wrx[ks2D(ix+hx+padr, iz+hz+padr-1)])/dz + (wrz[ks2D(ix+hx+padr+1, iz+hz+padr-1)] - wrz[ks2D(ix+hx+padr, iz+hz+padr-1)])/dx;  
+                                mrxz3 = (wrx[ks2D(ix+hx+padr-1, iz+hz+padr+1)] - wrx[ks2D(ix+hx+padr-1, iz+hz+padr)])/dz + (wrz[ks2D(ix+hx+padr, iz+hz+padr)] - wrz[ks2D(ix+hx+padr-1, iz+hz+padr)])/dx; 
+                                mrxz4 = (wrx[ks2D(ix+hx+padr, iz+hz+padr+1)] - wrx[ks2D(ix+hx+padr, iz+hz+padr)])/dz + (wrz[ks2D(ix+hx+padr+1, iz+hz+padr)] - wrz[ks2D(ix+hx+padr, iz+hz+padr)])/dx; 
+                                /*
+                                   msxz = 0.5*(wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz;
+                                   msxz += 0.5*(wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz;
+                                   msxz += 0.5*(wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx;
+                                   msxz += 0.5*(wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
+
+                                   mrxz = 0.5*(wrx[kr2D(ix+hx+padr, iz+hz+padr+1)] - wrx[kr2D(ix+hx+padr, iz+hz+padr)])/dz;
+                                   mrxz += 0.5*(wrx[kr2D(ix+hx+padr-1, iz+hz+padr)] - wrx[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dz;
+                                   mrxz += 0.5*(wrz[kr2D(ix+hx+padr+1, iz+hz+padr)] - wrz[kr2D(ix+hx+padr, iz+hz+padr)])/dx;
+                                   mrxz += 0.5*(wrz[kr2D(ix+hx+padr, iz+hz+padr-1)] - wrz[kr2D(ix+hx+padr-1, iz+hz+padr-1)])/dx;
+                                   */
+                                simagedata[ki2D(ix,iz,ihx,ihz)] += C44_minus*C44_plus*(-2.0*msxx*mrzz + -2.0*mszz*mrxx + 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4));
+                            }
 						}
 					}	
 				}

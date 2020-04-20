@@ -1352,8 +1352,7 @@ void PSmvaElastic2D<T>::calcAdjointsource(T *adjsrcxx_bw, T *adjsrczz_bw, T *adj
 
 							msxz  = (wsx[ks2D(ix-2*hx+pads, iz-2*hz+pads+1)] - wsx[ks2D(ix-2*hx+pads, iz-2*hz+pads)])/dz;
 							msxz += (wsz[ks2D(ix-2*hx+pads+1, iz-2*hz+pads)] - wsz[ks2D(ix-2*hx+pads, iz-2*hz+pads)])/dx;
-                            imagexz = 0.5*(imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)] + imagedata[ki2D(ix-hx+1,iz-hz+1,ihx,ihz)]);
-
+                            imagexz = 0.25*(imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)] + imagedata[ki2D(ix-hx+1,iz-hz+1,ihx,ihz)] + imagedata[ki2D(ix-hx+1,iz-hz,ihx,ihz)]+imagedata[ki2D(ix-hx,iz-hz+1,ihx,ihz)] );
 							adjsrcxx_bw[km2D(ix,iz)] -= 2.0*C*imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*C44_minus*mszz;
 							adjsrczz_bw[km2D(ix,iz)] -= 2.0*C*imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*C44_minus*msxx;
 							adjsrcxz_bw[km2D(ix,iz)] += C*imagexz*C44_minus_xz*msxz;
