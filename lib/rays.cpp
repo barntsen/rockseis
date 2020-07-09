@@ -351,22 +351,95 @@ void RaysAcoustic2D<T>::clearLam(T val) {
     }
 }
 
+//template<typename T>
+//int RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype){
+//    Point2D<int> *map;
+//    int ntrace = source->getNtrace();
+//    int nx, nz;
+//    int lpml;
+//    int nr = 0;
+//    lpml = this->getLpml();
+//    nx = this->getNx_pml();
+//    nz = this->getNz_pml();
+//
+//    // Get correct map (source or receiver mapping)
+//    if(maptype == SMAP) {
+//        map = (source->getGeom())->getSmap();
+//    }else{
+//        map = (source->getGeom())->getGmap();
+//    }
+//
+//    int i;
+//    //Indexes 
+//    Index I(nx, nz); //Model and Field indexes
+//    for (i=0; i < ntrace; i++) 
+//    {
+//        if(map[i].x >= 0 && map[i].y >=0)
+//        { 
+//            TT[I(lpml+map[i].x, lpml+map[i].y)] = 0.0;
+//            nr++;
+//        }
+//    }
+//    return nr;
+//}
+//
+//template<typename T>
+//int RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int traceno){
+//    Point2D<int> *map;
+//    int ntrace = source->getNtrace();
+//    if(traceno < 0 || traceno > ntrace-1){
+//        rs_error("RaysAcoustic2D<T>::insertSource: traceno out of bounds.");
+//    }
+//    int nx, nz;
+//    int lpml;
+//    lpml = this->getLpml();
+//    nx = this->getNx_pml();
+//    nz = this->getNz_pml();
+//    int nr = 0;
+//
+//    // Get correct map (source or receiver mapping)
+//    if(maptype == SMAP) {
+//        map = (source->getGeom())->getSmap();
+//    }else{
+//        map = (source->getGeom())->getGmap();
+//    }
+//
+//    int i = traceno;
+//    //Indexes 
+//    Index I(nx, nz); //Model and Field indexes
+//    if(map[i].x >= 0 && map[i].y >=0)
+//    { 
+//        TT[I(lpml+map[i].x, lpml+map[i].y)] = 0.0;
+//        nr++;
+//    }
+//    return nr;
+//}
+
 template<typename T>
 int RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype){
     Point2D<int> *map;
+    Point2D<T> *shift;
     int ntrace = source->getNtrace();
     int nx, nz;
+    T dx, dz;
     int lpml;
     int nr = 0;
+    int isx, isz;
     lpml = this->getLpml();
     nx = this->getNx_pml();
     nz = this->getNz_pml();
+    dx = this->getDx();
+    dz = this->getDz();
+    T x,z;
+    T *V = model->getL();
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
+        shift = (source->getGeom())->getSshift();
     }else{
         map = (source->getGeom())->getGmap();
+        shift = (source->getGeom())->getGshift();
     }
 
     int i;
@@ -376,7 +449,18 @@ int RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source,
     {
         if(map[i].x >= 0 && map[i].y >=0)
         { 
-            TT[I(lpml+map[i].x, lpml+map[i].y)] = 0.0;
+            for(isx =-1; isx < 2 ; isx++)
+            {
+                if(((map[i].x + isx) >= 0) && ((map[i].x + isx) < nx)){
+                    x = shift[i].x -  isx;
+                    for(isz = -1; isz < 2 ; isz++){
+                        z = shift[i].y -  isz;
+                        if(((map[i].y + isz) >= 0) && ((map[i].y + isz) < nz)){
+                            TT[I(lpml+map[i].x+isx, lpml+map[i].y+isz)] = sqrt(SQ(x*dx) + SQ(z*dz))/V[I(lpml+map[i].x, lpml+map[i].y)];
+                        }
+                    }
+                }
+            }
             nr++;
         }
     }
@@ -386,34 +470,52 @@ int RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source,
 template<typename T>
 int RaysAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int traceno){
     Point2D<int> *map;
-    int ntrace = source->getNtrace();
-    if(traceno < 0 || traceno > ntrace-1){
-        rs_error("RaysAcoustic2D<T>::insertSource: traceno out of bounds.");
-    }
+    Point2D<T> *shift;
     int nx, nz;
+    T dx, dz;
     int lpml;
+    int nr = 0;
+    int isx, isz;
     lpml = this->getLpml();
     nx = this->getNx_pml();
     nz = this->getNz_pml();
-    int nr = 0;
+    dx = this->getDx();
+    dz = this->getDz();
+    T x,z;
+    T *V = model->getL();
 
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
+        shift = (source->getGeom())->getSshift();
     }else{
         map = (source->getGeom())->getGmap();
+        shift = (source->getGeom())->getGshift();
     }
 
     int i = traceno;
     //Indexes 
     Index I(nx, nz); //Model and Field indexes
-    if(map[i].x >= 0 && map[i].y >=0)
-    { 
-        TT[I(lpml+map[i].x, lpml+map[i].y)] = 0.0;
-        nr++;
-    }
+        if(map[i].x >= 0 && map[i].y >=0)
+        { 
+            for(isx = -1; isx < 2 ; isx++)
+            {
+                if(((map[i].x + isx) >= 0) && ((map[i].x + isx) < nx)){
+                    x = shift[i].x -  isx;
+                    for(isz = -1; isz < 2 ; isz++){
+                        z = shift[i].y -  isz;
+                        if(((map[i].y + isz) >= 0) && ((map[i].y + isz) < nz)){
+                            TT[I(lpml+map[i].x+isx, lpml+map[i].y+isz)] = sqrt(SQ(x*dx) + SQ(z*dz))/V[I(lpml+map[i].x, lpml+map[i].y)];
+                        }
+                    }
+                }
+            }
+            nr++;
+        }
     return nr;
 }
+
+
 
 template<typename T>
 void RaysAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype){
@@ -439,7 +541,7 @@ void RaysAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bo
     }
 
     dataarray = data->getData();
-    int i;
+    int i, i1, i2;
     Index I(nx, nz);
     Index Idat(nt, ntrace);
     Fielddata = this->getTT();
@@ -447,10 +549,13 @@ void RaysAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bo
     { 
         if(map[i].x >= 0 && map[i].y >=0)
         {
-            dataarray[Idat(0,i)] = Fielddata[I(lpml+map[i].x, lpml+map[i].y)];
+            for(i1=0; i1<2*LANC_SIZE; i1++){
+                for(i2=0; i2<2*LANC_SIZE; i2++){
+                    dataarray[Idat(0,i)] += Fielddata[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i1 ,LANC_SIZE);
+                }
+            }
         }
     }
-
 }
 
 template<typename T>
@@ -1163,8 +1268,10 @@ T RaysAcoustic3D<T>::norm1(T *TT, T *TTold)
 template<typename T>
 int RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
     Point3D<int> *map;
+    Point3D<T> *shift;
     size_t ntrace = source->getNtrace();
     size_t nx, ny, nz;
+    T dx, dy, dz;
     int nr = 0;
     int lpml;
 
@@ -1173,60 +1280,110 @@ int RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source,
     ny = this->getNy_pml();
     nz = this->getNz_pml();
 
+    dx = this->getDx();
+    dy = this->getDy();
+    dz = this->getDz();
+
+    T x,y,z;
+    T *V = model->getL();
+
+
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
+        shift = (source->getGeom())->getSshift();
     }else{
         map = (source->getGeom())->getGmap();
+        shift = (source->getGeom())->getGshift();
     }
 
     size_t i;
+    int isx, isy, isz;
     //Indexes 
     Index I(nx, ny, nz); //Model and Field indexes
     for (i=0; i < ntrace; i++) 
     {
         if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
         { 
-            TT[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = 0.0;
-            nr++;
+            for(isx = -1; isx < 2 ; isx++)
+            {
+                if(((map[i].x + isx) >= 0) && ((map[i].x + isx) < nx)){
+                    x = shift[i].x -  isx;
+                    for(isy = -1; isy < 2 ; isy++){
+                        if(((map[i].y + isy) >= 0) && ((map[i].y + isy) < ny)){
+                            y = shift[i].y -  isy;
+                            for(isz = -1; isz < 2 ; isz++){
+                                if(((map[i].z + isz) >= 0) && ((map[i].z + isz) < nz)){
+                                    z = shift[i].z -  isz;
+                                    TT[I(lpml+map[i].x + isx, lpml+map[i].y + isy, lpml+map[i].z + isz)] = sqrt(SQ(x*dx) + SQ(y*dy) + SQ(z*dz))/V[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)];
+                                    nr++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     return nr;
 }
 
 template<typename T>
-int RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int traceno){
+int RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, size_t traceno){
     Point3D<int> *map;
-    size_t ntrace = source->getNtrace();
-
-    if(traceno < 0 || traceno > ntrace-1){
-        rs_error("RaysAcoustic3D<T>::insertSource: traceno out of bounds.");
-    }
-
+    Point3D<T> *shift;
     size_t nx, ny, nz;
-    int lpml;
+    T dx, dy, dz;
     int nr = 0;
+    int lpml;
 
     lpml = this->getLpml();
     nx = this->getNx_pml();
     ny = this->getNy_pml();
     nz = this->getNz_pml();
 
+    dx = this->getDx();
+    dy = this->getDy();
+    dz = this->getDz();
+
+    T x,y,z;
+    T *V = model->getL();
+
+
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
+        shift = (source->getGeom())->getSshift();
     }else{
         map = (source->getGeom())->getGmap();
+        shift = (source->getGeom())->getGshift();
     }
 
     size_t i = traceno;
+    int isx, isy, isz;
     //Indexes 
     Index I(nx, ny, nz); //Model and Field indexes
-    if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-    { 
-        TT[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)] = 0.0;
-        nr++;
-    }
+        if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+        { 
+            for(isx = -1; isx < 2 ; isx++)
+            {
+                if(((map[i].x + isx) >= 0) && ((map[i].x + isx) < nx)){
+                    x = shift[i].x -  isx;
+                    for(isy = -1; isy < 2 ; isy++){
+                        if(((map[i].y + isy) >= 0) && ((map[i].y + isy) < ny)){
+                            y = shift[i].y -  isy;
+                            for(isz = -1; isz < 2 ; isz++){
+                                if(((map[i].z + isz) >= 0) && ((map[i].z + isz) < nz)){
+                                    z = shift[i].z -  isz;
+                                    TT[I(lpml+map[i].x + isx, lpml+map[i].y + isy, lpml+map[i].z + isz)] = sqrt(SQ(x*dx) + SQ(y*dy) + SQ(z*dz))/V[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            nr++;
+        }
     return nr;
 }
 
@@ -1255,7 +1412,7 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
     }
 
     dataarray = data->getData();
-    size_t i;
+    size_t i,i1,i2,i3;
     Index I(nx, ny, nz);
     Index Idat(nt, ntrace);
     Fielddata = this->getTT();
@@ -1263,7 +1420,13 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
     { 
         if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
         {
-            dataarray[Idat(0,i)] = Fielddata[I(lpml+map[i].x, lpml+map[i].y, lpml+map[i].z)];
+            for(i1=0; i1<2*LANC_SIZE; i1++){
+                for(i2=0; i2<2*LANC_SIZE; i2++){
+                    for(i3=0; i3<2*LANC_SIZE; i3++){
+                        dataarray[Idat(0,i)] += Fielddata[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE);
+                    }
+                }
+            }
         }
     }
 
