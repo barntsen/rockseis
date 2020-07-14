@@ -6,9 +6,9 @@ namespace rockseis {
 // =============== ABSTRACT PML CLASS =============== //
 template<typename T>
 Pml<T>::Pml() {
-    Amax = 150.;
+    Amax = AMAX;
     Smax = 1200.;
-    Kmax = 2.;
+    Kmax = KMAX;
     dt = 0.0;
     Lpml=10;
     A_ltf = (T *) malloc(Lpml*sizeof(T));
@@ -47,9 +47,9 @@ Pml<T>::~Pml() {
 
 template<typename T>
 Pml<T>::Pml(const int _Lpml, const T _dt) {
-    Amax = 150.;
+    Amax = AMAX;
     Smax = 1200.;
-    Kmax = 2.;
+    Kmax = KMAX;
     dt = _dt;
     Lpml = _Lpml;
     A_ltf = (T *) malloc(Lpml*sizeof(T));

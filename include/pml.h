@@ -7,6 +7,12 @@
 #include <stdlib.h>
 #include <math.h>
 
+//#define AMAX 150
+//#define KMAX 2
+
+#define AMAX 0
+#define KMAX 1
+
 namespace rockseis {
 // =============== ABSTRACT PML CLASS =============== //
 /** The abstract pml class

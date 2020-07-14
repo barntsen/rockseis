@@ -212,8 +212,6 @@ int ModellingAcoustic2D<T>::run(){
      std::shared_ptr<WavesAcoustic2D<T>> waves (new WavesAcoustic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
-     (waves->getPml())->setAmax(AMAX);
-     (waves->getPml())->setKmax(KMAX);
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
@@ -372,8 +370,6 @@ int ModellingAcoustic3D<T>::run(){
      std::shared_ptr<WavesAcoustic3D<T>> waves (new WavesAcoustic3D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
-     (waves->getPml())->setAmax(AMAX);
-     (waves->getPml())->setKmax(KMAX);
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
@@ -550,8 +546,6 @@ int ModellingElastic2D<T>::run(){
      std::shared_ptr<WavesElastic2D<T>> waves (new WavesElastic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
-     (waves->getPml())->setAmax(AMAX);
-     (waves->getPml())->setKmax(KMAX);
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
@@ -722,8 +716,6 @@ int ModellingElastic3D<T>::run(){
      std::shared_ptr<WavesElastic3D<T>> waves (new WavesElastic3D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
-     (waves->getPml())->setAmax(AMAX);
-     (waves->getPml())->setKmax(KMAX);
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
@@ -903,8 +895,6 @@ int ModellingElastic2D_DS<T>::run(){
      std::shared_ptr<WavesElastic2D_DS<T>> waves (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
-     (waves->getPml())->setAmax(AMAX);
-     (waves->getPml())->setKmax(KMAX);
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
@@ -1084,8 +1074,6 @@ int ModellingElastic3D_DS<T>::run(){
      std::shared_ptr<WavesElastic3D_DS<T>> waves (new WavesElastic3D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
-     (waves->getPml())->setAmax(AMAX);
-     (waves->getPml())->setKmax(KMAX);
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
@@ -1274,8 +1262,6 @@ int ModellingViscoelastic2D<T>::run(){
      std::shared_ptr<WavesViscoelastic2D<T>> waves (new WavesViscoelastic2D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
-     (waves->getPml())->setAmax(AMAX);
-     (waves->getPml())->setKmax(KMAX);
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
@@ -1446,8 +1432,6 @@ int ModellingViscoelastic3D<T>::run(){
      std::shared_ptr<WavesViscoelastic3D<T>> waves (new WavesViscoelastic3D<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
-     (waves->getPml())->setAmax(AMAX);
-     (waves->getPml())->setKmax(KMAX);
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->computeABC();
 
