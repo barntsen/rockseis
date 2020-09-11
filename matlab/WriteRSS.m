@@ -45,13 +45,13 @@ end
 if(head.Nheader)    
     for i=1:head.geometry.N(2)
         for j=1:head.Nheader/2
-            fwrite(fileID, head.coordinates(i).s(j),'*float32');
+            fwrite(fileID, head.coordinates(i).s(j),'float32');
         end
         for j=1:head.Nheader/2
-            fwrite(fileID, head.coordinates(i).g(j),'*float32');
+            fwrite(fileID, head.coordinates(i).g(j),'float32');
         end
         
-        fwrite(fileID, data(:,i),'*float32');
+        fwrite(fileID, data(:,i),'float32');
     end
 else    
     fwrite(fileID, data,'*float32');    
