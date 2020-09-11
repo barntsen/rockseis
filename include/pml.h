@@ -12,6 +12,7 @@
 
 #define AMAX 0
 #define KMAX 1
+#define SMAX 1200
 
 namespace rockseis {
 // =============== ABSTRACT PML CLASS =============== //

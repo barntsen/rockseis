@@ -77,11 +77,10 @@ class RSSdata:
                     self.GroupY[i] = st.unpack('f', f.read(4))[0];
                     self.GroupZ[i] = st.unpack('f', f.read(4))[0];
                             
-                for j in range(0,self.geomN[0]):
-                    self.data[i*self.geomN[0] + j] = st.unpack('f', f.read(4))[0];
+                self.data[i*self.geomN[0]:(i+1)*self.geomN[0],0] = st.unpack('f'*self.geomN[0], f.read(4*self.geomN[0]));
         else:
-            for i in range(0,self.fullsize):
-               self.data[i] = st.unpack('f', f.read(4))[0];
+            self.data[0:self.fullsize,0] = st.unpack('f'*self.fullsize, f.read(4*self.fullsize));
+
 
         # Reshape data to correct dimensions
         self.data=self.data.reshape(resize, order='F')

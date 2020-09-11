@@ -213,6 +213,7 @@ int ModellingAcoustic2D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
     // Create snapshots
@@ -371,6 +372,7 @@ int ModellingAcoustic3D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
 	// Create log file
@@ -547,6 +549,7 @@ int ModellingElastic2D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
     // Create snapshots
@@ -717,6 +720,7 @@ int ModellingElastic3D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
 	// Create log file
@@ -896,6 +900,7 @@ int ModellingElastic2D_DS<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
     // Create snapshots
@@ -1075,6 +1080,7 @@ int ModellingElastic3D_DS<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
 	// Create log file
@@ -1263,6 +1269,7 @@ int ModellingViscoelastic2D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
     // Create snapshots
@@ -1433,6 +1440,7 @@ int ModellingViscoelastic3D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
      (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
 	// Create log file
