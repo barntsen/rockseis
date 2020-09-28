@@ -854,7 +854,7 @@ void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
             nump=np[previous];
             if(nump) break;
         }
-        if(nump){
+        if(nump>1){
             for(i=0; i<nump; i++)
             {
                 pos[i].x=(int) ((points[previous*maxpicks + i].x - v0)/ax);
@@ -874,7 +874,7 @@ void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
             nump=np[next];
             if(nump) break;
         }
-        if(nump){
+        if(nump>1){
             for(i=0; i<nump; i++)
             {
                 pos[i].x=(int) ((points[next*maxpicks + i].x - v0)/ax);
@@ -902,7 +902,9 @@ void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
                 // Draw a Point
                 dc.DrawCircle(pos[i].x, pos[i].y, 3);
             }
-            dc.DrawLines(nump, pos);
+            if(nump>1){
+               dc.DrawLines(nump, pos);
+            }
         }
 }
 
