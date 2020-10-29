@@ -2,13 +2,13 @@ function head = RSShead(data, type)
 % RSShead : Creates a header for a RSS formatted file
 %
 % Call :
-% head = RSShead(data, type=0);
+% head = RSShead(data, type=1);
 %
 %   Author(s): W. Weibull, 10/09-17
 %   Copyright 2017 Wiktor Weibull
 
 if (nargin < 2)
-    type=1;
+    head.type=1;
 else
     head.type=type;
 end
@@ -39,7 +39,7 @@ for i=1:length(Dsz)
 end
 
 
-if (type==2)
+if (head.type==2)
     head.Nheader=4;
    for i=1:Dsz(2)
        head.coordinates(i).s(1) = 0;
@@ -49,7 +49,7 @@ if (type==2)
    end
 end
 
-if (type==3)
+if (head.type==3)
     head.Nheader=6;
    for i=1:Dsz(2)
        head.coordinates(i).s(1) = 0;
