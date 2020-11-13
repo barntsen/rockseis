@@ -1477,10 +1477,10 @@ void WavesElastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
     }
 }
 
-
 template<typename T>
 void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
     Point2D<int> *map;
+    Point2D<T> *shift;
     T *wav; 
     int ntrace = source->getNtrace();
     int nx, nz, lpml;
@@ -1494,13 +1494,15 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
+        shift = (source->getGeom())->getSshift();
     }else{
         map = (source->getGeom())->getGmap();
+        shift = (source->getGeom())->getGshift();
     }
 
     rs_field sourcetype = source->getField();
     wav = source->getData();
-    int i;
+    int i, i1, i2;
     Index I(nx, nz); //Model and Field indexes
     Index Idat(nt, ntrace); // Data indexes
     switch(sourcetype)
@@ -1509,8 +1511,12 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0){
-                    Sxx[I(lpml + map[i].x, lpml + map[i].y)] += dt*wav[Idat(it,i)]; 
-                    Szz[I(lpml + map[i].x, lpml + map[i].y)] += dt*wav[Idat(it,i)]; 
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            Sxx[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE) + i1)] -= dt*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i1 ,LANC_SIZE);
+                            Szz[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE) + i1)] -= dt*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i1 ,LANC_SIZE);
+                        }
+                    }
                 }
             }
             break;
@@ -1519,8 +1525,13 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0){
-                    Vx[I(lpml + map[i].x, lpml + map[i].y)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
-                    Vx[I(lpml + map[i].x - 1, lpml + map[i].y)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
+                    T xshift = shift[i].x - 0.5;
+                    T yshift = shift[i].y;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            Vx[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE) + i1)] += dt*Mod[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE) + i1)]*wav[Idat(it,i)]*LANC(xshift + LANC_SIZE - i2, LANC_SIZE)*LANC(yshift + LANC_SIZE - i1 ,LANC_SIZE); 
+                        }
+                    }
                 }
             }
             break;
@@ -1529,8 +1540,13 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0){
-                    Vz[I(lpml + map[i].x, lpml + map[i].y)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
-                    Vz[I(lpml + map[i].x, lpml + map[i].y - 1)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
+                    T xshift = shift[i].x;
+                    T yshift = shift[i].y - 0.5;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            Vz[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE) + i1)] += dt*Mod[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE) + i1)]*wav[Idat(it,i)]*LANC(xshift + LANC_SIZE - i2, LANC_SIZE)*LANC(yshift + LANC_SIZE - i1 ,LANC_SIZE); 
+                        }
+                    }
                 }
             }
             break;
@@ -1539,12 +1555,16 @@ void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>
     }
 }
 
+
 template<typename T>
-void WavesElastic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
+void WavesElastic2D<T>::recordData(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
     Point2D<int> *map;
+    Point2D<T> *shift;
     T *dataarray; 
     T *Fielddata1 = NULL;
     T *Fielddata2 = NULL;
+    T *Vp, *Vs, *R;
+    T factor;
     int ntrace = data->getNtrace();
     int nt = data->getNt();
     int nx, nz, lpml;
@@ -1556,25 +1576,38 @@ void WavesElastic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bo
     // Get correct map (data or receiver mapping)
     if(maptype == SMAP) {
         map = (data->getGeom())->getSmap();
+        shift = (data->getGeom())->getSshift();
     }else{
         map = (data->getGeom())->getGmap();
+        shift = (data->getGeom())->getGshift();
     }
 
     dataarray = data->getData();
-    int i;
+    int i,i1,i2;
     Index I(nx, nz);
+    Index Im(this->getNx(), this->getNz());
     Index Idat(nt, ntrace);
     switch(field)
     {
         case PRESSURE:
             Fielddata1 = this->getSxx();
             Fielddata2 = this->getSzz();
+            Vp = model->getVp();
+            Vs = model->getVs();
+            R = model->getR();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >= 0)
                 {
-                    dataarray[Idat(it,i)] = Fielddata1[I(lpml + map[i].x, lpml + map[i].y)];
-                    dataarray[Idat(it,i)] += Fielddata2[I(lpml + map[i].x, lpml + map[i].y)];
+
+                    // Factor to make reciprocity work
+                    factor = R[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)] - R[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)];
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            dataarray[Idat(it,i)] += (1./2.)*Fielddata1[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i1 ,LANC_SIZE)/factor;
+                            dataarray[Idat(it,i)] += (1./2.)*Fielddata2[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i1 ,LANC_SIZE)/factor;
+                        }
+                    }
                 }
             }
 	    break;
@@ -1584,8 +1617,12 @@ void WavesElastic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bo
             { 
                 if(map[i].x >= 0 && map[i].y >= 0)
                 {
-                    dataarray[Idat(it,i)] = 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y)];
-                    dataarray[Idat(it,i)] += 0.5*Fielddata1[I(lpml + map[i].x - 1, lpml + map[i].y)];
+                    T xshift = shift[i].x - 0.5;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            dataarray[Idat(it,i)] += Fielddata1[I(lpml + map[i].x - (LANC_SIZE) + i2, lpml + map[i].y - (LANC_SIZE-1) + i1)]*LANC(xshift + LANC_SIZE - i2, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i1 ,LANC_SIZE);
+                        }
+                    }
                 }
             }
             break;
@@ -1595,15 +1632,18 @@ void WavesElastic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bo
             { 
                 if(map[i].x >= 0 && map[i].y >= 0)
                 {
-                    dataarray[Idat(it,i)] = 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y)];
-                    dataarray[Idat(it,i)] += 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y - 1)];
+                    T yshift = shift[i].y - 0.5;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            dataarray[Idat(it,i)] += Fielddata1[I(lpml + map[i].x - (LANC_SIZE-1) + i2, lpml + map[i].y - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i2, LANC_SIZE)*LANC(yshift + LANC_SIZE - i1 ,LANC_SIZE);
+                        }
+                    }
                 }
             }
             break;
         default:
             break;
     }
-
 }
 
 
@@ -2311,6 +2351,7 @@ void WavesElastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
 template<typename T>
 void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it){
     Point3D<int> *map;
+    Point3D<T> *shift;
     T *wav; 
     int ntrace = source->getNtrace();
     int nx, ny, nz, lpml;
@@ -2325,12 +2366,14 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
     // Get correct map (source or receiver mapping)
     if(maptype == SMAP) {
         map = (source->getGeom())->getSmap();
+        shift = (source->getGeom())->getSshift();
     }else{
         map = (source->getGeom())->getGmap();
+        shift = (source->getGeom())->getGshift();
     }
     rs_field sourcetype = source->getField();
     wav = source->getData();
-    int i;
+    int i,i1,i2,i3;
     Index I(nx, ny, nz); //Model and Field indexes
     Index Idat(nt, ntrace); // Data indexes
     switch(sourcetype)
@@ -2340,20 +2383,32 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    Sxx[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)] += dt*wav[Idat(it,i)]; 
-                    Syy[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)] += dt*wav[Idat(it,i)]; 
-                    Szz[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)] += dt*wav[Idat(it,i)]; 
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            for(i3=0; i3<2*LANC_SIZE; i3++){
+                                Sxx[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)] -= dt*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE); 
+                                Syy[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)] -= dt*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE); 
+                                Szz[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)] -= dt*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE); 
+                            }
+                        }
+                    }
                 }
             }
             break;
-	    case VX:
+        case VX:
             Mod = model->getRx();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    Vx[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]*wav[Idat(it,i)]; 
-                    Vx[I(lpml + map[i].x - 1, lpml + map[i].y, lpml + map[i].z)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]*wav[Idat(it,i)]; 
+                    T xshift = shift[i].x - 0.5;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            for(i3=0; i3<2*LANC_SIZE; i3++){
+                                Vx[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)] += dt*Mod[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*wav[Idat(it,i)]*LANC(xshift + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE); 
+                            }
+                        }
+                    }
                 }
             }
             break;
@@ -2363,8 +2418,14 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    Vy[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]*wav[Idat(it,i)]; 
-                    Vy[I(lpml + map[i].x, lpml + map[i].y - 1, lpml + map[i].z)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]*wav[Idat(it,i)]; 
+                    T yshift = shift[i].y - 0.5;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            for(i3=0; i3<2*LANC_SIZE; i3++){
+                                Vy[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)] += dt*Mod[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(yshift + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE); 
+                            }
+                        }
+                    }
                 }
             }
             break;
@@ -2374,8 +2435,14 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    Vz[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]*wav[Idat(it,i)]; 
-                    Vz[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z - 1)] += 0.5*dt*Mod[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]*wav[Idat(it,i)]; 
+                    T zshift = shift[i].z - 0.5;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            for(i3=0; i3<2*LANC_SIZE; i3++){
+                                Vz[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)] += dt*Mod[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(zshift + LANC_SIZE - i1 ,LANC_SIZE); 
+                            }
+                        }
+                    }
                 }
             }
             break;
@@ -2385,12 +2452,15 @@ void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>
 }
 
 template<typename T>
-void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it){
+void WavesElastic3D<T>::recordData(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it){
     Point3D<int> *map;
+    Point3D<T> *shift;
     T *dataarray; 
     T *Fielddata1 = NULL;
     T *Fielddata2 = NULL;
     T *Fielddata3 = NULL;
+    T *Vp, *Vs, *R;
+    T factor;
     int ntrace = data->getNtrace();
     int nt = data->getNt();
     int nx, ny, nz, lpml;
@@ -2402,14 +2472,17 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
     // Get correct map (data or receiver mapping)
     if(maptype == SMAP) {
         map = (data->getGeom())->getSmap();
+        shift = (data->getGeom())->getSshift();
     }else{
         map = (data->getGeom())->getGmap();
+        shift = (data->getGeom())->getGshift();
     }
 
     rs_field field = data->getField();
     dataarray = data->getData();
-    int i;
+    int i,i1,i2,i3;
     Index I(nx, ny, nz);
+    Index Im(this->getNx(), this->getNy(), this->getNz());
     Index Idat(nt, ntrace);
     switch(field)
     {
@@ -2417,13 +2490,25 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
             Fielddata1 = this->getSxx();
             Fielddata2 = this->getSyy();
             Fielddata3 = this->getSzz();
+            Vp = model->getVp();
+            Vs = model->getVs();
+            R = model->getR();
             for (i=0; i < ntrace; i++) 
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    dataarray[Idat(it,i)] = (1./3)*Fielddata1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
-                    dataarray[Idat(it,i)] += (1./3)*Fielddata2[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
-                    dataarray[Idat(it,i)] += (1./3)*Fielddata3[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
+
+                    // Factor to make reciprocity work
+                    factor = (3.*R[Im(map[i].x, map[i].y, map[i].z)]*Vp[Im(map[i].x, map[i].y, map[i].z)]*Vp[Im(map[i].x, map[i].y, map[i].z)] - 4.*R[Im(map[i].x, map[i].y, map[i].z)]*Vs[Im(map[i].x, map[i].y, map[i].z)]*Vs[Im(map[i].x, map[i].y, map[i].z)])/3.;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            for(i3=0; i3<2*LANC_SIZE; i3++){
+                                dataarray[Idat(it,i)] += (1./3.)*Fielddata1[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE)/factor;
+                                dataarray[Idat(it,i)] += (1./3.)*Fielddata2[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE)/factor;
+                                dataarray[Idat(it,i)] += (1./3.)*Fielddata3[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE)/factor;
+                            }
+                        }
+                    }
                 }
             }
             break;
@@ -2433,8 +2518,14 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    dataarray[Idat(it,i)] = 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
-                    dataarray[Idat(it,i)] += 0.5*Fielddata1[I(lpml + map[i].x - 1, lpml + map[i].y, lpml + map[i].z)];
+                    T xshift = shift[i].x - 0.5;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            for(i3=0; i3<2*LANC_SIZE; i3++){
+                                dataarray[Idat(it,i)] += Fielddata1[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*LANC(xshift + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE);
+                            }
+                        }
+                    }
                 }
             }
             break;
@@ -2444,8 +2535,14 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    dataarray[Idat(it,i)] = 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
-                    dataarray[Idat(it,i)] += 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y - 1, lpml + map[i].z)];
+                    T yshift = shift[i].y - 0.5;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            for(i3=0; i3<2*LANC_SIZE; i3++){
+                                dataarray[Idat(it,i)] += Fielddata1[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(yshift + LANC_SIZE - i2 ,LANC_SIZE)*LANC(shift[i].z + LANC_SIZE - i1 ,LANC_SIZE);
+                            }
+                        }
+                    }
                 }
             }
             break;
@@ -2456,8 +2553,14 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    dataarray[Idat(it,i)] = 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)];
-                    dataarray[Idat(it,i)] += 0.5*Fielddata1[I(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z - 1)];
+                    T zshift = shift[i].z - 0.5;
+                    for(i1=0; i1<2*LANC_SIZE; i1++){
+                        for(i2=0; i2<2*LANC_SIZE; i2++){
+                            for(i3=0; i3<2*LANC_SIZE; i3++){
+                                dataarray[Idat(it,i)] += Fielddata1[I(lpml + map[i].x - (LANC_SIZE) + i3, lpml + map[i].y - (LANC_SIZE) + i2, lpml + map[i].z - (LANC_SIZE) + i1)]*LANC(shift[i].x + LANC_SIZE - i3, LANC_SIZE)*LANC(shift[i].y + LANC_SIZE - i2 ,LANC_SIZE)*LANC(zshift + LANC_SIZE - i1 ,LANC_SIZE);
+                            }
+                        }
+                    }
                 }
             }
             break;
@@ -2465,6 +2568,7 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
             break;
     }
 }
+
 
 // =============== 2D ELASTIC DISPLACEMENT-STRESS WAVES CLASS =============== //
 /** The 2D Elastic WAVES model class

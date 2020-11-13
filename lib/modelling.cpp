@@ -586,17 +586,17 @@ int ModellingElastic2D<T>::run(){
 
         // Recording data 
         if(this->recPset){
-            waves->recordData(this->recP, GMAP, it);
+            waves->recordData(model,this->recP, GMAP, it);
         }
 
         // Recording data (Vx)
         if(this->recVxset){
-            waves->recordData(this->recVx, GMAP, it);
+            waves->recordData(model,this->recVx, GMAP, it);
         }
 
         // Recording data (Vz)
         if(this->recVzset){
-            waves->recordData(this->recVz, GMAP, it);
+            waves->recordData(model,this->recVz, GMAP, it);
         }
     
     	//Writting out results to snapshot file
@@ -767,22 +767,22 @@ int ModellingElastic3D<T>::run(){
 
         // Recording data 
         if(this->recPset){
-            waves->recordData(this->recP, GMAP, it);
+            waves->recordData(model, this->recP, GMAP, it);
         }
 
         // Recording data (Vx)
         if(this->recVxset){
-            waves->recordData(this->recVx, GMAP, it);
+            waves->recordData(model, this->recVx, GMAP, it);
         }
 
         // Recording data (Vy)
         if(this->recVyset){
-            waves->recordData(this->recVy, GMAP, it);
+            waves->recordData(model, this->recVy, GMAP, it);
         }
 
         // Recording data (Vz)
         if(this->recVzset){
-            waves->recordData(this->recVz, GMAP, it);
+            waves->recordData(model, this->recVz, GMAP, it);
         }
     
     	//Writting out results to snapshot file

@@ -239,8 +239,10 @@ class FwiElastic2D: public Fwi<T> {
 public:
     FwiElastic2D();					///< Constructor
     FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataUx, std::shared_ptr<Data2D<T>> dataUz, int order, int snapinc);					///< Constructor 
-    int run(); ///< Runs fwi with full snapshoting
-    int run_optimal(); ///< Runs fwi with optimal checkpointing
+    int run(); ///< Runs fwi with full snapshoting using velocity
+    int run_optimal(); ///< Runs fwi with optimal checkpointing velocity
+    int run_DS(); ///< Runs fwi with full snapshoting using displacement 
+    int run_optimal_DS(); ///< Runs fwi with optimal checkpointing using displacement
     void setModel(std::shared_ptr<ModelElastic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
@@ -257,6 +259,8 @@ public:
     void setDataweightz(std::shared_ptr<Data2D<T>> _dataweightz) { dataweightz = _dataweightz; dataweightzset = true; }
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
+    void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
+    void crossCorr_rev(std::shared_ptr<WavesElastic2D<T>> waves_fw, std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void crossCorr_rev(std::shared_ptr<WavesElastic2D_DS<T>> waves_fw, std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic2D<T>> model);

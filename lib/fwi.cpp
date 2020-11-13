@@ -2420,13 +2420,321 @@ void FwiElastic2D<T>::crossCorr_rev(std::shared_ptr<WavesElastic2D_DS<T>> waves_
             if(rhogradset){
                 uderx = 0.5*(Rx[ks2D(ix+pads-1, iz+pads)] *(rsxx[ks2D(ix+pads, iz+pads)] - rsxx[ks2D(ix-1+pads, iz+pads)])/dx)*wrx[kr2D(ix+padr-1, iz+padr)]; 
                 uderx += 0.5*(Rx[ks2D(ix+pads, iz+pads)] *(rsxx[ks2D(ix+1+pads, iz+pads)] - rsxx[ks2D(ix+pads, iz+pads)])/dx)*wrx[kr2D(ix+padr, iz+padr)]; 
-                uderx += 0.5*(Rx[ks2D(ix+pads-1, iz+pads)] * (rsxz[kr2D(ix+padr-1, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dz)*wrx[kr2D(ix+padr-1, iz+padr)];
-                uderx += 0.5*(Rx[ks2D(ix+pads, iz+pads)] * (rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr, iz+padr-1)])/dz)*wrx[kr2D(ix+padr, iz+padr)];
+                uderx += 0.5*(Rx[ks2D(ix+pads-1, iz+pads)] * (rsxz[ks2D(ix+padr-1, iz+padr)] - rsxz[ks2D(ix+padr-1, iz+padr-1)])/dz)*wrx[kr2D(ix+padr-1, iz+padr)];
+                uderx += 0.5*(Rx[ks2D(ix+pads, iz+pads)] * (rsxz[ks2D(ix+padr, iz+padr)] - rsxz[ks2D(ix+padr, iz+padr-1)])/dz)*wrx[kr2D(ix+padr, iz+padr)];
 
-                uderz = 0.5*(Rz[kr2D(ix+padr, iz+padr-1)]*(rsxz[kr2D(ix+padr, iz+padr-1)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dx)*wrz[ks2D(ix+pads, iz+pads-1)];
-                uderz += 0.5*(Rz[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr)])/dx)*wrz[ks2D(ix+pads, iz+pads)];
-                uderz += 0.5*(Rz[kr2D(ix+padr, iz+padr-1)]*(rszz[kr2D(ix+padr, iz+padr)] - rszz[kr2D(ix+padr, iz+padr-1)])/dz)*wrz[ks2D(ix+pads, iz+pads-1)];
-                uderz += 0.5*(Rz[kr2D(ix+padr, iz+padr)]*(rszz[kr2D(ix+padr, iz+padr+1)] - rszz[kr2D(ix+padr, iz+padr)])/dz)*wrz[ks2D(ix+pads, iz+pads)];
+                uderz = 0.5*(Rz[ks2D(ix+padr, iz+padr-1)]*(rsxz[ks2D(ix+padr, iz+padr-1)] - rsxz[ks2D(ix+padr-1, iz+padr-1)])/dx)*wrz[kr2D(ix+padr, iz+padr-1)];
+                uderz += 0.5*(Rz[ks2D(ix+padr, iz+padr)]*(rsxz[ks2D(ix+padr, iz+padr)] - rsxz[ks2D(ix+padr-1, iz+padr)])/dx)*wrz[kr2D(ix+padr, iz+padr)];
+                uderz += 0.5*(Rz[ks2D(ix+padr, iz+padr-1)]*(rszz[ks2D(ix+padr, iz+padr)] - rszz[ks2D(ix+padr, iz+padr-1)])/dz)*wrz[kr2D(ix+padr, iz+padr-1)];
+                uderz += 0.5*(Rz[ks2D(ix+padr, iz+padr)]*(rszz[ks2D(ix+padr, iz+padr+1)] - rszz[ks2D(ix+padr, iz+padr)])/dz)*wrz[kr2D(ix+padr, iz+padr)];
+                rhograddata[ki2D(ix,iz)] -= (uderx + uderz);
+            }
+        }
+    }	
+}
+
+template<typename T>
+void FwiElastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it)
+{
+    if(!vpgradset && !vsgradset && !rhogradset && !wavgradset) rs_error("FwiElastic2D<T>::crossCorr: No gradient set for computation.");
+	int ix, iz;
+    int padr = waves_bw->getLpml();
+    T* wrx = waves_bw->getVx();
+    T* wrz = waves_bw->getVz();
+    T* rsxx = waves_bw->getSxx();
+    T* rszz = waves_bw->getSzz();
+    T* rsxz = waves_bw->getSxz();
+
+	T *vpgraddata = NULL; 
+	T *vsgraddata = NULL;
+	T *wavgraddata = NULL;
+	T *rhograddata = NULL;
+	T msxx=0, mszz=0, uderx=0, uderz=0;
+    T mrxz1=0, mrxz2=0, mrxz3=0, mrxz4=0; 
+    T msxz1=0, msxz2=0, msxz3=0, msxz4=0;
+	int nx;
+	int nz;
+	T dx;
+	T dz;
+
+    T* Rx = model->getRx();
+    T* Rz = model->getRz();
+    T *Mxz = model->getM();
+
+    T* Vp = model->getVp();
+    T* Vs = model->getVs();
+    T* Rho = model->getR();
+    T L,M,S1,S2,D,F;
+
+	if(vpgradset){
+		if(!vpgrad->getAllocated()){
+			vpgrad->allocateImage();
+		}
+		vpgraddata = vpgrad->getImagedata();
+	}
+	if(vsgradset){
+		if(!vsgrad->getAllocated()){
+			vsgrad->allocateImage();
+		}
+		vsgraddata = vsgrad->getImagedata();
+	}
+	if(rhogradset){
+		if(!rhograd->getAllocated()){
+			rhograd->allocateImage();
+		}
+		rhograddata = rhograd->getImagedata();
+	}
+
+    int nt=0;
+    int ntrace=0;
+    int i=0;
+    Point2D<int> *map=NULL;
+    
+	if(wavgradset){
+		wavgraddata = wavgrad->getData();
+        nt = wavgrad->getNt();
+        ntrace = wavgrad->getNtrace();
+        map = (wavgrad->getGeom())->getSmap();
+	}
+
+    // Getting sizes
+    nx = waves_bw->getNx();
+    nz = waves_bw->getNz();
+    dx = waves_bw->getDx(); 
+    dz = waves_bw->getDz(); 
+
+	int nxs = nx+2*pads;
+	int nxr = nx+2*padr;
+
+    for (ix=1; ix<nx-1; ix++){
+        for (iz=1; iz<nz-1; iz++){
+            L = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+            M = Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)] + 1;
+            S1 = (L + 2*M)/(4*M*(L+M));
+            S2 = (-1*L)/(4*M*(L+M));
+            msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
+            mszz = (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads, iz+pads-1)])/dz;
+            D = S1*rsxx[kr2D(ix+padr, iz+padr)] + S2*rszz[kr2D(ix+padr, iz+padr)];
+            F = S2*rsxx[kr2D(ix+padr, iz+padr)] + S1*rszz[kr2D(ix+padr, iz+padr)];
+
+            if(vpgradset || vsgradset || rhogradset){
+                vpgraddata[ki2D(ix,iz)] -= (msxx + mszz) * (D + F);
+            }
+
+            if(vsgradset || rhogradset){
+                msxz1 = (wsx[ks2D(ix+pads-1, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads-1)])/dz + (wsz[ks2D(ix+pads, iz+pads-1)] - wsz[ks2D(ix+pads-1, iz+pads-1)])/dx;
+                msxz2 = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads, iz+pads-1)])/dz + (wsz[ks2D(ix+pads+1, iz+pads-1)] - wsz[ks2D(ix+pads, iz+pads-1)])/dx;  
+                msxz3 = (wsx[ks2D(ix+pads-1, iz+pads+1)] - wsx[ks2D(ix+pads-1, iz+pads)])/dz + (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads-1, iz+pads)])/dx; 
+                msxz4 = (wsx[ks2D(ix+pads, iz+pads+1)] - wsx[ks2D(ix+pads, iz+pads)])/dz + (wsz[ks2D(ix+pads+1, iz+pads)] - wsz[ks2D(ix+pads, iz+pads)])/dx; 
+
+                mrxz1 = rsxz[kr2D(ix+padr-1, iz+padr-1)]/(Mxz[kr2D(ix+padr-1, iz+padr-1)] + 1);
+                mrxz2 = rsxz[kr2D(ix+padr, iz+padr-1)]/(Mxz[kr2D(ix+padr, iz+padr-1)] + 1);
+                mrxz3 = rsxz[kr2D(ix+padr-1, iz+padr)]/(Mxz[kr2D(ix+padr-1, iz+padr)] + 1);
+                mrxz4 = rsxz[kr2D(ix+padr, iz+padr)]/(Mxz[kr2D(ix+padr, iz+padr)] + 1);
+                vsgraddata[ki2D(ix,iz)] -= (2.0*msxx*D + 2.0*mszz*F + 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4));
+            }
+            if(wavgradset){
+                switch(wavgrad->getField()){
+                    case PRESSURE:
+                        for (i=0; i < ntrace; i++) 
+                        {
+                            if((map[i].x == ix) && (map[i].y == iz))
+                            {
+                                wavgraddata[kwav(it,i)] = 1.0*(D + F);
+                            }
+                        }
+                        break;
+                    case VX:
+                        for (i=0; i < ntrace; i++) 
+                        {
+                            if((map[i].x == ix) && (map[i].y == iz))
+                            {
+                                wavgraddata[kwav(it,i)] = wrx[kr2D(ix+padr, iz+padr)];
+                            }
+                        }
+                        break;
+                    case VZ:
+                        for (i=0; i < ntrace; i++) 
+                        {
+                            if((map[i].x == ix) && (map[i].y == iz))
+                            {
+                                wavgraddata[kwav(it,i)] = wrz[kr2D(ix+padr, iz+padr)];
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if(rhogradset){
+                uderx = 0.5*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxx[kr2D(ix+padr+1, iz+padr)] - rsxx[kr2D(ix+padr, iz+padr)])/dx;
+                uderx += 0.5*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxx[kr2D(ix+padr, iz+padr)] - rsxx[kr2D(ix+padr-1, iz+padr)])/dx;
+                uderx += 0.5*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr, iz+padr-1)])/dz;
+                uderx += 0.5*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxz[kr2D(ix+padr-1, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dz;
+
+                uderz = 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr)])/dx;
+                uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rsxz[kr2D(ix+padr, iz+padr-1)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dx;
+                uderz += 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rszz[kr2D(ix+padr, iz+padr+1)] - rszz[kr2D(ix+padr, iz+padr)])/dz;
+                uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rszz[kr2D(ix+padr, iz+padr)] - rszz[kr2D(ix+padr, iz+padr-1)])/dz;
+                rhograddata[ki2D(ix,iz)] -= (uderx + uderz);
+            }
+        }
+    }	
+}
+
+template<typename T>
+void FwiElastic2D<T>::crossCorr_rev(std::shared_ptr<WavesElastic2D<T>> waves_fw, std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it)
+{
+    if(!vpgradset && !vsgradset && !rhogradset && !wavgradset) rs_error("FwiElastic2D<T>::crossCorr: No gradient set for computation.");
+	int ix, iz;
+
+    int pads = waves_fw->getLpml();
+    T* wsx = waves_fw->getVx();
+    T* wsz = waves_fw->getVz();
+
+    int padr = waves_bw->getLpml();
+    T* wrx = waves_bw->getVx();
+    T* wrz = waves_bw->getVz();
+
+    T* rsxx = waves_bw->getSxx();
+    T* rszz = waves_bw->getSzz();
+    T* rsxz = waves_bw->getSxz();
+
+
+	T *vpgraddata = NULL; 
+	T *vsgraddata = NULL;
+	T *wavgraddata = NULL;
+	T *rhograddata = NULL;
+	T msxx=0, mszz=0, uderx=0, uderz=0;
+    T mrxz1=0, mrxz2=0, mrxz3=0, mrxz4=0; 
+    T msxz1=0, msxz2=0, msxz3=0, msxz4=0;
+
+	int nx;
+	int nz;
+	T dx;
+	T dz;
+
+    T* Rx = model->getRx();
+    T* Rz = model->getRz();
+    T *Mxz = model->getM();
+
+    T* Vp = model->getVp();
+    T* Vs = model->getVs();
+    T* Rho = model->getR();
+    T L,M,S1,S2,D,F;
+
+	if(vpgradset){
+		if(!vpgrad->getAllocated()){
+			vpgrad->allocateImage();
+		}
+		vpgraddata = vpgrad->getImagedata();
+	}
+	if(vsgradset){
+		if(!vsgrad->getAllocated()){
+			vsgrad->allocateImage();
+		}
+		vsgraddata = vsgrad->getImagedata();
+	}
+	if(rhogradset){
+		if(!rhograd->getAllocated()){
+			rhograd->allocateImage();
+		}
+		rhograddata = rhograd->getImagedata();
+	}
+
+    int nt=0;
+    int ntrace=0;
+    int i=0;
+    Point2D<int> *map=NULL;
+    
+	if(wavgradset){
+		wavgraddata = wavgrad->getData();
+        nt = wavgrad->getNt();
+        ntrace = wavgrad->getNtrace();
+        map = (wavgrad->getGeom())->getSmap();
+	}
+
+    // Getting sizes
+    nx = waves_bw->getNx();
+    nz = waves_bw->getNz();
+    dx = waves_bw->getDx(); 
+    dz = waves_bw->getDz(); 
+
+	int nxs = nx+2*pads;
+	int nxr = nx+2*padr;
+
+    for (ix=1; ix<nx-1; ix++){
+        for (iz=1; iz<nz-1; iz++){
+            L = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+            M = Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)] + 1;
+            S1 = (L + 2*M)/(4*M*(L+M));
+            S2 = (-1*L)/(4*M*(L+M));
+            msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
+            mszz = (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads, iz+pads-1)])/dz;
+            D = S1*rsxx[kr2D(ix+padr, iz+padr)] + S2*rszz[kr2D(ix+padr, iz+padr)];
+            F = S2*rsxx[kr2D(ix+padr, iz+padr)] + S1*rszz[kr2D(ix+padr, iz+padr)];
+
+            if(vpgradset || vsgradset || rhogradset){
+                vpgraddata[ki2D(ix,iz)] -= (msxx + mszz) * (D + F);
+            }
+
+            if(vsgradset || rhogradset){
+                msxz1 = (wsx[ks2D(ix+pads-1, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads-1)])/dz + (wsz[ks2D(ix+pads, iz+pads-1)] - wsz[ks2D(ix+pads-1, iz+pads-1)])/dx;
+                msxz2 = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads, iz+pads-1)])/dz + (wsz[ks2D(ix+pads+1, iz+pads-1)] - wsz[ks2D(ix+pads, iz+pads-1)])/dx;  
+                msxz3 = (wsx[ks2D(ix+pads-1, iz+pads+1)] - wsx[ks2D(ix+pads-1, iz+pads)])/dz + (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads-1, iz+pads)])/dx; 
+                msxz4 = (wsx[ks2D(ix+pads, iz+pads+1)] - wsx[ks2D(ix+pads, iz+pads)])/dz + (wsz[ks2D(ix+pads+1, iz+pads)] - wsz[ks2D(ix+pads, iz+pads)])/dx; 
+
+                mrxz1 = rsxz[kr2D(ix+padr-1, iz+padr-1)]/(Mxz[kr2D(ix+padr-1, iz+padr-1)] + 1);
+                mrxz2 = rsxz[kr2D(ix+padr, iz+padr-1)]/(Mxz[kr2D(ix+padr, iz+padr-1)] + 1);
+                mrxz3 = rsxz[kr2D(ix+padr-1, iz+padr)]/(Mxz[kr2D(ix+padr-1, iz+padr)] + 1);
+                mrxz4 = rsxz[kr2D(ix+padr, iz+padr)]/(Mxz[kr2D(ix+padr, iz+padr)] + 1);
+                vsgraddata[ki2D(ix,iz)] -= (2.0*msxx*D + 2.0*mszz*F + 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4));
+            }
+            if(wavgradset){
+                switch(wavgrad->getField()){
+                    case PRESSURE:
+                        for (i=0; i < ntrace; i++) 
+                        {
+                            if((map[i].x == ix) && (map[i].y == iz))
+                            {
+                                wavgraddata[kwav(it,i)] = 1.0*(D + F);
+                            }
+                        }
+                        break;
+                    case VX:
+                        for (i=0; i < ntrace; i++) 
+                        {
+                            if((map[i].x == ix) && (map[i].y == iz))
+                            {
+                                wavgraddata[kwav(it,i)] = wrx[kr2D(ix+padr, iz+padr)];
+                            }
+                        }
+                        break;
+                    case VZ:
+                        for (i=0; i < ntrace; i++) 
+                        {
+                            if((map[i].x == ix) && (map[i].y == iz))
+                            {
+                                wavgraddata[kwav(it,i)] = wrz[kr2D(ix+padr, iz+padr)];
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if(rhogradset){
+                uderx = 0.5*(Rx[ks2D(ix+pads-1, iz+pads)] *(rsxx[ks2D(ix+pads, iz+pads)] - rsxx[ks2D(ix-1+pads, iz+pads)])/dx)*wsx[ks2D(ix+pads-1, iz+pads)]; 
+                uderx += 0.5*(Rx[ks2D(ix+pads, iz+pads)] *(rsxx[ks2D(ix+1+pads, iz+pads)] - rsxx[ks2D(ix+pads, iz+pads)])/dx)*wsx[ks2D(ix+pads, iz+pads)]; 
+                uderx += 0.5*(Rx[ks2D(ix+pads-1, iz+pads)] * (rsxz[kr2D(ix+padr-1, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dz)*wsx[ks2D(ix+pads-1, iz+pads)];
+                uderx += 0.5*(Rx[ks2D(ix+pads, iz+pads)] * (rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr, iz+padr-1)])/dz)*wsx[ks2D(ix+pads, iz+pads)];
+
+                uderz = 0.5*(Rz[kr2D(ix+padr, iz+padr-1)]*(rsxz[kr2D(ix+padr, iz+padr-1)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dx)*wsz[ks2D(ix+pads, iz+pads-1)];
+                uderz += 0.5*(Rz[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr)])/dx)*wsz[ks2D(ix+pads, iz+pads)];
+                uderz += 0.5*(Rz[kr2D(ix+padr, iz+padr-1)]*(rszz[kr2D(ix+padr, iz+padr)] - rszz[kr2D(ix+padr, iz+padr-1)])/dz)*wsz[ks2D(ix+pads, iz+pads-1)];
+                uderz += 0.5*(Rz[kr2D(ix+padr, iz+padr)]*(rszz[kr2D(ix+padr, iz+padr+1)] - rszz[kr2D(ix+padr, iz+padr)])/dz)*wsz[ks2D(ix+pads, iz+pads)];
                 rhograddata[ki2D(ix,iz)] -= (uderx + uderz);
             }
         }
@@ -3334,6 +3642,315 @@ int FwiElastic2D<T>::run(){
      this->createLog(this->getLogfile());
 
      // Create the classes 
+     std::shared_ptr<WavesElastic2D<T>> waves (new WavesElastic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
+
+     if(!this->checkStability()) rs_error("FwiElastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->computeABC();
+
+     // Create snapshots
+     std::shared_ptr<Snapshot2D<T>> Uxsnap;
+     Uxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+     Uxsnap->openSnap(this->getSnapfile() + "-ux", 'w'); // Create a new snapshot file
+     Uxsnap->setData(waves->getVx(), 0); //Set Ux as snap field
+
+     std::shared_ptr<Snapshot2D<T>> Uzsnap;
+     Uzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+     Uzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
+     Uzsnap->setData(waves->getVz(), 0); //Set Uz as snap field
+
+     this->writeLog("Running 2D Elastic full-waveform inversion gradient with full checkpointing.");
+     this->writeLog("Doing forward Loop.");
+    // Loop over forward time
+    for(int it=0; it < nt; it++)
+    {
+    	//Writting out results to snapshot files
+        Uxsnap->setData(waves->getVx(), 0); //Set Ux as snap field
+        Uxsnap->writeSnap(it);
+
+        Uzsnap->setData(waves->getVz(), 0); //Set Uz as snap field
+        Uzsnap->writeSnap(it);
+
+
+    	// Time stepping velocity
+    	waves->forwardstepVelocity(model, der);
+
+    	// Time stepping stress
+    	waves->forwardstepStress(model, der);
+
+    	// Inserting force source 
+    	waves->insertSource(model, source, SMAP, it);
+    
+        // Recording data (Ux)
+        if(this->datamodUxset){
+            waves->recordData(model, this->datamodUx, GMAP, it);
+        }
+
+        // Recording data (Uz)
+        if(this->datamodUzset){
+            waves->recordData(model, this->datamodUz, GMAP, it);
+        }
+
+        // Output progress to logfile
+        this->writeProgress(it, nt-1, 20, 48);
+    }//End of forward loop
+    
+    
+    //Close snapshot file
+    Uxsnap->closeSnap();
+    Uzsnap->closeSnap();
+
+    // Reset waves
+    waves.reset();
+    waves  = std::make_shared<WavesElastic2D<T>>(model, nt, dt, ot);
+    (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+    (waves->getPml())->computeABC();
+
+    // Create image
+    if(this->vpgradset) vpgrad->allocateImage();
+    if(this->vsgradset) vsgrad->allocateImage();
+    if(this->rhogradset) rhograd->allocateImage();
+
+    Uxsnap->openSnap(this->getSnapfile() + "-ux", 'r');
+    Uxsnap->allocSnap(0);
+
+    Uzsnap->openSnap(this->getSnapfile() + "-uz", 'r');
+    Uzsnap->allocSnap(0);
+
+    // Compute misfit
+    computeMisfit();
+
+    // Compute Residuals
+    computeResiduals();
+
+     this->writeLog("\nDoing reverse-time Loop.");
+    // Loop over reverse time
+    for(int it=0; it < nt; it++)
+    {
+
+    	// Time stepping 
+    	waves->forwardstepVelocity(model, der);
+
+    	// Time stepping 
+    	waves->forwardstepStress(model, der);
+
+    	// Inserting residuals
+    	waves->insertSource(model, dataresUx, GMAP, (nt - 1 - it));
+    	waves->insertSource(model, dataresUz, GMAP, (nt - 1 - it));
+
+        //Read forward snapshot
+        Uxsnap->readSnap(nt - 1 - it);
+        Uzsnap->readSnap(nt - 1 - it);
+
+        // Do Crosscorrelation
+        crossCorr(Uxsnap->getData(0), Uzsnap->getData(0), 0, waves, model, (nt - 1 - it));
+
+        // Output progress to logfile
+        this->writeProgress(it, nt-1, 20, 48);
+    }
+     this->writeLog("\nGradient computation completed.");
+
+    // Scale gradients
+    this->scaleGrad(model);
+    
+	//Remove snapshot file
+	Uxsnap->removeSnap();
+	Uzsnap->removeSnap();
+
+    result=FWI_OK;
+    return result;
+}
+
+template<typename T>
+int FwiElastic2D<T>::run_optimal(){
+     int result = FWI_ERR;
+     if(!vpgradset && !vsgradset && !wavgradset) {
+         rs_warning("FwiElastic2D::run: No image set");
+         return result;
+     }
+     int nt;
+     T dt;
+	 T ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<WavesElastic2D<T>> waves_fw (new WavesElastic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<WavesElastic2D<T>> waves_bw (new WavesElastic2D<T>(model, nt, dt, ot));
+     std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
+     std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
+     revolve_action whatodo;
+     int oldcapo,capo;
+     capo = 0;
+
+     // Set CFS PML parameters
+    (waves_fw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_fw->getLpml()*waves_fw->getDx()));
+    (waves_fw->getPml())->computeABC();
+    (waves_bw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_bw->getLpml()*waves_bw->getDx()));
+    (waves_bw->getPml())->computeABC();
+
+     // Create checkpoint file
+     optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
+
+     // Create image
+    if(this->vpgradset) vpgrad->allocateImage();
+    if(this->vsgradset) vsgrad->allocateImage();
+    if(this->rhogradset) rhograd->allocateImage();
+
+     this->writeLog("Running 2D Elastic full-waveform inversion gradient with optimal checkpointing.");
+     this->writeLog("Doing forward Loop.");
+     bool reverse = false;
+    // Loop over forward time
+    do
+    {
+        oldcapo=optimal->getCapo();
+        whatodo = optimal->revolve();
+        capo = optimal->getCapo();
+        if (whatodo == advance)
+        {
+            for(int it=oldcapo; it < capo; it++)
+            {
+
+                // Time stepping velocity
+                waves_fw->forwardstepVelocity(model, der);
+
+                // Time stepping stress
+                waves_fw->forwardstepStress(model, der);
+
+                // Inserting source 
+                waves_fw->insertSource(model, source, SMAP, it);
+
+                // Recording data (Ux)
+                if(this->datamodUxset && !reverse){
+                    waves_fw->recordData(model, this->datamodUx, GMAP, it);
+                }
+
+                // Recording data (Uz)
+                if(this->datamodUzset && !reverse){
+                    waves_fw->recordData(model, this->datamodUz, GMAP, it);
+                }
+
+                if(!reverse){
+                    // Output progress to logfile
+                    this->writeProgress(it, nt-1, 20, 48);
+                }
+            }
+
+        }
+        if (whatodo == firsturn)
+        {
+            
+            // Time stepping velocity
+            waves_fw->forwardstepVelocity(model, der);
+
+            // Time stepping stess
+            waves_fw->forwardstepStress(model, der);
+
+            // Inserting  source 
+            waves_fw->insertSource(model, source, SMAP, capo);
+
+            // Recording data (Ux)
+            if(this->datamodUxset){
+                waves_fw->recordData(model, this->datamodUx, GMAP, capo);
+            }
+
+            // Recording data (Uz)
+            if(this->datamodUzset){
+                waves_fw->recordData(model, this->datamodUz, GMAP, capo);
+            }
+
+            // Compute misfit
+            computeMisfit();
+
+            // Compute Residuals
+            computeResiduals();
+
+            // Inserting residuals
+            waves_bw->insertSource(model, dataresUx, GMAP, capo);
+            waves_bw->insertSource(model, dataresUz, GMAP, capo);
+
+            // Do Crosscorrelation 
+            crossCorr_rev(waves_fw, waves_bw, model, capo);
+
+            // Output progress to logfile
+            this->writeProgress(capo, nt-1, 20, 48);
+      
+            //Close checkpoint file for w and reopen for rw
+            optimal->closeCheck();
+            optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+            reverse = true;
+            // Output progress to logfile
+            this->writeLog("\nDoing reverse-time Loop.");
+            this->writeProgress(0, nt-1, 20, 48);
+        }
+        if (whatodo == youturn)
+        {
+
+            // Time stepping velocity
+            waves_bw->forwardstepVelocity(model, der);
+            // Time stepping stress
+            waves_bw->forwardstepStress(model, der);
+
+            // Inserting residuals
+            waves_bw->insertSource(model, dataresUx, GMAP, capo);
+            waves_bw->insertSource(model, dataresUz, GMAP, capo);
+
+            // Do Crosscorrelation
+            crossCorr_rev(waves_fw, waves_bw, model, capo);
+
+            // Output progress to logfile
+            this->writeProgress(nt-1-capo, nt-1, 20, 48);
+        }
+        if (whatodo == takeshot)
+        {
+            optimal->writeCheck(waves_fw);
+        }
+        if (whatodo == restore)
+        {
+            optimal->readCheck(waves_fw);
+        }
+
+        if(whatodo == error){
+            std::cerr << "Error!" << std::endl;
+        }
+
+    } while((whatodo != terminate) && (whatodo != error));
+     this->writeLog("\nGradient computation completed.");
+    
+    // Scale gradients
+    this->scaleGrad(model);
+
+	//Remove snapshot file
+	optimal->removeCheck();
+
+    result=FWI_OK;
+    return result;
+}
+
+template<typename T>
+int FwiElastic2D<T>::run_DS(){
+	int result = FWI_ERR;
+	if(!vpgradset && !vsgradset && !wavgradset) {
+		rs_warning("FwiElastic2D::run: No image set");
+		return result;
+	}
+	int nt;
+	T dt;
+	T ot;
+
+     nt = source->getNt();
+     dt = source->getDt();
+     ot = source->getOt();
+
+	// Create log file
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
      std::shared_ptr<WavesElastic2D_DS<T>> waves (new WavesElastic2D_DS<T>(model, nt, dt, ot));
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
@@ -3466,7 +4083,7 @@ int FwiElastic2D<T>::run(){
 }
 
 template<typename T>
-int FwiElastic2D<T>::run_optimal(){
+int FwiElastic2D<T>::run_optimal_DS(){
      int result = FWI_ERR;
      if(!vpgradset && !vsgradset && !wavgradset) {
          rs_warning("FwiElastic2D::run: No image set");
