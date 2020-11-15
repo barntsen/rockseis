@@ -100,6 +100,9 @@ public:
     T gauss(int it, T stdev);
     T linear(int it, T stdev);
     //void apply_filter(T *data, int nt, T dt);
+    //
+    //Interpolation function
+    T sinc(T x) { if(x == 0) return 1; else return std::sin(PI*x)/(PI*x); } 
 
 private:
     int order;  ///< Order of the FD stencil 
@@ -260,9 +263,7 @@ public:
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
-    void crossCorr_rev(std::shared_ptr<WavesElastic2D<T>> waves_fw, std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
-    void crossCorr_rev(std::shared_ptr<WavesElastic2D_DS<T>> waves_fw, std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic2D<T>> model);
     void computeMisfit();
     void computeResiduals();
@@ -306,6 +307,8 @@ class FwiElastic3D: public Fwi<T> {
 public:
     FwiElastic3D();					///< Constructor
     FwiElastic3D(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataVx, std::shared_ptr<Data3D<T>> dataVy, std::shared_ptr<Data3D<T>> dataVz, int order, int snapinc);					///< Constructor 
+    int run_DS(); ///< Runs fwi with full snapshoting
+    int run_optimal_DS(); ///< Runs fwi with optimal checkpointing
     int run(); ///< Runs fwi with full snapshoting
     int run_optimal(); ///< Runs fwi with optimal checkpointing
     void setModel(std::shared_ptr<ModelElastic3D<T>> _model) { model = _model; modelset = true; }
@@ -330,6 +333,7 @@ public:
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesElastic3D_DS<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
+    void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesElastic3D<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic3D<T>> model);
     void computeMisfit();
     void computeResiduals();

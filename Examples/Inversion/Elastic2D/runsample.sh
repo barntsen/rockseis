@@ -31,7 +31,7 @@ rsrss2rsf < Vxshot.rss out=stdout > temp.rsf
 sfmath <temp.rsf output=1.0  | sfpow1d tpow=2.0 out=stdout > temp2.rsf 
 sfheadermutter <temp2.rsf head=tfile.rsf v0=100 delay=0.0 type=0 out=stdout > weight.rsf
 sfsegywrite < weight.rsf tfile=tfile.rsf tape=temp.sgy
-rssegy2rss <temp.sgy > weight.rss segy.cfg
+rssegy2rss <temp.sgy type=DATA2D > weight.rss 
 rm weight.rsf temp.rsf temp2.rsf temp.sgy tfile.rsf
 
 # Add noise
