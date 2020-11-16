@@ -578,8 +578,8 @@ int ModellingElastic2D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves->forwardstepStress(model, der);
     	waves->forwardstepVelocity(model, der);
+    	waves->forwardstepStress(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
@@ -759,8 +759,8 @@ int ModellingElastic3D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves->forwardstepStress(model, der);
     	waves->forwardstepVelocity(model, der);
+    	waves->forwardstepStress(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
