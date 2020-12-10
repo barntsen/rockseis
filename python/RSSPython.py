@@ -24,7 +24,7 @@ class RSSdata:
         buff= f.read(MAGICNUMBERLENGTH)
     
         # Check if file has rss identifier
-        if(buff != MAGICNUMBER):
+        if(buff.decode("utf-8") != MAGICNUMBER):
             print('Not a valid rss file!')
             return -1
     
@@ -49,9 +49,13 @@ class RSSdata:
             if(self.geomN[i] > 0):    
                 self.fullsize = self.fullsize*self.geomN[i];
                 self.Ndims = self.Ndims + 1
-        resize = np.zeros([self.Ndims,1], dtype='uint64')
+#resize = np.zeros([self.Ndims,1], dtype='uint64')
+        resize = []
         for i in range(0,self.Ndims):
-            resize[i] = self.geomN[i];
+            resize.append(int(self.geomN[i]))
+
+        # Making size arrays integers
+        self.fullsize = int(self.fullsize)
 
         # Allocate 1d array for data
         self.data = np.zeros([self.fullsize,1], dtype='float32')
@@ -83,7 +87,7 @@ class RSSdata:
 
 
         # Reshape data to correct dimensions
-        self.data=self.data.reshape(resize, order='F')
+        self.data=np.reshape(self.data, resize, order='F')
 
     def write(self,filename):
         f = open(filename, 'wb')
