@@ -54,23 +54,25 @@ public:
 	int getRank();				///< Get rank for current processor
     char *getName();			///< Get rank for current processor
     std::string getLogfile() { return logfile; }    ///< Get log file name
+    bool getVerbose() { return verbose; } ///< Set verbose off
+    bool getNamelen() { return namelen; } ///< Get name length
 
 	// Set functions
     void setLogfile(std::string name) { logfile = name; }    ///< Set log file name
     void clearLogfile() { logfile.clear(); }    ///< Clear log file name
     void setVerbose(bool val) { verbose = val; } ///< Set verbose on
-    bool getVerbose() { return verbose; } ///< Set verbose off
-
     void finalize() { MPI_Finalize(); } ///< Finalize MPI
 
 	// Send and receive functions
 	virtual void performWork() = 0;
 	void stopSlaves();			///< Stop all slaves
 	void sendNoWork(const int rank);	///< Send no work tag to rank
+
 private:
 	// Variables
 	int nrank;	// Number of ranks
 	int rank;	// Rank for current rank
+    int namelen;
     char name[MPI_MAX_PROCESSOR_NAME]; // Processors name
     std::string logfile; // Logfile
     bool verbose;
@@ -100,11 +102,27 @@ public:
 	workModeling_t receiveWork();				///< Receive work from slave
 	void sendResult(workModeling_t _work);			///< Send result to master
     void clearWork() { work.clear(); } ///< Clears all elements of work
+
+    // Domain decomposition functions
+	int getDomainrank() { return domainrank;}	///< Get rank for current processor in domain Comm
+	int getMasterrank() { return masterrank;}	///< Get rank for current processor in master Comm
+	int getNdomain() { return ndomain; }	///< Get number of domains
+	int getNmaster() { return nmaster; };	///< Get number of masters
+    void setNdomain(int n) { ndomain = n; } ///< Set number of domains for decomposition
+
+    // MPI Comm functions
+    void splitDomains();
+
 private:
 	// Variables
 	MPI_Datatype MPIwork;					// MPI type for work
 	MPI_Datatype MPIresult;					// MPI type for result
 	std::vector<std::shared_ptr<workModeling_t>> work;	// Vector of work pointers
+    int ndomain;
+    int nmaster;
+    int domainrank;
+    int masterrank;
+    MPI_Comm MPI_COMM_DOMAIN, MPI_DOMAIN_MASTERS;
 	
 	// Functions
 	void initTypes();							///< Initialize MPI types
@@ -115,6 +133,8 @@ private:
 	void checkResult(workResult_t result);					///< Check result and update work queue
 	std::shared_ptr<workModeling_t> getWork();				///< Get work that has not started
 	unsigned long int getJobsleft();             ///< Return number of jobs left
+
+    
 };
 
 }

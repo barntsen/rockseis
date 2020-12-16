@@ -14,9 +14,11 @@ MPI::MPI() {
 	// Getting name for current processors
     int length;
     MPI_Get_processor_name(name, &length);
+    namelen = length;
 
     logfile = "mpiqueue.log";
     verbose = true;
+
 
 }
 
@@ -32,10 +34,13 @@ MPI::MPI(int *argc, char ***argv) {
 	// Getting name for current processors
     int length;
     MPI_Get_processor_name(name, &length);
+    namelen = length;
 
     logfile = "mpiqueue.log";
     verbose = true;
+
 }
+
 
 MPI::~MPI() {
 	// Nothing
@@ -68,10 +73,21 @@ void MPI::sendNoWork(const int rank) {
 // =============== MODELING MPI CLASS =============== //
 MPImodeling::MPImodeling(): MPI() {
 	initTypes();
+
+    ndomain = 1;
+    masterrank = 0;
+    domainrank = 0;
 }
 
 MPImodeling::MPImodeling(int *argc, char ***argv): MPI(argc,argv) {
 	initTypes();
+
+
+    ndomain = 1;
+    masterrank = 0;
+    domainrank = 0;
+    MPI_COMM_DOMAIN = MPI_COMM_NULL;
+    MPI_DOMAIN_MASTERS = MPI_COMM_NULL;
 }
 
 MPImodeling::~MPImodeling() {
@@ -409,4 +425,73 @@ void MPImodeling::checkResult(workResult_t result) {
             break;
     }
 }
+
+void MPImodeling::splitDomains() {
+    int nrank = this->getNrank();
+    int rank = this->getRank();
+    bool status;
+
+    if(ndomain > nrank-1) rs_error("MPI::splitDomains: Number domains cannot exceed number of slaves (number of processors - 1");
+    nmaster = (nrank-1)/ndomain;
+	int color;
+    int iam = rank;
+    if(rank > 0){
+        if ((iam-1) < ndomain * nmaster) {
+            color = (iam-1) % nmaster; 
+            status = MPI_Comm_split(MPI_COMM_WORLD, color, (iam-1), &MPI_COMM_DOMAIN);
+            if(status != MPI_SUCCESS) std::cerr << "Error in Split." << std::endl;
+            MPI_Comm_rank(MPI_COMM_DOMAIN, &domainrank);
+        } else {
+            color = MPI_UNDEFINED;
+            status = MPI_Comm_split(MPI_COMM_WORLD, color, 0, &MPI_COMM_DOMAIN);
+            if(status != MPI_SUCCESS) std::cerr << "Error in Split." << std::endl;
+        }
+    }else{
+        color = MPI_UNDEFINED;
+        status = MPI_Comm_split(MPI_COMM_WORLD, color, 0, &MPI_COMM_DOMAIN);
+        if(status != MPI_SUCCESS) std::cerr << "Error in Split." << std::endl;
+    }
+     
+    if(rank == 0) {
+        color=1;
+        status=MPI_Comm_split(MPI_COMM_WORLD, color, rank, &MPI_DOMAIN_MASTERS);
+        if(status != MPI_SUCCESS) std::cerr << "Error in Split." << std::endl;
+        MPI_Comm_rank(MPI_DOMAIN_MASTERS, &masterrank);
+    }else if(domainrank == 0){
+        color=1;
+        status=MPI_Comm_split(MPI_COMM_WORLD, color, (iam-1)/ndomain+1, &MPI_DOMAIN_MASTERS);
+        if(status != MPI_SUCCESS) std::cerr << "Error in Split." << std::endl;
+        MPI_Comm_rank(MPI_DOMAIN_MASTERS, &masterrank);
+    }else{
+        color = MPI_UNDEFINED;
+        status=MPI_Comm_split(MPI_COMM_WORLD, color, 0, &MPI_DOMAIN_MASTERS);
+        if(status != MPI_SUCCESS) std::cerr << "Error in Split." << std::endl;
+    }
+
+
+    /*
+    if(rank>0){
+    if(domainrank==0){
+	MPI_Send(work.get(),1,MPIwork,1,0,MPI_COMM_DOMAIN);
+    }
+	MPI_Receive(work.get(),1,MPIwork,1,0,MPI_COMM_DOMAIN);
+    }
+    */
+
+    int n1,n2;
+    if(MPI_COMM_DOMAIN != MPI_COMM_NULL){ 
+        MPI_Comm_size(MPI_COMM_DOMAIN,&n1);
+        std::cerr << "I am rank: "<< rank << " my Domain comm size is " << n1 << std::endl;
+    }else{
+        std::cerr << "I am rank: "<< rank << " and my Domain Comm is NULL." << std::endl;
+    }
+    if(MPI_DOMAIN_MASTERS != MPI_COMM_NULL){ 
+        MPI_Comm_size(MPI_DOMAIN_MASTERS,&n2);
+        std::cerr << "I am rank: "<< rank << " my Master Comm size is " << n2 << std::endl;
+    }else{
+        std::cerr << "I am rank: "<< rank << " and my Master Comm is NULL." << std::endl;
+    }
+
+}
+
 }

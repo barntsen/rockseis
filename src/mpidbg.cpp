@@ -7,6 +7,10 @@ using namespace rockseis;
 int main(int argc, char** argv) {
 	// Initializing MPI
 	MPImodeling mpi = MPImodeling(&argc,&argv);
+    mpi.setNdomain(3);
+    mpi.splitDomains();
+    //std::cerr << "Numer of processors: " << mpi.getNrank() << std::endl;
+    //std::cerr << "Numer of domains: " << mpi.getNdomain() << std::endl;
 	
 	if(mpi.getRank() == 0) {
 		// Master
@@ -19,14 +23,14 @@ int main(int argc, char** argv) {
 		}
 
 		// Print work queue
-		std::cerr << "Work queue before parallelization" << std::endl;
+		//std::cerr << "Work queue before parallelization" << std::endl;
 		mpi.printWork();
 
 		// Perform work in parallel
 		mpi.performWork();
 	
 		// Print work queue
-		std::cerr << "Work queue after parallelization" << std::endl;
+		//std::cerr << "Work queue after parallelization" << std::endl;
 		mpi.printWork();
 	}
 	else {
@@ -43,8 +47,8 @@ int main(int argc, char** argv) {
 			}
 			else {
 				// Do some work
-                std::cerr << "Received order to get shot number " << work.id << std::endl;
-                std::cerr << "Processing work with id number " << work.id << std::endl;
+                //std::cerr << "Received order to get shot number " << work.id << std::endl;
+                //std::cerr << "Processing work with id number " << work.id << std::endl;
 				work.status = WORK_FINISHED;
 
 				// Send result back
@@ -52,5 +56,8 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
+
+    std::cerr << "My rank in WORLD: " << mpi.getRank() << " My rank in domain: " << mpi.getDomainrank() << " My domain master is: " << mpi.getMasterrank() << std::endl;
+
 }
 
