@@ -635,7 +635,6 @@ void MPIdomaindecomp::printWork() {
          Flog << "Last updated: "; Flog << start; Flog << "\n\n";
          Flog.close();
       }
-
    }
 }
 

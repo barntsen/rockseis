@@ -53,8 +53,7 @@ int main(int argc, char** argv) {
          }
          else {
             // Do some work
-            std::cerr << "Received order to get shot number " << work.id << std::endl;
-            std::cerr << "Processing work with id number " << work.id << std::endl;
+            std::cerr << "Received order to get shot number " << work.id << " Domain number " << mpi.getDomainrank() << std::endl;
             work.status = WORK_FINISHED;
 
             // Send result back
