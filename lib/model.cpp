@@ -21,6 +21,9 @@ Model<T>::Model() {
     lpml = 1;
     fs = false;
     realized=false;
+
+    domain = std::make_shared<Domain<T>>(); 
+    domain->setLpml(lpml);
 }
 template<typename T>
 Model<T>::Model(const int _dim) {
@@ -38,6 +41,9 @@ Model<T>::Model(const int _dim) {
     lpml = 1;
     fs = false;
     realized=false;
+
+    domain = std::make_shared<Domain<T>>(); 
+    domain->setLpml(lpml);
 }
 
 template<typename T>
@@ -56,6 +62,9 @@ Model<T>::Model(const int _dim, const int _nx, const int _ny, const int _nz, con
     lpml = _lpml;
     fs = _fs;
     realized=false;
+
+    domain = std::make_shared<Domain<T>>(); 
+    domain->setLpml(_lpml);
 }
 
 template<typename T>

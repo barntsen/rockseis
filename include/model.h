@@ -6,8 +6,9 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "geometry.h"
 #include "utils.h"
+#include "geometry.h"
+#include "domain.h"
 #include "file.h"
 #include "data.h"
 
@@ -42,6 +43,7 @@ public:
     T getOy() { return geometry->getO(2); }		///< Get Oy
     T getOz() { return geometry->getO(3); }		///< Get Oz
     std::shared_ptr<Geometry<T>> getGeom() { return geometry; } ///< Get geometry
+    std::shared_ptr<Domain<T>> getDomain() { return domain; } ///< Get domain
     bool getRealized() { return realized; } ///< Check if model is allocated
     // Set functions
     void setNx(const int _nx) { geometry->setN(1, _nx); }	///< Set Nx
@@ -102,6 +104,7 @@ private:
     int dim; 
     int lpml;
     std::shared_ptr<Geometry<T>> geometry;
+    std::shared_ptr<Domain<T>> domain;
     int nx_pml;
     int ny_pml;
     int nz_pml;
