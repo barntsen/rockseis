@@ -87,7 +87,6 @@ env.Install('../bin/',st1d)
 makesurvey = env.Program(prefix + 'makesurvey','makesurvey.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
 env.Install('../bin/',makesurvey)
 
-
 Acousticmod2d = env.Program(prefix + 'Acousticmod2d','Acousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'interp', 'inparse', 'snap','fft'])
 env.Install('../bin/',Acousticmod2d)
 
@@ -114,6 +113,10 @@ if(env['MPI']):
 
         hello_fft = env.Program(prefix + 'hello_fft','hello_fft.cpp',LIBS=['fft'])
         env.Install('../bin/',hello_fft)
+
+        mpiHellodomdec = mpi.Program(prefix + 'mpiHellodomdec','mpiHellodomdec.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
+        mpi.Install('../bin/',mpiHellodomdec)
+
 
     Acousticfwi2d = mpi.Program(prefix + 'Acousticfwi2d','Acousticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
     mpi.Install('../bin/',Acousticfwi2d)
@@ -153,9 +156,6 @@ if(env['MPI']):
 
     mpiAcousticfat3d = mpi.Program(prefix + 'mpiAcousticfat3d','mpiAcousticfat3d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticfat3d)
-
-    mpiAcousticmod2d = mpi.Program(prefix + 'mpiAcousticmod2d','mpiAcousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
-    mpi.Install('../bin/',mpiAcousticmod2d)
 
     mpiAcousticredat2d = mpi.Program(prefix + 'mpiAcousticredat2d','mpiAcousticredat2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticredat2d)

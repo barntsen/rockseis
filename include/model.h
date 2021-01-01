@@ -63,6 +63,11 @@ public:
     void setDim(const int _dim) { dim = _dim; } 	///< Set the dimension
     void setRealized(const bool val) { realized = val; } ///< Set if model is allocated
 
+
+    // Calculate local model sizes
+    void  getLocalsize2d(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map, off_t *start, size_t *size);
+    void  getLocalsize3d(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map, off_t *start_x, size_t *size_x, off_t *start_y, size_t *size_y);
+
     // PADDING AND STAGGERING FUNCTIONS 
     /** Pads 1-D model.
      * Pads the model by copying the edges over the padded area.  
