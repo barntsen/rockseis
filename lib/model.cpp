@@ -23,7 +23,6 @@ Model<T>::Model() {
     realized=false;
 
     domain = std::make_shared<Domain<T>>(); 
-    domain->setLpml(lpml);
 }
 template<typename T>
 Model<T>::Model(const int _dim) {
@@ -43,7 +42,6 @@ Model<T>::Model(const int _dim) {
     realized=false;
 
     domain = std::make_shared<Domain<T>>(); 
-    domain->setLpml(lpml);
 }
 
 template<typename T>
@@ -64,7 +62,6 @@ Model<T>::Model(const int _dim, const int _nx, const int _ny, const int _nz, con
     realized=false;
 
     domain = std::make_shared<Domain<T>>(); 
-    domain->setLpml(_lpml);
 }
 
 template<typename T>
@@ -1520,6 +1517,92 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
 
     return local;
 }
+
+template<typename T>
+std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map, const int d, const int nd, const int order) {
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> local;
+    T dx = this->getDx();
+    T dz = this->getDz();
+    T ox = this->getOx();
+    T oz = this->getOz();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+    size_t size;
+    off_t start;
+    int nxd,nzd;
+    int ix0,iz0;
+    int lpml = this->getLpml();
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize2d(data, aperture, map, &start, &size);
+    (this->getDomain())->setupDomain(size+2*lpml,1,nz+2*this->getLpml(),d,nd,order);
+    nxd = (this->getDomain())->getNx_pad();
+    nzd = (this->getDomain())->getNz_pad();
+    ix0 = (this->getDomain())->getIx0();
+    iz0 = (this->getDomain())->getIz0();
+
+
+    /* Create local model */
+    local = std::make_shared<rockseis::ModelAcoustic2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getFs());
+
+    /*Realizing local model */
+    local->createModel();
+
+	/* Copying from big model into local model */
+    T *Vp = local->getVp();
+    T *R = local->getR();
+
+    /* Allocate two traces to read models from file */
+    T *vptrace = (T *) calloc(nx, sizeof(T));
+    if(vptrace == NULL) rs_error("ModelAcoustic2d::getLocal: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelAcoustic2d::getLocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    status = Fvp->input(Vpfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic2D::getLocal : Error reading from Vp file.");
+    }
+    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic2D::getLocal : Error reading from Density file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+    rockseis::Index l2d(nxd,nzd);
+    rockseis::Index f2d(nx,nz);
+    std::cerr << "d:" << d << " nd:" << nd <<  " ix0: " << ix0 << " nxd:" << nxd << std::endl;
+    std::cerr << "d:" << d << " nd:" << nd <<  " iz0: " << iz0 << " nzd:" << nzd << std::endl;
+
+    for(size_t i1=0; i1<nzd; i1++) {
+        lpos = iz0 + i1 - lpml;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        Fvp->read(vptrace, nx, fpos);
+        if(Fvp->getFail()) rs_error("ModelAcoustic2D::getLocal: Error reading from vp file");
+        Frho->read(rhotrace, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic2D::getLocal: Error reading from rho file");
+        for(size_t i2=0; i2<nxd; i2++) {
+            lpos = i + i2 + ix0 - lpml;
+            if(lpos < 0) lpos = 0;
+            if(lpos > (nx-1)) lpos = nx - 1;
+            Vp[l2d(i2,i1)] = vptrace[lpos];
+            R[l2d(i2,i1)] = rhotrace[lpos];
+        }
+    }
+
+    /* Free traces */
+    free(vptrace);
+    free(rhotrace);
+
+    return local;
+}
+
 
 // =============== 3D ACOUSTIC MODEL CLASS =============== //
 template<typename T>

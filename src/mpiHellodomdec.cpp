@@ -216,97 +216,99 @@ int main(int argc, char** argv) {
 
                 Shotgeom = Sort->get2DGather(work.id);
                 size_t ntr = Shotgeom->getNtrace();
-                lmodel = gmodel->getLocal(Shotgeom, apertx, SMAP);
+                lmodel = gmodel->getDomainmodel(Shotgeom, apertx, SMAP, mpi.getDomainrank(), mpi.getNdomain(), order);
+                lmodel->setVpfile("DomainVp-" + std::to_string(work.id) + "-" + std::to_string(mpi.getDomainrank()));
+                lmodel->writeVp();
 
-                // Read wavelet data, set shot coordinates and make a map
-                source->read();
-                source->copyCoords(Shotgeom);
-                source->makeMap(lmodel->getGeom(), SMAP);
-
-                modelling = std::make_shared<rockseis::ModellingAcoustic2D<float>>(lmodel, source, order, snapinc);
-
-                // Set logfile
-                modelling->setLogfile("log.txt-" + std::to_string(work.id));
-
-                // Setting Snapshot file 
-                if(Psnap){
-                    modelling->setSnapP(Psnapfile + "-" + std::to_string(work.id));
-                }
-                if(Axsnap){
-                    modelling->setSnapAx(Axsnapfile + "-" + std::to_string(work.id));
-                }
-                if(Azsnap){
-                    modelling->setSnapAz(Azsnapfile + "-" + std::to_string(work.id));
-                }
-
-                // Setting Record
-                if(Precord){
-                    Pdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                    Pdata2D->setField(rockseis::PRESSURE);
-                    // Copy geometry to Data
-                    Pdata2D->copyCoords(Shotgeom);
-                    Pdata2D->makeMap(lmodel->getGeom());
-                    modelling->setRecP(Pdata2D);
-                }
-                if(Axrecord){
-                    Axdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                    Axdata2D->setField(rockseis::VX);
-                    // Copy geometry to Data
-                    Axdata2D->copyCoords(Shotgeom);
-                    Axdata2D->makeMap(lmodel->getGeom());
-                    modelling->setRecAx(Axdata2D);
-                }
-                if(Azrecord){
-                    Azdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-                    Azdata2D->setField(rockseis::VZ);
-                    // Copy geometry to Data
-                    Azdata2D->copyCoords(Shotgeom);
-                    Azdata2D->makeMap(lmodel->getGeom());
-                    modelling->setRecAz(Azdata2D);
-                }
-
-                // Stagger model
-                lmodel->staggerModels();
-
-                // Run modelling 
-                modelling->run();
-
-                // Output record
-                if(Precord){
-                    Pdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
-                    Pdata2Di->setFile(Precordfile);
-                    interp->interp(Pdata2D, Pdata2Di);
-                    Sort->put2DGather(Pdata2Di, work.id);
-                }
-                if(Axrecord){
-                    Axdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
-                    Axdata2Di->setFile(Axrecordfile);
-                    interp->interp(Axdata2D, Axdata2Di);
-                    Sort->put2DGather(Axdata2Di, work.id);
-                }
-                if(Azrecord){
-                    Azdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
-                    Azdata2Di->setFile(Azrecordfile);
-                    interp->interp(Azdata2D, Azdata2Di);
-                    Sort->put2DGather(Azdata2Di, work.id);
-                }
-
-                // Reset all classes
-                Shotgeom.reset();
-                lmodel.reset();
-                modelling.reset();
-                if(Precord){
-                    Pdata2D.reset();
-                    Pdata2Di.reset();
-                }
-                if(Axrecord){
-                    Axdata2D.reset();
-                    Axdata2Di.reset();
-                }
-                if(Azrecord){
-                    Azdata2D.reset();
-                    Azdata2Di.reset();
-                }
+//                // Read wavelet data, set shot coordinates and make a map
+//                source->read();
+//                source->copyCoords(Shotgeom);
+//                source->makeMap(lmodel->getGeom(), SMAP);
+//
+//                modelling = std::make_shared<rockseis::ModellingAcoustic2D<float>>(lmodel, source, order, snapinc);
+//
+//                // Set logfile
+//                modelling->setLogfile("log.txt-" + std::to_string(work.id));
+//
+//                // Setting Snapshot file 
+//                if(Psnap){
+//                    modelling->setSnapP(Psnapfile + "-" + std::to_string(work.id));
+//                }
+//                if(Axsnap){
+//                    modelling->setSnapAx(Axsnapfile + "-" + std::to_string(work.id));
+//                }
+//                if(Azsnap){
+//                    modelling->setSnapAz(Azsnapfile + "-" + std::to_string(work.id));
+//                }
+//
+//                // Setting Record
+//                if(Precord){
+//                    Pdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+//                    Pdata2D->setField(rockseis::PRESSURE);
+//                    // Copy geometry to Data
+//                    Pdata2D->copyCoords(Shotgeom);
+//                    Pdata2D->makeMap(lmodel->getGeom());
+//                    modelling->setRecP(Pdata2D);
+//                }
+//                if(Axrecord){
+//                    Axdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+//                    Axdata2D->setField(rockseis::VX);
+//                    // Copy geometry to Data
+//                    Axdata2D->copyCoords(Shotgeom);
+//                    Axdata2D->makeMap(lmodel->getGeom());
+//                    modelling->setRecAx(Axdata2D);
+//                }
+//                if(Azrecord){
+//                    Azdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+//                    Azdata2D->setField(rockseis::VZ);
+//                    // Copy geometry to Data
+//                    Azdata2D->copyCoords(Shotgeom);
+//                    Azdata2D->makeMap(lmodel->getGeom());
+//                    modelling->setRecAz(Azdata2D);
+//                }
+//
+//                // Stagger model
+//                lmodel->staggerModels();
+//
+//                // Run modelling 
+//                modelling->run();
+//
+//                // Output record
+//                if(Precord){
+//                    Pdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
+//                    Pdata2Di->setFile(Precordfile);
+//                    interp->interp(Pdata2D, Pdata2Di);
+//                    Sort->put2DGather(Pdata2Di, work.id);
+//                }
+//                if(Axrecord){
+//                    Axdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
+//                    Axdata2Di->setFile(Axrecordfile);
+//                    interp->interp(Axdata2D, Axdata2Di);
+//                    Sort->put2DGather(Axdata2Di, work.id);
+//                }
+//                if(Azrecord){
+//                    Azdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
+//                    Azdata2Di->setFile(Azrecordfile);
+//                    interp->interp(Azdata2D, Azdata2Di);
+//                    Sort->put2DGather(Azdata2Di, work.id);
+//                }
+//
+//                // Reset all classes
+//                Shotgeom.reset();
+//                lmodel.reset();
+//                modelling.reset();
+//                if(Precord){
+//                    Pdata2D.reset();
+//                    Pdata2Di.reset();
+//                }
+//                if(Axrecord){
+//                    Axdata2D.reset();
+//                    Axdata2Di.reset();
+//                }
+//                if(Azrecord){
+//                    Azdata2D.reset();
+//                    Azdata2Di.reset();
+//                }
                 work.status = WORK_FINISHED;
 
                 // Send result back
