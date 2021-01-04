@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <memory>
 #include "geometry.h"
 #include "utils.h"
