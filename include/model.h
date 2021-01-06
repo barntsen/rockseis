@@ -289,6 +289,7 @@ public:
     It creates an empty model of Vp and R
     */
     void createModel();
+    void createPaddedmodel();
     
 private:
     T *Vp;  ///< P-wave velocity

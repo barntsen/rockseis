@@ -1051,11 +1051,9 @@ void ModelAcoustic1D<T>::readModel() {
     if(R == NULL) rs_error("ModelAcoustic1D::readModel: Failed to allocate memory.");
     this->setRealized(true);
 
-    Vp = this->getVp();
     Fvp->read(Vp, nz);
     Fvp->close();
 
-    R = this->getR();
     Frho->read(R, nz);
     Frho->close();
 }
@@ -1085,8 +1083,8 @@ void ModelAcoustic1D<T>::writeModel() {
     Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
-    Vp = this->getVp();
-    Fvp->write(Vp, nz, 0);
+    T *Mod = this->getVp();
+    Fvp->write(Mod, nz, 0);
     Fvp->close();
 
     Frho->setN(3,nz);
@@ -1095,8 +1093,8 @@ void ModelAcoustic1D<T>::writeModel() {
     Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
-    R = this->getR();
-    Frho->write(R, nz, 0);
+    Mod = this->getR();
+    Frho->write(Mod, nz, 0);
     Frho->close();
 }
 
@@ -1275,11 +1273,9 @@ void ModelAcoustic2D<T>::readModel() {
     if(R == NULL) rs_error("ModelAcoustic2D::readModel: Failed to allocate memory.");
     this->setRealized(true);
 
-    Vp = this->getVp();
     Fvp->read(Vp, nx*nz);
     Fvp->close();
 
-    R = this->getR();
     Frho->read(R, nx*nz);
     Frho->close();
 }
@@ -1312,8 +1308,8 @@ void ModelAcoustic2D<T>::writeVp() {
     Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
-    Vp = this->getVp();
-    Fvp->write(Vp, nx*nz, 0);
+    T *Mod = this->getVp();
+    Fvp->write(Mod, nx*nz, 0);
     Fvp->close();
 }
 
@@ -1345,8 +1341,8 @@ void ModelAcoustic2D<T>::writeR() {
     Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
-    R = this->getR();
-    Frho->write(R, nx*nz, 0);
+    T *Mod = this->getR();
+    Frho->write(Mod, nx*nz, 0);
     Frho->close();
 }
 
@@ -1451,6 +1447,21 @@ void ModelAcoustic2D<T>::createModel() {
 }
 
 template<typename T>
+void ModelAcoustic2D<T>::createPaddedmodel() {
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    /* Reallocate L Rx, and Rz */
+    free(L); free(Rx); free(Rz);
+    L = (T *) calloc(nx*nz,sizeof(T));
+    if(L == NULL) rs_error("ModelAcoustic2D::createPaddedmodel: Failed to allocate memory.");
+    Rx = (T *) calloc(nx*nz,sizeof(T));
+    if(Rx == NULL) rs_error("ModelAcoustic2D::createPaddedmodel: Failed to allocate memory.");
+    Rz = (T *) calloc(nx*nz,sizeof(T));
+    if(Rz == NULL) rs_error("ModelAcoustic2D::createPaddedmodel: Failed to allocate memory.");
+}
+
+template<typename T>
 std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) {
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> local;
     T dx = this->getDx();
@@ -1542,33 +1553,40 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel
     iz0 = (this->getDomain())->getIz0();
 
 
-    /* Create local model */
+    /* Create domain model */
     local = std::make_shared<rockseis::ModelAcoustic2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getFs());
+    (local->getDomain())->setupDomain(size+2*lpml,1,nz+2*this->getLpml(),d,nd,order);
 
     /*Realizing local model */
     local->createModel();
+    local->createPaddedmodel();
 
-	/* Copying from big model into local model */
+    /* Copying from big model into local model */
     T *Vp = local->getVp();
     T *R = local->getR();
+    T *L = local->getL();
+    T *Rx = local->getRx();
+    T *Rz = local->getRz();
 
     /* Allocate two traces to read models from file */
     T *vptrace = (T *) calloc(nx, sizeof(T));
-    if(vptrace == NULL) rs_error("ModelAcoustic2d::getLocal: Failed to allocate memory.");
+    if(vptrace == NULL) rs_error("ModelAcoustic2d::getDomainmodel: Failed to allocate memory.");
     T *rhotrace = (T *) calloc(nx, sizeof(T));
-    if(rhotrace == NULL) rs_error("ModelAcoustic2d::getLocal: Failed to allocate memory.");
+    if(rhotrace == NULL) rs_error("ModelAcoustic2d::getDomainmodel: Failed to allocate memory.");
+    T *rhotrace_adv = (T *) calloc(nx, sizeof(T));
+    if(rhotrace_adv == NULL) rs_error("ModelAcoustic2d::getDomainmodel: Failed to allocate memory.");
 
     // Open files for reading
     bool status;
     std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
     status = Fvp->input(Vpfile);
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic2D::getLocal : Error reading from Vp file.");
+	    rs_error("ModelAcoustic2D::getDomainmodel : Error reading from Vp file.");
     }
     std::shared_ptr<rockseis::File> Frho (new rockseis::File());
     status = Frho->input(Rfile);
     if(status == FILE_ERR){
-	    rs_error("ModelAcoustic2D::getLocal : Error reading from Density file.");
+	    rs_error("ModelAcoustic2D::getDomainmodel : Error reading from Density file.");
     }
 
     off_t i = start;
@@ -1584,22 +1602,50 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel
         if(lpos > (nz-1)) lpos = nz - 1;
         fpos = f2d(0, lpos)*sizeof(T);
         Fvp->read(vptrace, nx, fpos);
-        if(Fvp->getFail()) rs_error("ModelAcoustic2D::getLocal: Error reading from vp file");
+        if(Fvp->getFail()) rs_error("ModelAcoustic2D::getDomainmodel: Error reading from vp file");
         Frho->read(rhotrace, nx, fpos);
-        if(Frho->getFail()) rs_error("ModelAcoustic2D::getLocal: Error reading from rho file");
+        if(Frho->getFail()) rs_error("ModelAcoustic2D::getDomainmodel: Error reading from rho file");
+
+        // Read advanced trace
+        lpos = iz0 + i1 - lpml + 1;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        Frho->read(rhotrace_adv, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic2D::getDomainmodel: Error reading from rho file");
         for(size_t i2=0; i2<nxd; i2++) {
             lpos = i + i2 + ix0 - lpml;
             if(lpos < 0) lpos = 0;
             if(lpos > (nx-1)) lpos = nx - 1;
             Vp[l2d(i2,i1)] = vptrace[lpos];
             R[l2d(i2,i1)] = rhotrace[lpos];
+            L[l2d(i2,i1)] = rhotrace[lpos]*vptrace[lpos]*vptrace[lpos];
+            if(rhotrace[lpos] <= 0.0) rs_error("ModelAcoustic2D::getDomainmodel: Zero density found.");
+            if(lpos < nx-1){
+               Rx[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace[lpos+1]);
+            }else{
+               Rx[l2d(i2,i1)] = 1.0/(rhotrace[lpos]);
+            }
+            Rz[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace_adv[lpos]);
         }
     }
+
+       
+    // In case of free surface
+    if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
+        for(size_t ix=0; ix<nxd; ix++){
+            Rx[l2d(ix,lpml-iz0)] *= 2.0;
+            L[l2d(ix,lpml-iz0)] *= 0.0;
+        }
+    }
+
 
     /* Free traces */
     free(vptrace);
     free(rhotrace);
+    free(rhotrace_adv);
 
+    
     return local;
 }
 
@@ -1724,11 +1770,9 @@ void ModelAcoustic3D<T>::readModel() {
     if(R == NULL) rs_error("ModelAcoustic3D::readModel: Failed to allocate memory.");
     this->setRealized(true);
 
-    Vp = this->getVp();
     Fvp->read(Vp, nx*ny*nz);
     Fvp->close();
 
-    R = this->getR();
     Frho->read(R, nx*ny*nz);
     Frho->close();
 }
@@ -1767,8 +1811,8 @@ void ModelAcoustic3D<T>::writeVp() {
     Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
-    Vp = this->getVp();
-    Fvp->write(Vp, nx*ny*nz, 0);
+    T * Mod = this->getVp();
+    Fvp->write(Mod, nx*ny*nz, 0);
     Fvp->close();
 }
 
@@ -1806,8 +1850,8 @@ void ModelAcoustic3D<T>::writeR() {
     Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
-    R = this->getR();
-    Frho->write(R, nx*ny*nz, 0);
+    T * Mod = this->getR();
+    Frho->write(Mod, nx*ny*nz, 0);
     Frho->close();
 }
 
@@ -2178,15 +2222,12 @@ void ModelElastic2D<T>::readModel() {
     if(R == NULL) rs_error("ModelElastic2D::readModel: Failed to allocate memory.");
     this->setRealized(true);
 
-    Vp = this->getVp();
     Fvp->read(Vp, nx*nz);
     Fvp->close();
 
-    Vs = this->getVs();
     Fvs->read(Vs, nx*nz);
     Fvs->close();
 
-    R = this->getR();
     Frho->read(R, nx*nz);
     Frho->close();
 }
@@ -2219,8 +2260,8 @@ void ModelElastic2D<T>::writeR() {
     Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
-    R = this->getR();
-    Frho->write(R, nx*nz, 0);
+    T *Mod = this->getR();
+    Frho->write(Mod, nx*nz, 0);
     Frho->close();
 }
 
@@ -2253,8 +2294,8 @@ void ModelElastic2D<T>::writeVp() {
     Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
-    Vp = this->getVp();
-    Fvp->write(Vp, nx*nz, 0);
+    T *Mod = this->getVp();
+    Fvp->write(Mod, nx*nz, 0);
     Fvp->close();
 }
 
@@ -2289,8 +2330,8 @@ void ModelElastic2D<T>::writeVs() {
     Fvs->setType(REGULAR);
     Fvs->setData_format(sizeof(T));
     Fvs->writeHeader();
-    Vs = this->getVs();
-    Fvs->write(Vs, nx*nz, 0);
+    T *Mod = this->getVs();
+    Fvs->write(Mod, nx*nz, 0);
     Fvs->close();
 }
 
@@ -2647,15 +2688,12 @@ void ModelElastic3D<T>::readModel() {
     if(R == NULL) rs_error("ModelElastic3D::readModel: Failed to allocate memory.");
     this->setRealized(true);
 
-    Vp = this->getVp();
     Fvp->read(Vp, nx*ny*nz);
     Fvp->close();
 
-    Vs = this->getVs();
     Fvs->read(Vs, nx*ny*nz);
     Fvs->close();
 
-    R = this->getR();
     Frho->read(R, nx*ny*nz);
     Frho->close();
 }
@@ -2694,8 +2732,8 @@ void ModelElastic3D<T>::writeVp() {
     Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
-    Vp = this->getVp();
-    Fvp->write(Vp, nx*ny*nz, 0);
+    T *Mod = this->getVp();
+    Fvp->write(Mod, nx*ny*nz, 0);
     Fvp->close();
 }
 
@@ -2733,8 +2771,8 @@ void ModelElastic3D<T>::writeVs() {
     Fvs->setType(REGULAR);
     Fvs->setData_format(sizeof(T));
     Fvs->writeHeader();
-    Vs = this->getVs();
-    Fvs->write(Vs, nx*ny*nz, 0);
+    T *Mod = this->getVs();
+    Fvs->write(Mod, nx*ny*nz, 0);
     Fvs->close();
 }
 
@@ -2772,8 +2810,8 @@ void ModelElastic3D<T>::writeR() {
     Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
-    R = this->getR();
-    Frho->write(R, nx*ny*nz, 0);
+    T *Mod = this->getR();
+    Frho->write(Mod, nx*ny*nz, 0);
     Frho->close();
 }
 
@@ -3229,23 +3267,18 @@ void ModelViscoelastic2D<T>::readModel() {
     if(Qs == NULL) rs_error("ModelViscoelastic2D::readModel: Failed to allocate memory.");
     this->setRealized(true);
 
-    Vp = this->getVp();
     Fvp->read(Vp, nx*nz);
     Fvp->close();
 
-    Vs = this->getVs();
     Fvs->read(Vs, nx*nz);
     Fvs->close();
 
-    R = this->getR();
     Frho->read(R, nx*nz);
     Frho->close();
 
-    Qp = this->getQp();
     Fqp->read(Qp, nx*nz);
     Fqp->close();
 
-    Qs = this->getQs();
     Fqs->read(Qs, nx*nz);
     Fqs->close();
 }
@@ -3278,8 +3311,8 @@ void ModelViscoelastic2D<T>::writeR() {
     Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
-    R = this->getR();
-    Frho->write(R, nx*nz, 0);
+    T *Mod = this->getR();
+    Frho->write(Mod, nx*nz, 0);
     Frho->close();
 }
 
@@ -3312,8 +3345,8 @@ void ModelViscoelastic2D<T>::writeVp() {
     Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
-    Vp = this->getVp();
-    Fvp->write(Vp, nx*nz, 0);
+    T *Mod = this->getVp();
+    Fvp->write(Mod, nx*nz, 0);
     Fvp->close();
 }
 
@@ -3348,8 +3381,8 @@ void ModelViscoelastic2D<T>::writeVs() {
     Fvs->setType(REGULAR);
     Fvs->setData_format(sizeof(T));
     Fvs->writeHeader();
-    Vs = this->getVs();
-    Fvs->write(Vs, nx*nz, 0);
+    T *Mod = this->getVs();
+    Fvs->write(Mod, nx*nz, 0);
     Fvs->close();
 }
 
@@ -3819,23 +3852,18 @@ void ModelViscoelastic3D<T>::readModel() {
     if(Qs == NULL) rs_error("ModelViscoelastic2D::readModel: Failed to allocate memory.");
     this->setRealized(true);
 
-    Vp = this->getVp();
     Fvp->read(Vp, nx*ny*nz);
     Fvp->close();
 
-    Vs = this->getVs();
     Fvs->read(Vs, nx*ny*nz);
     Fvs->close();
 
-    R = this->getR();
     Frho->read(R, nx*ny*nz);
     Frho->close();
 
-    Qp = this->getQp();
     Fqp->read(Qp, nx*ny*nz);
     Fqp->close();
 
-    Qs = this->getQs();
     Fqs->read(Qs, nx*ny*nz);
     Fqs->close();
 }
@@ -3874,8 +3902,8 @@ void ModelViscoelastic3D<T>::writeVp() {
     Fvp->setType(REGULAR);
     Fvp->setData_format(sizeof(T));
     Fvp->writeHeader();
-    Vp = this->getVp();
-    Fvp->write(Vp, nx*ny*nz, 0);
+    T *Mod = this->getVp();
+    Fvp->write(Mod, nx*ny*nz, 0);
     Fvp->close();
 }
 
@@ -3913,8 +3941,8 @@ void ModelViscoelastic3D<T>::writeVs() {
     Fvs->setType(REGULAR);
     Fvs->setData_format(sizeof(T));
     Fvs->writeHeader();
-    Vs = this->getVs();
-    Fvs->write(Vs, nx*ny*nz, 0);
+    T *Mod = this->getVs();
+    Fvs->write(Mod, nx*ny*nz, 0);
     Fvs->close();
 }
 
@@ -3952,8 +3980,8 @@ void ModelViscoelastic3D<T>::writeR() {
     Frho->setType(REGULAR);
     Frho->setData_format(sizeof(T));
     Frho->writeHeader();
-    R = this->getR();
-    Frho->write(R, nx*ny*nz, 0);
+    T *Mod = this->getR();
+    Frho->write(Mod, nx*ny*nz, 0);
     Frho->close();
 }
 
