@@ -24,7 +24,9 @@ Pml<T>::Pml() {
     B_rbb_stag = (T *) malloc(Lpml*sizeof(T));
     C_rbb_stag = (T *) malloc(Lpml*sizeof(T));
  
+
     computeABC();
+
 }
 
 template<typename T>
@@ -64,9 +66,11 @@ Pml<T>::Pml(const int _Lpml, const T _dt) {
     A_rbb_stag = (T *) malloc(Lpml*sizeof(T));
     B_rbb_stag = (T *) malloc(Lpml*sizeof(T));
     C_rbb_stag = (T *) malloc(Lpml*sizeof(T));
+
     computeABC();
 
 }
+
 
 template<typename T>
 void Pml<T>::computeABC()

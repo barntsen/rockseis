@@ -93,7 +93,7 @@ template<typename T>
 class PmlAcoustic2D: public Pml<T> {
 public:
     PmlAcoustic2D();	///< Constructor
-    PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor
+    PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor 
     void callcompABC() { this->computeABC(); }  ///< Interface to computeABC()
     ~PmlAcoustic2D();	///< Destructor
     

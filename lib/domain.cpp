@@ -5,7 +5,6 @@ namespace rockseis {
 template<typename T>
 Domain<T>::Domain()
 {
-    geometry = std::make_shared<Geometry<T>>(); 
     lpad = 0;
     low = -1;
     high = -1;
@@ -13,6 +12,7 @@ Domain<T>::Domain()
     padh = 0;
     nd = 1;
     d = 0;
+    status = false;
 }
 
 template<typename T>
@@ -37,6 +37,9 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
         this->setHigh(-1);
         this->setPadh(0);
     }
+    this->setNx_orig(nx);
+    this->setNy_orig(ny);
+    this->setNz_orig(nz);
 
     int tmp[] = {nx,ny,nz}; 
     std::sort(tmp, tmp+3);
@@ -138,18 +141,14 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             break;
     }
 
-    this->setNx(nxdom);
     this->setNx_pad(nxpad);
-
-    this->setNy(nydom);
     this->setNy_pad(nypad);
-
-    this->setNz(nzdom);
     this->setNz_pad(nzpad);
 
     this->setIx0(ix0);
     this->setIy0(iy0);
     this->setIz0(iz0);
+    this->status = true;
 }
 
 
