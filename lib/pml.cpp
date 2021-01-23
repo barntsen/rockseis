@@ -24,6 +24,7 @@ Pml<T>::Pml() {
     B_rbb_stag = (T *) malloc(Lpml*sizeof(T));
     C_rbb_stag = (T *) malloc(Lpml*sizeof(T));
  
+    for(int i=0; i<6; i++) setApplypml(i,true);
 
     computeABC();
 
@@ -67,6 +68,8 @@ Pml<T>::Pml(const int _Lpml, const T _dt) {
     B_rbb_stag = (T *) malloc(Lpml*sizeof(T));
     C_rbb_stag = (T *) malloc(Lpml*sizeof(T));
 
+    for(int i=0; i<6; i++) applypml[i] = true;
+    
     computeABC();
 
 }
@@ -190,16 +193,77 @@ PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, cons
 }
 
 template<typename T>
+PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt, const int dim, const bool low, const bool high): Pml<T>(Lpml, dt) {
+    int nx_pml, nz_pml;
+    nx_pml= nx;
+    nz_pml= nz;
+
+    int i;
+    for (i=0; i<6; i++) this->setApplypml(i, false);
+
+    /* Allocate variables */
+    switch (dim){
+       case 0:
+          if(low){
+             P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+             Axx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+             this->setApplypml(0,true);
+          }
+          if(high){
+             P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+             Axx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+             this->setApplypml(1,true);
+          }
+          P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+          P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+          Azz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+          Azz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+          this->setApplypml(5,true);
+          this->setApplypml(6,true);
+          break;
+       case 2:
+          if(low){
+             P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+             Azz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+             this->setApplypml(5,true);
+          }
+          if(high){
+             P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+             Azz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+             this->setApplypml(6,true);
+          }
+          P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+          P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+          Axx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+          Axx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+          this->setApplypml(0,true);
+          this->setApplypml(1,true);
+          break;
+       default:
+          rs_error("PmlAcoustic2D::Invalid value for dim");
+          break;
+    }
+}
+
+template<typename T>
 PmlAcoustic2D<T>::~PmlAcoustic2D() {
-    /* Free variables */
-    free(P_left);
-    free(P_right);
-    free(P_top);
-    free(P_bottom);
-    free(Axx_left);
-    free(Axx_right);
-    free(Azz_top);
-    free(Azz_bottom);
+   /* Free variables */
+   if(this->getApplypml(0)){
+      free(P_left);
+      free(Axx_left);
+   }
+   if(this->getApplypml(1)){
+      free(P_right);
+      free(Axx_right);
+   }
+   if(this->getApplypml(5)){
+      free(P_top);
+      free(Azz_top);
+   }
+   if(this->getApplypml(6)){
+      free(P_bottom);
+      free(Azz_bottom);
+   }
 }
 
 // =============== 3D ACOUSTIC PML CLASS =============== //

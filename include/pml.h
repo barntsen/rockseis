@@ -6,6 +6,7 @@
 #include <string>
 #include <stdlib.h>
 #include <math.h>
+#include "utils.h"
 
 //#define AMAX 150
 //#define KMAX 2
@@ -13,6 +14,13 @@
 #define AMAX 0
 #define KMAX 1
 #define SMAX 1200
+
+#define LEFTPML 0
+#define RIGHTPML 1
+#define FRONTPML 2
+#define BACKPML 3
+#define TOPPML 4
+#define BOTTOMPML 5
 
 namespace rockseis {
 // =============== ABSTRACT PML CLASS =============== //
@@ -32,6 +40,8 @@ public:
     T getKmax() { return Kmax; }	///< Get Kmax
     int getLpml() { return Lpml; }	///< Get Lpml
     T getDt() { return dt; }	///< Get dt
+    bool *getApplypml() {return &applypml[0];} ///< Get applypml flag
+    bool getApplypml(int i) {if(i>=0 && i<6) return applypml[i]; else rs_error("Invalid index in getApplypml()"); } ///< Get applypml flag
     
     // Set functions
     void setAmax(T _Amax) { Amax= _Amax;}	///< Set Amax
@@ -39,6 +49,7 @@ public:
     void setSmax(T _Smax) { Smax= _Smax;}	///< Set Smax
     void setDt(T _dt) { dt= _dt;}	///< Set dt
     void setLpml(int _L) { Lpml = _L;}	///< Set Lpml
+    void setApplypml(bool val, int i) { if(i>=0 && i<6) applypml[i] = val; } ///< Set apply pml flag
     
     /** Compute A,B and C constants. 
      * Uses Amax, Kmax and Smax to compute the PML variables.
@@ -60,6 +71,7 @@ public:
     T *B_rbb_stag; // Staggered
     T *C_rbb_stag; // Staggered
 private:
+    bool applypml[6];
     int Lpml; // Length of PML boundary
     T dt;     // Time sampling interval
     T Amax; // PML constant (usually = pi*f0) where f0 is the dominant frequency
@@ -94,6 +106,7 @@ class PmlAcoustic2D: public Pml<T> {
 public:
     PmlAcoustic2D();	///< Constructor
     PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor 
+    PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt, const int dim, const bool low, const bool high);	///< Constructor for domain decomposition
     void callcompABC() { this->computeABC(); }  ///< Interface to computeABC()
     ~PmlAcoustic2D();	///< Destructor
     
