@@ -14,7 +14,7 @@
 #define DOMAIN_ERR 0
 
 #define IDWRK(i,j,k) ((k)*nwrk1*nwrk2 + (j)*nwrk1 + (i)) 
-#define IDARRAY(i,j,k) ((k)*n1*n2 + (j)*n1 + (i)) 
+#define IDARRAY(i,j,k) ((k)*n0*n1 + (j)*n0 + (i)) 
 
 namespace rockseis {
 
