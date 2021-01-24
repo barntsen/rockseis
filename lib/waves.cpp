@@ -30,6 +30,7 @@ Waves<T>::Waves() {
     geometry->setO(4, 0.);
     dim=0;
     lpml = 10;
+    domdec = false;
 }
 
 template<typename T>
@@ -54,7 +55,35 @@ Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, con
     geometry->setO(4, _ot);
     dim = _dim;
     lpml = _lpml;
+    domdec = false;
+}
 
+
+template<typename T>
+int Waves<T>::getNx_pml() {
+    if(this->getDomdec()){
+        return geometry->getN(1);
+    }else{
+        return geometry->getN(1) + 2*lpml;
+    }
+}
+
+template<typename T>
+int Waves<T>::getNy_pml() {
+    if(this->getDomdec()){
+        return geometry->getN(2);
+    }else{
+        return geometry->getN(2) + 2*lpml;
+    }
+}
+
+template<typename T>
+int Waves<T>::getNz_pml() {
+    if(this->getDomdec()){
+        return geometry->getN(3);
+    }else{
+        return geometry->getN(3) + 2*lpml;
+    }
 }
 
 // =============== 1D ACOUSTIC MODEL CLASS =============== //
@@ -385,6 +414,7 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
 
     if((model->getDomain())->getStatus()){
        // Domain decomposition mode
+       this->setDomdec(true);
        int dim = (model->getDomain())->getDim();
        int ix0, nxo, iz0, nzo;
        bool low=false,high=false;
@@ -5833,6 +5863,9 @@ void WavesViscoelastic3D<T>::recordData(std::shared_ptr<ModelViscoelastic3D<T>> 
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
+template class Waves<float>;
+template class Waves<double>;
+
 template class WavesAcoustic2D<float>;
 template class WavesAcoustic2D<double>;
 template class WavesAcoustic3D<float>;

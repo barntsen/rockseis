@@ -141,7 +141,7 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
 template<typename T>
 Domain<T>::~Domain() {
     if(allocated){
- //       free(wrk);
+        free(wrk);
     }
 }
 

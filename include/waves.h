@@ -37,11 +37,11 @@ public:
     // Get functions
     int getDim() { return dim; }		///< Get dimension
     int getNx() { return geometry->getN(1); }	///< Get Nx
-    int getNx_pml() { return geometry->getN(1) + 2*lpml ; }	///< Get Nx padded
     int getNy() { return geometry->getN(2); }	///< Get Ny
-    int getNy_pml() { return geometry->getN(2) + 2*lpml ; }	///< Get Ny padded
     int getNz() { return geometry->getN(3); }	///< Get Nz
-    int getNz_pml() { return geometry->getN(3) + 2*lpml ; }	///< Get Nz padded
+    int getNx_pml();	///< Get Nx padded
+    int getNy_pml();	///< Get Ny padded
+    int getNz_pml();	///< Get Nz padded
     int getNt() { return geometry->getN(4); }	///< Get Nt
     int getLpml() { return lpml; }		///< Get lpml
     T getDx() { return geometry->getD(1); }	///< Get Dx
@@ -52,6 +52,7 @@ public:
     T getOy() { return geometry->getO(2); }	///< Get Oy
     T getOz() { return geometry->getO(3); }	///< Get Oz
     T getOt() { return geometry->getO(4); }	///< Get Ot
+    bool getDomdec() { return domdec; } ///< Get domain decomposition flag
 
     //Interpolation function
     T sinc(T x) { if(x == 0) return 1; else return std::sin(PI*x)/(PI*x); } 
@@ -71,11 +72,13 @@ public:
     void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
     void setOt(const T _ot) { geometry->setO(4, _ot); }	///< Set Ot
     void setDim(const int _dim) { dim = _dim; }		///< Set the dimension
+    void setDomdec(bool val) { domdec = val; } ///<Set domain decomposition flag
 
 private:
     int dim;
     std::shared_ptr<Geometry<T>> geometry; // regular geometry
     int lpml; // PML boundary size
+    bool domdec; // Domain decomposition flag
 
 };
 
