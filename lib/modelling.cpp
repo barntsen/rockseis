@@ -242,6 +242,17 @@ int ModellingAcoustic2D<T>::run(){
     {
     	// Time stepping
     	waves->forwardstepAcceleration(model, der);
+        if((model->getDomain()->getStatus())){
+            if((model->getDomain())->getLow() > 0){
+                (model->getDomain())->copyFromboundary(0, waves->getP2());
+                (model->getDomain())->copyToboundary(0, waves->getP2());
+            }
+
+            if((model->getDomain())->getHigh() > 0){
+                (model->getDomain())->copyFromboundary(1, waves->getP2());
+                (model->getDomain())->copyToboundary(1, waves->getP2());
+            }
+        }
     	waves->forwardstepStress(model, der);
     
     	// Inserting source 

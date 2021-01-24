@@ -13,6 +13,9 @@
 #define DOMAIN_OK 1
 #define DOMAIN_ERR 0
 
+#define IDWRK(i,j,k) ((k)*nwrk1*nwrk2 + (j)*nwrk1 + (i)) 
+#define IDARRAY(i,j,k) ((k)*n1*n2 + (j)*n1 + (i)) 
+
 namespace rockseis {
 
 // =============== ABSTRACT DOMAIN CLASS =============== //
@@ -40,6 +43,8 @@ public:
     void setNz_pad(const int val) { nz_pad = val; }     ///< Set nz_pad
     void setNd(const int _nd) { nd=_nd; }///< Set number of domains
     void setD(const int _d) { d=_d; }///< Set domain number
+    void copyFromboundary(const bool side, const T *array); ///< Copy from array to wrk
+    void copyToboundary(const bool side, T *array); ///< Copy from wrk to array
 
     void setIx0(const int _ix0) { ix0 = _ix0; }     ///< Set ix0 (origin in global model)
     void setIy0(const int _iy0) { iy0 = _iy0; }     ///< Set iy0 (origin in global model)

@@ -139,6 +139,201 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
 
 
 template<typename T>
+void Domain<T>::copyFromboundary(const bool side, const T *array){
+    int ix,iy,iz,io;
+    if(side){
+        if(this->getHigh() < 0) rs_error("Domain<T>::copyFromboundary: Invalid side.");
+    }else{
+        if(this->getLow() < 0) rs_error("Domain<T>::copyFromboundary: Invalid side.");
+    }
+    int pad=0, n0=0, n1=0, n2=0, nwrk1=0, nwrk2=0;
+
+    switch(this->getDim()){
+        case 0:
+            n0 = this->getNx_pad();
+            n1 = this->getNy_pad();
+            n2 = this->getNz_pad();
+            nwrk1 = n1;
+            nwrk2 = n2;
+            if(side){
+                pad = this->getPadh();
+                for (io=0; io < pad; io++) {
+                    for (iy=0; iy < n1; iy++) {
+                        for (iz=0; iz < n2; iz++) {
+                            wrk[IDWRK(io,iy,iz)] = array[IDARRAY(n0-2*pad + io, iy, iz)];
+                        }
+                    }
+                }
+            }else{
+                pad = this->getPadl();
+                for (io=0; io < pad; io++) {
+                    for (iy=0; iy < n1; iy++) {
+                        for (iz=0; iz < n2; iz++) {
+                            wrk[IDWRK(io,iy,iz)] = array[IDARRAY(io + pad, iy, iz)];
+                        }
+                    }
+                }
+            }
+            break;
+        case 1:
+            n0 = this->getNx_pad();
+            n1 = this->getNy_pad();
+            n2 = this->getNz_pad();
+            nwrk1 = n0;
+            nwrk2 = n2;
+            if(side){
+                pad = this->getPadh();
+                for (ix=0; ix < n0; ix++) {
+                    for (io=0; io < pad; io++) {
+                        for (iz=0; iz < n2; iz++) {
+                            wrk[IDWRK(io,ix,iz)] = array[IDARRAY(ix, n1-2*pad + io, iz)];
+                        }
+                    }
+                }
+            }else{
+                pad = this->getPadl();
+                for (ix=0; ix < n0; ix++) {
+                    for (io=0; io < pad; io++) {
+                        for (iz=0; iz < n2; iz++) {
+                            wrk[IDWRK(io,ix,iz)] = array[IDARRAY(ix, io + pad, iz)];
+                        }
+                    }
+                }
+            }
+            break;
+        case 2:
+            n0 = this->getNx_pad();
+            n1 = this->getNy_pad();
+            n2 = this->getNz_pad();
+            nwrk1 = n0;
+            nwrk2 = n1;
+            if(side){
+                pad = this->getPadh();
+                for (ix=0; ix < n0; ix++) {
+                    for (iy=0; iy < n1; iy++) {
+                        for (io=0; io < pad; io++) {
+                            wrk[IDWRK(io,ix,iy)] = array[IDARRAY(ix, iy, n2-2*pad + io)];
+                        }
+                    }
+                }
+            }else{
+                pad = this->getPadl();
+                for (ix=0; ix < n0; ix++) {
+                    for (iy=0; iy < n1; iy++) {
+                        for (io=0; io < pad; io++) {
+                            wrk[IDWRK(io,ix,iy)] = array[IDARRAY(ix, iy, io + pad)];
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            rs_error("Domain<T>::copyBoundary:Invalid dimension");
+            break;
+            break;
+    }
+}
+
+template<typename T>
+void Domain<T>::copyToboundary(const bool side, T *array){
+    int ix,iy,iz,io;
+    if(side){
+        if(this->getHigh() < 0) rs_error("Domain<T>::copyToboundary: Invalid side.");
+    }else{
+        if(this->getLow() < 0) rs_error("Domain<T>::copyToboundary: Invalid side.");
+    }
+    int pad=0, n0=0, n1=0, n2=0, nwrk1=0, nwrk2=0;
+
+    switch(this->getDim()){
+        case 0:
+            n0 = this->getNx_pad();
+            n1 = this->getNy_pad();
+            n2 = this->getNz_pad();
+            nwrk1 = n1;
+            nwrk2 = n2;
+            if(side){
+                pad = this->getPadh();
+                for (io=0; io < pad; io++) {
+                    for (iy=0; iy < n1; iy++) {
+                        for (iz=0; iz < n2; iz++) {
+                           array[IDARRAY(n0-pad + io, iy, iz)] = wrk[IDWRK(io,iy,iz)];
+                        }
+                    }
+                }
+            }else{
+                pad = this->getPadl();
+                for (io=0; io < pad; io++) {
+                    for (iy=0; iy < n1; iy++) {
+                        for (iz=0; iz < n2; iz++) {
+                            array[IDARRAY(io, iy, iz)] = wrk[IDWRK(io,iy,iz)];
+                        }
+                    }
+                }
+            }
+            break;
+        case 1:
+            n0 = this->getNx_pad();
+            n1 = this->getNy_pad();
+            n2 = this->getNz_pad();
+            nwrk1 = n0;
+            nwrk2 = n2;
+            if(side){
+                pad = this->getPadh();
+                for (ix=0; ix < n0; ix++) {
+                    for (io=0; io < pad; io++) {
+                        for (iz=0; iz < n2; iz++) {
+                            array[IDARRAY(ix, n1-pad + io, iz)] = wrk[IDWRK(io,ix,iz)];
+                        }
+                    }
+                }
+            }else{
+                pad = this->getPadl();
+                for (ix=0; ix < n0; ix++) {
+                    for (io=0; io < pad; io++) {
+                        for (iz=0; iz < n2; iz++) {
+                          array[IDARRAY(ix, io, iz)] = wrk[IDWRK(io,ix,iz)];
+                        }
+                    }
+                }
+            }
+            break;
+        case 2:
+            n0 = this->getNx_pad();
+            n1 = this->getNy_pad();
+            n2 = this->getNz_pad();
+            nwrk1 = n0;
+            nwrk2 = n1;
+            if(side){
+                pad = this->getPadh();
+                for (ix=0; ix < n0; ix++) {
+                    for (iy=0; iy < n1; iy++) {
+                        for (io=0; io < pad; io++) {
+                            array[IDARRAY(ix, iy, n2-pad + io)] = wrk[IDWRK(io,ix,iy)];
+                        }
+                    }
+                }
+            }else{
+                pad = this->getPadl();
+                for (ix=0; ix < n0; ix++) {
+                    for (iy=0; iy < n1; iy++) {
+                        for (io=0; io < pad; io++) {
+                            array[IDARRAY(ix, iy, io)] = wrk[IDWRK(io,ix,iy)];
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            rs_error("Domain<T>::copyBoundary:Invalid dimension");
+            break;
+            break;
+    }
+
+}
+
+
+
+template<typename T>
 Domain<T>::~Domain() {
     if(allocated){
         free(wrk);
