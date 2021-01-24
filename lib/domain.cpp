@@ -72,7 +72,7 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nxpad = nxdom+this->getPadl()+this->getPadh();
             nypad = ny;
             nzpad = nz;
-            wrk = (T *) calloc(nz*ny*(order+1), sizeof(T));
+            wrk = (T *) calloc(nz*ny*(this->getLpad()), sizeof(T));
             if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
         case 1:
@@ -95,7 +95,7 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nxpad = nxdom;
             nypad = nydom+this->getPadl()+this->getPadh();
             nzpad = nzdom;
-            wrk = (T *) calloc(nx*nz*(order+1), sizeof(T));
+            wrk = (T *) calloc(nx*nz*(this->getLpad()), sizeof(T));
             if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
         case 2:
@@ -118,7 +118,7 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nxpad = nxdom;
             nypad = nydom;
             nzpad = nzdom+this->getPadl()+this->getPadh();
-            wrk = (T *) calloc(nx*ny*(order+1), sizeof(T));
+            wrk = (T *) calloc(nx*ny*(this->getLpad()), sizeof(T));
             if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
         default:
@@ -146,17 +146,17 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
     }else{
         if(this->getLow() < 0) rs_error("Domain<T>::copyFromboundary: Invalid side.");
     }
-    int pad=0, n0=0, n1=0, n2=0, nwrk1=0, nwrk2=0;
+    int pad=0, n0=0, n1=0, n2=0, nwrk=0;
+
+    n0 = this->getNx_pad();
+    n1 = this->getNy_pad();
+    n2 = this->getNz_pad();
+    pad = this->getLpad();
 
     switch(this->getDim()){
         case 0:
-            n0 = this->getNx_pad();
-            n1 = this->getNy_pad();
-            n2 = this->getNz_pad();
-            nwrk1 = n1;
-            nwrk2 = n2;
+            nwrk = n1;
             if(side){
-                pad = this->getPadh();
                 for (io=0; io < pad; io++) {
                     for (iy=0; iy < n1; iy++) {
                         for (iz=0; iz < n2; iz++) {
@@ -165,7 +165,6 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
                     }
                 }
             }else{
-                pad = this->getPadl();
                 for (io=0; io < pad; io++) {
                     for (iy=0; iy < n1; iy++) {
                         for (iz=0; iz < n2; iz++) {
@@ -176,13 +175,8 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
             }
             break;
         case 1:
-            n0 = this->getNx_pad();
-            n1 = this->getNy_pad();
-            n2 = this->getNz_pad();
-            nwrk1 = n0;
-            nwrk2 = n2;
+            nwrk = n0;
             if(side){
-                pad = this->getPadh();
                 for (ix=0; ix < n0; ix++) {
                     for (io=0; io < pad; io++) {
                         for (iz=0; iz < n2; iz++) {
@@ -191,7 +185,6 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
                     }
                 }
             }else{
-                pad = this->getPadl();
                 for (ix=0; ix < n0; ix++) {
                     for (io=0; io < pad; io++) {
                         for (iz=0; iz < n2; iz++) {
@@ -202,13 +195,8 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
             }
             break;
         case 2:
-            n0 = this->getNx_pad();
-            n1 = this->getNy_pad();
-            n2 = this->getNz_pad();
-            nwrk1 = n0;
-            nwrk2 = n1;
+            nwrk = n0;
             if(side){
-                pad = this->getPadh();
                 for (ix=0; ix < n0; ix++) {
                     for (iy=0; iy < n1; iy++) {
                         for (io=0; io < pad; io++) {
@@ -217,7 +205,6 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
                     }
                 }
             }else{
-                pad = this->getPadl();
                 for (ix=0; ix < n0; ix++) {
                     for (iy=0; iy < n1; iy++) {
                         for (io=0; io < pad; io++) {
@@ -242,17 +229,17 @@ void Domain<T>::copyToboundary(const bool side, T *array){
     }else{
         if(this->getLow() < 0) rs_error("Domain<T>::copyToboundary: Invalid side.");
     }
-    int pad=0, n0=0, n1=0, n2=0, nwrk1=0, nwrk2=0;
+    int pad=0, n0=0, n1=0, n2=0, nwrk=0;
+
+    n0 = this->getNx_pad();
+    n1 = this->getNy_pad();
+    n2 = this->getNz_pad();
+    pad = this->getLpad();
 
     switch(this->getDim()){
         case 0:
-            n0 = this->getNx_pad();
-            n1 = this->getNy_pad();
-            n2 = this->getNz_pad();
-            nwrk1 = n1;
-            nwrk2 = n2;
+            nwrk = n1;
             if(side){
-                pad = this->getPadh();
                 for (io=0; io < pad; io++) {
                     for (iy=0; iy < n1; iy++) {
                         for (iz=0; iz < n2; iz++) {
@@ -261,7 +248,6 @@ void Domain<T>::copyToboundary(const bool side, T *array){
                     }
                 }
             }else{
-                pad = this->getPadl();
                 for (io=0; io < pad; io++) {
                     for (iy=0; iy < n1; iy++) {
                         for (iz=0; iz < n2; iz++) {
@@ -272,13 +258,8 @@ void Domain<T>::copyToboundary(const bool side, T *array){
             }
             break;
         case 1:
-            n0 = this->getNx_pad();
-            n1 = this->getNy_pad();
-            n2 = this->getNz_pad();
-            nwrk1 = n0;
-            nwrk2 = n2;
+            nwrk = n0;
             if(side){
-                pad = this->getPadh();
                 for (ix=0; ix < n0; ix++) {
                     for (io=0; io < pad; io++) {
                         for (iz=0; iz < n2; iz++) {
@@ -287,7 +268,6 @@ void Domain<T>::copyToboundary(const bool side, T *array){
                     }
                 }
             }else{
-                pad = this->getPadl();
                 for (ix=0; ix < n0; ix++) {
                     for (io=0; io < pad; io++) {
                         for (iz=0; iz < n2; iz++) {
@@ -298,11 +278,7 @@ void Domain<T>::copyToboundary(const bool side, T *array){
             }
             break;
         case 2:
-            n0 = this->getNx_pad();
-            n1 = this->getNy_pad();
-            n2 = this->getNz_pad();
-            nwrk1 = n0;
-            nwrk2 = n1;
+            nwrk = n0;
             if(side){
                 pad = this->getPadh();
                 for (ix=0; ix < n0; ix++) {
@@ -313,7 +289,6 @@ void Domain<T>::copyToboundary(const bool side, T *array){
                     }
                 }
             }else{
-                pad = this->getPadl();
                 for (ix=0; ix < n0; ix++) {
                     for (iy=0; iy < n1; iy++) {
                         for (io=0; io < pad; io++) {
