@@ -49,7 +49,7 @@ public:
     void setSmax(T _Smax) { Smax= _Smax;}	///< Set Smax
     void setDt(T _dt) { dt= _dt;}	///< Set dt
     void setLpml(int _L) { Lpml = _L;}	///< Set Lpml
-    void setApplypml(bool val, int i) { if(i>=0 && i<6) applypml[i] = val; } ///< Set apply pml flag
+    void setApplypml(int i, bool val) { if(i>=0 && i<6) applypml[i] = val; } ///< Set apply pml flag
     
     /** Compute A,B and C constants. 
      * Uses Amax, Kmax and Smax to compute the PML variables.

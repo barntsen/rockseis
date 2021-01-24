@@ -68,7 +68,7 @@ Pml<T>::Pml(const int _Lpml, const T _dt) {
     B_rbb_stag = (T *) malloc(Lpml*sizeof(T));
     C_rbb_stag = (T *) malloc(Lpml*sizeof(T));
 
-    for(int i=0; i<6; i++) applypml[i] = true;
+    for(int i=0; i<6; i++) setApplypml(i,true);
     
     computeABC();
 
