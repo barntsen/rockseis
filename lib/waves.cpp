@@ -395,11 +395,11 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
        switch (dim){
           case 0:
              if(ix0 < _lpml) low=true;
-             if(ix0 + _nx > nxo-_lpml) high=true;
+             if(ix0 + _nx >= nxo-_lpml) high=true;
              break;
           case 2:
              if(iz0 < _lpml) low=true;
-             if(iz0 + _nz > nzo-_lpml) high=true;
+             if(iz0 + _nz >= nzo-_lpml) high=true;
              break;
           default:
              rs_error("WavesAcoustic2D<T>::WavesAcoustic2D: Invalid dim in domain");
@@ -485,15 +485,19 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
        for(iz=0; iz < nz; iz++){
           for(ix=0; ix < lpml; ix++){
              if(Pml->getApplypml(0)){
-                // Left
-                Pml->P_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->P_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix,iz)];
-                Ax[I2D(ix,iz)] -= Rx[I2D(ix,iz)]*(Pml->P_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix,iz)]);
+                 if(ix >= ix0 && ix < (ix0 + nx)){
+                     // Left
+                     Pml->P_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->P_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix-ix0,iz)];
+                     Ax[I2D(ix-ix0,iz)] -= Rx[I2D(ix-ix0,iz)]*(Pml->P_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)]);
+                 }
              }
              if(Pml->getApplypml(1)){
-                // Right
-                i = ix + nx - lpml;
-                Pml->P_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->P_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i,iz)];
-                Ax[I2D(i,iz)] -= Rx[I2D(i,iz)]*(Pml->P_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i,iz)]);
+                 i = ix + nxo - lpml;
+                 if(i >= ix0 && i < (ix0 + nx)){
+                     // Right
+                     Pml->P_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->P_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i-ix0,iz)];
+                     Ax[I2D(i-ix0,iz)] -= Rx[I2D(i-ix0,iz)]*(Pml->P_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)]);
+                 }
              }
           }
        }
@@ -513,17 +517,21 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
     if(Pml->getApplypml(4) || Pml->getApplypml(5)){
        for(iz=0; iz < lpml; iz++){
           for(ix=0; ix < nx; ix++){
-             if(Pml->getApplypml(4)){
-                // Top
-                Pml->P_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->P_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz)];
-                Az[I2D(ix,iz)] -= Rz[I2D(ix,iz)]*(Pml->P_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz)]);
-             }
-             if(Pml->getApplypml(5)){
-                i = iz + nz - lpml;
-                //Bottom
-                Pml->P_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->P_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i)];
-                Az[I2D(ix,i)] -= Rz[I2D(ix,i)]*(Pml->P_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i)]);
-             }
+              if(Pml->getApplypml(4)){
+                  if(iz >= iz0 && iz < (iz0 + nz)){
+                      // Top
+                      Pml->P_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->P_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz-iz0)];
+                      Az[I2D(ix,iz-iz0)] -= Rz[I2D(ix,iz-iz0)]*(Pml->P_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)]);
+                  }
+              }
+              if(Pml->getApplypml(5)){
+                  i = iz + nzo - lpml;
+                  if(i >= iz0 && i < (iz0 + nz)){
+                      //Bottom
+                      Pml->P_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->P_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i-iz0)];
+                      Az[I2D(ix,i-iz0)] -= Rz[I2D(ix,i-iz0)]*(Pml->P_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)]);
+                  }
+              }
           }
        }
     }
@@ -533,15 +541,31 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
 
 template<typename T>
 void WavesAcoustic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
-    int i, ix, iz, nx, nz, lpml;
+    int i, ix0, ix, iz0, iz, nx, nz, lpml, nxo, nzo;
     T dt;
     lpml = model->getLpml();
-    nx = model->getNx() + 2*lpml;
-    nz = model->getNz() + 2*lpml;
     dt = this->getDt();
     T *L, *df;
     L = model->getL();
     df = der->getDf();
+
+    if((model->getDomain())->getStatus()){
+       // Domain decomposition 
+       nx = model->getNx();
+       nz = model->getNz();
+       ix0 = (model->getDomain())->getIx0();
+       iz0 = (model->getDomain())->getIz0();
+       nxo = (model->getDomain())->getNx_orig();
+       nzo = (model->getDomain())->getNz_orig();
+    }else{
+       nx = model->getNx() + 2*lpml;
+       nz = model->getNz() + 2*lpml;
+       ix0 = 0;
+       iz0 = 0;
+       nxo = nx;
+       nzo = nz;
+    }
+ 
     
     // Derivate Ax backward with respect to x
     der->ddx_bw(Ax);
@@ -553,19 +577,27 @@ void WavesAcoustic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
     }
     
     // Attenuate left and right using non-staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(ix=0; ix < lpml; ix++){
-            // Left
-            Pml->Axx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Axx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix,iz)];
-            
-            P2[I2D(ix,iz)] -= dt*dt*L[I2D(ix,iz)]*(Pml->Axx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix,iz)]);
-            // Right
-            i = ix + nx - lpml;
-            Pml->Axx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Axx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i,iz)];
-            P2[I2D(i,iz)] -= dt*dt*L[I2D(i,iz)]*(Pml->Axx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i,iz)]);
+    if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+        for(iz=0; iz < nz; iz++){
+            for(ix=0; ix < lpml; ix++){
+                if(Pml->getApplypml(0)){
+                    if(ix >= ix0 && ix < (ix0 + nx)){
+                        // Left
+                        Pml->Axx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Axx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
+                        P2[I2D(ix-ix0,iz)] -= dt*dt*L[I2D(ix-ix0,iz)]*(Pml->Axx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+                    }
+                }
+                if(Pml->getApplypml(1)){
+                    i = ix + nxo - lpml;
+                    if(i >= ix0 && i < (ix0 + nx)){
+                        // Right
+                        Pml->Axx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Axx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
+                        P2[I2D(i-ix0,iz)] -= dt*dt*L[I2D(i-ix0,iz)]*(Pml->Axx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+                    }
+                }
+            }
         }
-    }
-    
+    } 
     
     // Derivate Az backward with respect to z
     der->ddz_bw(Az);
@@ -577,16 +609,25 @@ void WavesAcoustic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
     }
     
     // Attenuate top and bottom using non-staggered variables
-    for(iz=0; iz < lpml; iz++){
-        for(ix=0; ix < nx; ix++){
-            // Top
-            Pml->Azz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Azz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz)];
-            
-            P2[I2D(ix,iz)] -= dt*dt*L[I2D(ix,iz)]*(Pml->Azz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz)]);
-            i = iz + nz - lpml;
-            //Bottom
-            Pml->Azz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Azz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i)];
-            P2[I2D(ix,i)] -= dt*dt*L[I2D(ix,i)]*(Pml->Azz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i)]);
+    if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+        for(iz=0; iz < lpml; iz++){
+            for(ix=0; ix < nx; ix++){
+                if(Pml->getApplypml(4)){
+                    if(iz >= iz0 && iz < (iz0 + nz)){
+                        // Top
+                        Pml->Azz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Azz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
+                        P2[I2D(ix,iz-iz0)] -= dt*dt*L[I2D(ix,iz-iz0)]*(Pml->Azz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+                    }
+                }
+                if(Pml->getApplypml(5)){
+                    i = iz + nzo - lpml;
+                    if(i >= iz0 && i < (iz0 + nz)){
+                        //Bottom
+                        Pml->Azz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Azz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
+                        P2[I2D(ix,i-iz0)] -= dt*dt*L[I2D(ix,i-iz0)]*(Pml->Azz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+                    }
+                }
+            }
         }
     }
     

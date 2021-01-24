@@ -41,7 +41,7 @@ public:
     int getLpml() { return Lpml; }	///< Get Lpml
     T getDt() { return dt; }	///< Get dt
     bool *getApplypml() {return &applypml[0];} ///< Get applypml flag
-    bool getApplypml(int i) {if(i>=0 && i<6) return applypml[i]; else rs_error("Invalid index in getApplypml()"); } ///< Get applypml flag
+    bool getApplypml(int i) {if(i>=0 && i<6) return applypml[i]; else {rs_error("Invalid index in getApplypml()"); return false;} } ///< Get applypml flag
     
     // Set functions
     void setAmax(T _Amax) { Amax= _Amax;}	///< Set Amax

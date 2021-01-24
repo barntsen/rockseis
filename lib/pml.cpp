@@ -218,19 +218,19 @@ PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, cons
           P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
           Azz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
           Azz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+          this->setApplypml(4,true);
           this->setApplypml(5,true);
-          this->setApplypml(6,true);
           break;
        case 2:
           if(low){
              P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
              Azz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-             this->setApplypml(5,true);
+             this->setApplypml(4,true);
           }
           if(high){
              P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
              Azz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
-             this->setApplypml(6,true);
+             this->setApplypml(5,true);
           }
           P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
           P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
@@ -256,11 +256,11 @@ PmlAcoustic2D<T>::~PmlAcoustic2D() {
       free(P_right);
       free(Axx_right);
    }
-   if(this->getApplypml(5)){
+   if(this->getApplypml(4)){
       free(P_top);
       free(Azz_top);
    }
-   if(this->getApplypml(6)){
+   if(this->getApplypml(5)){
       free(P_bottom);
       free(Azz_bottom);
    }

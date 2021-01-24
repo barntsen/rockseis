@@ -13,6 +13,7 @@ Domain<T>::Domain()
     nd = 1;
     d = 0;
     status = false;
+    allocated = false;
 }
 
 template<typename T>
@@ -47,9 +48,9 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
     if (tmp[2] == ny) this->setDim(1);
     if (tmp[2] == nx) this->setDim(0);
 
-    int nxdom, nydom, nzdom;
-    int nxpad, nypad, nzpad;
-    int ix0, iy0, iz0;
+    int nxdom=0, nydom=0, nzdom=0;
+    int nxpad=0, nypad=0, nzpad=0;
+    int ix0=0, iy0=0, iz0=0;
     switch(this->getDim()){
         case 0:
             nxdom = std::ceil((T) nx/((T) _nd));
@@ -71,7 +72,8 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nxpad = nxdom+this->getPadl()+this->getPadh();
             nypad = ny;
             nzpad = nz;
-
+            wrk = (T *) calloc(nz*ny*(order+1), sizeof(T));
+            if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
         case 1:
             nydom = std::ceil((T) ny/((T) _nd));
@@ -93,7 +95,8 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nxpad = nxdom;
             nypad = nydom+this->getPadl()+this->getPadh();
             nzpad = nzdom;
-
+            wrk = (T *) calloc(nx*nz*(order+1), sizeof(T));
+            if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
         case 2:
             nzdom = std::ceil((T) nz/((T) _nd));
@@ -115,29 +118,11 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nxpad = nxdom;
             nypad = nydom;
             nzpad = nzdom+this->getPadl()+this->getPadh();
-
+            wrk = (T *) calloc(nx*ny*(order+1), sizeof(T));
+            if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
         default:
-            nxdom = std::ceil((T) nx/((T) _nd));
-
-            //Find global coordinates of the domain
-            ix0 = _d*nxdom - this->getPadl();
-            iy0 = 0;
-            iz0 = 0;
-            // Treat special case of last domain which can be smaller than the other domains
-            if (_d == _nd-1){ 
-                nxdom = nx - nxdom*(_nd-1);
-            }
-            if(nxdom <= 0){
-                rs_error("Domain<T>::setupDomain:Number of domains cannot exceed the number of grid points");
-            }
-            nydom = ny;
-            nzdom = nz;
-
-            nxpad = nxdom+this->getPadl()+this->getPadh();
-            nypad = ny;
-            nzpad = nz;
-
+            rs_error("Domain<T>::setupDomain:Invalid dimension");
             break;
     }
 
@@ -149,12 +134,15 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
     this->setIy0(iy0);
     this->setIz0(iz0);
     this->status = true;
+    this->allocated = true;
 }
 
 
 template<typename T>
 Domain<T>::~Domain() {
-   // Do nothing
+    if(allocated){
+ //       free(wrk);
+    }
 }
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //

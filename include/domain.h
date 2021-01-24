@@ -77,6 +77,8 @@ public:
     int d;
     int ix0, iy0, iz0; // Global indexes for the origin of domain 
     bool status; // 1 for on, 0 for off. 
+    bool allocated;
+    T *wrk; // Work array to be used to communicate boundaries
 };
 
 }
