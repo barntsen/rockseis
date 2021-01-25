@@ -670,9 +670,15 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
     T *wav; 
     int ntrace = source->getNtrace();
     int nx, nz, lpml;
-    lpml = this->getLpml();
-    nx = this->getNx() + 2*lpml;
-    nz = this->getNz() + 2*lpml;
+    if(this->getDomdec()){
+        lpml = 0;
+        nx = this->getNx();
+        nz = this->getNz();
+    }else{
+        lpml = this->getLpml();
+        nx = this->getNx() + 2*lpml;
+        nz = this->getNz() + 2*lpml;
+    }
     T *Mod;
     int nt = this->getNt();
     T dt = this->getDt();
@@ -743,9 +749,16 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, b
     int ntrace = data->getNtrace();
     int nt = data->getNt();
     int nx, nz, lpml;
-    lpml = this->getLpml();
-    nx = this->getNx() + 2*lpml;
-    nz = this->getNz() + 2*lpml;
+
+    if(this->getDomdec()){
+        lpml = 0;
+        nx = this->getNx();
+        nz = this->getNz();
+    }else{
+        lpml = this->getLpml();
+        nx = this->getNx() + 2*lpml;
+        nz = this->getNz() + 2*lpml;
+    }
 
     // Get correct map (data or receiver mapping)
     if(maptype == SMAP) {

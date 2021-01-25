@@ -51,7 +51,7 @@ if sys.platform == 'darwin' :    # Mac
 else:
     mpi = env.Clone(CC='mpicc', CXX='mpicxx')
     
-envc = Environment(ENV=os.environ, CC = 'gcc', CXX='g++') 
+envc = Environment(ENV=os.environ, CC ='gcc', CXX='g++') 
 envc.Append(CPPFLAGS=' -O3 -Wall' ) # Optimized 
 #envc.Append(CPPFLAGS=' -g -Wall' ) # For debugging
 

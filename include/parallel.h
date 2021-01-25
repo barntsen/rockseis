@@ -142,6 +142,10 @@ class MPIdomaindecomp: public MPI {
       workModeling_t receiveWork();				///< Receive work from slave
       void sendResult(workModeling_t _work);			///< Send result to master
       void clearWork() { work.clear(); } ///< Clears all elements of work
+      void sendEdges(float *wrk, size_t wrksize, int to_rank); ///< Send edges between ranks
+      void sendEdges(double *wrk, size_t wrksize, int to_rank); ///< Send edges between ranks
+      void receiveEdges(float *wrk, size_t wrksize, int from_rank); ///< Receive edges between ranks
+      void receiveEdges(double *wrk, size_t wrksize, int from_rank); ///< Receive edges between ranks
 
       // Domain decomposition functions
       int getDomainrank() { return domainrank;}	///< Get rank for current processor in domain Comm

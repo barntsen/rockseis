@@ -10,7 +10,6 @@
 #include "pml.h"
 #include "der.h"
 #include "geometry.h"
-#include "model.h"
 #include "utils.h"
 #include "data.h"
 #include "file.h"

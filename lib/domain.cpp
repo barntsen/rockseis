@@ -14,6 +14,7 @@ Domain<T>::Domain()
     d = 0;
     status = false;
     allocated = false;
+    mpiset = false;
 }
 
 template<typename T>
@@ -72,7 +73,8 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nxpad = nxdom+this->getPadl()+this->getPadh();
             nypad = ny;
             nzpad = nz;
-            wrk = (T *) calloc(nz*ny*(this->getLpad()), sizeof(T));
+            wrksize = nz*ny*(this->getLpad());
+            wrk = (T *) calloc(wrksize, sizeof(T));
             if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
         case 1:
@@ -95,7 +97,8 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nxpad = nxdom;
             nypad = nydom+this->getPadl()+this->getPadh();
             nzpad = nzdom;
-            wrk = (T *) calloc(nx*nz*(this->getLpad()), sizeof(T));
+            wrksize = nx*nz*(this->getLpad());
+            wrk = (T *) calloc(wrksize, sizeof(T));
             if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
         case 2:
@@ -118,7 +121,8 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nxpad = nxdom;
             nypad = nydom;
             nzpad = nzdom+this->getPadl()+this->getPadh();
-            wrk = (T *) calloc(nx*ny*(this->getLpad()), sizeof(T));
+            wrksize = nx*ny*(this->getLpad());
+            wrk = (T *) calloc(wrksize, sizeof(T));
             if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
         default:
@@ -306,6 +310,47 @@ void Domain<T>::copyToboundary(const bool side, T *array){
 
 }
 
+
+template<typename T>
+void Domain<T>::shareEdges(T *array){
+    if(!mpiset) rs_error("Domain<T>::shareEdges: MPI not set in domain.");
+    if(mpi->getDomainrank() % 2){
+        if(this->getLow() >= 0){
+            mpi->receiveEdges(wrk, wrksize, this->getLow());
+            this->copyToboundary(0, array);
+        }
+        if(this->getHigh() >= 0){
+            mpi->receiveEdges(wrk, wrksize, this->getHigh());
+            this->copyToboundary(1, array);
+        }
+        if(this->getLow() >= 0){
+            this->copyFromboundary(0, array);
+            mpi->sendEdges(wrk, wrksize, this->getLow());
+        }
+        if(this->getHigh() >= 0){
+            this->copyFromboundary(1, array);
+            mpi->sendEdges(wrk, wrksize, this->getHigh());
+        }
+    }else{
+        if(this->getHigh() >= 0){
+            this->copyFromboundary(1, array);
+            mpi->sendEdges(wrk, wrksize, this->getHigh());
+        }
+        if(this->getLow() >= 0){
+            this->copyFromboundary(0, array);
+            mpi->sendEdges(wrk, wrksize, this->getLow());
+        }
+        if(this->getHigh() >= 0){
+            mpi->receiveEdges(wrk, wrksize, this->getHigh());
+            this->copyToboundary(1, array);
+        }
+        if(this->getLow() >= 0){
+            mpi->receiveEdges(wrk, wrksize, this->getLow());
+            this->copyToboundary(0, array);
+        }
+    }
+
+}
 
 
 template<typename T>

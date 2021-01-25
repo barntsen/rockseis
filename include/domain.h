@@ -46,9 +46,10 @@ public:
     void setNd(const int _nd) { nd=_nd; }///< Set number of domains
     void setD(const int _d) { d=_d; }///< Set domain number
 
-    void setMpi(MPIdomaindecomp *_mpi) { mpi = _mpi; }
+    void setMpi(MPIdomaindecomp *_mpi) { mpi = _mpi; mpiset = true;}
     void copyFromboundary(const bool side, const T *array); ///< Copy from array to wrk
     void copyToboundary(const bool side, T *array); ///< Copy from wrk to array
+    void shareEdges(T *array); ///< Share edges of array with neighbors
 
     void setIx0(const int _ix0) { ix0 = _ix0; }     ///< Set ix0 (origin in global model)
     void setIy0(const int _iy0) { iy0 = _iy0; }     ///< Set iy0 (origin in global model)
@@ -89,7 +90,9 @@ public:
     bool status; // 1 for on, 0 for off. 
     bool allocated;
     T *wrk; // Work array to be used to communicate boundaries
+    size_t wrksize; // Size of workarray
     MPIdomaindecomp *mpi; // Domain decomposition mpi class
+    bool mpiset;
 };
 
 }

@@ -219,6 +219,7 @@ int main(int argc, char** argv) {
                 lmodel = gmodel->getDomainmodel(Shotgeom, apertx, SMAP, mpi.getDomainrank(), mpi.getNdomain(), order);
                 //lmodel->setVpfile("DomainVp-" + std::to_string(work.id) + "-" + std::to_string(mpi.getDomainrank()));
                 //lmodel->writeVp();
+                (lmodel->getDomain())->setMpi(&mpi);
 
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();
