@@ -9,6 +9,8 @@
 #include <memory>
 #include "geometry.h"
 #include "utils.h"
+#include "utils.h"
+#include "parallel.h"
 
 #define DOMAIN_OK 1
 #define DOMAIN_ERR 0
@@ -43,6 +45,8 @@ public:
     void setNz_pad(const int val) { nz_pad = val; }     ///< Set nz_pad
     void setNd(const int _nd) { nd=_nd; }///< Set number of domains
     void setD(const int _d) { d=_d; }///< Set domain number
+
+    void setMpi(MPIdomaindecomp *_mpi) { mpi = _mpi; }
     void copyFromboundary(const bool side, const T *array); ///< Copy from array to wrk
     void copyToboundary(const bool side, T *array); ///< Copy from wrk to array
 
@@ -65,6 +69,7 @@ public:
     int getPadh() { return padh; }              ///< Get padh
     int getNd() { return nd; } ///< GetNd
     int getD() { return d; } /// Get d
+    MPIdomaindecomp * getMpi() { return mpi; }
     int getIx0() { return ix0; } /// Get ix0
     int getIy0() { return iy0; } /// Get iy0
     int getIz0() { return iz0; } /// Get iz0
@@ -84,6 +89,7 @@ public:
     bool status; // 1 for on, 0 for off. 
     bool allocated;
     T *wrk; // Work array to be used to communicate boundaries
+    MPIdomaindecomp *mpi; // Domain decomposition mpi class
 };
 
 }

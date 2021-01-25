@@ -15,7 +15,6 @@ builddir = '../build/'
 
 # Library
 file = env.Library(builddir + 'file','file.cpp')
-model = env.Library(builddir + 'model',['model.cpp', 'domain.cpp'])
 pml = env.Library(builddir + 'pml','pml.cpp')
 der = env.Library(builddir + 'der','der.cpp')
 hilbert = env.Library(builddir + 'hilbert','hilbert.cpp')
@@ -37,11 +36,12 @@ lsrtm = env.Library(builddir + 'lsrtm',['lsrtm.cpp', 'pml.cpp', 'der.cpp', 'wave
 revolve = env.Library(builddir + 'revolve',['revolve.cpp', 'waves.cpp', 'file.cpp'])
 snap = env.Library(builddir + 'snap',['snap.cpp', 'waves.cpp', 'file.cpp'])
 ttable = env.Library(builddir + 'ttable',['ttable.cpp', 'rays.cpp', 'file.cpp'])
-image = env.Library(builddir + 'image',['image.cpp', 'model.cpp', 'domain.cpp'])
 opt = env.Library(builddir + 'opt',['opt.cpp'])
 bspl = env.Library(builddir + 'bspl',['bspl.cpp'])
 kdtree = env.Library(builddir + 'kdtree',['kdtree.cpp'])
 if(env['MPI']):
+    image = mpi.Library(builddir + 'image',['image.cpp', 'model.cpp', 'domain.cpp'])
+    model = mpi.Library(builddir + 'model',['model.cpp', 'domain.cpp'])
     parallel = mpi.Library(builddir + 'parallel',['parallel.cpp'])
     inversion = mpi.Library(builddir + 'inversion',['inversion.cpp'])
     wemva = mpi.Library(builddir + 'wemva',['wemva.cpp'])
