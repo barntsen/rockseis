@@ -284,7 +284,6 @@ void Domain<T>::copyToboundary(const bool side, T *array){
         case 2:
             nwrk = n0;
             if(side){
-                pad = this->getPadh();
                 for (ix=0; ix < n0; ix++) {
                     for (iy=0; iy < n1; iy++) {
                         for (io=0; io < pad; io++) {
