@@ -302,7 +302,7 @@ void Domain<T>::copyToboundary(const bool side, T *array){
             }
             break;
         default:
-            rs_error("Domain<T>::copyBoundary:Invalid dimension");
+            rs_error("Domain<T>::copyToboundary:Invalid dimension");
             break;
             break;
     }
@@ -348,7 +348,6 @@ void Domain<T>::shareEdges(T *array){
             this->copyToboundary(0, array);
         }
     }
-
 }
 
 

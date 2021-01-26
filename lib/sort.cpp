@@ -556,6 +556,54 @@ void Sort<T>::put2DGather(std::shared_ptr<Data2D<T>> data, size_t number)
 }
 
 template<typename T>
+void Sort<T>::put2DGather(std::shared_ptr<Data2D<T>> data, size_t number, Point2D<int> *mask)
+{
+    if(this->ngathers == 0 || this->ntraces == 0) rs_error("Sort::put2DGather: No sort map created.");
+    if(number > ngathers-1) rs_error("Sort::put2DGather: Trying to put a gather with number that is larger than ngathers");
+
+    bool status;
+    std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
+    status = Fdata->append(data->getFile());
+    if(status == FILE_ERR) rs_error("Sort::put2DGather: Error opening data file for appending: ", data->getFile());
+    rs_datatype datatype = Fdata->getType(); 
+    if(datatype != DATA2D) rs_error("Sort::put2DGather: Datafile must be of type Data2D.");
+    //Get gather size information
+    size_t n1 = Fdata->getN(1);
+    T d1 = Fdata->getD(1);
+    T o1 = Fdata->getO(1);
+    size_t n2 = this->keymap[number].n;
+    if(n1 != data->getNt()) rs_error("Sort::put2DGather: Number of samples in data and datafile mismatch.");
+    if(d1 != data->getDt()) rs_error("Sort::put2DGather: Sampling interval in data and datafile mismatch.");
+    if(o1 != data->getOt()) rs_error("Sort::put2DGather: Origin in data and datafile mismatch.");
+
+    //Write gather
+    Point2D<T> *scoords = (data->getGeom())->getScoords();
+    Point2D<T> *gcoords = (data->getGeom())->getGcoords();
+    T *tracedata = data->getData();
+    size_t traceno;
+    for (size_t j=0; j < n2; j++){
+        if(mask[j].x > 0 && mask[j].y > 0){
+            traceno = this->sortmap[this->keymap[number].i0 + j];
+            Fdata->seekp(Fdata->getStartofdata() + traceno*(n1+NHEAD2D)*sizeof(T));
+            if(!this->getReciprocity()){
+                Fdata->write(&scoords[j].x, 1);
+                Fdata->write(&scoords[j].y, 1);
+                Fdata->write(&gcoords[j].x, 1);
+                Fdata->write(&gcoords[j].y, 1);
+            }else{
+                Fdata->write(&gcoords[j].x, 1);
+                Fdata->write(&gcoords[j].y, 1);
+                Fdata->write(&scoords[j].x, 1);
+                Fdata->write(&scoords[j].y, 1);
+            }
+            Fdata->write(&tracedata[j*n1], n1);
+        }
+    }
+
+    if(Fdata->getFail()) rs_error("Sort::Put2DGather: Error writting gather to output file");
+}
+
+template<typename T>
 void Sort<T>::put3DGather(std::shared_ptr<Data3D<T>> data, size_t number)
 {
     if(this->ngathers == 0 || this->ntraces == 0) rs_error("Sort::put3DGather: No sort map created.");

@@ -233,13 +233,13 @@ int main(int argc, char** argv) {
 
                 // Setting Snapshot file 
                 if(Psnap){
-                    modelling->setSnapP(Psnapfile + "-" + std::to_string(work.id));
+                    modelling->setSnapP(Psnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
                 }
                 if(Axsnap){
-                    modelling->setSnapAx(Axsnapfile + "-" + std::to_string(work.id));
+                    modelling->setSnapAx(Axsnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
                 }
                 if(Azsnap){
-                    modelling->setSnapAz(Azsnapfile + "-" + std::to_string(work.id));
+                    modelling->setSnapAz(Azsnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
                 }
 
                 // Setting Record
@@ -248,7 +248,18 @@ int main(int argc, char** argv) {
                     Pdata2D->setField(rockseis::PRESSURE);
                     // Copy geometry to Data
                     Pdata2D->copyCoords(Shotgeom);
-                    Pdata2D->makeMap(lmodel->getGeom());
+                    Pdata2D->makeMap(lmodel->getGeom(),SMAP,0,0);
+                    switch((lmodel->getDomain())->getDim()){
+                        case 0:
+                            Pdata2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0);
+                            break;
+                        case 2:
+                            Pdata2D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad());
+                            break;
+                        default:
+                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
+                            break;
+                    }
                     modelling->setRecP(Pdata2D);
                 }
                 if(Axrecord){
@@ -256,7 +267,19 @@ int main(int argc, char** argv) {
                     Axdata2D->setField(rockseis::VX);
                     // Copy geometry to Data
                     Axdata2D->copyCoords(Shotgeom);
-                    Axdata2D->makeMap(lmodel->getGeom());
+                    Axdata2D->makeMap(lmodel->getGeom(),SMAP,0,0);
+                    switch((lmodel->getDomain())->getDim()){
+                        case 0:
+                            Axdata2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0);
+                            break;
+                        case 2:
+                            Axdata2D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad());
+                            break;
+                        default:
+                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
+                            break;
+                    }
+
                     modelling->setRecAx(Axdata2D);
                 }
                 if(Azrecord){
@@ -264,7 +287,18 @@ int main(int argc, char** argv) {
                     Azdata2D->setField(rockseis::VZ);
                     // Copy geometry to Data
                     Azdata2D->copyCoords(Shotgeom);
-                    Azdata2D->makeMap(lmodel->getGeom());
+                    Azdata2D->makeMap(lmodel->getGeom(),SMAP,0,0);
+                    switch((lmodel->getDomain())->getDim()){
+                        case 0:
+                            Azdata2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0);
+                            break;
+                        case 2:
+                            Azdata2D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad());
+                            break;
+                        default:
+                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
+                            break;
+                    }
                     modelling->setRecAz(Azdata2D);
                 }
 
@@ -274,26 +308,24 @@ int main(int argc, char** argv) {
                 // Run modelling 
                 modelling->run();
 
-                if(mpi.getDomainrank() == 0){
-                    // Output record
-                    if(Precord){
-                        Pdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
-                        Pdata2Di->setFile(Precordfile);
-                        interp->interp(Pdata2D, Pdata2Di);
-                        Sort->put2DGather(Pdata2Di, work.id);
-                    }
-                    if(Axrecord){
-                        Axdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
-                        Axdata2Di->setFile(Axrecordfile);
-                        interp->interp(Axdata2D, Axdata2Di);
-                        Sort->put2DGather(Axdata2Di, work.id);
-                    }
-                    if(Azrecord){
-                        Azdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
-                        Azdata2Di->setFile(Azrecordfile);
-                        interp->interp(Azdata2D, Azdata2Di);
-                        Sort->put2DGather(Azdata2Di, work.id);
-                    }
+                // Output record
+                if(Precord){
+                    Pdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
+                    Pdata2Di->setFile(Precordfile);
+                    interp->interp(Pdata2D, Pdata2Di);
+                    Sort->put2DGather(Pdata2Di, work.id, (Pdata2D->getGeom())->getGmap());
+                }
+                if(Axrecord){
+                    Axdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
+                    Axdata2Di->setFile(Axrecordfile);
+                    interp->interp(Axdata2D, Axdata2Di);
+                    Sort->put2DGather(Axdata2Di, work.id);
+                }
+                if(Azrecord){
+                    Azdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
+                    Azdata2Di->setFile(Azrecordfile);
+                    interp->interp(Azdata2D, Azdata2Di);
+                    Sort->put2DGather(Azdata2Di, work.id);
                 }
 
                 // Reset all classes

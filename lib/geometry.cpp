@@ -134,75 +134,7 @@ Geometry2D<T>::~Geometry2D() {
 
 // create map
 template<typename T>
-void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
-	size_t n = this->getN(1);  //Get number of traces 
-	// Get regular model parameters
-	int nx = _geom->getN(1);
-	int ny = _geom->getN(3);
-	T dx = _geom->getD(1);
-	T dy = _geom->getD(3);
-	T ox = _geom->getO(1);
-	T oy = _geom->getO(3);
-	// Compute index smap
-	int pos;
-	for (size_t i = 0; i < n ; i++){
-		pos = this->mapfloor((scoords[i].x - ox)/dx);
-		if(pos >=0 && pos < nx)
-		{
-			smap[i].x  = pos; // index is within bounds
-            sshift[i].x = ((scoords[i].x - ox)/dx) - pos;
-		}else
-		{
-			smap[i].x  = -1;  // index is off bounds
-		}
-		pos = this->mapfloor((scoords[i].y - oy)/dy);
-		if(pos >=0 && pos < ny)
-		{
-			smap[i].y  = pos; // index is within bounds
-            sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
-		}else
-		{
-			smap[i].y  = -1;  // index is off bounds
-		}
-	}
-	// Compute index gmap
-	for (size_t i = 0; i < n ; i++){
-		pos = this->mapfloor((gcoords[i].x - ox)/dx);
-		if(pos >=0 && pos < nx)
-		{
-			gmap[i].x  = pos; // index is within bounds
-            gshift[i].x = ((gcoords[i].x - ox)/dx) - pos;
-		}else
-		{
-			gmap[i].x  = -1;  // index is off bounds
-		}
-		pos = this->mapfloor((gcoords[i].y - oy)/dy);
-		if(pos >=0 && pos < ny)
-		{
-			gmap[i].y  = pos; // index is within bounds
-            gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
-		}else
-		{
-			gmap[i].y  = -1;  // index is off bounds
-		}
-	}
-
-   // Issue a warning if all receivers are out of bounds
-    bool s_inbound = false;
-    bool g_inbound = false;
-    
-    for (size_t i =0; i < n; i++) 
-    {
-        if ((smap[i].x >= 0)  && (smap[i].y >= 0)) s_inbound = true;
-        if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)) g_inbound = true;
-    }
-    if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
-    if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
-}
-
-// create map
-template<typename T>
-void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
+void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padx, int pady) {
 	size_t n = this->getN(1);  //Get number of traces 
 	// Get regular model parameters
 	int nx = _geom->getN(1);
@@ -218,7 +150,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
         // Compute index smap
         for (size_t i = 0; i < n ; i++){
             pos = this->mapfloor((scoords[i].x - ox)/dx);
-            if(pos >=0 && pos < nx)
+            if(pos >=padx && pos < nx-padx)
             {
                 smap[i].x  = pos; // index is within bounds
                 sshift[i].x = ((scoords[i].x - ox)/dx) - pos;
@@ -227,7 +159,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
                 smap[i].x  = -1;  // index is off bounds
             }
             pos = this->mapfloor((scoords[i].y - oy)/dy);
-            if(pos >=0 && pos < ny)
+            if(pos >=pady && pos < ny-pady)
             {
                 smap[i].y  = pos; // index is within bounds
                 sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
@@ -248,7 +180,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
         // Compute index gmap
         for (size_t i = 0; i < n ; i++){
             pos = this->mapfloor((gcoords[i].x - ox)/dx);
-            if(pos >=0 && pos < nx)
+            if(pos >=padx && pos < nx-padx)
             {
                 gmap[i].x  = pos; // index is within bounds
                 gshift[i].x = ((gcoords[i].x - ox)/dx) - pos;
@@ -257,7 +189,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
                 gmap[i].x  = -1;  // index is off bounds
             }
             pos = this->mapfloor((gcoords[i].y - oy)/dy);
-            if(pos >=0 && pos < ny)
+            if(pos >=pady && pos < ny-pady)
             {
                 gmap[i].y  = pos; // index is within bounds
                 gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
@@ -276,7 +208,6 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
     }
 
 }
-
 
 // copy map
 template<typename T>

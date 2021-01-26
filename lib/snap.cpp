@@ -301,7 +301,11 @@ Snapshot2D<T>::Snapshot2D(std::shared_ptr<WavesAcoustic2D<T>> waves, int snapinc
     _ox=waves->getOx();
     _oy=waves->getOy();
     _oz=waves->getOz();
-    _lpml = waves->getLpml();
+    if(waves->getDomdec()){
+        _lpml = 0;
+    }else{
+        _lpml = waves->getLpml();
+    }
     _dim = waves->getDim();
     _nt = waves->getNt();
     _dt = waves->getDt();
