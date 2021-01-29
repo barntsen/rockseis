@@ -171,6 +171,9 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
                     for (iy=0; iy < n1; iy++) {
                         for (iz=0; iz < n2; iz++) {
                             wrk[IDWRK(io,iy,iz)] = array[IDARRAY(n0-2*pad + io, iy, iz)];
+                            if(IDWRK(io,iy,iz) >= wrksize) {
+                                std::cerr << "Out of bounds!!!!  Index:" << IDWRK(io,iy,iz) << " wrksize:" << wrksize << std::endl;
+                            }
                         }
                     }
                 }
