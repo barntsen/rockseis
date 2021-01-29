@@ -52,6 +52,7 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
     int nxdom=0, nydom=0, nzdom=0;
     int nxpad=0, nypad=0, nzpad=0;
     int ix0=0, iy0=0, iz0=0;
+
     switch(this->getDim()){
         case 0:
             nxdom = std::ceil((T) nx/((T) _nd));

@@ -247,6 +247,7 @@ int main(int argc, char** argv) {
                 lmodel = gmodel->getDomainmodel(Shotgeom, apertx, aperty, SMAP, mpi.getDomainrank(), mpi.getNdomain(), order);
                 (lmodel->getDomain())->setMpi(&mpi);
 
+
                 // Read wavelet data, set shot and receiver coordinates and make a map
                 source->read();
                 source->copyCoords(Shotgeom);
@@ -277,15 +278,44 @@ int main(int argc, char** argv) {
                     Pdata3D->setField(rockseis::PRESSURE);
                     // Copy geometry to Data
                     Pdata3D->copyCoords(Shotgeom);
-                    Pdata3D->makeMap(lmodel->getGeom());
+                    Pdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
+                    switch((lmodel->getDomain())->getDim()){
+                        case 0:
+                            Pdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
+                            break;
+                        case 1:
+                            Pdata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
+                            break;
+                        case 2:
+                            Pdata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
+                            break;
+                        default:
+                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
+                            break;
+                    }
                     modelling->setRecP(Pdata3D);
                 }
+
                 if(Axrecord){
                     Axdata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
                     Axdata3D->setField(rockseis::VX);
                     // Copy geometry to Data
                     Axdata3D->copyCoords(Shotgeom);
-                    Axdata3D->makeMap(lmodel->getGeom());
+                    Axdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
+                    switch((lmodel->getDomain())->getDim()){
+                        case 0:
+                            Axdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
+                            break;
+                        case 1:
+                            Axdata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
+                            break;
+                        case 2:
+                            Axdata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
+                            break;
+                        default:
+                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
+                            break;
+                    }
                     modelling->setRecAx(Axdata3D);
                 }
                 if(Ayrecord){
@@ -293,7 +323,21 @@ int main(int argc, char** argv) {
                     Aydata3D->setField(rockseis::VY);
                     // Copy geometry to Data
                     Aydata3D->copyCoords(Shotgeom);
-                    Aydata3D->makeMap(lmodel->getGeom());
+                    Aydata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
+                    switch((lmodel->getDomain())->getDim()){
+                        case 0:
+                            Aydata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
+                            break;
+                        case 1:
+                            Aydata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
+                            break;
+                        case 2:
+                            Aydata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
+                            break;
+                        default:
+                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
+                            break;
+                    }
                     modelling->setRecAy(Aydata3D);
                 }
                 if(Azrecord){
@@ -301,7 +345,21 @@ int main(int argc, char** argv) {
                     Azdata3D->setField(rockseis::VZ);
                     // Copy geometry to Data
                     Azdata3D->copyCoords(Shotgeom);
-                    Azdata3D->makeMap(lmodel->getGeom());
+                    Azdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
+                    switch((lmodel->getDomain())->getDim()){
+                        case 0:
+                            Azdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
+                            break;
+                        case 1:
+                            Azdata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
+                            break;
+                        case 2:
+                            Azdata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
+                            break;
+                        default:
+                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
+                            break;
+                    }
                     modelling->setRecAz(Azdata3D);
                 }
 

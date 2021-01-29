@@ -321,13 +321,13 @@ int main(int argc, char** argv) {
                     Axdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
                     Axdata2Di->setFile(Axrecordfile);
                     interp->interp(Axdata2D, Axdata2Di);
-                    Sort->put2DGather(Axdata2Di, work.id);
+                    Sort->put2DGather(Axdata2Di, work.id, (Axdata2D->getGeom())->getGmap());
                 }
                 if(Azrecord){
                     Azdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, ntrec, dtrec, 0.0);
                     Azdata2Di->setFile(Azrecordfile);
                     interp->interp(Azdata2D, Azdata2Di);
-                    Sort->put2DGather(Azdata2Di, work.id);
+                    Sort->put2DGather(Azdata2Di, work.id, (Azdata2D->getGeom())->getGmap());
                 }
 
                 // Reset all classes
