@@ -313,25 +313,25 @@ int main(int argc, char** argv) {
                     Pdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
                     Pdata3Di->setFile(Precordfile);
                     interp->interp(Pdata3D, Pdata3Di);
-                    Sort->put3DGather(Pdata3Di, work.id);
+                    Sort->put3DGather(Pdata3Di, work.id, (Pdata3D->getGeom())->getGmap());
                 }
                 if(Axrecord){
                     Axdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
                     Axdata3Di->setFile(Axrecordfile);
                     interp->interp(Axdata3D, Axdata3Di);
-                    Sort->put3DGather(Axdata3Di, work.id);
+                    Sort->put3DGather(Axdata3Di, work.id, (Axdata3D->getGeom())->getGmap());
                 }
                 if(Ayrecord){
                     Aydata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
                     Aydata3Di->setFile(Ayrecordfile);
                     interp->interp(Aydata3D, Aydata3Di);
-                    Sort->put3DGather(Aydata3Di, work.id);
+                    Sort->put3DGather(Aydata3Di, work.id,(Aydata3D->getGeom())->getGmap());
                 }
                 if(Azrecord){
                     Azdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
                     Azdata3Di->setFile(Azrecordfile);
                     interp->interp(Azdata3D, Azdata3Di);
-                    Sort->put3DGather(Azdata3Di, work.id);
+                    Sort->put3DGather(Azdata3Di, work.id,(Azdata3D->getGeom())->getGmap() );
                 }
 
                 // Reset all classes

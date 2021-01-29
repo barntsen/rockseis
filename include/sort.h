@@ -56,6 +56,7 @@ public:
     void put2DGather(std::shared_ptr<Data2D<T>>, size_t num); ///< Put 2d gather into a data file number using the keymap and sortmap
     void put2DGather(std::shared_ptr<Data2D<T>>, size_t num, Point2D<int> *mask); ///< Put 2d gather into a data file number using the keymap and sortmap and a mask
     void put3DGather(std::shared_ptr<Data3D<T>>, size_t num); ///< Put 3d gather into a data file number using the keymap and sortmap
+    void put3DGather(std::shared_ptr<Data3D<T>>, size_t num, Point3D<int> *mask); ///< Put 3d gather into a data file number using the keymap and sortmap and a mask
     std::shared_ptr<Data3D<T>> get3DGather(); ///< Get a gather using the keymap and sortmap
     std::shared_ptr<Data3D<T>> get3DGather(size_t num); ///< Get gather number using the keymap and sortmap
 
