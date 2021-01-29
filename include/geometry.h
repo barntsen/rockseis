@@ -103,8 +103,10 @@ public:
     virtual ~Geometry3D();       	///< Destructor
     /** Creates integer map from data coordinates and model geometry.
      * */
-    void makeMap(std::shared_ptr<Geometry<T>> _geom);
-    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map);
+    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padx, int pady, int padz); 
+    void makeMap(std::shared_ptr<Geometry<T>> _geom, int padx, int pady, int padz) {makeMap(_geom,SMAP,padx,pady,padz); makeMap(_geom,GMAP,padx,pady,padz);} 
+    void makeMap(std::shared_ptr<Geometry<T>> _geom) {makeMap(_geom,SMAP,0,0,0); makeMap(_geom,GMAP,0,0,0);} 
+    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {makeMap(_geom,map,0,0,0);} 
     void copySmap2Gmap();
     void copyGmap2Smap();
 

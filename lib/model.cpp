@@ -269,7 +269,7 @@ T Model<T>::getMin(T *model){
 }
 
 template<typename T>
-void Model<T>::getLocalsize2d(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map, off_t *start, size_t *size) {
+void Model<T>::getLocalsize2d(std::shared_ptr<Data2D<T>> data, T aperture, bool map, off_t *start, size_t *size) {
     /* Get source or receiver min and max positions */
     Point2D<T> *scoords;
     Point2D<T> *gcoords;
@@ -342,7 +342,7 @@ void Model<T>::getLocalsize2d(std::shared_ptr<rockseis::Data2D<T>> data, T apert
 }
 
 template<typename T>
-void Model<T>::getLocalsize3d(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map, off_t *start_x, size_t *size_x, off_t *start_y, size_t *size_y)
+void Model<T>::getLocalsize3d(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map, off_t *start_x, size_t *size_x, off_t *start_y, size_t *size_y)
 {
     /* Get source or receiver min and max positions */
     Point3D<T> *scoords;
@@ -499,7 +499,7 @@ ModelEikonal2D<T>::ModelEikonal2D(std::string _Velocityfile, const int _lpml): M
     T ox, oz;
     Velocityfile = _Velocityfile;
 
-    std::shared_ptr<rockseis::File> Fmod (new rockseis::File());
+    std::shared_ptr<File> Fmod (new File());
     status = Fmod->input(Velocityfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelEikonal2D::Error reading from Velocity file: ", Velocityfile);
@@ -546,7 +546,7 @@ void ModelEikonal2D<T>::readVelocity() {
     // Get file names
     std::string Velocityfile = this->getVelocityfile();
     // Open files for reading
-    std::shared_ptr<rockseis::File> Fmod (new rockseis::File());
+    std::shared_ptr<File> Fmod (new File());
     status = Fmod->input(Velocityfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelEikonal2D::readVelocity : Error reading from Velocity file: ", Velocityfile);
@@ -575,7 +575,7 @@ void ModelEikonal2D<T>::writeVelocity() {
     // Get file names
     std::string Velocityfile = this->getVelocityfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fmod (new rockseis::File());
+    std::shared_ptr<File> Fmod (new File());
     Fmod->output(Velocityfile);
     // Write models
     int nx = this->getNx();
@@ -634,8 +634,8 @@ void ModelEikonal2D<T>::createModel() {
 }
 
 template<typename T>
-std::shared_ptr<rockseis::ModelEikonal2D<T>> ModelEikonal2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) {
-    std::shared_ptr<rockseis::ModelEikonal2D<T>> local;
+std::shared_ptr<ModelEikonal2D<T>> ModelEikonal2D<T>::getLocal(std::shared_ptr<Data2D<T>> data, T aperture, bool map) {
+    std::shared_ptr<ModelEikonal2D<T>> local;
     T dx = this->getDx();
     T ox = this->getOx();
     size_t nz = this->getNz();
@@ -647,7 +647,7 @@ std::shared_ptr<rockseis::ModelEikonal2D<T>> ModelEikonal2D<T>::getLocal(std::sh
     this->getLocalsize2d(data, aperture, map, &start, &size);
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelEikonal2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz());
+    local = std::make_shared<ModelEikonal2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz());
 
     /*Realizing local model */
     local->createModel();
@@ -661,7 +661,7 @@ std::shared_ptr<rockseis::ModelEikonal2D<T>> ModelEikonal2D<T>::getLocal(std::sh
 
     // Open files for reading
     bool status;
-    std::shared_ptr<rockseis::File> Fmod (new rockseis::File());
+    std::shared_ptr<File> Fmod (new File());
     status = Fmod->input(Velocityfile);
     if(status == FILE_ERR){
 	    rs_error("ModelEikonal2D::getLocal : Error reading from Velocity file.");
@@ -669,8 +669,8 @@ std::shared_ptr<rockseis::ModelEikonal2D<T>> ModelEikonal2D<T>::getLocal(std::sh
 
     off_t i = start;
     off_t lpos, fpos;
-    rockseis::Index l2d(size,nz);
-    rockseis::Index f2d(nx,nz);
+    Index l2d(size,nz);
+    Index f2d(nx,nz);
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f2d(0, i1)*sizeof(T);
         Fmod->read(veltrace, nx, fpos);
@@ -706,7 +706,7 @@ ModelEikonal3D<T>::ModelEikonal3D(std::string _Velocityfile, const int _lpml): M
     T ox, oy, oz;
     Velocityfile = _Velocityfile;
 
-    std::shared_ptr<rockseis::File> Fmodel (new rockseis::File());
+    std::shared_ptr<File> Fmodel (new File());
     status = Fmodel->input(Velocityfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelEikonal3D::Error reading from Velocity file: ", Velocityfile);
@@ -754,7 +754,7 @@ void ModelEikonal3D<T>::readVelocity() {
     // Get file names
     std::string Velocityfile = this->getVelocityfile();
     // Open files for reading
-    std::shared_ptr<rockseis::File> Fmodel (new rockseis::File());
+    std::shared_ptr<File> Fmodel (new File());
     status = Fmodel->input(Velocityfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelEikonal3D::readVelocity : Error reading from Velocity file: ", Velocityfile);
@@ -784,7 +784,7 @@ void ModelEikonal3D<T>::writeVelocity() {
     // Get file names
     std::string Velocityfile = this->getVelocityfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fmodel (new rockseis::File());
+    std::shared_ptr<File> Fmodel (new File());
     Fmodel->output(Velocityfile.c_str());
 
     // Write models
@@ -861,9 +861,9 @@ void ModelEikonal3D<T>::createModel() {
 }
 
 template<typename T>
-std::shared_ptr<rockseis::ModelEikonal3D<T>> ModelEikonal3D<T>::getLocal(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
+std::shared_ptr<ModelEikonal3D<T>> ModelEikonal3D<T>::getLocal(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
 
-    std::shared_ptr<rockseis::ModelEikonal3D<T>> local;
+    std::shared_ptr<ModelEikonal3D<T>> local;
     T dx = this->getDx();
     T dy = this->getDy();
     T ox = this->getOx();
@@ -884,7 +884,7 @@ std::shared_ptr<rockseis::ModelEikonal3D<T>> ModelEikonal3D<T>::getLocal(std::sh
     oyl = (oy + start_y*dy);
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelEikonal3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz());
+    local = std::make_shared<ModelEikonal3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz());
 
     /*Realizing local model */
     local->createModel();
@@ -898,7 +898,7 @@ std::shared_ptr<rockseis::ModelEikonal3D<T>> ModelEikonal3D<T>::getLocal(std::sh
 
     // Open files for reading
     bool status;
-    std::shared_ptr<rockseis::File> Fmodel (new rockseis::File());
+    std::shared_ptr<File> Fmodel (new File());
     status = Fmodel->input(Velocityfile);
     if(status == FILE_ERR){
 	    rs_error("ModelEikonal3D::getLocal : Error reading from Velocity file.");
@@ -906,9 +906,9 @@ std::shared_ptr<rockseis::ModelEikonal3D<T>> ModelEikonal3D<T>::getLocal(std::sh
     off_t i = start_x;
     off_t j = start_y;
     off_t lpos_x, lpos_y, fpos;
-    rockseis::Index l3d(size_x, size_y, nz);
-    rockseis::Index f3d(nx, ny, nz);
-    rockseis::Index l2d(nx, ny);
+    Index l3d(size_x, size_y, nz);
+    Index f3d(nx, ny, nz);
+    Index l2d(nx, ny);
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f3d(0, 0, i1)*sizeof(T);
         Fmodel->read(veltrace, nx*ny, fpos);
@@ -962,12 +962,12 @@ ModelAcoustic1D<T>::ModelAcoustic1D(std::string _Vpfile, std::string _Rfile, con
     Vpfile = _Vpfile;
     Rfile = _Rfile;
 
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic1D::Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelAcoustic1D::Error reading from density file: ", Rfile);
@@ -1029,12 +1029,12 @@ void ModelAcoustic1D<T>::readModel() {
     std::string Vpfile = this->getVpfile();
     std::string Rfile = this->getRfile();
     // Open files for reading
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic1D::readModel : Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic1D::readModel : Error reading from Density file: ", Rfile );
@@ -1067,9 +1067,9 @@ void ModelAcoustic1D<T>::writeModel() {
     std::string Vpfile = this->getVpfile();
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     Fvp->output(Vpfile);
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     Frho->output(Rfile);
 
     // Write models
@@ -1174,12 +1174,12 @@ ModelAcoustic2D<T>::ModelAcoustic2D(std::string _Vpfile, std::string _Rfile, con
     Vpfile = _Vpfile;
     Rfile = _Rfile;
 
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic2D::Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelAcoustic2D::Error reading from density file: ", Rfile);
@@ -1250,12 +1250,12 @@ void ModelAcoustic2D<T>::readModel() {
     std::string Vpfile = this->getVpfile();
     std::string Rfile = this->getRfile();
     // Open files for reading
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic2D::readModel : Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic2D::readModel : Error reading from Density file: ", Rfile);
@@ -1289,7 +1289,7 @@ void ModelAcoustic2D<T>::writeVp() {
     std::string Vpfile = this->getVpfile();
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     Fvp->output(Vpfile);
     // Write models
     int nx = this->getNx();
@@ -1321,7 +1321,7 @@ void ModelAcoustic2D<T>::writeR() {
     // Get file names
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     Frho->output(Rfile);
 
     // Write models
@@ -1462,8 +1462,8 @@ void ModelAcoustic2D<T>::createPaddedmodel() {
 }
 
 template<typename T>
-std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) {
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> local;
+std::shared_ptr<ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::shared_ptr<Data2D<T>> data, T aperture, bool map) {
+    std::shared_ptr<ModelAcoustic2D<T>> local;
     T dx = this->getDx();
     T ox = this->getOx();
     size_t nz = this->getNz();
@@ -1475,7 +1475,7 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
     this->getLocalsize2d(data, aperture, map, &start, &size);
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelAcoustic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getFs());
+    local = std::make_shared<ModelAcoustic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getFs());
 
     /*Realizing local model */
     local->createModel();
@@ -1492,12 +1492,12 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
 
     // Open files for reading
     bool status;
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile);
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic2D::getLocal : Error reading from Vp file.");
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile);
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic2D::getLocal : Error reading from Density file.");
@@ -1505,8 +1505,8 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
 
     off_t i = start;
     off_t lpos, fpos;
-    rockseis::Index l2d(size,nz);
-    rockseis::Index f2d(nx,nz);
+    Index l2d(size,nz);
+    Index f2d(nx,nz);
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f2d(0, i1)*sizeof(T);
         Fvp->read(vptrace, nx, fpos);
@@ -1530,8 +1530,8 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getLocal(std::
 }
 
 template<typename T>
-std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map, const int d, const int nd, const int order) {
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> local;
+std::shared_ptr<ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel(std::shared_ptr<Data2D<T>> data, T aperture, bool map, const int d, const int nd, const int order) {
+    std::shared_ptr<ModelAcoustic2D<T>> local;
     T dx = this->getDx();
     T dz = this->getDz();
     T ox = this->getOx();
@@ -1554,7 +1554,7 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel
 
 
     /* Create domain model */
-    local = std::make_shared<rockseis::ModelAcoustic2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getFs());
+    local = std::make_shared<ModelAcoustic2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getFs());
     (local->getDomain())->setupDomain(size+2*lpml,1,nz+2*this->getLpml(),d,nd,order);
 
     /*Realizing local model */
@@ -1578,12 +1578,12 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel
 
     // Open files for reading
     bool status;
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile);
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic2D::getDomainmodel : Error reading from Vp file.");
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile);
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic2D::getDomainmodel : Error reading from Density file.");
@@ -1591,10 +1591,8 @@ std::shared_ptr<rockseis::ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel
 
     off_t i = start;
     off_t lpos, fpos;
-    rockseis::Index l2d(nxd,nzd);
-    rockseis::Index f2d(nx,nz);
-    std::cerr << "d:" << d << " nd:" << nd <<  " ix0: " << ix0 << " nxd:" << nxd << std::endl;
-    std::cerr << "d:" << d << " nd:" << nd <<  " iz0: " << iz0 << " nzd:" << nzd << std::endl;
+    Index l2d(nxd,nzd);
+    Index f2d(nx,nz);
 
     for(size_t i1=0; i1<nzd; i1++) {
         lpos = iz0 + i1 - lpml;
@@ -1672,12 +1670,12 @@ ModelAcoustic3D<T>::ModelAcoustic3D(std::string _Vpfile, std::string _Rfile, con
     Vpfile = _Vpfile;
     Rfile = _Rfile;
 
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic3D::Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelAcoustic3D::Error reading from density file: ", Rfile);
@@ -1746,12 +1744,12 @@ void ModelAcoustic3D<T>::readModel() {
     std::string Vpfile = this->getVpfile();
     std::string Rfile = this->getRfile();
     // Open files for reading
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic3D::readModel : Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic3D::readModel : Error reading from Density file: ", Rfile);
@@ -1785,7 +1783,7 @@ void ModelAcoustic3D<T>::writeVp() {
     // Get file names
     std::string Vpfile = this->getVpfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     Fvp->output(Vpfile.c_str());
 
     // Write models
@@ -1824,7 +1822,7 @@ void ModelAcoustic3D<T>::writeR() {
     // Get file names
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     Frho->output(Rfile.c_str());
 
     // Write models
@@ -1985,9 +1983,174 @@ void ModelAcoustic3D<T>::createModel() {
 }
 
 template<typename T>
-std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
+void ModelAcoustic3D<T>::createPaddedmodel() {
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
 
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> local;
+    /* Reallocate L Rx, and Rz */
+    free(L); free(Rx); free(Ry); free(Rz);
+    L = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(L == NULL) rs_error("ModelAcoustic3D::createPaddedmodel: Failed to allocate memory.");
+    Rx = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Rx == NULL) rs_error("ModelAcoustic3D::createPaddedmodel: Failed to allocate memory.");
+    Ry = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Ry == NULL) rs_error("ModelAcoustic3D::createPaddedmodel: Failed to allocate memory.");
+    Rz = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Rz == NULL) rs_error("ModelAcoustic3D::createPaddedmodel: Failed to allocate memory.");
+}
+
+
+
+template<typename T>
+std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getDomainmodel(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map, const int d, const int nd, const int order) {
+
+    std::shared_ptr<ModelAcoustic3D<T>> local;
+    T dx = this->getDx();
+    T dy = this->getDy();
+    T dz = this->getDz();
+    T ox = this->getOx();
+    T oy = this->getOy();
+    T oz = this->getOz();
+    size_t nx = this->getNx();
+    size_t ny = this->getNy();
+    size_t nz = this->getNz();
+    size_t size_x;
+    off_t start_x;
+    size_t size_y;
+    off_t start_y;
+    int nxd,nyd,nzd;
+    int ix0,iy0,iz0;
+    int lpml = this->getLpml();
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize3d(data, aperture_x, aperture_y, map, &start_x, &size_x, &start_y, &size_y);
+    (this->getDomain())->setupDomain(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd,order);
+
+    nxd = (this->getDomain())->getNx_pad();
+    nyd = (this->getDomain())->getNy_pad();
+    nzd = (this->getDomain())->getNz_pad();
+    ix0 = (this->getDomain())->getIx0();
+    iy0 = (this->getDomain())->getIy0();
+    iz0 = (this->getDomain())->getIz0();
+
+    T oxl, oyl, ozl; 
+    oxl = (ox + (start_x+ix0-lpml)*dx);
+    oyl = (oy + (start_y+iy0-lpml)*dy);
+    ozl = (oz + (iz0-lpml)*dz);
+
+    /* Create local model */
+    local = std::make_shared<ModelAcoustic3D<T>>(nxd, nyd, nzd, lpml, dx, dy, dz, oxl, oyl, ozl, this->getFs());
+
+    /*Realizing local model */
+    local->createModel();
+    local->createPaddedmodel();
+
+	/* Copying from big model into local model */
+    T *Vp = local->getVp();
+    T *R = local->getR();
+    T *L = local->getL();
+    T *Rx = local->getRx();
+    T *Ry = local->getRx();
+    T *Rz = local->getRz();
+
+    /* Allocate two traces to read models from file */
+    T *vptrace = (T *) calloc(nx*ny, sizeof(T));
+    if(vptrace == NULL) rs_error("ModelAcoustic3D::getLocal: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx*ny, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelAcoustic3D::getLocal: Failed to allocate memory.");
+    T *rhotrace_adv = (T *) calloc(nx*ny, sizeof(T));
+    if(rhotrace_adv == NULL) rs_error("ModelAcoustic3D::getLocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> Fvp (new File());
+    status = Fvp->input(Vpfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic3D::getLocal : Error reading from Vp file.");
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic3D::getLocal : Error reading from Density file.");
+    }
+
+    off_t i = start_x;
+    off_t j = start_y;
+    off_t lpos_x, lpos_y, lpos_z, fpos;
+    Index l3d(nxd, nyd, nzd);
+    Index f3d(nx, ny, nz);
+    Index l2d(nx, ny);
+    for(size_t i1=0; i1<nzd; i1++) {
+        lpos_z = iz0 + i1 - lpml;
+        if(lpos_z < 0) lpos_z = 0;
+        if(lpos_z > (nz-1)) lpos_z = nz - 1;
+        fpos = f3d(0, 0, lpos_z)*sizeof(T);
+        Fvp->read(vptrace, nx*ny, fpos);
+        if(Fvp->getFail()) rs_error("ModelAcoustic3D::getLocal: Error reading from vp file");
+        Frho->read(rhotrace, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic3D::getLocal: Error reading from rho file");
+
+        lpos_z = iz0 + i1 - lpml + 1;
+        if(lpos_z < 0) lpos_z = 0;
+        if(lpos_z > (nz-1)) lpos_z = nz - 1;
+        fpos = f3d(0, 0, lpos_z)*sizeof(T);
+
+        Frho->read(rhotrace_adv, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic3D::getLocal: Error reading from rho file");
+
+        for(size_t i3=0; i3<nyd; i3++) {
+            lpos_y = j + i3 + iy0 - lpml;
+                if(lpos_y < 0) lpos_y = 0;
+                if(lpos_y > (ny-1)) lpos_y = ny - 1;
+            for(size_t i2=0; i2<nxd; i2++) {
+                lpos_x = i + i2 + ix0 - lpml;
+                if(lpos_x < 0) lpos_x = 0;
+                if(lpos_x > (nx-1)) lpos_x = nx - 1;
+                Vp[l3d(i2,i3,i1)] = vptrace[l2d(lpos_x, lpos_y)];
+                R[l3d(i2,i3,i1)] = rhotrace[l2d(lpos_x, lpos_y)];
+                L[l3d(i2,i3,i1)] = rhotrace[l2d(lpos_x, lpos_y)]*vptrace[l2d(lpos_x, lpos_y)]*vptrace[l2d(lpos_x, lpos_y)];
+
+                if(rhotrace[l2d(lpos_x, lpos_y)] <= 0.0) rs_error("ModelAcoustic3D::getDomainmodel: Zero density found.");
+
+                if(lpos_x < nx-1){
+                    Rx[l2d(lpos_x, lpos_y)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x+1, lpos_y)]);
+                }else{
+                    Rx[l2d(lpos_x, lpos_y)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                }
+                if(lpos_y < ny-1){
+                    Ry[l2d(lpos_x, lpos_y)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x, lpos_y+1)]);
+                }else{
+                    Ry[l2d(lpos_x, lpos_y)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                }
+                Rz[l2d(lpos_x, lpos_y)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace_adv[l2d(lpos_x, lpos_y)]);
+            }
+        }
+    }
+
+    if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
+        for(size_t ix=0; ix<nxd; ix++){
+            for(size_t iy=0; iy<nyd; iy++){
+                Rx[l3d(ix,iy,lpml-iz0)] *= 2.0;
+                Ry[l3d(ix,iy,lpml-iz0)] *= 2.0;
+                L[l3d(ix,iy,lpml-iz0)] *= 0.0;
+            }
+        }
+    }
+
+
+    /* Free traces */
+    free(vptrace);
+    free(rhotrace);
+    free(rhotrace_adv);
+
+    return local;
+}
+
+template<typename T>
+std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
+
+    std::shared_ptr<ModelAcoustic3D<T>> local;
     T dx = this->getDx();
     T dy = this->getDy();
     T ox = this->getOx();
@@ -2008,7 +2171,7 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
     oyl = (oy + start_y*dy);
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelAcoustic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getFs());
+    local = std::make_shared<ModelAcoustic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getFs());
 
     /*Realizing local model */
     local->createModel();
@@ -2025,12 +2188,12 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
 
     // Open files for reading
     bool status;
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile);
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic3D::getLocal : Error reading from Vp file.");
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile);
     if(status == FILE_ERR){
 	    rs_error("ModelAcoustic3D::getLocal : Error reading from Density file.");
@@ -2039,9 +2202,9 @@ std::shared_ptr<rockseis::ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::
     off_t i = start_x;
     off_t j = start_y;
     off_t lpos_x, lpos_y, fpos;
-    rockseis::Index l3d(size_x, size_y, nz);
-    rockseis::Index f3d(nx, ny, nz);
-    rockseis::Index l2d(nx, ny);
+    Index l3d(size_x, size_y, nz);
+    Index f3d(nx, ny, nz);
+    Index l2d(nx, ny);
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f3d(0, 0, i1)*sizeof(T);
         Fvp->read(vptrace, nx*ny, fpos);
@@ -2102,18 +2265,18 @@ ModelElastic2D<T>::ModelElastic2D(std::string _Vpfile, std::string _Vsfile, std:
     Vsfile = _Vsfile;
     Rfile = _Rfile;
 
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelElastic2D::Error reading from Vp file: ", Vpfile);
 	    exit(1);
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelElastic2D::Error reading from Vs file: ", Vsfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelElastic2D::Error reading from density file: ", Rfile);
@@ -2192,17 +2355,17 @@ void ModelElastic2D<T>::readModel() {
     std::string Vsfile = this->getVsfile();
     std::string Rfile = this->getRfile();
     // Open files for reading
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelElastic2D::readModel : Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelElastic2D::readModel : Error reading from Vs file: ", Vsfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelElastic2D::readModel : Error reading from Density file: ", Rfile);
@@ -2240,7 +2403,7 @@ void ModelElastic2D<T>::writeR() {
     // Get file names
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     Frho->output(Rfile);
 
     // Write models
@@ -2274,7 +2437,7 @@ void ModelElastic2D<T>::writeVp() {
     // Get file names
     std::string Vpfile = this->getVpfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     Fvp->output(Vpfile);
 
     // Write models
@@ -2310,7 +2473,7 @@ void ModelElastic2D<T>::writeVs() {
     std::string Vsfile = this->getVsfile();
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     Fvs->output(Vsfile);
 
     // Write models
@@ -2436,9 +2599,9 @@ void ModelElastic2D<T>::createModel() {
 }
 
 template<typename T>
-std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) {
+std::shared_ptr<ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::shared_ptr<Data2D<T>> data, T aperture, bool map) {
 
-    std::shared_ptr<rockseis::ModelElastic2D<T>> local;
+    std::shared_ptr<ModelElastic2D<T>> local;
     T dx = this->getDx();
     T ox = this->getOx();
     size_t nz = this->getNz();
@@ -2450,7 +2613,7 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
     this->getLocalsize2d(data, aperture, map, &start, &size);
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelElastic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getFs());
+    local = std::make_shared<ModelElastic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getFs());
 
     /*Realizing local model */
     local->createModel();
@@ -2470,18 +2633,18 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
 
     // Open files for reading
     bool status;
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile);
     if(status == FILE_ERR){
 	    rs_error("ModelElastic2D::getLocal : Error reading from Vp file.");
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile);
     if(status == FILE_ERR){
 	    rs_error("ModelElastic2D::getLocal : Error reading from Vs file.");
     }
 
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile);
     if(status == FILE_ERR){
 	    rs_error("ModelElastic2D::getLocal : Error reading from Density file.");
@@ -2489,8 +2652,8 @@ std::shared_ptr<rockseis::ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::sh
 
     off_t i = start;
     off_t lpos, fpos;
-    rockseis::Index l2d(size,nz);
-    rockseis::Index f2d(nx,nz);
+    Index l2d(size,nz);
+    Index f2d(nx,nz);
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f2d(0, i1)*sizeof(T);
         Fvp->read(vptrace, nx, fpos);
@@ -2563,17 +2726,17 @@ ModelElastic3D<T>::ModelElastic3D(std::string _Vpfile, std::string _Vsfile, std:
     Vsfile = _Vsfile;
     Rfile = _Rfile;
 
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelElastic3D::Error reading from Vp file:  ", _Vpfile);
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelElastic3D::Error reading from Vs file: ", _Vsfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelElastic3D::Error reading from density file: ", _Rfile);
@@ -2657,17 +2820,17 @@ void ModelElastic3D<T>::readModel() {
     std::string Vsfile = this->getVsfile();
     std::string Rfile = this->getRfile();
     // Open files for reading
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelElastic3D::readModel : Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelElastic3D::readModel : Error reading from Vs file: ", Vsfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelElastic3D::readModel : Error reading from Density file: ", Rfile);
@@ -2706,7 +2869,7 @@ void ModelElastic3D<T>::writeVp() {
     // Get file names
     std::string Vpfile = this->getVpfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     Fvp->output(Vpfile.c_str());
 
     // Write models
@@ -2745,7 +2908,7 @@ void ModelElastic3D<T>::writeVs() {
     // Get file names
     std::string Vsfile = this->getVsfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     Fvs->output(Vsfile.c_str());
 
     // Write models
@@ -2784,7 +2947,7 @@ void ModelElastic3D<T>::writeR() {
     // Get file names
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     Frho->output(Rfile.c_str());
 
     // Write models
@@ -2939,9 +3102,9 @@ void ModelElastic3D<T>::createModel() {
 }
 
 template<typename T>
-std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
+std::shared_ptr<ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
 
-    std::shared_ptr<rockseis::ModelElastic3D<T>> local;
+    std::shared_ptr<ModelElastic3D<T>> local;
     T dx = this->getDx();
     T dy = this->getDy();
     T ox = this->getOx();
@@ -2962,7 +3125,7 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
     oyl = (oy + start_y*dy);
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelElastic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getFs());
+    local = std::make_shared<ModelElastic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getFs());
 
     /*Realizing local model */
     local->createModel();
@@ -2982,17 +3145,17 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
 
     // Open files for reading
     bool status;
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile);
     if(status == FILE_ERR){
 	    rs_error("ModelElastic3D::getLocal : Error reading from Vp file.");
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile);
     if(status == FILE_ERR){
         rs_error("ModelElastic3D::getLocal : Error reading from Vs file.");
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile);
     if(status == FILE_ERR){
 	    rs_error("ModelElastic3D::getLocal : Error reading from Density file.");
@@ -3001,9 +3164,9 @@ std::shared_ptr<rockseis::ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::sh
     off_t i = start_x;
     off_t j = start_y;
     off_t lpos_x, lpos_y, fpos;
-    rockseis::Index l3d(size_x, size_y, nz);
-    rockseis::Index f3d(nx, ny, nz);
-    rockseis::Index l2d(nx, ny);
+    Index l3d(size_x, size_y, nz);
+    Index f3d(nx, ny, nz);
+    Index l2d(nx, ny);
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f3d(0, 0, i1)*sizeof(T);
         Fvp->read(vptrace, nx*ny, fpos);
@@ -3093,30 +3256,30 @@ ModelViscoelastic2D<T>::ModelViscoelastic2D(std::string _Vpfile, std::string _Vs
     Qsfile = _Qsfile;
     f0 = _f0;
 
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic2D::Error reading from Vp file: ", Vpfile);
 	    exit(1);
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::Error reading from Vs file: ", Vsfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::Error reading from density file: ", Rfile);
         exit(1);
     }
-    std::shared_ptr<rockseis::File> Fqp (new rockseis::File());
+    std::shared_ptr<File> Fqp (new File());
     status = Fqp->input(Qpfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::Error reading from Qp file: ", Qpfile);
         exit(1);
     }
-    std::shared_ptr<rockseis::File> Fqs (new rockseis::File());
+    std::shared_ptr<File> Fqs (new File());
     status = Fqs->input(Qsfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::Error reading from Qs file: ", Qsfile);
@@ -3221,29 +3384,29 @@ void ModelViscoelastic2D<T>::readModel() {
     std::string Qpfile = this->getQpfile();
     std::string Qsfile = this->getQsfile();
     // Open files for reading
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic2D::readModel : Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic2D::readModel : Error reading from Vs file: ", Vsfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic2D::readModel : Error reading from Density file: ", Rfile);
     }
 
-    std::shared_ptr<rockseis::File> Fqp (new rockseis::File());
+    std::shared_ptr<File> Fqp (new File());
     status = Fqp->input(Qpfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::readModel : Error reading from Qp file: ", Qpfile);
     }
 
-    std::shared_ptr<rockseis::File> Fqs (new rockseis::File());
+    std::shared_ptr<File> Fqs (new File());
     status = Fqs->input(Qsfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::readModel : Error reading from Qs file: ", Qsfile);
@@ -3291,7 +3454,7 @@ void ModelViscoelastic2D<T>::writeR() {
     // Get file names
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     Frho->output(Rfile);
 
     // Write models
@@ -3325,7 +3488,7 @@ void ModelViscoelastic2D<T>::writeVp() {
     // Get file names
     std::string Vpfile = this->getVpfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     Fvp->output(Vpfile);
 
     // Write models
@@ -3361,7 +3524,7 @@ void ModelViscoelastic2D<T>::writeVs() {
     std::string Vsfile = this->getVsfile();
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     Fvs->output(Vsfile);
 
     // Write models
@@ -3505,9 +3668,9 @@ void ModelViscoelastic2D<T>::createModel() {
 }
 
 template<typename T>
-std::shared_ptr<rockseis::ModelViscoelastic2D<T>> ModelViscoelastic2D<T>::getLocal(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map) {
+std::shared_ptr<ModelViscoelastic2D<T>> ModelViscoelastic2D<T>::getLocal(std::shared_ptr<Data2D<T>> data, T aperture, bool map) {
 
-    std::shared_ptr<rockseis::ModelViscoelastic2D<T>> local;
+    std::shared_ptr<ModelViscoelastic2D<T>> local;
     T dx = this->getDx();
     T ox = this->getOx();
     size_t nz = this->getNz();
@@ -3519,7 +3682,7 @@ std::shared_ptr<rockseis::ModelViscoelastic2D<T>> ModelViscoelastic2D<T>::getLoc
     this->getLocalsize2d(data, aperture, map, &start, &size);
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelViscoelastic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getF0(), this->getFs());
+    local = std::make_shared<ModelViscoelastic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getF0(), this->getFs());
 
     /*Realizing local model */
     local->createModel();
@@ -3545,28 +3708,28 @@ std::shared_ptr<rockseis::ModelViscoelastic2D<T>> ModelViscoelastic2D<T>::getLoc
 
     // Open files for reading
     bool status;
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile);
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic2D::getLocal : Error reading from Vp file.");
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile);
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic2D::getLocal : Error reading from Vs file.");
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile);
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic2D::getLocal : Error reading from Density file.");
     }
-    std::shared_ptr<rockseis::File> Fqp (new rockseis::File());
+    std::shared_ptr<File> Fqp (new File());
     status = Fqp->input(Qpfile);
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::getLocal : Error reading from Qp file: ", Qpfile);
     }
 
-    std::shared_ptr<rockseis::File> Fqs (new rockseis::File());
+    std::shared_ptr<File> Fqs (new File());
     status = Fqs->input(Qsfile);
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::getLocal : Error reading from Qs file: ", Qsfile);
@@ -3574,8 +3737,8 @@ std::shared_ptr<rockseis::ModelViscoelastic2D<T>> ModelViscoelastic2D<T>::getLoc
 
     off_t i = start;
     off_t lpos, fpos;
-    rockseis::Index l2d(size,nz);
-    rockseis::Index f2d(nx,nz);
+    Index l2d(size,nz);
+    Index f2d(nx,nz);
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f2d(0, i1)*sizeof(T);
         Fvp->read(vptrace, nx, fpos);
@@ -3672,28 +3835,28 @@ ModelViscoelastic3D<T>::ModelViscoelastic3D(std::string _Vpfile, std::string _Vs
     Qsfile = _Qsfile;
     f0 = _f0;
 
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic3D::Error reading from Vp file:  ", _Vpfile);
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic3D::Error reading from Vs file: ", _Vsfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic3D::Error reading from density file: ", _Rfile);
     }
-    std::shared_ptr<rockseis::File> Fqp (new rockseis::File());
+    std::shared_ptr<File> Fqp (new File());
     status = Fqp->input(Qpfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic3D::Error reading from Qp file: ", Qpfile);
         exit(1);
     }
-    std::shared_ptr<rockseis::File> Fqs (new rockseis::File());
+    std::shared_ptr<File> Fqs (new File());
     status = Fqs->input(Qsfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic3D::Error reading from Qs file: ", Qsfile);
@@ -3805,28 +3968,28 @@ void ModelViscoelastic3D<T>::readModel() {
     std::string Vsfile = this->getVsfile();
     std::string Rfile = this->getRfile();
     // Open files for reading
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic3D::readModel : Error reading from Vp file: ", Vpfile);
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic3D::readModel : Error reading from Vs file: ", Vsfile);
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic3D::readModel : Error reading from Density file: ", Rfile);
     }
-    std::shared_ptr<rockseis::File> Fqp (new rockseis::File());
+    std::shared_ptr<File> Fqp (new File());
     status = Fqp->input(Qpfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::Error reading from Qp file: ", Qpfile);
         exit(1);
     }
-    std::shared_ptr<rockseis::File> Fqs (new rockseis::File());
+    std::shared_ptr<File> Fqs (new File());
     status = Fqs->input(Qsfile.c_str());
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic2D::Error reading from Qs file: ", Qsfile);
@@ -3876,7 +4039,7 @@ void ModelViscoelastic3D<T>::writeVp() {
     // Get file names
     std::string Vpfile = this->getVpfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     Fvp->output(Vpfile.c_str());
 
     // Write models
@@ -3915,7 +4078,7 @@ void ModelViscoelastic3D<T>::writeVs() {
     // Get file names
     std::string Vsfile = this->getVsfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     Fvs->output(Vsfile.c_str());
 
     // Write models
@@ -3954,7 +4117,7 @@ void ModelViscoelastic3D<T>::writeR() {
     // Get file names
     std::string Rfile = this->getRfile();
     // Open files for writting
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     Frho->output(Rfile.c_str());
 
     // Write models
@@ -4135,9 +4298,9 @@ void ModelViscoelastic3D<T>::createModel() {
 }
 
 template<typename T>
-std::shared_ptr<rockseis::ModelViscoelastic3D<T>> ModelViscoelastic3D<T>::getLocal(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
+std::shared_ptr<ModelViscoelastic3D<T>> ModelViscoelastic3D<T>::getLocal(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
 
-    std::shared_ptr<rockseis::ModelViscoelastic3D<T>> local;
+    std::shared_ptr<ModelViscoelastic3D<T>> local;
     T dx = this->getDx();
     T dy = this->getDy();
     T ox = this->getOx();
@@ -4158,7 +4321,7 @@ std::shared_ptr<rockseis::ModelViscoelastic3D<T>> ModelViscoelastic3D<T>::getLoc
     oyl = (oy + start_y*dy);
 
     /* Create local model */
-    local = std::make_shared<rockseis::ModelViscoelastic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getF0(), this->getFs());
+    local = std::make_shared<ModelViscoelastic3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getF0(), this->getFs());
 
     /*Realizing local model */
     local->createModel();
@@ -4184,27 +4347,27 @@ std::shared_ptr<rockseis::ModelViscoelastic3D<T>> ModelViscoelastic3D<T>::getLoc
 
     // Open files for reading
     bool status;
-    std::shared_ptr<rockseis::File> Fvp (new rockseis::File());
+    std::shared_ptr<File> Fvp (new File());
     status = Fvp->input(Vpfile);
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic3D::getLocal : Error reading from Vp file.");
     }
-    std::shared_ptr<rockseis::File> Fvs (new rockseis::File());
+    std::shared_ptr<File> Fvs (new File());
     status = Fvs->input(Vsfile);
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic3D::getLocal : Error reading from Vs file.");
     }
-    std::shared_ptr<rockseis::File> Frho (new rockseis::File());
+    std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile);
     if(status == FILE_ERR){
 	    rs_error("ModelViscoelastic3D::getLocal : Error reading from Density file.");
     }
-    std::shared_ptr<rockseis::File> Fqp (new rockseis::File());
+    std::shared_ptr<File> Fqp (new File());
     status = Fqp->input(Qpfile);
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic3D::getLocal : Error reading from Qp file: ", Qpfile);
     }
-    std::shared_ptr<rockseis::File> Fqs (new rockseis::File());
+    std::shared_ptr<File> Fqs (new File());
     status = Fqs->input(Qsfile);
     if(status == FILE_ERR){
         rs_error("ModelViscoelastic3D::getLocal : Error reading from Qs file: ", Qsfile);
@@ -4213,9 +4376,9 @@ std::shared_ptr<rockseis::ModelViscoelastic3D<T>> ModelViscoelastic3D<T>::getLoc
     off_t i = start_x;
     off_t j = start_y;
     off_t lpos_x, lpos_y, fpos;
-    rockseis::Index l3d(size_x, size_y, nz);
-    rockseis::Index f3d(nx, ny, nz);
-    rockseis::Index l2d(nx, ny);
+    Index l3d(size_x, size_y, nz);
+    Index f3d(nx, ny, nz);
+    Index l2d(nx, ny);
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f3d(0, 0, i1)*sizeof(T);
         Fvp->read(vptrace, nx*ny, fpos);

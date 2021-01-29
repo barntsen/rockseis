@@ -65,8 +65,8 @@ public:
 
 
     // Calculate local model sizes
-    void  getLocalsize2d(std::shared_ptr<rockseis::Data2D<T>> data, T aperture, bool map, off_t *start, size_t *size);
-    void  getLocalsize3d(std::shared_ptr<rockseis::Data3D<T>> data, T aperture_x, T aperture_y, bool map, off_t *start_x, size_t *size_x, off_t *start_y, size_t *size_y);
+    void  getLocalsize2d(std::shared_ptr<Data2D<T>> data, T aperture, bool map, off_t *start, size_t *size);
+    void  getLocalsize3d(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map, off_t *start_x, size_t *size_x, off_t *start_y, size_t *size_y);
 
     // PADDING AND STAGGERING FUNCTIONS 
     /** Pads 1-D model.
@@ -137,7 +137,7 @@ public:
     T *getL() { return L; }		///< Get L
     std::string getVelocityfile() { return Velocityfile; }
     void setVelocityfile(std::string name) { Velocityfile = name; }
-    std::shared_ptr<rockseis::ModelEikonal2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
+    std::shared_ptr<ModelEikonal2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
     T getMinvel() {return this->getMin(Velocity); } ///< Returns min of model
     T getMaxvel() {return this->getMax(Velocity); } ///< Returns max of model
 
@@ -177,7 +177,7 @@ public:
     T *getL() { return L; }		///< Get L
     std::string getVelocityfile() { return Velocityfile; }
     void setVelocityfile(std::string name) { Velocityfile = name; }
-    std::shared_ptr<rockseis::ModelEikonal3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperturex, T aperturey, bool map);
+    std::shared_ptr<ModelEikonal3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map);
     T getMinvel() {return this->getMin(Velocity); } ///< Returns min of model
     T getMaxvel() {return this->getMax(Velocity); } ///< Returns max of model
 
@@ -272,8 +272,8 @@ public:
     std::string getRfile() { return Rfile; }
     void setVpfile(std::string name) { Vpfile = name; }
     void setRfile(std::string name) { Rfile = name; }
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> getDomainmodel(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map, const int d, const int nd, const int order); ///< Returns a model of a domain
+    std::shared_ptr<ModelAcoustic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
+    std::shared_ptr<ModelAcoustic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd, const int order); ///< Returns a model of a domain
     T getMinVp() {return this->getMin(Vp); } ///< Returns min Vp
     T getMinR() {return this->getMin(R); } ///< Returns min R
     T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
@@ -335,7 +335,8 @@ public:
     T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
     T getMaxR() {return this->getMax(R); } ///< Returns max R
 
-    std::shared_ptr<rockseis::ModelAcoustic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperturex, T aperturey, bool map);
+    std::shared_ptr<ModelAcoustic3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map);
+    std::shared_ptr<ModelAcoustic3D<T>> getDomainmodel(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map, const int d, const int nd, const int order); ///< Returns a model of a domain
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz and L from the non-padded models R and Vp. 
@@ -347,6 +348,7 @@ public:
     It creates an empty model of Vp and R
     */
     void createModel();
+    void createPaddedmodel();
 
 
 private:
@@ -405,7 +407,7 @@ public:
     It creates the padded Rx, Rz, L, L2M and M from the non-padded models R, Vp and Vs. 
     */
     void staggerModels();
-    std::shared_ptr<rockseis::ModelElastic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
+    std::shared_ptr<ModelElastic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
 
     /** Create model
     It creates an empty model of Vp, Vs and R
@@ -470,7 +472,7 @@ public:
     T getMaxVs() {return this->getMax(Vs); } ///< Returns max Vs
     T getMaxR() {return this->getMax(R); } ///< Returns max R
 
-    std::shared_ptr<rockseis::ModelElastic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperture_x, T aperture_y, bool map);
+    std::shared_ptr<ModelElastic3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperture_x, T aperture_y, bool map);
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, Vp and Vs. 
@@ -554,7 +556,7 @@ public:
     It creates the padded Rx, Rz, M_xz, L2M and M from the non-padded models R, Vp and Vs. 
     */
     void staggerModels();
-    std::shared_ptr<rockseis::ModelViscoelastic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
+    std::shared_ptr<ModelViscoelastic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
 
     /** Create model
     It creates an empty model of Vp, Vs and R
@@ -639,7 +641,7 @@ public:
     T getMaxVs() {return this->getMax(Vs); } ///< Returns max Vs
     T getMaxR() {return this->getMax(R); } ///< Returns max R
 
-    std::shared_ptr<rockseis::ModelViscoelastic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperture_x, T aperture_y, bool map);
+    std::shared_ptr<ModelViscoelastic3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperture_x, T aperture_y, bool map);
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, Vp and Vs. 

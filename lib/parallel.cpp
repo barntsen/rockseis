@@ -860,7 +860,6 @@ void MPIdomaindecomp::sendEdges(double *wrk, size_t wrksize, int to_rank) {
         MPI_Send(wrk,wrksize,MPI_DOUBLE,to_rank, 0, MPI_COMM_DOMAIN);
 }
 
-
 void MPIdomaindecomp::receiveEdges(float *wrk, size_t wrksize, int from_rank) {
     MPI_Status status;
     MPI_Recv(wrk,wrksize,MPI_FLOAT,from_rank,MPI_ANY_TAG,MPI_COMM_DOMAIN, &status);
@@ -869,6 +868,12 @@ void MPIdomaindecomp::receiveEdges(float *wrk, size_t wrksize, int from_rank) {
 void MPIdomaindecomp::receiveEdges(double *wrk, size_t wrksize, int from_rank) {
     MPI_Status status;
     MPI_Recv(wrk,wrksize,MPI_DOUBLE,from_rank,MPI_ANY_TAG,MPI_COMM_DOMAIN, &status);
+}
+
+void MPIdomaindecomp::broadcastNdomain(int *val) {
+    int status;
+    status = MPI_Bcast(val, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    if(status != MPI_SUCCESS) rs_error("MPIdomaindecomp::broadcastNdomain failed.");
 }
 
 }

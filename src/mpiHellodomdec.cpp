@@ -21,8 +21,6 @@ using namespace rockseis;
 int main(int argc, char** argv) {
     // Initializing MPI
     MPIdomaindecomp mpi = MPIdomaindecomp(&argc,&argv);
-    mpi.setNdomain(3);
-    mpi.splitDomains();
     if(mpi.getNrank() < 2){
         rs_error("This is a parallel program, it must run with at least 2 processors, use mpirun.");
     }
@@ -30,6 +28,9 @@ int main(int argc, char** argv) {
     if(argc < 2){
         if(mpi.getRank() == 0){
             PRINT_DOC(# MPI 2d acoustic modelling default configuration file);
+            PRINT_DOC();
+            PRINT_DOC(# Domain decomposition parameter);
+            PRINT_DOC(        ndomain = "1";  # Number of domains to split the model into);
             PRINT_DOC();
             PRINT_DOC(# Modelling parameters);
             PRINT_DOC(        freesurface = "true";  # True if free surface should be on);
@@ -65,6 +66,7 @@ int main(int argc, char** argv) {
 	/* General input parameters */
 	int lpml;
 	bool fs;
+    int ndomain;
 	int order;
 	int snapinc;
     float apertx;
@@ -104,6 +106,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("dtrec", &dtrec) == INPARSE_ERR) status = true;
     if(Inpar->getPar("order", &order) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("ndomain", &ndomain) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
@@ -139,6 +142,10 @@ int main(int argc, char** argv) {
 	if(status == true){
 		rs_error("Program terminated due to input errors.");
 	}
+
+    // Setup Domain decomposition
+    mpi.setNdomain(ndomain);
+    mpi.splitDomains();
 
     // Create a sort class
     std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
