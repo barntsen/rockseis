@@ -131,7 +131,6 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             break;
     }
 
-    std::cerr << "wrksize: "  << wrksize << std::endl;
     this->setNx_pad(nxpad);
     this->setNy_pad(nypad);
     this->setNz_pad(nzpad);
@@ -150,7 +149,7 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
 
 template<typename T>
 void Domain<T>::copyFromboundary(const bool side, const T *array){
-    int ix,iy,iz,io;
+    size_t ix,iy,iz,io;
     if(side){
         if(this->getHigh() < 0) rs_error("Domain<T>::copyFromboundary: Invalid side.");
     }else{
@@ -171,9 +170,6 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
                     for (iy=0; iy < n1; iy++) {
                         for (iz=0; iz < n2; iz++) {
                             wrk[IDWRK(io,iy,iz)] = array[IDARRAY(n0-2*pad + io, iy, iz)];
-                            if(IDWRK(io,iy,iz) >= wrksize) {
-                                std::cerr << "Out of bounds!!!!  Index:" << IDWRK(io,iy,iz) << " wrksize:" << wrksize << std::endl;
-                            }
                         }
                     }
                 }
@@ -236,7 +232,7 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
 
 template<typename T>
 void Domain<T>::copyToboundary(const bool side, T *array){
-    int ix,iy,iz,io;
+    size_t ix,iy,iz,io;
     if(side){
         if(this->getHigh() < 0) rs_error("Domain<T>::copyToboundary: Invalid side.");
     }else{

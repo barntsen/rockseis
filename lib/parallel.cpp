@@ -870,10 +870,4 @@ void MPIdomaindecomp::receiveEdges(double *wrk, size_t wrksize, int from_rank) {
     MPI_Recv(wrk,wrksize,MPI_DOUBLE,from_rank,MPI_ANY_TAG,MPI_COMM_DOMAIN, &status);
 }
 
-void MPIdomaindecomp::broadcastNdomain(int *val) {
-    int status;
-    status = MPI_Bcast(val, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    if(status != MPI_SUCCESS) rs_error("MPIdomaindecomp::broadcastNdomain failed.");
-}
-
 }
