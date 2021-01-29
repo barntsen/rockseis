@@ -20,6 +20,7 @@
 #define PARALLEL_IO 5
 #define MPI_TAG_DIE 10
 #define MPI_TAG_NO_WORK 11
+#define MPI_TAG_SHARE_EDGE 79
 
 
 namespace rockseis {
