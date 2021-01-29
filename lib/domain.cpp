@@ -131,9 +131,14 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             break;
     }
 
+    std::cerr << "wrksize: "  << wrksize << std::endl;
     this->setNx_pad(nxpad);
     this->setNy_pad(nypad);
     this->setNz_pad(nzpad);
+
+    std::cerr << "nxpad: "  << nxpad << std::endl;
+    std::cerr << "nypad: "  << nypad << std::endl;
+    std::cerr << "nzpad: "  << nzpad << std::endl;
 
     this->setIx0(ix0);
     this->setIy0(iy0);
