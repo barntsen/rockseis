@@ -84,9 +84,6 @@ if(env['MPI']):
         hello3d_artm = mpi.Program(prefix + 'hello3d_artm','hello3d_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'parallel', 'sort', 'rtm', 'image', 'snap', 'config4cpp', 'fft'])
         mpi.Install('../bin/',hello3d_artm)
 
-        mpiHellodomdec = mpi.Program(prefix + 'mpiHellodomdec','mpiHellodomdec.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
-        mpi.Install('../bin/',mpiHellodomdec)
-
         hello_models = mpi.Program(prefix + 'hello_models','hello_models.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'parallel', 'sort', 'modelling', 'fft', 'hilbert'])
         mpi.Install('../bin/',hello_models)
 
@@ -163,6 +160,9 @@ if(env['MPI']):
     
     mpiAcousticmod2d = mpi.Program(prefix + 'mpiAcousticmod2d','mpiAcousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticmod2d)
+
+    mpiAcousticmod2d_domdec = mpi.Program(prefix + 'mpiAcousticmod2d_domdec','mpiAcousticmod2d_domdec.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
+    mpi.Install('../bin/',mpiAcousticmod2d_domdec)
 
     mpiAcousticmod3d = mpi.Program(prefix + 'mpiAcousticmod3d','mpiAcousticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticmod3d)
