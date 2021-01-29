@@ -861,6 +861,8 @@ void MPIdomaindecomp::sendEdges(double *wrk, size_t wrksize, int to_rank) {
 }
 
 void MPIdomaindecomp::receiveEdges(float *wrk, size_t wrksize, int from_rank) {
+
+    std::cerr << "wrksize in parallel:" << wrksize << std::endl;
     MPI_Status status;
     MPI_Recv(wrk,wrksize,MPI_FLOAT,from_rank,MPI_ANY_TAG,MPI_COMM_DOMAIN, &status);
 }
