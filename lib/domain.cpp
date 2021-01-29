@@ -75,6 +75,7 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             nypad = ny;
             nzpad = nz;
             wrksize = nz*ny*(this->getLpad());
+            std::cerr << "wrksize:" << wrksize << std::endl;
             wrk = (T *) calloc(wrksize, sizeof(T));
             if(wrk == NULL) rs_error("Domain<T>::setupDomain:Error allocating wrk array");
             break;
