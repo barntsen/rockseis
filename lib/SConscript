@@ -17,6 +17,7 @@ builddir = '../build/'
 file = mpi.Library(builddir + 'file','file.cpp')
 pml = mpi.Library(builddir + 'pml','pml.cpp')
 der = mpi.Library(builddir + 'der','der.cpp')
+domain = mpi.Library(builddir + 'domain','domain.cpp')
 hilbert = mpi.Library(builddir + 'hilbert','hilbert.cpp')
 waves = mpi.Library(builddir + 'waves',['waves.cpp', 'pml.cpp'])
 rays = mpi.Library(builddir + 'rays',['rays.cpp'])
