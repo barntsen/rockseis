@@ -942,7 +942,6 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
         Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
         Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
     }else{
-
         /* Create associated PML class */
         Pml = std::make_shared<PmlAcoustic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
 
