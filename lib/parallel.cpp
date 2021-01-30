@@ -853,33 +853,25 @@ void MPIdomaindecomp::splitDomains() {
 
 
 void MPIdomaindecomp::sendEdges(float *wrk, size_t wrksize, int to_rank) {
-    size_t i;
-    for (i=0; i< wrksize; i++){
-        MPI_Send(&wrk[i],1,MPI_FLOAT,to_rank, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN);
-    }
+    int count = (int) wrksize;
+    MPI_Send(wrk,count,MPI_FLOAT,to_rank, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN);
 }
 
 void MPIdomaindecomp::sendEdges(double *wrk, size_t wrksize, int to_rank) {
-    size_t i;
-    for (i=0; i< wrksize; i++){
-        MPI_Send(&wrk[i],1,MPI_DOUBLE,to_rank, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN);
-    }
+    int count = (int) wrksize;
+    MPI_Send(wrk,count,MPI_DOUBLE,to_rank, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN);
 }
 
 void MPIdomaindecomp::receiveEdges(float *wrk, size_t wrksize, int from_rank) {
     MPI_Status status;
-    size_t i;
-    for (i=0; i< wrksize; i++){
-        MPI_Recv(&wrk[i],1,MPI_FLOAT,from_rank,MPI_TAG_SHARE_EDGE,MPI_COMM_DOMAIN, &status);
-    }
+    int count = (int) wrksize;
+    MPI_Recv(wrk,count,MPI_FLOAT,from_rank,MPI_TAG_SHARE_EDGE,MPI_COMM_DOMAIN, &status);
 }
 
 void MPIdomaindecomp::receiveEdges(double *wrk, size_t wrksize, int from_rank) {
     MPI_Status status;
-    size_t i;
-    for (i=0; i< wrksize; i++){
-        MPI_Recv(&wrk[i],1,MPI_DOUBLE,from_rank,MPI_TAG_SHARE_EDGE,MPI_COMM_DOMAIN, &status);
-    }
+    int count = (int) wrksize;
+    MPI_Recv(wrk,count,MPI_DOUBLE,from_rank,MPI_TAG_SHARE_EDGE,MPI_COMM_DOMAIN, &status);
 }
 
 }
