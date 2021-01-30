@@ -1555,7 +1555,7 @@ std::shared_ptr<ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel(std::shar
 
     /* Create domain model */
     local = std::make_shared<ModelAcoustic2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getFs());
-    (local->getDomain())->setupDomain(size+2*lpml,1,nz+2*this->getLpml(),d,nd,order);
+    (local->getDomain())->setupDomain(size+2*lpml,1,nz+2*lpml,d,nd,order);
 
     /*Realizing local model */
     local->createModel();
