@@ -2115,16 +2115,16 @@ std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getDomainmodel(std::shar
                 if(rhotrace[l2d(lpos_x, lpos_y)] <= 0.0) rs_error("ModelAcoustic3D::getDomainmodel: Zero density found.");
 
                 if(lpos_x < nx-1){
-                    Rx[l2d(lpos_x, lpos_y)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x+1, lpos_y)]);
+                    Rx[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x+1, lpos_y)]);
                 }else{
-                    Rx[l2d(lpos_x, lpos_y)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                    Rx[l3d(i2,i3,i1)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
                 }
                 if(lpos_y < ny-1){
-                    Ry[l2d(lpos_x, lpos_y)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x, lpos_y+1)]);
+                    Ry[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x, lpos_y+1)]);
                 }else{
-                    Ry[l2d(lpos_x, lpos_y)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                    Ry[l3d(i2,i3,i1)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
                 }
-                Rz[l2d(lpos_x, lpos_y)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace_adv[l2d(lpos_x, lpos_y)]);
+                Rz[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace_adv[l2d(lpos_x, lpos_y)]);
             }
         }
     }

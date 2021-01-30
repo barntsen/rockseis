@@ -737,7 +737,11 @@ Snapshot3D<T>::Snapshot3D(std::shared_ptr<WavesAcoustic3D<T>> waves, int snapinc
     _ox=waves->getOx();
     _oy=waves->getOy();
     _oz=waves->getOz();
-    _lpml = waves->getLpml();
+    if(waves->getDomdec()){
+        _lpml = 0;
+    }else{
+        _lpml = waves->getLpml();
+    }
     _nt = waves->getNt();
     _dt = waves->getDt();
     _ot = waves->getOt();
