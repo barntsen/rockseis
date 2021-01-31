@@ -156,7 +156,7 @@ void Domain<T>::copyFromboundary(const bool side, const T *array){
     }else{
         if(this->getLow() < 0) rs_error("Domain<T>::copyFromboundary: Invalid side.");
     }
-    int pad=0, n0=0, n1=0, n2=0, nwrk=0;
+    size_t pad=0, n0=0, n1=0, n2=0, nwrk=0;
 
     n0 = this->getNx_pad();
     n1 = this->getNy_pad();
@@ -239,7 +239,7 @@ void Domain<T>::copyToboundary(const bool side, T *array){
     }else{
         if(this->getLow() < 0) rs_error("Domain<T>::copyToboundary: Invalid side.");
     }
-    int pad=0, n0=0, n1=0, n2=0, nwrk=0;
+    size_t pad=0, n0=0, n1=0, n2=0, nwrk=0;
 
     n0 = this->getNx_pad();
     n1 = this->getNy_pad();
