@@ -246,7 +246,9 @@ int main(int argc, char** argv) {
                 size_t ntr = Shotgeom->getNtrace();
                 lmodel = gmodel->getDomainmodel(Shotgeom, apertx, aperty, SMAP, mpi.getDomainrank(), mpi.getNdomain(), order);
                 (lmodel->getDomain())->setMpi(&mpi);
-                std::cerr << "d:" << mpi.getDomainrank() << " dim:" << (lmodel->getDomain())->getDim() << " ix0:" << (lmodel->getDomain())->getIx0() << " iy0:" << (lmodel->getDomain())->getIy0()<< " iz0:" << (lmodel->getDomain())->getIz0() << " nxp:" << (lmodel->getDomain())->getNx_pad() << " nyp:" << (lmodel->getDomain())->getNy_pad()<< " nzp:" << (lmodel->getDomain())->getNz_pad() << " Low: " << (lmodel->getDomain())->getLow() << " High: " << (lmodel->getDomain())->getHigh() << std::endl;
+                
+                // For DEBUG:
+                //std::cerr << "d:" << mpi.getDomainrank() << " dim:" << (lmodel->getDomain())->getDim() << " ix0:" << (lmodel->getDomain())->getIx0() << " iy0:" << (lmodel->getDomain())->getIy0()<< " iz0:" << (lmodel->getDomain())->getIz0() << " nxp:" << (lmodel->getDomain())->getNx_pad() << " nyp:" << (lmodel->getDomain())->getNy_pad()<< " nzp:" << (lmodel->getDomain())->getNz_pad() << " Low: " << (lmodel->getDomain())->getLow() << " High: " << (lmodel->getDomain())->getHigh() << std::endl;
 
                 // Read wavelet data, set shot and receiver coordinates and make a map
                 source->read();
