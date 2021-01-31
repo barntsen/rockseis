@@ -80,7 +80,7 @@ public:
    private:
     int nx_orig, ny_orig, nz_orig;
     int nx_pad, ny_pad, nz_pad;
-    int lpad; // PML boundary size
+    int lpad; // Domain boundary padding
     int low,high;
     int dim;
     int padl, padh;
