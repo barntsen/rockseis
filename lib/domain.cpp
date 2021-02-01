@@ -66,8 +66,8 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             if (_d == _nd-1){ 
                 nxdom = nx - nxdom*(_nd-1);
             }
-            if(nxdom <= 0){
-                rs_error("Domain<T>::setupDomain:Number of domains cannot exceed the number of grid points");
+            if(nxdom < this->getLpad()){
+                rs_error("Domain<T>::setupDomain:Number of grid cells in a domain is less than the order of the finite difference stencil. Decrease the number of domains or the stencil.");
             }
             nydom = ny;
             nzdom = nz;
@@ -89,8 +89,8 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             if (_d == _nd-1){ 
                 nydom = ny - nydom*(_nd-1);
             }
-            if(nydom <= 0){
-                rs_error("Domain<T>::setupDomain:Number of domains cannot exceed the number of grid points");
+            if(nydom < this->getLpad()){
+                rs_error("Domain<T>::setupDomain:Number of grid cells in a domain is less than the order of the finite difference stencil. Decrease the number of domains or the stencil.");
             }
             nxdom = nx;
             nzdom = nz;
@@ -113,8 +113,9 @@ void Domain<T>::setupDomain(const int nx, const int ny, const int nz, const int 
             if (_d == _nd-1){ 
                 nzdom = nz - nzdom*(_nd-1);
             }
-            if(nzdom <= 0){
-                rs_error("Domain<T>::setupDomain:Number of domains cannot exceed the number of grid points");
+
+            if(nzdom < this->getLpad()){
+                rs_error("Domain<T>::setupDomain:Number of grid cells in a domain is less than the order of the finite difference stencil. Decrease the number of domains or the stencil.");
             }
             nxdom = nx;
             nydom = ny;
