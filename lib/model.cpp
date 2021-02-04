@@ -1546,7 +1546,7 @@ std::shared_ptr<ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel(std::shar
 
     /* Determine grid positions and sizes */
     this->getLocalsize2d(data, aperture, map, &start, &size);
-    (this->getDomain())->setupDomain(size+2*lpml,1,nz+2*this->getLpml(),d,nd,order);
+    (this->getDomain())->setupDomain1D(size+2*lpml,1,nz+2*this->getLpml(),d,nd,order);
     nxd = (this->getDomain())->getNx_pad();
     nzd = (this->getDomain())->getNz_pad();
     ix0 = (this->getDomain())->getIx0();
@@ -1555,7 +1555,7 @@ std::shared_ptr<ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel(std::shar
 
     /* Create domain model */
     local = std::make_shared<ModelAcoustic2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getFs());
-    (local->getDomain())->setupDomain(size+2*lpml,1,nz+2*lpml,d,nd,order);
+    (local->getDomain())->setupDomain1D(size+2*lpml,1,nz+2*lpml,d,nd,order);
 
     /*Realizing local model */
     local->createModel();
@@ -2000,8 +2000,6 @@ void ModelAcoustic3D<T>::createPaddedmodel() {
     if(Rz == NULL) rs_error("ModelAcoustic3D::createPaddedmodel: Failed to allocate memory.");
 }
 
-
-
 template<typename T>
 std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getDomainmodel(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map, const int d, const int nd, const int order) {
 
@@ -2025,7 +2023,7 @@ std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getDomainmodel(std::shar
 
     /* Determine grid positions and sizes */
     this->getLocalsize3d(data, aperture_x, aperture_y, map, &start_x, &size_x, &start_y, &size_y);
-    (this->getDomain())->setupDomain(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd,order);
+    (this->getDomain())->setupDomain1D(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd,order);
 
     nxd = (this->getDomain())->getNx_pad();
     nyd = (this->getDomain())->getNy_pad();
@@ -2041,7 +2039,7 @@ std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getDomainmodel(std::shar
 
     /* Create local model */
     local = std::make_shared<ModelAcoustic3D<T>>(nxd, nyd, nzd, lpml, dx, dy, dz, oxl, oyl, ozl, this->getFs());
-    (local->getDomain())->setupDomain(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd,order);
+    (local->getDomain())->setupDomain1D(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd,order);
 
     /*Realizing local model */
     local->createModel();
@@ -2147,6 +2145,153 @@ std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getDomainmodel(std::shar
 
     return local;
 }
+
+template<typename T>
+std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getDomainmodel(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map, const int d, const int nd0, const int nd1, const int nd2, const int order) {
+
+    std::shared_ptr<ModelAcoustic3D<T>> local;
+    T dx = this->getDx();
+    T dy = this->getDy();
+    T dz = this->getDz();
+    T ox = this->getOx();
+    T oy = this->getOy();
+    T oz = this->getOz();
+    size_t nx = this->getNx();
+    size_t ny = this->getNy();
+    size_t nz = this->getNz();
+    size_t size_x;
+    off_t start_x;
+    size_t size_y;
+    off_t start_y;
+    int nxd,nyd,nzd;
+    int ix0,iy0,iz0;
+    int lpml = this->getLpml();
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize3d(data, aperture_x, aperture_y, map, &start_x, &size_x, &start_y, &size_y);
+    (this->getDomain())->setupDomain3D(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd0,nd1,nd2,order);
+
+    nxd = (this->getDomain())->getNx_pad();
+    nyd = (this->getDomain())->getNy_pad();
+    nzd = (this->getDomain())->getNz_pad();
+    ix0 = (this->getDomain())->getIx0();
+    iy0 = (this->getDomain())->getIy0();
+    iz0 = (this->getDomain())->getIz0();
+
+    T oxl, oyl, ozl; 
+    oxl = (ox + (start_x+ix0-lpml)*dx);
+    oyl = (oy + (start_y+iy0-lpml)*dy);
+    ozl = (oz + (iz0-lpml)*dz);
+
+    /* Create local model */
+    local = std::make_shared<ModelAcoustic3D<T>>(nxd, nyd, nzd, lpml, dx, dy, dz, oxl, oyl, ozl, this->getFs());
+    (local->getDomain())->setupDomain3D(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd0,nd1,nd2,order);
+
+    /*Realizing local model */
+    local->createModel();
+    local->createPaddedmodel();
+
+	/* Copying from big model into local model */
+    T *Vp = local->getVp();
+    T *R = local->getR();
+    T *L = local->getL();
+    T *Rx = local->getRx();
+    T *Ry = local->getRx();
+    T *Rz = local->getRz();
+
+    /* Allocate two traces to read models from file */
+    T *vptrace = (T *) calloc(nx*ny, sizeof(T));
+    if(vptrace == NULL) rs_error("ModelAcoustic3D::getLocal: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx*ny, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelAcoustic3D::getLocal: Failed to allocate memory.");
+    T *rhotrace_adv = (T *) calloc(nx*ny, sizeof(T));
+    if(rhotrace_adv == NULL) rs_error("ModelAcoustic3D::getLocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> Fvp (new File());
+    status = Fvp->input(Vpfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic3D::getLocal : Error reading from Vp file.");
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic3D::getLocal : Error reading from Density file.");
+    }
+
+    off_t i = start_x;
+    off_t j = start_y;
+    off_t lpos_x, lpos_y, lpos_z, fpos;
+    Index l3d(nxd, nyd, nzd);
+    Index f3d(nx, ny, nz);
+    Index l2d(nx, ny);
+    for(size_t i1=0; i1<nzd; i1++) {
+        lpos_z = iz0 + i1 - lpml;
+        if(lpos_z < 0) lpos_z = 0;
+        if(lpos_z > (nz-1)) lpos_z = nz - 1;
+        fpos = f3d(0, 0, lpos_z)*sizeof(T);
+        Fvp->read(vptrace, nx*ny, fpos);
+        if(Fvp->getFail()) rs_error("ModelAcoustic3D::getLocal: Error reading from vp file");
+        Frho->read(rhotrace, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic3D::getLocal: Error reading from rho file");
+
+        lpos_z = iz0 + i1 - lpml + 1;
+        if(lpos_z < 0) lpos_z = 0;
+        if(lpos_z > (nz-1)) lpos_z = nz - 1;
+        fpos = f3d(0, 0, lpos_z)*sizeof(T);
+
+        Frho->read(rhotrace_adv, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic3D::getLocal: Error reading from rho file");
+
+        for(size_t i3=0; i3<nyd; i3++) {
+            lpos_y = j + i3 + iy0 - lpml;
+                if(lpos_y < 0) lpos_y = 0;
+                if(lpos_y > (ny-1)) lpos_y = ny - 1;
+            for(size_t i2=0; i2<nxd; i2++) {
+                lpos_x = i + i2 + ix0 - lpml;
+                if(lpos_x < 0) lpos_x = 0;
+                if(lpos_x > (nx-1)) lpos_x = nx - 1;
+                Vp[l3d(i2,i3,i1)] = vptrace[l2d(lpos_x, lpos_y)];
+                R[l3d(i2,i3,i1)] = rhotrace[l2d(lpos_x, lpos_y)];
+                L[l3d(i2,i3,i1)] = rhotrace[l2d(lpos_x, lpos_y)]*vptrace[l2d(lpos_x, lpos_y)]*vptrace[l2d(lpos_x, lpos_y)];
+
+                if(rhotrace[l2d(lpos_x, lpos_y)] <= 0.0) rs_error("ModelAcoustic3D::getDomainmodel: Zero density found.");
+
+                if(lpos_x < nx-1){
+                    Rx[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x+1, lpos_y)]);
+                }else{
+                    Rx[l3d(i2,i3,i1)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                }
+                if(lpos_y < ny-1){
+                    Ry[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x, lpos_y+1)]);
+                }else{
+                    Ry[l3d(i2,i3,i1)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                }
+                Rz[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace_adv[l2d(lpos_x, lpos_y)]);
+            }
+        }
+    }
+
+    if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
+        for(size_t ix=0; ix<nxd; ix++){
+            for(size_t iy=0; iy<nyd; iy++){
+                Rx[l3d(ix,iy,lpml-iz0)] *= 2.0;
+                Ry[l3d(ix,iy,lpml-iz0)] *= 2.0;
+                L[l3d(ix,iy,lpml-iz0)] *= 0.0;
+            }
+        }
+    }
+
+
+    /* Free traces */
+    free(vptrace);
+    free(rhotrace);
+    free(rhotrace_adv);
+
+    return local;
+}
+
 
 template<typename T>
 std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getLocal(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map) {

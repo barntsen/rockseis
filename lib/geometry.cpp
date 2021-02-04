@@ -100,12 +100,12 @@ template<typename T>
 Geometry2D<T>::Geometry2D(size_t ntrace): Geometry<T>()
 {
     this->setN(1, ntrace);
-    scoords = (rockseis::Point2D<T> *) calloc(ntrace,sizeof(rockseis::Point2D<T>));
-    gcoords = (rockseis::Point2D<T> *) calloc(ntrace,sizeof(rockseis::Point2D<T>));
-    smap = (rockseis::Point2D<int> *) calloc(ntrace,sizeof(rockseis::Point2D<int>));
-    gmap = (rockseis::Point2D<int> *) calloc(ntrace,sizeof(rockseis::Point2D<int>));
-    sshift = (rockseis::Point2D<T> *) calloc(ntrace,sizeof(rockseis::Point2D<T>));
-    gshift = (rockseis::Point2D<T> *) calloc(ntrace,sizeof(rockseis::Point2D<T>));
+    scoords = (Point2D<T> *) calloc(ntrace,sizeof(Point2D<T>));
+    gcoords = (Point2D<T> *) calloc(ntrace,sizeof(Point2D<T>));
+    smap = (Point2D<int> *) calloc(ntrace,sizeof(Point2D<int>));
+    gmap = (Point2D<int> *) calloc(ntrace,sizeof(Point2D<int>));
+    sshift = (Point2D<T> *) calloc(ntrace,sizeof(Point2D<T>));
+    gshift = (Point2D<T> *) calloc(ntrace,sizeof(Point2D<T>));
     for (size_t i=0; i< ntrace; i++) 
     {
         scoords[i].x = 0;
@@ -139,9 +139,9 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
 	int nx = _geom->getN(1);
 	int ny = _geom->getN(3);
 	T dx = _geom->getD(1);
-	T dy = _geom->getD(3);
-    T ox = _geom->getO(1);
-    T oy = _geom->getO(3);
+        T dy = _geom->getD(3);
+        T ox = _geom->getO(1);
+        T oy = _geom->getO(3);
 
     int pos;
     if(map == SMAP)
@@ -237,12 +237,12 @@ template<typename T>
 Geometry3D<T>::Geometry3D(int ntrace): Geometry<T>()
 {
     this->setN(1, ntrace);
-    scoords = (rockseis::Point3D<T> *) calloc(ntrace,sizeof(rockseis::Point3D<T>));
-    gcoords = (rockseis::Point3D<T> *) calloc(ntrace,sizeof(rockseis::Point3D<T>));
-    smap = (rockseis::Point3D<int> *) calloc(ntrace,sizeof(rockseis::Point3D<int>));
-    gmap = (rockseis::Point3D<int> *) calloc(ntrace,sizeof(rockseis::Point3D<int>));
-    sshift = (rockseis::Point3D<T> *) calloc(ntrace,sizeof(rockseis::Point3D<T>));
-    gshift = (rockseis::Point3D<T> *) calloc(ntrace,sizeof(rockseis::Point3D<T>));
+    scoords = (Point3D<T> *) calloc(ntrace,sizeof(Point3D<T>));
+    gcoords = (Point3D<T> *) calloc(ntrace,sizeof(Point3D<T>));
+    smap = (Point3D<int> *) calloc(ntrace,sizeof(Point3D<int>));
+    gmap = (Point3D<int> *) calloc(ntrace,sizeof(Point3D<int>));
+    sshift = (Point3D<T> *) calloc(ntrace,sizeof(Point3D<T>));
+    gshift = (Point3D<T> *) calloc(ntrace,sizeof(Point3D<T>));
     for (size_t i=0; i< ntrace; i++) 
     {
         scoords[i].x = 0;

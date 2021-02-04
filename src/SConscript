@@ -170,6 +170,9 @@ if(env['MPI']):
     mpiAcousticmod3d_domdec = mpi.Program(prefix + 'mpiAcousticmod3d_domdec','mpiAcousticmod3d_domdec.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticmod3d_domdec)
 
+    mpiAcousticmod3d_dd3dtest = mpi.Program(prefix + 'mpiAcousticmod3d_dd3dtest','mpiAcousticmod3d_dd3dtest.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
+    mpi.Install('../bin/',mpiAcousticmod3d_dd3dtest)
+
     mpiAcousticredat3d = mpi.Program(prefix + 'mpiAcousticredat3d','mpiAcousticredat3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticredat3d)
 

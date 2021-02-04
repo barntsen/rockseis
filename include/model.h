@@ -337,6 +337,7 @@ public:
 
     std::shared_ptr<ModelAcoustic3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map);
     std::shared_ptr<ModelAcoustic3D<T>> getDomainmodel(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map, const int d, const int nd, const int order); ///< Returns a model of a domain
+    std::shared_ptr<ModelAcoustic3D<T>> getDomainmodel(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map, const int d, const int nd0, const int nd1, const int nd2, const int order); ///< Returns a model of a domain
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz and L from the non-padded models R and Vp. 
