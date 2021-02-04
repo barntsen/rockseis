@@ -584,6 +584,68 @@ void Domain<T>::setupDomain3D(const int nx, const int ny, const int nz, const in
 }
 
 template<typename T>
+void Domain<T>::copyFromboundary2(const T *array){
+   size_t ix,iy,iz,io;
+   size_t padl0=0, padl1, padl2, padh0=0, padh1=0, padh2=0, n0=0, n1=0, n2=0, nwrk=0;
+
+   padl0 = this->getPadl(0);
+   padl1 = this->getPadl(1);
+   padl2 = this->getPadl(2);
+   padh0 = this->getPadh(0);
+   padh1 = this->getPadh(1);
+   padh2 = this->getPadh(2);
+
+   n0 = this->getNx_pad() - padl0 - padh0;
+   n1 = this->getNy_pad() - padl1 - padh1;
+   n2 = this->getNz_pad() - padl2 - padh2;
+
+   if(this->getLow(0)>0){
+      nwrk = n1-padl1-padh1;
+      for (io=0; io < pad; io++) {
+         for (iy=0; iy < n1; iy++) {
+            for (iz=0; iz < n2; iz++) {
+               wrk0[IDWRK(io,iy,iz)] = array[IDARRAY(io + padl0, iy+padl1, iz+padl2)];
+            }
+         }
+      }
+   }
+   if(this->getHigh(0)>0){
+      nwrk = n1-padl1-padh1;
+      for (io=0; io < pad; io++) {
+         for (iy=0; iy < n1; iy++) {
+            for (iz=0; iz < n2; iz++) {
+               wrk0[IDWRK(io,iy,iz)] = array[IDARRAY(n0-padh0 + io, iy+padl1, iz+padl2)];
+            }
+         }
+      }
+   }
+
+   if(this->getLow(1)>0){
+      nwrk = n0-padl0-padh0;
+      for (ix=0; ix < n0; ix++) {
+         for (io=0; io < pad; io++) {
+            for (iz=0; iz < n2; iz++) {
+                            wrk1[IDWRK(io,ix,iz)] = array[IDARRAY(ix+padl0, io + padl1, iz+padl2)];
+            }
+         }
+      }
+   }
+   if(this->getHigh(1)>0){
+      nwrk = n0-padl0-padh0;
+                for (ix=0; ix < n0; ix++) {
+                    for (io=0; io < pad; io++) {
+                        for (iz=0; iz < n2; iz++) {
+               wrk1[IDWRK(io,ix,iz)] = array[IDARRAY(ix + padl0, n1-padh1 + io, iz+padl2)];
+            }
+         }
+      }
+   }
+
+
+}
+
+
+template<typename T>
 void Domain<T>::copyFromboundary(const bool side, const T *array){
     size_t ix,iy,iz,io;
     if(side){
