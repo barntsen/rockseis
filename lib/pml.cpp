@@ -193,7 +193,7 @@ PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, cons
 }
 
 template<typename T>
-PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt, const int dim, const bool low, const bool high): Pml<T>(Lpml, dt) {
+PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt, const bool *low, const bool *high): Pml<T>(Lpml, dt) {
     int nx_pml, nz_pml;
     nx_pml= nx;
     nz_pml= nz;
@@ -202,46 +202,25 @@ PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, cons
     for (i=0; i<6; i++) this->setApplypml(i, false);
 
     /* Allocate variables */
-    switch (dim){
-       case 0:
-          if(low){
-             P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
-             Axx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
-             this->setApplypml(0,true);
-          }
-          if(high){
-             P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
-             Axx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
-             this->setApplypml(1,true);
-          }
-          P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-          P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
-          Azz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-          Azz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
-          this->setApplypml(4,true);
-          this->setApplypml(5,true);
-          break;
-       case 2:
-          if(low){
-             P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-             Azz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-             this->setApplypml(4,true);
-          }
-          if(high){
-             P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
-             Azz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
-             this->setApplypml(5,true);
-          }
-          P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
-          P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
-          Axx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
-          Axx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
-          this->setApplypml(0,true);
-          this->setApplypml(1,true);
-          break;
-       default:
-          rs_error("PmlAcoustic2D::Invalid value for dim");
-          break;
+    if(low[0]){
+       P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Axx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       this->setApplypml(0,true);
+    }
+    if(high[0]){
+       P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Axx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       this->setApplypml(1,true);
+    }
+    if(low[1]){
+       P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Azz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       this->setApplypml(4,true);
+    }
+    if(high[1]){
+       P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Azz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       this->setApplypml(5,true);
     }
 }
 
@@ -308,7 +287,7 @@ PmlAcoustic3D<T>::PmlAcoustic3D(const int nx, const int ny, const int nz, const 
 }
 
 template<typename T>
-PmlAcoustic3D<T>::PmlAcoustic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt, const int dim, const bool low, const bool high): Pml<T>(Lpml, dt) {
+PmlAcoustic3D<T>::PmlAcoustic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt, const bool *low, const bool *high): Pml<T>(Lpml, dt) {
     int nx_pml, ny_pml, nz_pml;
     nx_pml= nx;
     ny_pml= ny;
@@ -318,86 +297,37 @@ PmlAcoustic3D<T>::PmlAcoustic3D(const int nx, const int ny, const int nz, const 
     for (i=0; i<6; i++) this->setApplypml(i, false);
 
     /* Allocate variables */
-    switch (dim){
-        case 0:
-            if(low){
-                P_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-                Axx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-                this->setApplypml(0,true);
-            }
-            if(high){
-                P_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-                Axx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-                this->setApplypml(1,true);
-            }
+    if(low[0]){
+       P_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Axx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       this->setApplypml(0,true);
+    }
+    if(high[0]){
+       P_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Axx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       this->setApplypml(1,true);
+    }
 
-            P_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-            P_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-            P_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-            P_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-            Ayy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-            Ayy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-            Azz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-            Azz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-            this->setApplypml(2,true);
-            this->setApplypml(3,true);
-            this->setApplypml(4,true);
-            this->setApplypml(5,true);
-            break;
-        case 1:
-            if(low){
-                P_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-                Ayy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-                this->setApplypml(2,true);
-            }
-            if(high){
-                P_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-                Ayy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-                this->setApplypml(3,true);
-            }
+    if(low[1]){
+       P_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Ayy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       this->setApplypml(2,true);
+    }
+    if(high[1]){
+       P_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Ayy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       this->setApplypml(3,true);
+    }
 
-            P_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-            Axx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-            P_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-            Axx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-            P_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-            P_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-            Azz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-            Azz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-            this->setApplypml(0,true);
-            this->setApplypml(1,true);
-            this->setApplypml(4,true);
-            this->setApplypml(5,true);
-            break;
-
-        case 2:
-            if(low){
-                P_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-                Azz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-                this->setApplypml(4,true);
-            }
-            if(high){
-                P_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-                Azz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-                this->setApplypml(5,true);
-            }
-
-            P_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-            P_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-            P_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-            P_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-            Axx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-            Axx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-            Ayy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-            Ayy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-            this->setApplypml(0,true);
-            this->setApplypml(1,true);
-            this->setApplypml(2,true);
-            this->setApplypml(3,true);
-            break;
-        default:
-            rs_error("PmlAcoustic2D::Invalid value for dim");
-            break;
+    if(low[2]){
+       P_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Azz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       this->setApplypml(4,true);
+    }
+    if(high[2]){
+       P_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Azz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       this->setApplypml(5,true);
     }
 }
 

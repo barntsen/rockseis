@@ -106,7 +106,7 @@ class PmlAcoustic2D: public Pml<T> {
 public:
     PmlAcoustic2D();	///< Constructor
     PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor 
-    PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt, const int dim, const bool low, const bool high);	///< Constructor for domain decomposition
+    PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt, const bool *low, const bool *high);	///< Constructor for domain decomposition
     void callcompABC() { this->computeABC(); }  ///< Interface to computeABC()
     ~PmlAcoustic2D();	///< Destructor
     
@@ -129,7 +129,7 @@ class PmlAcoustic3D: public Pml<T> {
 public:
     PmlAcoustic3D();	///< Constructor
     PmlAcoustic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt);	///< Constructor
-    PmlAcoustic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt, const int dim, const bool low, const bool high);	///< Constructor for domain decomposition
+    PmlAcoustic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt, const bool *low, const bool *high);	///< Constructor for domain decomposition
     void callcompABC() { this->computeABC(); }  ///< Interface to computeABC()
     ~PmlAcoustic3D();	///< Destructor
     

@@ -59,10 +59,16 @@ public:
     void setEdge(const int val, const int i) { if(i>=0 && i<12) edge[i] = val; else rs_error("Domain::setEdge: invalid edge index."); }
 
     void setMpi(MPIdomaindecomp *_mpi) { mpi = _mpi; mpiset = true;}
+    void copyFromboundary(const int dim, const bool side, const T *array); ///< Copy from array to wrk
+    void copyFromedge(const int id, const int d0, const int d1, const T *array); ///< Get an edge from the array to send to neighour
+    void copyFromcorner(const int d0, const int d1, const int d2, const T *array); ///< Get an edge from the array to send to neighour
+    void copyToboundary(const int dim, const bool side, T *array); ///< Copy from array to wrk
+    void copyToedge(const int id, const int d0, const int d1, T *array); ///< Get an edge from the array to send to neighour
+    void copyTocorner(const int d0, const int d1, const int d2, T *array); ///< Get an edge from the array to send to neighour
     void copyFromboundary(const bool side, const T *array); ///< Copy from array to wrk
-    void copyFromboundary2(const int dim, const bool side, const T *array); ///< Copy from array to wrk
     void copyToboundary(const bool side, T *array); ///< Copy from wrk to array
     void shareEdges(T *array); ///< Share edges of array with neighbors
+    void shareEdges2(T *array); ///< Share edges of array with neighbors
 
     void setIx0(const int _ix0) { ix0 = _ix0; }     ///< Set ix0 (origin in global model)
     void setIy0(const int _iy0) { iy0 = _iy0; }     ///< Set iy0 (origin in global model)
@@ -95,8 +101,8 @@ public:
     int getIy0() { return iy0; } ///< Get iy0
     int getIz0() { return iz0; } ///< Get iz0
     int getId(const int d, const int dim); ///< Get domain index in dimension dim 
-    int getCorner(const int i) { if(i>=0 && i<8) return corner[i]; else {rs_error("Domain::getCorner: invalid corner index."); return -1; }}
     int getEdge(const int i) { if(i>=0 && i<12) return edge[i]; else {rs_error("Domain::getEdge: invalid corner index."); return -1; }}
+    int getCorner(const int i) { if(i>=0 && i<8) return corner[i]; else {rs_error("Domain::getCorner: invalid corner index."); return -1; }}
     bool getStatus() { return status; }
     void setupDomain1D(const int nx, const int ny, const int nz, const int d, const int nd, const int order);
     void setupDomain3D(const int nx, const int ny, const int nz, const int d, const int nd0, const int nd1, const int nd2, const int order);

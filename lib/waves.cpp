@@ -415,29 +415,24 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
     if((model->getDomain())->getStatus()){
        // Domain decomposition mode
        this->setDomdec(true);
-       int dim = (model->getDomain())->getDim();
        int ix0, nxo, iz0, nzo;
-       bool low=false,high=false;
+       bool low[2],high[2];
+
+       for (int i=0; i<2; i++){
+          low[i] = false;
+          high[i] = false;
+        }
        ix0 = (model->getDomain())->getIx0();
        iz0 = (model->getDomain())->getIz0();
        nxo = (model->getDomain())->getNx_orig();
        nzo = (model->getDomain())->getNz_orig();
-       switch (dim){
-          case 0:
-             if(ix0 < _lpml) low=true;
-             if(ix0 + _nx >= nxo-_lpml) high=true;
-             break;
-          case 2:
-             if(iz0 < _lpml) low=true;
-             if(iz0 + _nz >= nzo-_lpml) high=true;
-             break;
-          default:
-             rs_error("WavesAcoustic2D<T>::WavesAcoustic2D: Invalid dim in domain");
-             break;
-       }
+       if(ix0 < _lpml) low[0]=true;
+       if(ix0 + _nx >= nxo-_lpml) high[0]=true;
+       if(iz0 < _lpml) low[1]=true;
+       if(iz0 + _nz >= nzo-_lpml) high[1]=true;
 
        /* Create associated PML class */
-       Pml = std::make_shared<PmlAcoustic2D<T>>(_nx, _nz, _lpml, _dt, dim, low, high);
+       Pml = std::make_shared<PmlAcoustic2D<T>>(_nx, _nz, _lpml, _dt, &low[0], &high[0]);
 
        int nx_pml, nz_pml;
        nx_pml = _nx;
@@ -901,36 +896,28 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
     if((model->getDomain())->getStatus()){
         // Domain decomposition mode
         this->setDomdec(true);
-        int dim = (model->getDomain())->getDim();
         int ix0, nxo, iy0, nyo, iz0, nzo;
-        bool low=false,high=false;
+        bool low[3],high[3];
+        for (int i=0; i<3; i++){
+           low[i] = false;
+           high[i] = false;
+        }
+        
         ix0 = (model->getDomain())->getIx0();
         iy0 = (model->getDomain())->getIy0();
         iz0 = (model->getDomain())->getIz0();
         nxo = (model->getDomain())->getNx_orig();
         nyo = (model->getDomain())->getNy_orig();
         nzo = (model->getDomain())->getNz_orig();
-        switch (dim){
-            case 0:
-                if(ix0 < _lpml) low=true;
-                if(ix0 + _nx >= nxo-_lpml) high=true;
-                break;
-            case 1:
-                if(iy0 < _lpml) low=true;
-                if(iy0 + _ny >= nyo-_lpml) high=true;
-                break;
-            case 2:
-                if(iz0 < _lpml) low=true;
-                if(iz0 + _nz >= nzo-_lpml) high=true;
-                break;
-            default:
-                rs_error("WavesAcoustic3D<T>::WavesAcoustic3D: Invalid dim in domain");
-                break;
-        }
-
+        if(ix0 < _lpml) low[0]=true;
+        if(ix0 + _nx >= nxo-_lpml) high[0]=true;
+        if(iy0 < _lpml) low[1]=true;
+        if(iy0 + _ny >= nyo-_lpml) high[1]=true;
+        if(iz0 < _lpml) low[2]=true;
+        if(iz0 + _nz >= nzo-_lpml) high[2]=true;
 
         /* Create associated PML class */
-        Pml = std::make_shared<PmlAcoustic3D<T>>(_nx, _ny, _nz, _lpml, _dt, dim, low, high);
+        Pml = std::make_shared<PmlAcoustic3D<T>>(_nx, _ny, _nz, _lpml, _dt, &low[0], &high[0]);
 
         nx_pml = _nx;
         ny_pml = _ny;
