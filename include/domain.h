@@ -60,6 +60,7 @@ public:
 
     void setMpi(MPIdomaindecomp *_mpi) { mpi = _mpi; mpiset = true;}
     void copyFromboundary(const bool side, const T *array); ///< Copy from array to wrk
+    void copyFromboundary2(const int dim, const bool side, const T *array); ///< Copy from array to wrk
     void copyToboundary(const bool side, T *array); ///< Copy from wrk to array
     void shareEdges(T *array); ///< Share edges of array with neighbors
 
