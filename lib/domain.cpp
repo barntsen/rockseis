@@ -604,7 +604,7 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
    switch(dim){
       case 0:
          if(side == 0){
-            if(this->getLow(0)>0){
+            if(this->getLow(0)>=0){
                nwrk = n1-padl1-padh1;
                for (io=0; io < pad; io++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
@@ -615,7 +615,7 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
                }
             }
          }else{
-            if(this->getHigh(0)>0){
+            if(this->getHigh(0)>=0){
                nwrk = n1-padl1-padh1;
                for (io=0; io < pad; io++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
@@ -629,7 +629,7 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
          break;
       case 1:
          if(side == 0){
-            if(this->getLow(1)>0){
+            if(this->getLow(1)>=0){
                nwrk = n0-padl0-padh0;
                for (ix=0; ix < n0-padl0-padh0; ix++) {
                   for (io=0; io < pad; io++) {
@@ -640,7 +640,7 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
                }
             }
          }else{
-            if(this->getHigh(1)>0){
+            if(this->getHigh(1)>=0){
                nwrk = n0-padl0-padh0;
                for (ix=0; ix < n0-padl0-padh0; ix++) {
                   for (io=0; io < pad; io++) {
@@ -654,7 +654,7 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
          break;
       case 2:
          if(side == 0){
-            if(this->getLow(2)>0){
+            if(this->getLow(2)>=0){
                nwrk = n0-padl0-padh0;
                for (ix=0; ix < n0-padl0-padh0; ix++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
@@ -665,7 +665,7 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
                }
             }
          }else{
-            if(this->getHigh(2)>0){
+            if(this->getHigh(2)>=0){
                nwrk = n0-padl0-padh0;
                for (ix=0; ix < n0-padl0-padh0; ix++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
@@ -831,7 +831,7 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
    switch(dim){
       case 0:
          if(side == 0){
-            if(this->getLow(0)>0){
+            if(this->getLow(0)>=0){
                nwrk = n1-padl1-padh1;
                for (io=0; io < pad; io++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
@@ -842,7 +842,7 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
                }
             }
          }else{
-            if(this->getHigh(0)>0){
+            if(this->getHigh(0)>=0){
                nwrk = n1-padl1-padh1;
                for (io=0; io < pad; io++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
@@ -856,7 +856,7 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
          break;
       case 1:
          if(side == 0){
-            if(this->getLow(1)>0){
+            if(this->getLow(1)>=0){
                nwrk = n0-padl0-padh0;
                for (ix=0; ix < n0-padl0-padh0; ix++) {
                   for (io=0; io < pad; io++) {
@@ -867,7 +867,7 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
                }
             }
          }else{
-            if(this->getHigh(1)>0){
+            if(this->getHigh(1)>=0){
                nwrk = n0-padl0-padh0;
                for (ix=0; ix < n0-padl0-padh0; ix++) {
                   for (io=0; io < pad; io++) {
@@ -881,7 +881,7 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
          break;
       case 2:
          if(side == 0){
-            if(this->getLow(2)>0){
+            if(this->getLow(2)>=0){
                nwrk = n0-padl0-padh0;
                for (ix=0; ix < n0-padl0-padh0; ix++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
@@ -892,7 +892,7 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
                }
             }
          }else{
-            if(this->getHigh(2)>0){
+            if(this->getHigh(2)>=0){
                nwrk = n0-padl0-padh0;
                for (ix=0; ix < n0-padl0-padh0; ix++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
@@ -1359,95 +1359,92 @@ void Domain<T>::shareEdges2(T *array){
     }
 
     //Edges
-    int k = 0;
     int d0,d1,d2;
+    int k;
     for(int i = 0; i < 2; i++){
        d0 = i*2 - 1;
        for(int j = 0; j < 2; j++){
           d1 = j*2 - 1;
+          k = IDEDGE(i,j,0);
           if(this->getEdge(k) >= 0){
              if(k % 2){
                 mpi->receiveEdges(wrkedg0, wrkedgsize[0], this->getEdge(k));
-                this->copyToedge(k, -d1, -d2, array);
-                this->copyFromedge(k, d1, d2, array);
+                this->copyToedge(k, d0, d1, array);
+                this->copyFromedge(k, d0, d1, array);
                 mpi->sendEdges(wrkedg0, wrkedgsize[0], this->getEdge(k));
              }else{
-                this->copyFromedge(k, d1, d2, array);
+                this->copyFromedge(k, d0, d1, array);
                 mpi->sendEdges(wrkedg0, wrkedgsize[0], this->getEdge(k));
                 mpi->receiveEdges(wrkedg0, wrkedgsize[0], this->getEdge(k));
-                this->copyToedge(k, -d1, -d2, array);
+                this->copyToedge(k, d0, d1, array);
              }
           }
-          k=k+1;
        }
     }
 
-    k=4;
     for(int i = 0; i < 2; i++){
        d0 = i*2 - 1;
        for(int j = 0; j < 2; j++){
           d1 = j*2 - 1;
+          k = IDEDGE(i,j,1);
           if(this->getEdge(k) >= 0){
              if(k % 2){
                 mpi->receiveEdges(wrkedg1, wrkedgsize[1], this->getEdge(k));
-                this->copyToedge(k, -d1, -d2, array);
-                this->copyFromedge(k, d1, d2, array);
+                this->copyToedge(k, d0, d1, array);
+                this->copyFromedge(k, d0, d1, array);
                 mpi->sendEdges(wrkedg1, wrkedgsize[1], this->getEdge(k));
              }else{
-                this->copyFromedge(k, d1, d2, array);
+                this->copyFromedge(k, d0, d1, array);
                 mpi->sendEdges(wrkedg1, wrkedgsize[1], this->getEdge(k));
                 mpi->receiveEdges(wrkedg1, wrkedgsize[1], this->getEdge(k));
-                this->copyToedge(k, -d1, -d2, array);
+                this->copyToedge(k, d0, d1, array);
              }
           }
-          k=k+1;
        }
     }
-    k=8;
     for(int i = 0; i < 2; i++){
        d0 = i*2 - 1;
        for(int j = 0; j < 2; j++){
           d1 = j*2 - 1;
+          k = IDEDGE(i,j,2);
           if(this->getEdge(k) >= 0){
              if(k % 2){
                 mpi->receiveEdges(wrkedg2, wrkedgsize[2], this->getEdge(k));
-                this->copyToedge(k, -d1, -d2, array);
-                this->copyFromedge(k, d1, d2, array);
+                this->copyToedge(k, d0, d1, array);
+                this->copyFromedge(k, d0, d1, array);
                 mpi->sendEdges(wrkedg2, wrkedgsize[2], this->getEdge(k));
              }else{
-                this->copyFromedge(k, d1, d2, array);
+                this->copyFromedge(k, d0, d1, array);
                 mpi->sendEdges(wrkedg2, wrkedgsize[2], this->getEdge(k));
                 mpi->receiveEdges(wrkedg2, wrkedgsize[2], this->getEdge(k));
-                this->copyToedge(k, -d1, -d2, array);
+                this->copyToedge(k, d0, d1, array);
              }
           }
-          k=k+1;
        }
     }
 
     //Corners
-    int l=0;
+    int l;
     for(int i = 0; i < 2; i++){
        d0 = i*2 - 1;
        for(int j = 0; j < 2; j++){
           d1 = j*2 - 1;
           for(int k = 0; k < 2; k++){
              d2 = k*2 - 1;
+             l = IDCRN(i,j,k);
              if(this->getCorner(l) >= 0){
                 if(l % 2){
                    mpi->receiveEdges(wrkcrn, wrkcrnsize, this->getCorner(l));
-                   this->copyTocorner(l, -d1, -d2, array);
-                   this->copyFromcorner(l, d1, d2, array);
+                   this->copyTocorner(d0, d1, d2, array);
+                   this->copyFromcorner(d0, d1, d2, array);
                    mpi->sendEdges(wrkcrn, wrkcrnsize, this->getCorner(l));
                 }else{
-                   this->copyFromcorner(l, d1, d2, array);
+                   this->copyFromcorner(d0, d1, d2, array);
                    mpi->sendEdges(wrkcrn, wrkcrnsize, this->getCorner(l));
                    mpi->receiveEdges(wrkcrn, wrkcrnsize, this->getCorner(l));
-                   this->copyTocorner(l, -d1, -d2, array);
+                   this->copyTocorner(d0, d1, d2, array);
                 }
              }
-
-             l = l+1;
           }
        }
     }

@@ -147,6 +147,7 @@ public:
     void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); } 
     void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
     void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padx, int pady, int padz) { geometry->makeMap(geom, map, padx, pady, padz, padx, pady, padz); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padlz, int padhx, int padhy, int padhz) { geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz); } 
 
     void copyGmap2Smap() { geometry->copyGmap2Smap(); } 
     void copySmap2Gmap() { geometry->copySmap2Gmap(); } 

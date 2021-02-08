@@ -270,169 +270,117 @@ int main(int argc, char** argv) {
                 lmodel->writeVp();
 
                 // Read wavelet data, set shot and receiver coordinates and make a map
-//                source->read();
-//                source->copyCoords(Shotgeom);
-//                source->makeMap(lmodel->getGeom(), SMAP);
-//
-//                modelling = std::make_shared<rockseis::ModellingAcoustic3D<float>>(lmodel, source, order, snapinc);
-//
-//                // Set logfile
-//                modelling->setLogfile("log.txt-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
-//
-//                // Setting Snapshot file 
-//                if(Psnap){
-//                    modelling->setSnapP(Psnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
-//                }
-//                if(Axsnap){
-//                    modelling->setSnapAx(Axsnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
-//                }
-//                if(Aysnap){
-//                    modelling->setSnapAy(Aysnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
-//                }
-//                if(Azsnap){
-//                    modelling->setSnapAz(Azsnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
-//                }
-//
-//                // Setting Record
-//                if(Precord){
-//                    Pdata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-//                    Pdata3D->setField(rockseis::PRESSURE);
-//                    // Copy geometry to Data
-//                    Pdata3D->copyCoords(Shotgeom);
-//                    Pdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
-//                    switch((lmodel->getDomain())->getDim()){
-//                        case 0:
-//                            Pdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
-//                            break;
-//                        case 1:
-//                            Pdata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
-//                            break;
-//                        case 2:
-//                            Pdata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
-//                            break;
-//                        default:
-//                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
-//                            break;
-//                    }
-//                    modelling->setRecP(Pdata3D);
-//                }
-//
-//                if(Axrecord){
-//                    Axdata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-//                    Axdata3D->setField(rockseis::VX);
-//                    // Copy geometry to Data
-//                    Axdata3D->copyCoords(Shotgeom);
-//                    Axdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
-//                    switch((lmodel->getDomain())->getDim()){
-//                        case 0:
-//                            Axdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
-//                            break;
-//                        case 1:
-//                            Axdata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
-//                            break;
-//                        case 2:
-//                            Axdata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
-//                            break;
-//                        default:
-//                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
-//                            break;
-//                    }
-//                    modelling->setRecAx(Axdata3D);
-//                }
-//                if(Ayrecord){
-//                    Aydata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-//                    Aydata3D->setField(rockseis::VY);
-//                    // Copy geometry to Data
-//                    Aydata3D->copyCoords(Shotgeom);
-//                    Aydata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
-//                    switch((lmodel->getDomain())->getDim()){
-//                        case 0:
-//                            Aydata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
-//                            break;
-//                        case 1:
-//                            Aydata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
-//                            break;
-//                        case 2:
-//                            Aydata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
-//                            break;
-//                        default:
-//                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
-//                            break;
-//                    }
-//                    modelling->setRecAy(Aydata3D);
-//                }
-//                if(Azrecord){
-//                    Azdata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
-//                    Azdata3D->setField(rockseis::VZ);
-//                    // Copy geometry to Data
-//                    Azdata3D->copyCoords(Shotgeom);
-//                    Azdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
-//                    switch((lmodel->getDomain())->getDim()){
-//                        case 0:
-//                            Azdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
-//                            break;
-//                        case 1:
-//                            Azdata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
-//                            break;
-//                        case 2:
-//                            Azdata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
-//                            break;
-//                        default:
-//                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
-//                            break;
-//                    }
-//                    modelling->setRecAz(Azdata3D);
-//                }
-//
-//                // Run modelling 
-//                modelling->run();
-//
-//                // Output record
-//                if(Precord){
-//                    Pdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
-//                    Pdata3Di->setFile(Precordfile);
-//                    interp->interp(Pdata3D, Pdata3Di);
-//                    Sort->put3DGather(Pdata3Di, work.id, (Pdata3D->getGeom())->getGmap());
-//                }
-//                if(Axrecord){
-//                    Axdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
-//                    Axdata3Di->setFile(Axrecordfile);
-//                    interp->interp(Axdata3D, Axdata3Di);
-//                    Sort->put3DGather(Axdata3Di, work.id, (Axdata3D->getGeom())->getGmap());
-//                }
-//                if(Ayrecord){
-//                    Aydata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
-//                    Aydata3Di->setFile(Ayrecordfile);
-//                    interp->interp(Aydata3D, Aydata3Di);
-//                    Sort->put3DGather(Aydata3Di, work.id,(Aydata3D->getGeom())->getGmap());
-//                }
-//                if(Azrecord){
-//                    Azdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
-//                    Azdata3Di->setFile(Azrecordfile);
-//                    interp->interp(Azdata3D, Azdata3Di);
-//                    Sort->put3DGather(Azdata3Di, work.id,(Azdata3D->getGeom())->getGmap() );
-//                }
-//
-//                // Reset all classes
-//                Shotgeom.reset();
-//                lmodel.reset();
-//                modelling.reset();
-//                if(Precord){
-//                    Pdata3D.reset();
-//                    Pdata3Di.reset();
-//                }
-//                if(Axrecord){
-//                    Axdata3D.reset();
-//                    Axdata3Di.reset();
-//                }
-//                if(Ayrecord){
-//                    Aydata3D.reset();
-//                    Aydata3Di.reset();
-//                }
-//                if(Azrecord){
-//                    Azdata3D.reset();
-//                    Azdata3Di.reset();
-//                }
+                source->read();
+                source->copyCoords(Shotgeom);
+                source->makeMap(lmodel->getGeom(), SMAP);
+
+                modelling = std::make_shared<rockseis::ModellingAcoustic3D<float>>(lmodel, source, order, snapinc);
+
+                // Set logfile
+                modelling->setLogfile("log.txt-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
+
+                // Setting Snapshot file 
+                if(Psnap){
+                    modelling->setSnapP(Psnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
+                }
+                if(Axsnap){
+                    modelling->setSnapAx(Axsnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
+                }
+                if(Aysnap){
+                    modelling->setSnapAy(Aysnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
+                }
+                if(Azsnap){
+                    modelling->setSnapAz(Azsnapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
+                }
+
+                // Setting Record
+                if(Precord){
+                    Pdata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    Pdata3D->setField(rockseis::PRESSURE);
+                    // Copy geometry to Data
+                    Pdata3D->copyCoords(Shotgeom);
+                    Pdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
+                    Pdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                    modelling->setRecP(Pdata3D);
+                }
+
+                if(Axrecord){
+                    Axdata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    Axdata3D->setField(rockseis::VX);
+                    // Copy geometry to Data
+                    Axdata3D->copyCoords(Shotgeom);
+                    Axdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
+                    Axdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                    modelling->setRecAx(Axdata3D);
+                }
+                if(Ayrecord){
+                    Aydata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    Aydata3D->setField(rockseis::VY);
+                    // Copy geometry to Data
+                    Aydata3D->copyCoords(Shotgeom);
+                    Aydata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
+                    Aydata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                    modelling->setRecAy(Aydata3D);
+                }
+                if(Azrecord){
+                    Azdata3D = std::make_shared<rockseis::Data3D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
+                    Azdata3D->setField(rockseis::VZ);
+                    // Copy geometry to Data
+                    Azdata3D->copyCoords(Shotgeom);
+                    Azdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
+                    Azdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                    modelling->setRecAz(Azdata3D);
+                }
+
+                // Run modelling 
+                modelling->run();
+
+                // Output record
+                if(Precord){
+                    Pdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
+                    Pdata3Di->setFile(Precordfile);
+                    interp->interp(Pdata3D, Pdata3Di);
+                    Sort->put3DGather(Pdata3Di, work.id, (Pdata3D->getGeom())->getGmap());
+                }
+                if(Axrecord){
+                    Axdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
+                    Axdata3Di->setFile(Axrecordfile);
+                    interp->interp(Axdata3D, Axdata3Di);
+                    Sort->put3DGather(Axdata3Di, work.id, (Axdata3D->getGeom())->getGmap());
+                }
+                if(Ayrecord){
+                    Aydata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
+                    Aydata3Di->setFile(Ayrecordfile);
+                    interp->interp(Aydata3D, Aydata3Di);
+                    Sort->put3DGather(Aydata3Di, work.id,(Aydata3D->getGeom())->getGmap());
+                }
+                if(Azrecord){
+                    Azdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr, ntrec, dtrec, 0.0);
+                    Azdata3Di->setFile(Azrecordfile);
+                    interp->interp(Azdata3D, Azdata3Di);
+                    Sort->put3DGather(Azdata3Di, work.id,(Azdata3D->getGeom())->getGmap() );
+                }
+
+                // Reset all classes
+                Shotgeom.reset();
+                lmodel.reset();
+                modelling.reset();
+                if(Precord){
+                    Pdata3D.reset();
+                    Pdata3Di.reset();
+                }
+                if(Axrecord){
+                    Axdata3D.reset();
+                    Axdata3Di.reset();
+                }
+                if(Ayrecord){
+                    Aydata3D.reset();
+                    Aydata3Di.reset();
+                }
+                if(Azrecord){
+                    Azdata3D.reset();
+                    Azdata3Di.reset();
+                }
                 work.status = WORK_FINISHED;
 
                 // Send result back

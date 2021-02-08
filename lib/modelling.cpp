@@ -418,13 +418,13 @@ int ModellingAcoustic3D<T>::run(){
     	// Time stepping
     	waves->forwardstepAcceleration(model, der);
         if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges(waves->getAx());
-            (model->getDomain())->shareEdges(waves->getAy());
-            (model->getDomain())->shareEdges(waves->getAz());
+            (model->getDomain())->shareEdges2(waves->getAx());
+            (model->getDomain())->shareEdges2(waves->getAy());
+            (model->getDomain())->shareEdges2(waves->getAz());
         }
     	waves->forwardstepStress(model, der);
         if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges(waves->getP2());
+            (model->getDomain())->shareEdges2(waves->getP2());
         }
     
     	// Inserting source
