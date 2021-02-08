@@ -1647,6 +1647,125 @@ std::shared_ptr<ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel(std::shar
     return local;
 }
 
+template<typename T>
+std::shared_ptr<ModelAcoustic2D<T>> ModelAcoustic2D<T>::getDomainmodel(std::shared_ptr<Data2D<T>> data, T aperture, bool map, const int d, const int nd0, const int nd1, const int order) {
+    std::shared_ptr<ModelAcoustic2D<T>> local;
+    T dx = this->getDx();
+    T dz = this->getDz();
+    T ox = this->getOx();
+    T oz = this->getOz();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+    size_t size;
+    off_t start;
+    int nxd,nzd;
+    int ix0,iz0;
+    int lpml = this->getLpml();
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize2d(data, aperture, map, &start, &size);
+    (this->getDomain())->setupDomain3D(size+2*lpml,1,nz+2*this->getLpml(),d,nd0,1,nd1,order);
+    nxd = (this->getDomain())->getNx_pad();
+    nzd = (this->getDomain())->getNz_pad();
+    ix0 = (this->getDomain())->getIx0();
+    iz0 = (this->getDomain())->getIz0();
+
+
+    /* Create domain model */
+    local = std::make_shared<ModelAcoustic2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getFs());
+    (local->getDomain())->setupDomain3D(size+2*lpml,1,nz+2*lpml,d,nd0,1,nd1,order);
+
+    /*Realizing local model */
+    local->createModel();
+    local->createPaddedmodel();
+
+    /* Copying from big model into local model */
+    T *Vp = local->getVp();
+    T *R = local->getR();
+    T *L = local->getL();
+    T *Rx = local->getRx();
+    T *Rz = local->getRz();
+
+    /* Allocate two traces to read models from file */
+    T *vptrace = (T *) calloc(nx, sizeof(T));
+    if(vptrace == NULL) rs_error("ModelAcoustic2d::getDomainmodel: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelAcoustic2d::getDomainmodel: Failed to allocate memory.");
+    T *rhotrace_adv = (T *) calloc(nx, sizeof(T));
+    if(rhotrace_adv == NULL) rs_error("ModelAcoustic2d::getDomainmodel: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> Fvp (new File());
+    status = Fvp->input(Vpfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic2D::getDomainmodel : Error reading from Vp file.");
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelAcoustic2D::getDomainmodel : Error reading from Density file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+    Index l2d(nxd,nzd);
+    Index f2d(nx,nz);
+
+    for(size_t i1=0; i1<nzd; i1++) {
+        lpos = iz0 + i1 - lpml;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        Fvp->read(vptrace, nx, fpos);
+        if(Fvp->getFail()) rs_error("ModelAcoustic2D::getDomainmodel: Error reading from vp file");
+        Frho->read(rhotrace, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic2D::getDomainmodel: Error reading from rho file");
+
+        // Read advanced trace
+        lpos = iz0 + i1 - lpml + 1;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        Frho->read(rhotrace_adv, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelAcoustic2D::getDomainmodel: Error reading from rho file");
+        for(size_t i2=0; i2<nxd; i2++) {
+            lpos = i + i2 + ix0 - lpml;
+            if(lpos < 0) lpos = 0;
+            if(lpos > (nx-1)) lpos = nx - 1;
+            Vp[l2d(i2,i1)] = vptrace[lpos];
+            R[l2d(i2,i1)] = rhotrace[lpos];
+            L[l2d(i2,i1)] = rhotrace[lpos]*vptrace[lpos]*vptrace[lpos];
+            if(rhotrace[lpos] <= 0.0) rs_error("ModelAcoustic2D::getDomainmodel: Zero density found.");
+            if(lpos < nx-1){
+               Rx[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace[lpos+1]);
+            }else{
+               Rx[l2d(i2,i1)] = 1.0/(rhotrace[lpos]);
+            }
+            Rz[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace_adv[lpos]);
+        }
+    }
+
+       
+    // In case of free surface
+    if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
+        for(size_t ix=0; ix<nxd; ix++){
+            Rx[l2d(ix,lpml-iz0)] *= 2.0;
+            L[l2d(ix,lpml-iz0)] *= 0.0;
+        }
+    }
+
+
+    /* Free traces */
+    free(vptrace);
+    free(rhotrace);
+    free(rhotrace_adv);
+
+    
+    return local;
+}
+
+
 
 // =============== 3D ACOUSTIC MODEL CLASS =============== //
 template<typename T>

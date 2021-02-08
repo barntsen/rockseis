@@ -67,8 +67,8 @@ public:
     void copyTocorner(const int d0, const int d1, const int d2, T *array); ///< Get an edge from the array to send to neighour
     void copyFromboundary(const bool side, const T *array); ///< Copy from array to wrk
     void copyToboundary(const bool side, T *array); ///< Copy from wrk to array
-    void shareEdges(T *array); ///< Share edges of array with neighbors
-    void shareEdges2(T *array); ///< Share edges of array with neighbors
+    void shareEdges1D(T *array); ///< Share edges of array with neighbors
+    void shareEdges3D(T *array); ///< Share edges of array with neighbors
 
     void setIx0(const int _ix0) { ix0 = _ix0; }     ///< Set ix0 (origin in global model)
     void setIy0(const int _iy0) { iy0 = _iy0; }     ///< Set iy0 (origin in global model)

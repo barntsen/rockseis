@@ -477,7 +477,7 @@ void Domain<T>::setupDomain3D(const int nx, const int ny, const int nz, const in
     if (getId(_d, 0) == _nd0-1){ 
        nxdom = nx - nxdom*(_nd0-1);
     }
-    if(nxdom < this->getLpad()){
+    if(nxdom < this->getLpad() && _nd0 > 1){
        rs_error("Domain<T>::setupDomain:Number of grid cells in a domain is less than the order of the finite difference stencil. Decrease the number of domains or the stencil.");
     }
     nxpad = nxdom+this->getPadl(0)+this->getPadh(0);
@@ -490,7 +490,7 @@ void Domain<T>::setupDomain3D(const int nx, const int ny, const int nz, const in
     if (getId(_d, 1) == _nd1-1){ 
        nydom = ny - nydom*(_nd1-1);
     }
-    if(nydom < this->getLpad()){
+    if(nydom < this->getLpad() && _nd1 > 1){
        rs_error("Domain<T>::setupDomain:Number of grid cells in a domain is less than the order of the finite difference stencil. Decrease the number of domains or the stencil.");
     }
     nypad = nydom+this->getPadl(1)+this->getPadh(1);
@@ -503,7 +503,7 @@ void Domain<T>::setupDomain3D(const int nx, const int ny, const int nz, const in
        nzdom = nz - nzdom*(_nd2-1);
     }
 
-    if(nzdom < this->getLpad()){
+    if(nzdom < this->getLpad() && _nd2 > 1){
        rs_error("Domain<T>::setupDomain:Number of grid cells in a domain is less than the order of the finite difference stencil. Decrease the number of domains or the stencil.");
     }
     nzpad = nzdom+this->getPadl(2)+this->getPadh(2);
@@ -1205,8 +1205,8 @@ void Domain<T>::copyToboundary(const bool side, T *array){
 }
 
 template<typename T>
-void Domain<T>::shareEdges(T *array){
-    if(!mpiset) rs_error("Domain<T>::shareEdges: MPI not set in domain.");
+void Domain<T>::shareEdges1D(T *array){
+    if(!mpiset) rs_error("Domain<T>::shareEdges1D: MPI not set in domain.");
 
     if(mpi->getDomainrank() % 2){
         if(this->getLow() >= 0){
@@ -1246,8 +1246,8 @@ void Domain<T>::shareEdges(T *array){
 }
 
 template<typename T>
-void Domain<T>::shareEdges2(T *array){
-    if(!mpiset) rs_error("Domain<T>::shareEdges: MPI not set in domain.");
+void Domain<T>::shareEdges3D(T *array){
+    if(!mpiset) rs_error("Domain<T>::shareEdges3D: MPI not set in domain.");
 
     //Sides
     if(this->getId(mpi->getDomainrank(),0) % 2){

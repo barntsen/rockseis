@@ -133,7 +133,7 @@ Geometry2D<T>::~Geometry2D() {
 
 // create map
 template<typename T>
-void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padx, int pady) {
+void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padhx, int padhy) {
 	size_t n = this->getN(1);  //Get number of traces 
 	// Get regular model parameters
 	int nx = _geom->getN(1);
@@ -149,7 +149,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         // Compute index smap
         for (size_t i = 0; i < n ; i++){
             pos = this->mapfloor((scoords[i].x - ox)/dx);
-            if(pos >=padx && pos < nx-padx)
+            if(pos >=padlx && pos < nx-padhx)
             {
                 smap[i].x  = pos; // index is within bounds
                 sshift[i].x = ((scoords[i].x - ox)/dx) - pos;
@@ -158,7 +158,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
                 smap[i].x  = -1;  // index is off bounds
             }
             pos = this->mapfloor((scoords[i].y - oy)/dy);
-            if(pos >=pady && pos < ny-pady)
+            if(pos >=padly && pos < ny-padhy)
             {
                 smap[i].y  = pos; // index is within bounds
                 sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
@@ -179,7 +179,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         // Compute index gmap
         for (size_t i = 0; i < n ; i++){
             pos = this->mapfloor((gcoords[i].x - ox)/dx);
-            if(pos >=padx && pos < nx-padx)
+            if(pos >=padlx && pos < nx-padhx)
             {
                 gmap[i].x  = pos; // index is within bounds
                 gshift[i].x = ((gcoords[i].x - ox)/dx) - pos;
@@ -188,7 +188,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
                 gmap[i].x  = -1;  // index is off bounds
             }
             pos = this->mapfloor((gcoords[i].y - oy)/dy);
-            if(pos >=pady && pos < ny-pady)
+            if(pos >=padly && pos < ny-padhy)
             {
                 gmap[i].y  = pos; // index is within bounds
                 gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;

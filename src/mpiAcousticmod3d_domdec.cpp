@@ -30,7 +30,9 @@ int main(int argc, char** argv) {
             PRINT_DOC(# MPI 3d acoustic modelling default configuration file);
             PRINT_DOC();
             PRINT_DOC(# Domain decomposition parameter);
-            PRINT_DOC(        ndomain = "1";  # Number of domains to split the model into);
+            PRINT_DOC(        ndomain0 = "1";  # Number of domains along x direction to split the model into);
+            PRINT_DOC(        ndomain1 = "1";  # Number of domains along y direction to split the model into);
+            PRINT_DOC(        ndomain2 = "1";  # Number of domains along z direction to split the model into);
             PRINT_DOC();
             PRINT_DOC(# Modelling parameters);
             PRINT_DOC(        freesurface = "true";  # True if free surface should be on);
@@ -68,12 +70,14 @@ int main(int argc, char** argv) {
         exit(1);
     }
     bool status;
-	/* General input parameters */
-	int lpml;
-	bool fs;
-    int ndomain;
-	int order;
-	int snapinc;
+    /* General input parameters */
+    int lpml;
+    bool fs;
+    int ndomain0;
+    int ndomain1;
+    int ndomain2;
+    int order;
+    int snapinc;
     float apertx;
     float aperty;
     float dtrec;
@@ -118,7 +122,9 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
     if(Inpar->getPar("dtrec", &dtrec) == INPARSE_ERR) status = true;
     if(Inpar->getPar("order", &order) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("ndomain", &ndomain) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("ndomain0", &ndomain0) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("ndomain1", &ndomain1) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("ndomain2", &ndomain2) == INPARSE_ERR) status = true;
     if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
@@ -161,7 +167,7 @@ int main(int argc, char** argv) {
 	}
 
     // Setup Domain decomposition
-    mpi.setNdomain(ndomain);
+    mpi.setNdomain(ndomain0*ndomain1*ndomain2);
     mpi.splitDomains();
 
     // Create a sort class
@@ -244,11 +250,24 @@ int main(int argc, char** argv) {
 
                 Shotgeom = Sort->get3DGather(work.id);
                 size_t ntr = Shotgeom->getNtrace();
-                lmodel = gmodel->getDomainmodel(Shotgeom, apertx, aperty, SMAP, mpi.getDomainrank(), mpi.getNdomain(), order);
+                lmodel = gmodel->getDomainmodel(Shotgeom, apertx, aperty, SMAP, mpi.getDomainrank(), ndomain0,ndomain1,ndomain2, order);
                 (lmodel->getDomain())->setMpi(&mpi);
-                
+
                 // For DEBUG:
                 //std::cerr << "d:" << mpi.getDomainrank() << " dim:" << (lmodel->getDomain())->getDim() << " ix0:" << (lmodel->getDomain())->getIx0() << " iy0:" << (lmodel->getDomain())->getIy0()<< " iz0:" << (lmodel->getDomain())->getIz0() << " nxp:" << (lmodel->getDomain())->getNx_pad() << " nyp:" << (lmodel->getDomain())->getNy_pad()<< " nzp:" << (lmodel->getDomain())->getNz_pad() << " Low: " << (lmodel->getDomain())->getLow() << " High: " << (lmodel->getDomain())->getHigh() << std::endl;
+                if(mpi.getDomainrank() == 5){
+                   std::cerr << "d:" << mpi.getDomainrank() << " ix0:" << (lmodel->getDomain())->getIx0() << " iy0:" << (lmodel->getDomain())->getIy0()<< " iz0:" << (lmodel->getDomain())->getIz0() << " nxp:" << (lmodel->getDomain())->getNx_pad() << " nyp:" << (lmodel->getDomain())->getNy_pad()<< " nzp:" << (lmodel->getDomain())->getNz_pad() << std::endl;
+                   std::cerr << " Low0: " << (lmodel->getDomain())->getLow(0) << " High0: " << (lmodel->getDomain())->getHigh(0) << std::endl;
+                   std::cerr << " Low1: " << (lmodel->getDomain())->getLow(1) << " High1: " << (lmodel->getDomain())->getHigh(1) << std::endl;
+                   std::cerr << " Low2: " << (lmodel->getDomain())->getLow(2) << " High2: " << (lmodel->getDomain())->getHigh(2) << std::endl;
+                   for(int i=0; i<8; i++){
+                      std::cerr << " Corner " << i << ":" <<(lmodel->getDomain())->getCorner(i) << std::endl;
+                   }
+
+                   for(int i=0; i<12; i++){
+                      std::cerr << " Edge " << i << ":" <<(lmodel->getDomain())->getEdge(i) << std::endl;
+                   }
+                }
 
                 // Read wavelet data, set shot and receiver coordinates and make a map
                 source->read();
@@ -281,20 +300,7 @@ int main(int argc, char** argv) {
                     // Copy geometry to Data
                     Pdata3D->copyCoords(Shotgeom);
                     Pdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
-                    switch((lmodel->getDomain())->getDim()){
-                        case 0:
-                            Pdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
-                            break;
-                        case 1:
-                            Pdata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
-                            break;
-                        case 2:
-                            Pdata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
-                            break;
-                        default:
-                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
-                            break;
-                    }
+                    Pdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
                     modelling->setRecP(Pdata3D);
                 }
 
@@ -304,20 +310,7 @@ int main(int argc, char** argv) {
                     // Copy geometry to Data
                     Axdata3D->copyCoords(Shotgeom);
                     Axdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
-                    switch((lmodel->getDomain())->getDim()){
-                        case 0:
-                            Axdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
-                            break;
-                        case 1:
-                            Axdata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
-                            break;
-                        case 2:
-                            Axdata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
-                            break;
-                        default:
-                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
-                            break;
-                    }
+                    Axdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
                     modelling->setRecAx(Axdata3D);
                 }
                 if(Ayrecord){
@@ -326,20 +319,7 @@ int main(int argc, char** argv) {
                     // Copy geometry to Data
                     Aydata3D->copyCoords(Shotgeom);
                     Aydata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
-                    switch((lmodel->getDomain())->getDim()){
-                        case 0:
-                            Aydata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
-                            break;
-                        case 1:
-                            Aydata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
-                            break;
-                        case 2:
-                            Aydata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
-                            break;
-                        default:
-                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
-                            break;
-                    }
+                    Aydata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
                     modelling->setRecAy(Aydata3D);
                 }
                 if(Azrecord){
@@ -348,20 +328,7 @@ int main(int argc, char** argv) {
                     // Copy geometry to Data
                     Azdata3D->copyCoords(Shotgeom);
                     Azdata3D->makeMap(lmodel->getGeom(),SMAP,0,0,0);
-                    switch((lmodel->getDomain())->getDim()){
-                        case 0:
-                            Azdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getLpad(),0,0);
-                            break;
-                        case 1:
-                            Azdata3D->makeMap(lmodel->getGeom(),GMAP,0,(lmodel->getDomain())->getLpad(),0);
-                            break;
-                        case 2:
-                            Azdata3D->makeMap(lmodel->getGeom(),GMAP,0,0,(lmodel->getDomain())->getLpad());
-                            break;
-                        default:
-                            rs_error("mpiHellodomdec:Invalid dimension in Domain.");
-                            break;
-                    }
+                    Azdata3D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
                     modelling->setRecAz(Azdata3D);
                 }
 

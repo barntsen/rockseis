@@ -274,6 +274,7 @@ public:
     void setRfile(std::string name) { Rfile = name; }
     std::shared_ptr<ModelAcoustic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
     std::shared_ptr<ModelAcoustic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd, const int order); ///< Returns a model of a domain
+    std::shared_ptr<ModelAcoustic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int order); ///< Returns a model of a domain
     T getMinVp() {return this->getMin(Vp); } ///< Returns min Vp
     T getMinR() {return this->getMin(R); } ///< Returns min R
     T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp

@@ -95,7 +95,8 @@ public:
      * */
     void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); } 
     void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padx, int pady) { geometry->makeMap(geom, map, padx, pady); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padx, int pady) { geometry->makeMap(geom, map, padx, pady, padx, pady); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padhx, int padhy) { geometry->makeMap(geom, map, padlx, padly, padhx, padhy); } 
     
     void copyGmap2Smap() { geometry->copyGmap2Smap(); } 
     void copySmap2Gmap() { geometry->copySmap2Gmap(); } 
