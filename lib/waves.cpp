@@ -414,7 +414,7 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
 
     if((model->getDomain())->getStatus()){
        // Domain decomposition mode
-       this->setDomdec(true);
+       this->setDomain(model->getDomain());
        int ix0, nxo, iz0, nzo;
        bool low[2],high[2];
 
@@ -895,7 +895,7 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
 
     if((model->getDomain())->getStatus()){
         // Domain decomposition mode
-        this->setDomdec(true);
+        this->setDomain(model->getDomain());
         int ix0, nxo, iy0, nyo, iz0, nzo;
         bool low[3],high[3];
         for (int i=0; i<3; i++){

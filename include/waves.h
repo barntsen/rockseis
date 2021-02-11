@@ -51,6 +51,7 @@ public:
     T getOy() { return geometry->getO(2); }	///< Get Oy
     T getOz() { return geometry->getO(3); }	///< Get Oz
     T getOt() { return geometry->getO(4); }	///< Get Ot
+
     bool getDomdec() { return domdec; } ///< Get domain decomposition flag
 
     //Interpolation function
@@ -71,11 +72,12 @@ public:
     void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
     void setOt(const T _ot) { geometry->setO(4, _ot); }	///< Set Ot
     void setDim(const int _dim) { dim = _dim; }		///< Set the dimension
-    void setDomdec(bool val) { domdec = val; } ///<Set domain decomposition flag
+    void setDomain(std::shared_ptr<Domain<T>> dom) { domain = dom; if(dom->getStatus()) domdec = true;} ///<Set domain decomposition obj
 
 private:
     int dim;
     std::shared_ptr<Geometry<T>> geometry; // regular geometry
+    std::shared_ptr<Domain<T>> domain; // Domain pointer 
     int lpml; // PML boundary size
     bool domdec; // Domain decomposition flag
 

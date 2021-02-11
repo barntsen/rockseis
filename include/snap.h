@@ -100,6 +100,8 @@ public:
     int enddiff;
     int snapit; 
     int snapinc;
+    int pad[6]; ///< Padding of domain
+    bool snapswitch; ///< Switches snapshoting on or off
 };
 
 
