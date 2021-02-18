@@ -464,6 +464,337 @@ KdmigAcoustic2D<T>::~KdmigAcoustic2D() {
     // Nothing here
 }
 
+// =============== ACOUSTIC 3D KDMIG CLASS =============== //
+
+template<typename T>
+KdmigAcoustic3D<T>::KdmigAcoustic3D(){
+    dataset = false;
+    modelset = false;
+    pimageset = false;
+    ttableset = false;
+}
+
+template<typename T>
+KdmigAcoustic3D<T>::KdmigAcoustic3D(std::shared_ptr<ModelEikonal3D<T>> _model, std::shared_ptr<Ttable3D<T>> _ttable, std::shared_ptr<Data3D<T>> _data, std::shared_ptr<Image3D<T>> _pimage):Kdmig<T>(){
+    data = _data;
+    ttable = _ttable;
+    model = _model;
+    pimage = _pimage;
+    dataset = true;
+    ttableset = true;
+    modelset = true;
+    pimageset = true;
+}
+
+template<typename T>
+int KdmigAcoustic3D<T>::run()
+{
+     int result = KDMIG_ERR;
+     int nt;
+     T dt;
+	 T ot;
+
+     nt = data->getNt();
+     dt = data->getDt();
+     ot = data->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<Ttable3D<T>> ttable_sou (new Ttable3D<T>(model, 1));
+     std::shared_ptr<Ttable3D<T>> ttable_rec (new Ttable3D<T>(model, 1));
+
+     /* Get data */
+     int ntr = data->getNtrace();
+     Index Idata(nt,ntr);
+     T *rdata_array = data->getData();
+
+     // Create image
+     pimage->allocateImage();
+
+     // Create ttable arrays
+     ttable_sou->allocTtable();
+     ttable_rec->allocTtable();
+
+     this->writeLog("Running 3D Kirchhoff migration.");
+
+     this->writeLog("Doing forward Loop.");
+     // Inserting source point
+     ttable_sou->insertSource(data, SMAP, 0);
+
+     // Solving Eikonal equation for source traveltime
+     ttable->interpTtable(ttable_sou, this->getRadius());
+
+     //Loop over data traces
+     int i;
+     for (i=0; i<ntr; i++){
+         // Inserting new receiver point
+         ttable_rec->insertSource(data, GMAP, i);
+
+         // Solving Eikonal equation for receiver traveltime
+         ttable->interpTtable(ttable_rec, this->getRadius());
+
+         // Build image contribution
+         this->crossCorr_td(ttable_sou, ttable_rec, &rdata_array[Idata(0,i)], nt, dt, ot);
+
+        // Output progress to logfile
+        this->writeProgress(i, ntr-1, 20, 48);
+     }
+        
+    result=KDMIG_OK;
+    return result;
+}
+
+template<typename T>
+int KdmigAcoustic3D<T>::run_adj()
+{
+     int result = KDMIG_ERR;
+     int nt;
+     T dt;
+	 T ot;
+
+     nt = data->getNt();
+     dt = data->getDt();
+     ot = data->getOt();
+
+     this->createLog(this->getLogfile());
+
+     // Create the classes 
+     std::shared_ptr<Ttable3D<T>> ttable_sou (new Ttable3D<T>(model, 1));
+     std::shared_ptr<Ttable3D<T>> ttable_rec (new Ttable3D<T>(model, 1));
+     std::shared_ptr<RaysAcoustic3D<T>> rays_adj (new RaysAcoustic3D<T>(model));
+
+     /* Get data */
+     int ntr = data->getNtrace();
+     Index Idata(nt,ntr);
+     T *rdata_array = data->getData();
+     T *data_dt = (T *) calloc(nt, sizeof(T));
+
+     // Create gradient
+     vpgrad->allocateImage();
+
+     // Create ttable arrays
+     ttable_sou->allocTtable();
+     ttable_rec->allocTtable();
+
+    // Allocate memory for adjoint sources 
+    T* adjsrc_sou, *adjsrc_rec;
+    adjsrc_sou = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
+    adjsrc_rec = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
+
+     this->writeLog("Running 3D Kirchhoff migration.");
+
+     this->writeLog("Doing forward Loop.");
+     // Inserting source point
+     ttable_sou->insertSource(data, SMAP, 0);
+
+     // Solving Eikonal equation for source traveltime
+     ttable->interpTtable(ttable_sou, this->getRadius());
+
+     //Loop over data traces
+     int i,j;
+     for (i=0; i<ntr; i++){
+         // Inserting new receiver point
+         ttable_rec->insertSource(data, GMAP, i);
+
+         // Solving Eikonal equation for receiver traveltime
+         ttable->interpTtable(ttable_rec, this->getRadius());
+
+         // Derivate data
+         for(j=1; j<nt-1; j++){
+             data_dt[j] =  (rdata_array[Idata(j+1,i)] - rdata_array[Idata(j-1,i)])/(2.0*dt);
+         }
+
+         // Build adjoint source
+         this->calcAdjointsource(adjsrc_sou, adjsrc_rec, ttable_sou, ttable_rec, data_dt, nt, dt, ot);
+
+         // Solve the source side adjoint equation
+         rays_adj->clearTT();
+         ttable_sou->putTtabledata(rays_adj);
+         rays_adj->insertImageresiduals(adjsrc_sou);
+         rays_adj->solve_adj();
+
+         // Calculate gradient
+         this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+         rays_adj->clearLam(1e16);
+
+         // Solve the receiver side equation
+         rays_adj->clearTT();
+         ttable_rec->putTtabledata(rays_adj);
+         rays_adj->insertImageresiduals(adjsrc_rec);
+         rays_adj->solve_adj();
+
+         // Calculate gradient
+         this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+         rays_adj->clearLam(1e16);
+
+        // Output progress to logfile
+        this->writeProgress(i, ntr-1, 20, 48);
+     }
+        
+    result=KDMIG_OK;
+    return result;
+}
+
+template<typename T>
+void KdmigAcoustic3D<T>::scaleGrad(std::shared_ptr<rockseis::ModelEikonal3D<T>> model, T *lam, T *grad) {
+    int nx, ny, nz;
+    int nx_pml, ny_pml, nz_pml;
+    int lpml = model->getLpml();
+    nx = model->getNx();
+    ny = model->getNy();
+    nz = model->getNz();
+    nx_pml = model->getNx_pml();
+    ny_pml = model->getNy_pml();
+    nz_pml = model->getNz_pml();
+    T * vp = model->getVelocity();
+    Index Ilam(nx_pml, ny_pml, nz_pml);
+    Index Igrad(nx, ny, nz);
+    for (int i=0; i<nx; i++){
+       for (int j=0; j<ny; j++){
+          for (int k=0; k<nz; k++){
+             if(isnan(lam[Ilam(i+lpml, j+lpml, k+lpml)]) || isinf(lam[Ilam(i+lpml, j+lpml, k+lpml)]) ){
+                grad[Igrad(i,j,k)] = 0.0;
+             }else{
+                grad[Igrad(i,j,k)] += -1.0*lam[Ilam(i+lpml,j+lpml,k+lpml)]/CUB(vp[Igrad(i,j,k)]);
+             }
+          }
+       }
+    }
+}
+
+template<typename T>
+void KdmigAcoustic3D<T>::crossCorr_td(std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T *data, unsigned long nt, T dt, T ot) {
+   /* Build image */
+   if(!pimage->getAllocated()) pimage->allocateImage();
+   int ix, iy, iz, ihx, ihy, ihz;
+   T *TT_sou = ttable_sou->getData();
+   T *TT_rec = ttable_rec->getData();
+   T *imagedata = pimage->getImagedata();
+   int nhx = pimage->getNhx();
+   int nhy = pimage->getNhy();
+   int nhz = pimage->getNhz();
+   int nx = pimage->getNx();
+   int ny = pimage->getNy();
+   int nz = pimage->getNz();
+   int hx, hy, hz;
+   T wsr,wsi;
+   int it0, it1;
+   T TTsum=0;
+   T omega=0;
+   for (ihz=0; ihz<nhz; ihz++){
+      hz= -(nhz-1)/2 + ihz;
+      for (ihy=0; ihy<nhy; ihy++){
+         hy= -(nhy-1)/2 + ihy;
+         for (ihx=0; ihx<nhx; ihx++){
+            hx= -(nhx-1)/2 + ihx;
+            for (iz=0; iz<nz; iz++){
+               if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+                  for (iy=0; iy<ny; iy++){
+                     if( ((iy-hy) >= 0) && ((iy-hy) < ny) && ((iy+hy) >= 0) && ((iy+hy) < ny)){
+                        for (ix=0; ix<nx; ix++){
+                           if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+                           {
+                              TTsum = TT_sou[kt3D(ix-hx, iy-hy, iz-hz)] + TT_rec[kt3D(ix+hx, iy+hy, iz+hz)] - ot;
+                              it0 = (int) ((TTsum -ot)/dt);
+                              it1 = it0 + 1;
+
+                              if(it0 > 0 && it1 < nt){
+                                 wsr = data[it0];
+                                 wsi = data[it1];
+                                 omega = (TTsum - it0*dt + ot)/dt;
+                                 imagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= (1.0-omega)*wsr + omega*wsi;
+                              }
+                           }
+                        }
+                     }	
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
+template<typename T>
+void KdmigAcoustic3D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T *data, unsigned long nt, T dt, T ot) {
+   int ix, iy, iz, ihx, ihy, ihz;
+   T *TT_sou = ttable_sou->getData();
+   T *TT_rec = ttable_rec->getData();
+   T *imagedata = pimage->getImagedata();
+   int nhx = pimage->getNhx();
+   int nhy = pimage->getNhy();
+   int nhz = pimage->getNhz();
+   int nx = pimage->getNx();
+   int ny = pimage->getNy();
+   int nz = pimage->getNz();
+   int hx, hy, hz;
+   T wsr,wsi;
+   int it0, it1;
+    T TTsum;
+    T omega=0;
+    //Reset arrays
+    for (ix=0; ix<nx; ix++){
+       for (iy=0; iy<ny; iy++){
+          for (iz=0; iz<nz; iz++){
+             adjsrc_sou[km3D(ix,iy,iz)] = 0.0;
+             adjsrc_rec[km3D(ix,iy,iz)] = 0.0;
+          }
+       }
+    }
+
+    for (ihz=0; ihz<nhz; ihz++){
+       hz= -(nhz-1)/2 + ihz;
+       for (ihy=0; ihy<nhy; ihy++){
+          hy= -(nhy-1)/2 + ihy;
+          for (ihx=0; ihx<nhx; ihx++){
+             hx= -(nhx-1)/2 + ihx;
+             for (iz=0; iz<nz; iz++){
+                if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz)){
+                   for (iy=0; iy<ny; iy++){
+                      if( ((iy-2*hy) >= 0) && ((iy-2*hy) < ny) && ((iy+2*hy) >= 0) && ((iy+2*hy) < ny)){
+                         for (ix=0; ix<nx; ix++){
+                            if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
+                            {
+                               // Source side residual
+                               TTsum = TT_sou[kt3D(ix, iy, iz)] + TT_rec[kt3D(ix+2*hx, iy+2*hy, iz+2*hz)] - ot;
+                               it0 = (int) ((TTsum -ot)/dt);
+                               it1 = it0 + 1;
+                               if(it0 > 0 && it1 < nt){
+                                  wsr = data[it0];
+                                  wsi = data[it1];
+                                  omega = (TTsum - it0*dt + ot)/dt;
+                                  adjsrc_sou[km3D(ix,iy,iz)] += imagedata[ki3D(ix+hx,iy+hy,iz+hz,ihx,ihy,ihz)]*((1.0-omega)*wsr + omega*wsi);
+                               }
+
+                               // Receiver side residual
+                               TTsum = TT_sou[kt3D(ix-2*hx, iy-2*hy, iz-2*hz)] + TT_rec[kt3D(ix, iy, iz)] - ot;
+                               it0 = (int) ((TTsum -ot)/dt);
+                               it1 = it0 + 1;
+                               if(it0 > 0 && it1 < nt){
+                                  wsr = data[it0];
+                                  wsi = data[it1];
+                                  omega = (TTsum - it0*dt + ot)/dt;
+                                  adjsrc_rec[km3D(ix,iy,iz)] += imagedata[ki3D(ix-hx,iy-hy,iz-hz,ihx,ihy,ihz)]*((1.0-omega)*wsr + omega*wsi);
+                               }
+                            }
+                         }
+                      }
+                   }
+                }	
+             }
+          }
+       }
+    }
+}
+
+
+template<typename T>
+KdmigAcoustic3D<T>::~KdmigAcoustic3D() {
+    // Nothing here
+}
+
+
 // =============== ELASTIC 2D KDMIG CLASS =============== //
 
 template<typename T>
@@ -695,6 +1026,8 @@ template class Kdmig<float>;
 template class Kdmig<double>;
 template class KdmigAcoustic2D<float>;
 template class KdmigAcoustic2D<double>;
+template class KdmigAcoustic3D<float>;
+template class KdmigAcoustic3D<double>;
 template class KdmigElastic2D<float>;
 template class KdmigElastic2D<double>;
 }
