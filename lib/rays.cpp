@@ -1388,6 +1388,132 @@ int RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source,
 }
 
 template<typename T>
+int RaysAcoustic3D<T>::solveHomogen(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
+    Point3D<int> *map;
+    Point3D<T> *shift;
+    size_t ntrace = source->getNtrace();
+    size_t nx, ny, nz;
+    T dx, dy, dz;
+    int nr = 0;
+    int lpml;
+
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    ny = this->getNy_pml();
+    nz = this->getNz_pml();
+
+    dx = this->getDx();
+    dy = this->getDy();
+    dz = this->getDz();
+
+    T x,y,z;
+    T *V = model->getL();
+
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+        shift = (source->getGeom())->getSshift();
+    }else{
+        map = (source->getGeom())->getGmap();
+        shift = (source->getGeom())->getGshift();
+    }
+
+    size_t i;
+    int isx, isy, isz;
+    int nxi,nyi,nzi;
+    nxi = (int) nx;
+    nyi = (int) ny;
+    nzi = (int) nz;
+    //Indexes 
+    Index I(nx, ny, nz); //Model and Field indexes
+    for (i=0; i < ntrace; i++) 
+    {
+        if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+        { 
+            for(isx = -map[i].x; isx < (nxi-map[i].x) ; isx++)
+                {
+                if(((map[i].x + isx) >= 0) && ((map[i].x + isx) < nx)){
+                    x = shift[i].x -  isx;
+                    for(isy = -map[i].y; isy < (nyi-map[i].y) ; isy++){
+                        if(((map[i].y + isy) >= 0) && ((map[i].y + isy) < ny)){
+                            y = shift[i].y -  isy;
+                            for(isz = -map[i].z; isz < (nzi-map[i].z) ; isz++){
+                                if(((map[i].z + isz) >= 0) && ((map[i].z + isz) < nz)){
+                                    z = shift[i].z -  isz;
+                                    TT[I(lpml+map[i].x + isx, lpml+map[i].y + isy, lpml+map[i].z + isz)] = sqrt(SQ(x*dx) + SQ(y*dy) + SQ(z*dz))/V[I(lpml, lpml, lpml)];
+                                    nr++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return nr;
+}
+
+template<typename T>
+int RaysAcoustic3D<T>::solveHomogen(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, size_t traceno){
+    Point3D<int> *map;
+    Point3D<T> *shift;
+    size_t nx, ny, nz;
+    T dx, dy, dz;
+    int nr = 0;
+    int lpml;
+
+    lpml = this->getLpml();
+    nx = this->getNx_pml();
+    ny = this->getNy_pml();
+    nz = this->getNz_pml();
+
+    dx = this->getDx();
+    dy = this->getDy();
+    dz = this->getDz();
+
+    T x,y,z;
+    T *V = model->getL();
+
+
+    // Get correct map (source or receiver mapping)
+    if(maptype == SMAP) {
+        map = (source->getGeom())->getSmap();
+        shift = (source->getGeom())->getSshift();
+    }else{
+        map = (source->getGeom())->getGmap();
+        shift = (source->getGeom())->getGshift();
+    }
+
+    size_t i = traceno;
+    int isx, isy, isz;
+    //Indexes 
+    Index I(nx, ny, nz); //Model and Field indexes
+    if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+    { 
+        for(isx = -map[i].x; isx < (nx-map[i].x); isx++)
+        {
+            if(((map[i].x + isx) >= 0) && ((map[i].x + isx) < nx)){
+                x = shift[i].x -  isx;
+                for(isy = -map[i].y; isy < (ny-map[i].y) ; isy++){
+                    if(((map[i].y + isy) >= 0) && ((map[i].y + isy) < ny)){
+                        y = shift[i].y -  isy;
+                        for(isz = -map[i].z; isz < (nz-map[i].z) ; isz++){
+                            if(((map[i].z + isz) >= 0) && ((map[i].z + isz) < nz)){
+                                z = shift[i].z -  isz;
+                                TT[I(lpml+map[i].x + isx, lpml+map[i].y + isy, lpml+map[i].z + isz)] = sqrt(SQ(x*dx) + SQ(y*dy) + SQ(z*dz))/V[I(lpml, lpml, lpml)];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        nr++;
+    }
+    return nr;
+}
+
+template<typename T>
 void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype){
     Point3D<int> *map;
     Point3D<T> *shift;

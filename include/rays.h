@@ -151,6 +151,8 @@ public:
     // Insert source functions
     int insertSource(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
     int insertSource(std::shared_ptr<Data3D<T>> source, bool maptype, size_t traceno); ///< Insert source position for a particular trace number
+    int solveHomogen(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
+    int solveHomogen(std::shared_ptr<Data3D<T>> source, bool maptype, size_t traceno); ///< Insert source position for a particular trace number
     void insertResiduals(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert traveltime residuals
     void insertImageresiduals(T *res); ///< Insert image residuals
     void clearTT(); ///< Reset traveltime array 

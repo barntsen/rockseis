@@ -27,6 +27,9 @@ int main(int argc, char** argv) {
       if(mpi.getRank() == 0){
          PRINT_DOC(# MPI 3d acoustic modelling default configuration file);
          PRINT_DOC();
+         PRINT_DOC(# Form of traveltime computation);
+         PRINT_DOC(        Homogen = "false";);
+         PRINT_DOC();
          PRINT_DOC(# Sampling);
          PRINT_DOC(        Souinc = "1";);
          PRINT_DOC(        Recinc = "1";);
@@ -45,6 +48,7 @@ int main(int argc, char** argv) {
    int souinc, recinc;
    int nsoufin, nrecfin;
    int Lpml = 0;
+   bool homogen;
    std::string Surveyfile;
    std::string Vpfile;
    std::string Ttablefile;
@@ -60,6 +64,7 @@ int main(int argc, char** argv) {
       rs_error("Parse error on input config file", argv[1]);
    }
    status = false; 
+   if(Inpar->getPar("Homogen", &homogen) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Survey", &Surveyfile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Souinc", &souinc) == INPARSE_ERR) status = true;
@@ -78,8 +83,10 @@ int main(int argc, char** argv) {
    std::shared_ptr<rockseis::ModelEikonal3D<float>> gmodel (new rockseis::ModelEikonal3D<float>(Vpfile, Lpml));
 
    // Test for problematic model sampling
-   if(gmodel->getDx() != gmodel->getDz() || gmodel->getDx() != gmodel->getDy()){
-      rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dy = dz).");
+   if(!homogen){
+       if(gmodel->getDx() != gmodel->getDz() || gmodel->getDx() != gmodel->getDy()){
+           rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dy = dz).");
+       }
    }
    // Read and expand global model
    gmodel->readVelocity();
@@ -186,8 +193,12 @@ int main(int argc, char** argv) {
             rays = std::make_shared<rockseis::RaysAcoustic3D<float>>(gmodel);
 
             /* initialize traveltime field at source positions */
-            rays->insertSource(source, SMAP);
-            rays->solve();
+            if(homogen){
+                rays->solveHomogen(source, SMAP);
+            }else{
+                rays->insertSource(source, SMAP);
+                rays->solve();
+            }
 
             // Create traveltime table
             Ttable = std::make_shared<rockseis::Ttable3D<float>> (Ttablefile);
@@ -235,8 +246,12 @@ int main(int argc, char** argv) {
             rays = std::make_shared<rockseis::RaysAcoustic3D<float>>(gmodel);
 
             /* initialize traveltime field at source positions */
-            rays->insertSource(source, SMAP);
-            rays->solve();
+            if(homogen){
+                rays->solveHomogen(source, SMAP);
+            }else{
+                rays->insertSource(source, SMAP);
+                rays->solve();
+            }
 
             // Create traveltime table
             Ttable = std::make_shared<rockseis::Ttable3D<float>> (Ttablefile);
