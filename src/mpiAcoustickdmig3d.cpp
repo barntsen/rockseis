@@ -133,6 +133,7 @@ int main(int argc, char** argv) {
            rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dy = dz).");
        }
    }
+   mpi.setVerbose(false);
 
 
    if(mpi.getRank() == 0) {
@@ -232,7 +233,7 @@ int main(int argc, char** argv) {
             kdmig->setRadius(radius);
 
             // Set logfile
-            kdmig->setLogfile("log.txt-" + std::to_string(work.id));
+            //kdmig->setLogfile("log.txt-" + std::to_string(work.id));
 
             // Run migration
             kdmig->run();
