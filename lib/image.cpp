@@ -65,6 +65,7 @@ Image2D<T>::Image2D(std::string _imagefile): Model<T>(2)
     this->setOy(_oy);
     this->setOz(_oz);
     allocated = false;
+    incore = false;
 }
 
 template<typename T>
@@ -97,6 +98,7 @@ Image2D<T>::Image2D(std::string _imagefile, std::shared_ptr<ModelEikonal2D<T>> m
     this->setNhz(nhz);
     imagefile = _imagefile;
     allocated = false;
+    incore = false;
 }
 
 template<typename T>
@@ -129,6 +131,7 @@ Image2D<T>::Image2D(std::string _imagefile, std::shared_ptr<ModelAcoustic2D<T>> 
     this->setNhz(nhz);
     imagefile = _imagefile;
     allocated = false;
+    incore = false;
 }
 
 template<typename T>
@@ -161,6 +164,7 @@ Image2D<T>::Image2D(std::string _imagefile, std::shared_ptr<ModelElastic2D<T>> m
     this->setNhz(nhz);
     imagefile = _imagefile;
     allocated = false;
+    incore = false;
 }
 
 template<typename T>
@@ -178,6 +182,7 @@ Image2D<T>::Image2D(const int _nx, const int _nz,  const int _nhx, const int _nh
     this->setNhx(_nhx);
     this->setNhz(_nhz);
     allocated = false;
+    incore = false;
 }
 
 template<typename T>
@@ -722,6 +727,7 @@ Image3D<T>::Image3D(std::string imagefile): Model<T>(3)
     this->setOy(_oy);
     this->setOz(_oz);
     allocated = false;
+    incore = false;
 }
 
 template<typename T>
@@ -755,6 +761,7 @@ Image3D<T>::Image3D(std::string _imagefile, std::shared_ptr<ModelEikonal3D<T>> m
     this->setNhz(nhz);
     imagefile = _imagefile;
     allocated = false;
+    incore = false;
 }
 
 template<typename T>
@@ -788,6 +795,7 @@ Image3D<T>::Image3D(std::string _imagefile, std::shared_ptr<ModelAcoustic3D<T>> 
     this->setNhz(nhz);
     imagefile = _imagefile;
     allocated = false;
+    incore = false;
 }
 
 template<typename T>
@@ -821,6 +829,7 @@ Image3D<T>::Image3D(std::string _imagefile, std::shared_ptr<ModelElastic3D<T>> m
     this->setNhz(nhz);
     imagefile = _imagefile;
     allocated = false;
+    incore = false;
 }
 
 template<typename T>
@@ -839,6 +848,7 @@ Image3D<T>::Image3D(const int _nx, const int _ny, const int _nz, const int _nhx,
     this->setNhy(_nhy);
     this->setNhz(_nhz);
     allocated = false;
+    incore = false;
 }
 
 template<typename T>

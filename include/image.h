@@ -31,6 +31,8 @@ public:
     int getNhz() { return (this->getGeom())->getN(6); }
     T *getImagedata() { return imagedata; }  ///< Get image array
     bool getAllocated() { return allocated; } ///< Returns true if image is allocated
+    bool getIncore() { return incore; } ///< Stack incore switch 
+    void setIncore(bool val) { incore = val; } ///< Stack incore switch 
 
     // Set functions
     void setNhx(int nhx) { (this->getGeom())->setN(4, nhx); }
@@ -54,6 +56,7 @@ private:
     std::string imagefile;
     std::string gatherfile;
     bool allocated;
+    bool incore;
 };
 
 // =============== 3D IMAGE CLASS =============== //
@@ -76,6 +79,8 @@ public:
     int getNhz() { return (this->getGeom())->getN(6); }
     T *getImagedata() { return imagedata; }  ///< Get image array
     bool getAllocated() { return allocated; } ///< Returns true if image is allocated
+    bool getIncore() { return incore; } ///< Stack incore switch 
+    void setIncore(bool val) { incore = val; } ///< Stack incore switch 
 
     // Set functions
     void setNhx(int nhx) { (this->getGeom())->setN(4, nhx); }
@@ -100,6 +105,7 @@ private:
     std::string imagefile;
     std::string gatherfile;
     bool allocated;
+    bool incore;
 };
 
 }

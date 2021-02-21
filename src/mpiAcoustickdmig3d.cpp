@@ -184,6 +184,8 @@ int main(int argc, char** argv) {
    else {
       /* Slave */
       std::shared_ptr<rockseis::KdmigAcoustic3D<float>> kdmig;
+      pimage_lstack = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-" + std::to_string(mpi.getRank()), gmodel, nhx, nhy, nhz);
+      pimage_lstack->createEmpty();
       while(1) {
          workModeling_t work = mpi.receiveWork();
 
@@ -213,8 +215,6 @@ int main(int argc, char** argv) {
             // Make image classes
             pimage = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-tmp-" + std::to_string(work.id), lmodel, nhx, nhy, nhz);
 
-            pimage_lstack = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-" + std::to_string(mpi.getRank()), gmodel, nhx, nhy, nhz);
-            pimage_lstack->createEmpty();
             if(!incore){
                 // Create traveltime table class
                 ttable = std::make_shared<rockseis::Ttable3D<float>>(Ttablefile);
@@ -246,6 +246,8 @@ int main(int argc, char** argv) {
 
             // Output image
             pimage->write();
+
+            // Stack image
             pimage_lstack->stackImage(Pimagefile + "-tmp-" + std::to_string(work.id));
             remove_file(Pimagefile + "-tmp-" + std::to_string(work.id));
 
