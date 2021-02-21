@@ -237,7 +237,9 @@ int main(int argc, char** argv) {
             lmodel.reset();
             pimage.reset();
             kdmig.reset();
-            ttable.reset();
+            if(!incore){
+                ttable.reset();
+            }
 
             // Send result back
             work.status = WORK_FINISHED;
