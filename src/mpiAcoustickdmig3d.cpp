@@ -185,8 +185,11 @@ int main(int argc, char** argv) {
       /* Slave */
       std::shared_ptr<rockseis::KdmigAcoustic3D<float>> kdmig;
       pimage_lstack = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-" + std::to_string(mpi.getRank()), gmodel, nhx, nhy, nhz);
-      pimage_lstack->allocateImage();
-      //pimage_lstack->createEmpty();
+      if(incore){
+          pimage_lstack->allocateImage();
+      }else{
+          pimage_lstack->createEmpty();
+      }
       while(1) {
          workModeling_t work = mpi.receiveWork();
 
@@ -245,13 +248,16 @@ int main(int argc, char** argv) {
             // Run migration
             kdmig->run();
 
-            // Output image
-            //pimage->write();
-
             // Stack image
-            //pimage_lstack->stackImage(Pimagefile + "-tmp-" + std::to_string(work.id));
-            //remove_file(Pimagefile + "-tmp-" + std::to_string(work.id));
-            pimage_lstack->stackImage(pimage);
+            if(incore){
+                pimage_lstack->stackImage(pimage);
+            }else{
+                // Output image
+                pimage->write();
+                pimage_lstack->stackImage(Pimagefile + "-tmp-" + std::to_string(work.id));
+                remove_file(Pimagefile + "-tmp-" + std::to_string(work.id));
+            }
+
 
             // Reset all classes
             shot3D.reset();
@@ -267,8 +273,10 @@ int main(int argc, char** argv) {
             mpi.sendResult(work);		
          }
       }
-      // Write out stack
-      pimage_lstack->write();
+      if(incore){
+          // Write out stack
+          pimage_lstack->write();
+      }
    }
 }
 
