@@ -1433,13 +1433,13 @@ int RaysAcoustic3D<T>::solveHomogen(std::shared_ptr<rockseis::Data3D<T>> source,
         { 
             for(isx = -map[i].x; isx < (nxi-map[i].x) ; isx++)
                 {
-                if(((map[i].x + isx) >= 0) && ((map[i].x + isx) < nx)){
+                if(((map[i].x + isx + lpml) >= 0) && ((map[i].x + isx + lpml) < nx)){
                     x = shift[i].x -  isx;
                     for(isy = -map[i].y; isy < (nyi-map[i].y) ; isy++){
-                        if(((map[i].y + isy) >= 0) && ((map[i].y + isy) < ny)){
+                        if(((map[i].y + isy + lpml) >= 0) && ((map[i].y + isy + lpml) < ny)){
                             y = shift[i].y -  isy;
                             for(isz = -map[i].z; isz < (nzi-map[i].z) ; isz++){
-                                if(((map[i].z + isz) >= 0) && ((map[i].z + isz) < nz)){
+                                if(((map[i].z + isz + lpml) >= 0) && ((map[i].z + isz + lpml) < nz)){
                                     z = shift[i].z -  isz;
                                     TT[I(lpml+map[i].x + isx, lpml+map[i].y + isy, lpml+map[i].z + isz)] = sqrt(SQ(x*dx) + SQ(y*dy) + SQ(z*dz))/V[I(lpml, lpml, lpml)];
                                     nr++;
@@ -1497,13 +1497,13 @@ int RaysAcoustic3D<T>::solveHomogen(std::shared_ptr<rockseis::Data3D<T>> source,
     { 
         for(isx = -map[i].x; isx < (nxi-map[i].x) ; isx++)
         {
-            if(((map[i].x + isx) >= 0) && ((map[i].x + isx) < nx)){
+            if(((map[i].x + isx + lpml) >= 0) && ((map[i].x + isx + lpml) < nx)){
                 x = shift[i].x -  isx;
                 for(isy = -map[i].y; isy < (nyi-map[i].y) ; isy++){
-                    if(((map[i].y + isy) >= 0) && ((map[i].y + isy) < ny)){
+                    if(((map[i].y + isy + lpml) >= 0) && ((map[i].y + isy + lpml) < ny)){
                         y = shift[i].y -  isy;
                         for(isz = -map[i].z; isz < (nzi-map[i].z) ; isz++){
-                            if(((map[i].z + isz) >= 0) && ((map[i].z + isz) < nz)){
+                            if(((map[i].z + isz + lpml) >= 0) && ((map[i].z + isz + lpml) < nz)){
                                 z = shift[i].z -  isz;
                                 TT[I(lpml+map[i].x + isx, lpml+map[i].y + isy, lpml+map[i].z + isz)] = sqrt(SQ(x*dx) + SQ(y*dy) + SQ(z*dz))/V[I(lpml, lpml, lpml)];
                                 nr++;

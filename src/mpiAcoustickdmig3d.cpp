@@ -127,6 +127,14 @@ int main(int argc, char** argv) {
    // Create a global model class
    std::shared_ptr<rockseis::ModelEikonal3D<float>> gmodel (new rockseis::ModelEikonal3D<float>(Vpfile, lpml));
 
+   // Test for problematic model sampling
+   if(incore && !homogen){
+       if(gmodel->getDx() != gmodel->getDz() || gmodel->getDx() != gmodel->getDy()){
+           rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dy = dz).");
+       }
+   }
+
+
    if(mpi.getRank() == 0) {
       // Master
       Sort->createShotmap(Precordfile); 
