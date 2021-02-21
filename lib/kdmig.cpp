@@ -13,6 +13,8 @@ Kdmig<T>::Kdmig() {
     maxfreq = 100;
     minfreq = 4;
     rad = 50.0;
+    incore = true;
+    homogen = false;
 }
 
 template<typename T>
@@ -492,7 +494,11 @@ int KdmigAcoustic3D<T>::run()
      int result = KDMIG_ERR;
      int nt;
      T dt;
-	 T ot;
+     T ot;
+     std::shared_ptr<RaysAcoustic3D<T>> rays_sou;
+     std::shared_ptr<RaysAcoustic3D<T>> rays_rec;
+     std::shared_ptr<Ttable3D<T>> ttable_sou;
+     std::shared_ptr<Ttable3D<T>> ttable_rec;
 
      nt = data->getNt();
      dt = data->getDt();
@@ -501,8 +507,13 @@ int KdmigAcoustic3D<T>::run()
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<Ttable3D<T>> ttable_sou (new Ttable3D<T>(model, 1));
-     std::shared_ptr<Ttable3D<T>> ttable_rec (new Ttable3D<T>(model, 1));
+     if(this->getIncore()){
+         rays_sou = std::make_shared<RaysAcoustic3D<T>> (model);
+         rays_rec = std::make_shared<RaysAcoustic3D<T>> (model);
+     }else{
+         ttable_sou = std::make_shared<Ttable3D<T>> (model, 1);
+         ttable_rec = std::make_shared<Ttable3D<T>> (model, 1);
+     }
 
      /* Get data */
      int ntr = data->getNtrace();
@@ -512,30 +523,56 @@ int KdmigAcoustic3D<T>::run()
      // Create image
      pimage->allocateImage();
 
-     // Create ttable arrays
-     ttable_sou->allocTtable();
-     ttable_rec->allocTtable();
+     if(!this->getIncore()){
+         // Create ttable arrays
+         ttable_sou->allocTtable();
+         ttable_rec->allocTtable();
+     }
 
      this->writeLog("Running 3D Kirchhoff migration.");
 
      this->writeLog("Doing forward Loop.");
-     // Inserting source point
-     ttable_sou->insertSource(data, SMAP, 0);
+     if(this->getIncore()){
+         if(this->getHomogen()){
+             rays_sou->solveHomogen(data, SMAP, 0);
+         }else{
+             rays_sou->insertSource(data, SMAP, 0);
+             rays_sou->solve();
+         }
+     }else{
+         // Inserting source point
+         ttable_sou->insertSource(data, SMAP, 0);
 
-     // Solving Eikonal equation for source traveltime
-     ttable->interpTtable(ttable_sou, this->getRadius());
+         // Solving Eikonal equation for source traveltime
+         ttable->interpTtable(ttable_sou, this->getRadius());
+     }
 
      //Loop over data traces
      int i;
      for (i=0; i<ntr; i++){
-         // Inserting new receiver point
-         ttable_rec->insertSource(data, GMAP, i);
+         if(this->getIncore()){
+             if(this->getHomogen()){
+                 // Solve traveltime 
+                 rays_rec->solveHomogen(data, GMAP, i);
+             }else{
+                 // Reset traveltime for receiver
+                 rays_rec->clearTT();
+                 // Inserting new receiver point
+                 rays_rec->insertSource(data, GMAP, i);
+                 rays_rec->solve();
+             }
 
-         // Solving Eikonal equation for receiver traveltime
-         ttable->interpTtable(ttable_rec, this->getRadius());
+             // Build image contribution
+             this->crossCorr_td(rays_sou, rays_rec, &rdata_array[Idata(0,i)], nt, dt, ot, model->getLpml());
+         }else{
+             // Inserting new receiver point
+             ttable_rec->insertSource(data, GMAP, i);
 
-         // Build image contribution
-         this->crossCorr_td(ttable_sou, ttable_rec, &rdata_array[Idata(0,i)], nt, dt, ot);
+             // Solving Eikonal equation for receiver traveltime
+             ttable->interpTtable(ttable_rec, this->getRadius());
+             // Build image contribution
+             this->crossCorr_td(ttable_sou, ttable_rec, &rdata_array[Idata(0,i)], nt, dt, ot);
+         }
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -677,6 +714,8 @@ void KdmigAcoustic3D<T>::crossCorr_td(std::shared_ptr<Ttable3D<T>> ttable_sou, s
    int nx = pimage->getNx();
    int ny = pimage->getNy();
    int nz = pimage->getNz();
+   int nxt = nx;
+   int nyt = ny;
    int hx, hy, hz;
    T wsr,wsi;
    int it0, it1;
@@ -717,6 +756,61 @@ void KdmigAcoustic3D<T>::crossCorr_td(std::shared_ptr<Ttable3D<T>> ttable_sou, s
 }
 
 template<typename T>
+void KdmigAcoustic3D<T>::crossCorr_td(std::shared_ptr<RaysAcoustic3D<T>> rays_sou, std::shared_ptr<RaysAcoustic3D<T>> rays_rec, T *data, unsigned long nt, T dt, T ot, int pad) {
+   /* Build image */
+   if(!pimage->getAllocated()) pimage->allocateImage();
+   int ix, iy, iz, ihx, ihy, ihz;
+   T *TT_sou = rays_sou->getTT();
+   T *TT_rec = rays_rec->getTT();
+   T *imagedata = pimage->getImagedata();
+   int nhx = pimage->getNhx();
+   int nhy = pimage->getNhy();
+   int nhz = pimage->getNhz();
+   int nx = pimage->getNx();
+   int ny = pimage->getNy();
+   int nz = pimage->getNz();
+   int nxt = nx + 2*pad;
+   int nyt = ny + 2*pad;
+   int hx, hy, hz;
+   T wsr,wsi;
+   int it0, it1;
+   T TTsum=0;
+   T omega=0;
+   for (ihz=0; ihz<nhz; ihz++){
+      hz= -(nhz-1)/2 + ihz;
+      for (ihy=0; ihy<nhy; ihy++){
+         hy= -(nhy-1)/2 + ihy;
+         for (ihx=0; ihx<nhx; ihx++){
+            hx= -(nhx-1)/2 + ihx;
+            for (iz=0; iz<nz; iz++){
+               if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+                  for (iy=0; iy<ny; iy++){
+                     if( ((iy-hy) >= 0) && ((iy-hy) < ny) && ((iy+hy) >= 0) && ((iy+hy) < ny)){
+                        for (ix=0; ix<nx; ix++){
+                           if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+                           {
+                              TTsum = TT_sou[kt3D(ix-hx+pad, iy-hy+pad, iz-hz+pad)] + TT_rec[kt3D(ix+hx+pad, iy+hy+pad, iz+hz+pad)] - ot;
+                              it0 = (int) ((TTsum -ot)/dt);
+                              it1 = it0 + 1;
+
+                              if(it0 > 0 && it1 < nt){
+                                 wsr = data[it0];
+                                 wsi = data[it1];
+                                 omega = (TTsum - it0*dt + ot)/dt;
+                                 imagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= (1.0-omega)*wsr + omega*wsi;
+                              }
+                           }
+                        }
+                     }	
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
+template<typename T>
 void KdmigAcoustic3D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T *data, unsigned long nt, T dt, T ot) {
    int ix, iy, iz, ihx, ihy, ihz;
    T *TT_sou = ttable_sou->getData();
@@ -728,6 +822,8 @@ void KdmigAcoustic3D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::sh
    int nx = pimage->getNx();
    int ny = pimage->getNy();
    int nz = pimage->getNz();
+   int nxt = nx;
+   int nyt = ny;
    int hx, hy, hz;
    T wsr,wsi;
    int it0, it1;

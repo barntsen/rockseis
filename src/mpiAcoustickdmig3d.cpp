@@ -30,6 +30,8 @@ int main(int argc, char** argv) {
       if(mpi.getRank() == 0){
          PRINT_DOC(# MPI 3d acoustic reverse-time migration configuration file);
          PRINT_DOC();
+         PRINT_DOC(# Traveltime computation parameters);
+         PRINT_DOC();
          PRINT_DOC(# Modelling parameters);
          PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
          PRINT_DOC(aperty = "1800"; # Aperture for local model (source is in the middle));
@@ -46,10 +48,12 @@ int main(int argc, char** argv) {
          PRINT_DOC(# Booleans);
          PRINT_DOC(Gather = "false"; # If surface gathers are to be output);
          PRINT_DOC();
-         PRINT_DOC(# Files);
+         PRINT_DOC(# Input files);
          PRINT_DOC(Vp = "Vp3d.rss";);
          PRINT_DOC(Ttable = "Ttable3d.rss";);
          PRINT_DOC(Precordfile = "Pshots3d.rss";);
+         PRINT_DOC();
+         PRINT_DOC(# Output files);
          PRINT_DOC(Pimagefile = "Pimage3d.rss";);
          PRINT_DOC(Pgatherfile = "Pgather3d.rss";);
          PRINT_DOC();
@@ -66,6 +70,8 @@ int main(int argc, char** argv) {
    float minfreq;
    float maxfreq;
    float radius;
+   bool incore;
+   bool homogen;
    std::string Vpfile;
    std::string Ttablefile;
    std::string Pimagefile;
@@ -86,13 +92,18 @@ int main(int argc, char** argv) {
       rs_error("Parse error on input config file", argv[1]);
    }
    status = false; 
-   if(Inpar->getPar("lpml", &lpml) == INPARSE_ERR) status = true;
    if(Inpar->getPar("freqinc", &freqinc) == INPARSE_ERR) status = true;
    if(Inpar->getPar("minfreq", &minfreq) == INPARSE_ERR) status = true;
    if(Inpar->getPar("maxfreq", &maxfreq) == INPARSE_ERR) status = true;
    if(Inpar->getPar("radius", &radius) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("incore", &incore) == INPARSE_ERR) status = true;
+   if(incore){
+       if(Inpar->getPar("homogen", &homogen) == INPARSE_ERR) status = true;
+   }
    if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
-   if(Inpar->getPar("Ttable", &Ttablefile) == INPARSE_ERR) status = true;
+   if(!incore){
+       if(Inpar->getPar("Ttable", &Ttablefile) == INPARSE_ERR) status = true;
+   }
    if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
    if(Inpar->getPar("aperty", &aperty) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Pimagefile", &Pimagefile) == INPARSE_ERR) status = true;
@@ -183,15 +194,24 @@ int main(int argc, char** argv) {
             lmodel = gmodel->getLocal(shot3D, apertx, aperty, SMAP);
             lmodel->Expand();
 
+            // Map coordinates to model
+            shot3D->makeMap(lmodel->getGeom(), SMAP);
+            shot3D->makeMap(lmodel->getGeom(), GMAP);
+
             // Make image class
             pimage = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhy, nhz);
-
-            // Create traveltime table class
-            ttable = std::make_shared<rockseis::Ttable3D<float>>(Ttablefile);
-            ttable->allocTtable();
+            if(!incore){
+                // Create traveltime table class
+                ttable = std::make_shared<rockseis::Ttable3D<float>>(Ttablefile);
+                ttable->allocTtable();
+            }
 
             // Create imaging class
             kdmig = std::make_shared<rockseis::KdmigAcoustic3D<float>>(lmodel, ttable, shot3D, pimage);
+
+            // Set traveltime parameters
+            kdmig->setIncore(incore);
+            kdmig->setHomogen(homogen);
 
             // Set frequency decimation 
             kdmig->setFreqinc(freqinc);

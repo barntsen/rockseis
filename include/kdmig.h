@@ -32,7 +32,7 @@
 
 #define ki3D(i,j,k,l,m,n) ((n)*nhy*nhx*nx*ny*nz + (m)*nhx*nx*ny*nz + (l)*nx*ny*nz + (k)*nx*ny + (j)*nx + (i))
 #define km3D(i,j,k) ((k)*nx*ny + (j)*nx + (i))
-#define kt3D(i,j,k) ((k)*nx*ny + (j)*nx + (i))
+#define kt3D(i,j,k) ((k)*nxt*nyt + (j)*nxt + (i))
 
 #define PCLIP 97
 
@@ -73,6 +73,10 @@ public:
     void setMaxfreq(T val) {maxfreq = val;} ///< Set Maximum frequecy to migrate
     void setMinfreq(T val) {minfreq = val;} ///< Set Minimum frequecy to migrate
     void setRadius(T val) { rad = val; } ///< Set radius of traveltime interpolation 
+    void setIncore(bool val) { incore = val; } 
+    bool getIncore() { return incore; }
+    void setHomogen(bool val) { homogen = val; } 
+    bool getHomogen() { return homogen; }
 
     void writeProgressbar(int x, int n, int r, int w);
     void writeProgress(int x, int n, int r, int w);
@@ -86,6 +90,8 @@ private:
     T maxfreq;
     T minfreq;
     T rad; ///< Radius of interpolation 
+    bool incore; ///< Whether to compute the traveltimes on the fly
+    bool homogen; ///< Whether to use a contant velocity for computing traveltimes
 };
 
 /** The 2D Acoustic Kdmig class
@@ -139,6 +145,7 @@ public:
     void setVpgrad(std::shared_ptr<Image3D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setTtable(std::shared_ptr<Ttable3D<T>> _ttable) { ttable = _ttable; ttableset = true; }
     void crossCorr_td(std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
+    void crossCorr_td(std::shared_ptr<RaysAcoustic3D<T>> rays_sou, std::shared_ptr<RaysAcoustic3D<T>> rays_rec, T* data, unsigned long nfs, T df, T ot, int pad);
     void calcAdjointsource(T *adj_sou, T *adj_rec, std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     void scaleGrad(std::shared_ptr<rockseis::ModelEikonal3D<T>> model, T *lam, T *grad);
     int run();

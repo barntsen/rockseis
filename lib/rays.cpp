@@ -1487,28 +1487,32 @@ int RaysAcoustic3D<T>::solveHomogen(std::shared_ptr<rockseis::Data3D<T>> source,
 
     size_t i = traceno;
     int isx, isy, isz;
+    int nxi,nyi,nzi;
+    nxi = (int) nx;
+    nyi = (int) ny;
+    nzi = (int) nz;
     //Indexes 
     Index I(nx, ny, nz); //Model and Field indexes
     if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
     { 
-        for(isx = -map[i].x; isx < (nx-map[i].x); isx++)
+        for(isx = -map[i].x; isx < (nxi-map[i].x) ; isx++)
         {
             if(((map[i].x + isx) >= 0) && ((map[i].x + isx) < nx)){
                 x = shift[i].x -  isx;
-                for(isy = -map[i].y; isy < (ny-map[i].y) ; isy++){
+                for(isy = -map[i].y; isy < (nyi-map[i].y) ; isy++){
                     if(((map[i].y + isy) >= 0) && ((map[i].y + isy) < ny)){
                         y = shift[i].y -  isy;
-                        for(isz = -map[i].z; isz < (nz-map[i].z) ; isz++){
+                        for(isz = -map[i].z; isz < (nzi-map[i].z) ; isz++){
                             if(((map[i].z + isz) >= 0) && ((map[i].z + isz) < nz)){
                                 z = shift[i].z -  isz;
                                 TT[I(lpml+map[i].x + isx, lpml+map[i].y + isy, lpml+map[i].z + isz)] = sqrt(SQ(x*dx) + SQ(y*dy) + SQ(z*dz))/V[I(lpml, lpml, lpml)];
+                                nr++;
                             }
                         }
                     }
                 }
             }
         }
-        nr++;
     }
     return nr;
 }
