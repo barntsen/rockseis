@@ -267,7 +267,8 @@ int main(int argc, char** argv) {
             mpi.sendResult(work);		
          }
       }
+      // Write out stack
+      pimage_lstack->write();
    }
-   pimage_lstack->write();
 }
 
