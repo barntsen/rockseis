@@ -78,6 +78,7 @@ int main(int argc, char** argv) {
    std::string Precordfile;
    std::shared_ptr<rockseis::Data3D<float>> shot3D;
    std::shared_ptr<rockseis::Image3D<float>> pimage;
+   std::shared_ptr<rockseis::Image3D<float>> pimage_lstack;
    bool Gather;
    std::string Pgatherfile;
    std::shared_ptr<rockseis::Data3D<float>> pgather;
@@ -172,9 +173,11 @@ int main(int argc, char** argv) {
       // Image
       pimage = std::make_shared<rockseis::Image3D<float>>(Pimagefile, gmodel, nhx, nhy, nhz);
       pimage->createEmpty();
-      for(long int i=0; i<ngathers; i++) {
-         pimage->stackImage(Pimagefile + "-" + std::to_string(i));
-         remove_file(Pimagefile + "-" + std::to_string(i));
+      for(long int i=1; i<mpi.getNrank(); i++) {
+          if(file_exists(Pimagefile + "-" + std::to_string(i))){
+              pimage->stackImage(Pimagefile + "-" + std::to_string(i));
+              remove_file(Pimagefile + "-" + std::to_string(i));
+          }
       }
 
    }
@@ -207,8 +210,11 @@ int main(int argc, char** argv) {
             shot3D->makeMap(lmodel->getGeom(), SMAP);
             shot3D->makeMap(lmodel->getGeom(), GMAP);
 
-            // Make image class
-            pimage = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhy, nhz);
+            // Make image classes
+            pimage = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-tmp-" + std::to_string(work.id), lmodel, nhx, nhy, nhz);
+
+            pimage_lstack = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-" + std::to_string(mpi.getRank()), gmodel, nhx, nhy, nhz);
+            pimage_lstack->createEmpty();
             if(!incore){
                 // Create traveltime table class
                 ttable = std::make_shared<rockseis::Ttable3D<float>>(Ttablefile);
@@ -240,6 +246,8 @@ int main(int argc, char** argv) {
 
             // Output image
             pimage->write();
+            pimage_lstack->stackImage(Pimagefile + "-tmp-" + std::to_string(work.id));
+            remove_file(Pimagefile + "-tmp-" + std::to_string(work.id));
 
             // Reset all classes
             shot3D.reset();
