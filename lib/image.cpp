@@ -1148,6 +1148,105 @@ bool Image3D<T>::stackImage(std::string infile)
 }
 
 template<typename T>
+bool Image3D<T>::stackImage(std::shared_ptr<Image3D<T>>  imagein)
+{
+    if(!imagein->getAllocated()) rs_error("Image3D<T>::stackImage: Input image data not allocated.");
+    if(!this->getAllocated()) rs_error("Image3D<T>::stackImage: Output image data not allocated.");
+    bool status;
+    long int nxg, nyg,nzg;
+    int nhxg, nhyg, nhzg;
+    T *dataout=this->getImagedata();
+    T dxg, dyg, dzg, oxg, oyg, ozg;
+    nxg = this->getNx();
+    nyg = this->getNy();
+    nzg = this->getNz();
+    nhxg = this->getNhx();
+    nhyg = this->getNhy();
+    nhzg = this->getNhz();
+    dxg = this->getDx();
+    dyg = this->getDy();
+    dzg = this->getDz();
+    oxg = this->getOx();
+    oyg = this->getOy();
+    ozg = this->getOz();
+
+    long int nxl, nyl, nzl;
+    int nhxl, nhyl, nhzl;
+	T dxl, dyl, dzl, oxl, oyl, ozl;
+
+    T *datain=imagein->getImagedata();
+    nxl = imagein->getNx();
+    nyl = imagein->getNy();
+    nzl = imagein->getNz();
+    nhxl = imagein->getNhx();
+    nhyl = imagein->getNhy();
+    nhzl = imagein->getNhz();
+    dxl = imagein->getDx();
+    dyl = imagein->getDy();
+    dzl = imagein->getDz();
+    oxl = imagein->getOx();
+    oyl = imagein->getOy();
+    ozl = imagein->getOz();
+
+	if(nhxg != nhxl || nhyg != nhyl || nhzg != nhzl || dxg != dxl || dyg != dyl || dzg != dzl){
+		rs_error("Image3D::stackImage: Images are not compatible. Cannot stack.");
+	}
+
+    T *trcin;
+    trcin = (T *) calloc(nxl, sizeof(T));
+    if(trcin == NULL) rs_error("Image3D::stackImage: Failed to allocate memory for input trace.");
+
+    T *trcout;
+    trcout = (T *) calloc(nxg, sizeof(T));
+    if(trcout == NULL) rs_error("Image3D::stackImage: Failed to allocate memory for input trace.");
+
+	// Stack data
+	int ix, iy, iz, ihx, ihy, ihz;
+    int ix_start, iy_start, iz_start;
+	ix_start = (int) (oxl/dxl - oxg/dxg);
+	iy_start = (int) (oyl/dyl - oyg/dyg);
+	iz_start = (int) (ozl/dzl - ozg/dzg);
+	Index Iin(nxl, nyl, nzl, nhxl, nhyl, nhzl);
+	Index Iout(nxg, nyg, nzg, nhxl, nhyl, nhzl);
+    for(ihz=0; ihz<nhzl; ihz++) {
+        for(ihy=0; ihy<nhyl; ihy++) {
+            for(ihx=0; ihx<nhxl; ihx++) {
+                for(iz=0; iz<nzl; iz++) {
+                    if((iz + iz_start) >= 0 && (iz + iz_start) < nzg){
+                        for(iy=0; iy<nyl; iy++) {
+                            if((iy + iy_start) >= 0 && (iy + iy_start) < nyg){
+                                // Read traces 
+                                for(ix=0; ix < nxl; ix++){
+                                    trcin[ix] = datain[Iin(ix,iy,iz,ihx,ihy,ihz)];
+                                }
+
+                                for(ix=0; ix < nxg; ix++){
+                                    trcout[ix] = dataout[Iout(ix, (iy+iy_start), (iz+iz_start),ihx,ihy,ihz)];
+                                }
+                                for(ix = 0; ix < nxl; ix++) {
+                                    if((ix + ix_start) >= 0 && (ix + ix_start) < nxg){
+                                        trcout[ix + ix_start] += trcin[ix];
+                                    }
+                                }
+                                // Write trc 
+                                for(ix=0; ix < nxg; ix++){
+                                    dataout[Iout(ix, (iy+iy_start), (iz+iz_start),ihx,ihy,ihz)] = trcout[ix];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+	free(trcin);
+	free(trcout);
+	status = FILE_OK;
+    return status;
+}
+
+
+template<typename T>
 bool Image3D<T>::stackImage_parallel(std::string infile)
 {
     bool status;
