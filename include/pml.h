@@ -156,6 +156,7 @@ class PmlElastic2D: public Pml<T> {
 public:
     PmlElastic2D();	///< Constructor
     PmlElastic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor
+    PmlElastic2D(const int nx, const int nz, const int Lpml, const T dt, const bool *low, const bool *high);	///< Constructor
     ~PmlElastic2D();	///< Destructor
     
     T *Sxx_left;
@@ -189,6 +190,7 @@ class PmlElastic3D: public Pml<T> {
 public:
     PmlElastic3D();	///< Constructor
     PmlElastic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt); 	///< Constructor
+    PmlElastic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt, const bool *low, const bool *high); 	///< Constructor
     ~PmlElastic3D();	///< Destructor
     
     T *Sxx_left;

@@ -389,24 +389,72 @@ PmlElastic2D<T>::PmlElastic2D(const int nx, const int nz, const int Lpml, const 
 }
 
 template<typename T>
+PmlElastic2D<T>::PmlElastic2D(const int nx, const int nz, const int Lpml, const T dt, const bool *low, const bool *high): Pml<T>(Lpml, dt) {
+    int nx_pml, nz_pml;
+    nx_pml= nx;
+    nz_pml= nz;
+
+    int i;
+    for (i=0; i<6; i++) this->setApplypml(i, false);
+
+    /* Allocate variables */
+    if(low[0]){
+       Sxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Sxzx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vzx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       this->setApplypml(0,true);
+    }
+    if(high[0]){
+       Sxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Sxzx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vzx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       this->setApplypml(1,true);
+    }
+    if(low[1]){
+       Szz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Sxzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vxz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       this->setApplypml(4,true);
+    }
+    if(high[1]){
+       Szz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Sxzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vxz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       this->setApplypml(5,true);
+    }
+}
+
+template<typename T>
 PmlElastic2D<T>::~PmlElastic2D() {
     /* Free variables */
-    free(Sxx_left);
-    free(Sxx_right);
-    free(Szz_top);
-    free(Szz_bottom);
-    free(Sxzz_top);
-    free(Sxzz_bottom);
-    free(Sxzx_left);
-    free(Sxzx_right);
-    free(Vxx_left);
-    free(Vxx_right);
-    free(Vzx_left);
-    free(Vzx_right);
-    free(Vzz_top);
-    free(Vzz_bottom);
-    free(Vxz_top);
-    free(Vxz_bottom);
+   if(this->getApplypml(0)){
+      free(Sxx_left);
+      free(Vxx_left);
+      free(Sxzx_left);
+      free(Vzx_left);
+   }
+   if(this->getApplypml(1)){
+      free(Sxx_right);
+      free(Sxzx_right);
+      free(Vxx_right);
+      free(Vzx_right);
+   }
+   if(this->getApplypml(4)){
+      free(Szz_top);
+      free(Sxzz_top);
+      free(Vzz_top);
+      free(Vxz_top);
+   }
+   if(this->getApplypml(5)){
+      free(Szz_bottom);
+      free(Sxzz_bottom);
+      free(Vzz_bottom);
+      free(Vxz_bottom);
+   }
 }
 
 
@@ -460,44 +508,124 @@ PmlElastic3D<T>::PmlElastic3D(const int nx, const int ny, const int nz, const in
 }
 
 template<typename T>
+PmlElastic3D<T>::PmlElastic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt, const bool *low, const bool *high): Pml<T>(Lpml, dt) {
+    int nx_pml, ny_pml, nz_pml;
+    nx_pml= nx;
+    ny_pml= ny;
+    nz_pml= nz;
+
+    /* Allocate variables */
+    if(low[0]){
+       Sxx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Sxzx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Sxyx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Vxx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Vzx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Vyx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       this->setApplypml(0,true);
+    }
+    if(high[0]){
+       Sxx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Sxzx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Sxyx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Vxx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Vzx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Vyx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       this->setApplypml(1,true);
+    }
+
+    if(low[1]){
+       Syy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Sxyy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Syzy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Vxy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Vzy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Vyy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       this->setApplypml(2,true);
+    }
+    if(high[1]){
+       Syy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Sxyy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Syzy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Vxy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Vzy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Vyy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       this->setApplypml(3,true);
+    }
+
+    if(low[2]){
+       Szz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Sxzz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Syzz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Vzz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Vxz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Vyz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       this->setApplypml(4,true);
+    }
+    if(high[2]){
+       Szz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Sxzz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Syzz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Vzz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Vxz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Vyz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       this->setApplypml(5,true);
+    }
+
+}
+
+
+template<typename T>
 PmlElastic3D<T>::~PmlElastic3D() {
     /* Free variables */
-    free(Sxx_left);
-    free(Sxx_right);
-    free(Syy_front);
-    free(Syy_back);
-    free(Szz_top);
-    free(Szz_bottom);
-    free(Sxzz_top);
-    free(Sxzz_bottom);
-    free(Syzz_top);
-    free(Syzz_bottom);
-    free(Sxzx_left);
-    free(Sxzx_right);
-    free(Sxyx_left);
-    free(Sxyx_right);
-    free(Sxyy_front);
-    free(Sxyy_back);
-    free(Syzy_front);
-    free(Syzy_back);
-    free(Vxx_left);
-    free(Vxx_right);
-    free(Vzx_left);
-    free(Vzx_right);
-    free(Vyx_left);
-    free(Vyx_right);
-    free(Vzz_top);
-    free(Vzz_bottom);
-    free(Vxz_top);
-    free(Vxz_bottom);
-    free(Vyz_top);
-    free(Vyz_bottom);
-    free(Vxy_front);
-    free(Vxy_back);
-    free(Vzy_front);
-    free(Vzy_back);
-    free(Vyy_front);
-    free(Vyy_back);
+   if(this->getApplypml(0)){
+      free(Sxx_left);
+      free(Sxzx_left);
+      free(Sxyx_left);
+      free(Vxx_left);
+      free(Vzx_left);
+      free(Vyx_left);
+   }
+   if(this->getApplypml(1)){
+      free(Sxx_right);
+      free(Sxzx_right);
+      free(Sxyx_right);
+      free(Vxx_right);
+      free(Vzx_right);
+      free(Vyx_right);
+   }
+   if(this->getApplypml(2)){
+      free(Syy_front);
+      free(Sxyy_front);
+      free(Syzy_front);
+      free(Vxy_front);
+      free(Vzy_front);
+      free(Vyy_front);
+   }
+   if(this->getApplypml(3)){
+      free(Szz_top);
+      free(Sxzz_top);
+      free(Syzz_top);
+      free(Vzz_top);
+      free(Vxz_top);
+      free(Vyz_top);
+   }
+   if(this->getApplypml(4)){
+      free(Szz_bottom);
+      free(Sxzz_bottom);
+      free(Syzz_bottom);
+      free(Vzz_bottom);
+      free(Vxz_bottom);
+      free(Vyz_bottom);
+   }
+   if(this->getApplypml(5)){
+      free(Sxyy_back);
+      free(Syzy_back);
+      free(Vxy_back);
+      free(Vzy_back);
+      free(Vyy_back);
+      free(Syy_back);
+   }
 }
 
 
