@@ -594,7 +594,16 @@ int ModellingElastic2D<T>::run(){
     {
     	// Time stepping
     	waves->forwardstepVelocity(model, der);
+        if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves->getVx());
+            (model->getDomain())->shareEdges3D(waves->getVz());
+        }
     	waves->forwardstepStress(model, der);
+        if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves->getSxx());
+            (model->getDomain())->shareEdges3D(waves->getSzz());
+            (model->getDomain())->shareEdges3D(waves->getSxz());
+        }
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
@@ -775,7 +784,20 @@ int ModellingElastic3D<T>::run(){
     {
     	// Time stepping
     	waves->forwardstepVelocity(model, der);
+        if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves->getVx());
+            (model->getDomain())->shareEdges3D(waves->getVy());
+            (model->getDomain())->shareEdges3D(waves->getVz());
+        }
     	waves->forwardstepStress(model, der);
+        if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves->getSxx());
+            (model->getDomain())->shareEdges3D(waves->getSyy());
+            (model->getDomain())->shareEdges3D(waves->getSzz());
+            (model->getDomain())->shareEdges3D(waves->getSxz());
+            (model->getDomain())->shareEdges3D(waves->getSyz());
+            (model->getDomain())->shareEdges3D(waves->getSxy());
+        }
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);

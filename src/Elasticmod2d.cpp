@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
     }
 
     std::shared_ptr<rockseis::Data2D<float>> Shotgeom;
-    std::shared_ptr<rockseis::ModellingElastic2D_DS<float>> modelling;
+    std::shared_ptr<rockseis::ModellingElastic2D<float>> modelling;
 
     for(unsigned long int i=0; i<ngathers; i++) {
         Sort->readKeymap();
@@ -204,7 +204,7 @@ int main(int argc, char** argv) {
                 break;
         }
 
-        modelling = std::make_shared<rockseis::ModellingElastic2D_DS<float>>(lmodel, source, order, snapinc);
+        modelling = std::make_shared<rockseis::ModellingElastic2D<float>>(lmodel, source, order, snapinc);
 
         // Set logfile
         modelling->setLogfile("log.txt-" + std::to_string(i));
@@ -214,10 +214,10 @@ int main(int argc, char** argv) {
             modelling->setSnapP(Psnapfile + "-" + std::to_string(i));
         }
         if(Vxsnap){
-            modelling->setSnapUx(Vxsnapfile + "-" + std::to_string(i));
+            modelling->setSnapVx(Vxsnapfile + "-" + std::to_string(i));
         }
         if(Vzsnap){
-            modelling->setSnapUz(Vzsnapfile + "-" + std::to_string(i));
+            modelling->setSnapVz(Vzsnapfile + "-" + std::to_string(i));
         }
 
         // Setting Record
@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
             // Copy geometry to Data
             Vxdata2D->copyCoords(Shotgeom);
             Vxdata2D->makeMap(lmodel->getGeom());
-            modelling->setRecUx(Vxdata2D);
+            modelling->setRecVx(Vxdata2D);
         }
         if(Vzrecord){
             Vzdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
             // Copy geometry to Data
             Vzdata2D->copyCoords(Shotgeom);
             Vzdata2D->makeMap(lmodel->getGeom());
-            modelling->setRecUz(Vzdata2D);
+            modelling->setRecVz(Vzdata2D);
         }
 
         // Stagger model

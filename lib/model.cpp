@@ -2864,6 +2864,26 @@ void ModelElastic2D<T>::createModel() {
 }
 
 template<typename T>
+void ModelElastic2D<T>::createPaddedmodel() {
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    /* Reallocate L2M, L , M, Rx, and Rz */
+    free(L2M); free(L); free(M); free(Rx); free(Rz);
+
+    L2M = (T *) calloc(nx*nz,sizeof(T));
+    if(L2M == NULL) rs_error("ModelElastic2D::createPaddedmodel: Failed to allocate memory.");
+    L = (T *) calloc(nx*nz,sizeof(T));
+    if(L == NULL) rs_error("ModelElastic2D::createPaddedmodel: Failed to allocate memory.");
+    M = (T *) calloc(nx*nz,sizeof(T));
+    if(M == NULL) rs_error("ModelElastic2D::createPaddedmodel: Failed to allocate memory.");
+    Rx = (T *) calloc(nx*nz,sizeof(T));
+    if(Rx == NULL) rs_error("ModelElastic2D::createPaddedmodel: Failed to allocate memory.");
+    Rz = (T *) calloc(nx*nz,sizeof(T));
+    if(Rz == NULL) rs_error("ModelElastic2D::createPaddedmodel: Failed to allocate memory.");
+}
+
+template<typename T>
 std::shared_ptr<ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::shared_ptr<Data2D<T>> data, T aperture, bool map) {
 
     std::shared_ptr<ModelElastic2D<T>> local;
@@ -2944,6 +2964,157 @@ std::shared_ptr<ModelElastic2D<T>> ModelElastic2D<T>::getLocal(std::shared_ptr<D
 
     return local;
 }
+
+template<typename T>
+std::shared_ptr<ModelElastic2D<T>> ModelElastic2D<T>::getDomainmodel(std::shared_ptr<Data2D<T>> data, T aperture, bool map, const int d, const int nd0, const int nd1, const int order) {
+    std::shared_ptr<ModelElastic2D<T>> local;
+    T dx = this->getDx();
+    T dz = this->getDz();
+    T ox = this->getOx();
+    T oz = this->getOz();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+    size_t size;
+    off_t start;
+    int nxd,nzd;
+    int ix0,iz0;
+    int lpml = this->getLpml();
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize2d(data, aperture, map, &start, &size);
+    (this->getDomain())->setupDomain3D(size+2*lpml,1,nz+2*this->getLpml(),d,nd0,1,nd1,order);
+    nxd = (this->getDomain())->getNx_pad();
+    nzd = (this->getDomain())->getNz_pad();
+    ix0 = (this->getDomain())->getIx0();
+    iz0 = (this->getDomain())->getIz0();
+
+
+    /* Create domain model */
+    local = std::make_shared<ModelElastic2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getFs());
+    (local->getDomain())->setupDomain3D(size+2*lpml,1,nz+2*lpml,d,nd0,1,nd1,order);
+
+    /*Realizing local model */
+    local->createModel();
+    local->createPaddedmodel();
+
+    /* Copying from big model into local model */
+    T *Vp = local->getVp();
+    T *Vs = local->getVs();
+    T *R = local->getR();
+    T *M = local->getM();
+    T *L = local->getL();
+    T *L2M = local->getL2M();
+    T *Rx = local->getRx();
+    T *Rz = local->getRz();
+
+    /* Allocate two traces to read models from file */
+    T *vptrace = (T *) calloc(nx, sizeof(T));
+    if(vptrace == NULL) rs_error("ModelElastic2d::getDomainmodel: Failed to allocate memory.");
+    T *vstrace = (T *) calloc(nx, sizeof(T));
+    if(vstrace == NULL) rs_error("ModelElastic2d::getLocal: Failed to allocate memory.");
+    T *vstrace_adv = (T *) calloc(nx, sizeof(T));
+    if(vstrace_adv == NULL) rs_error("ModelElastic2d::getLocal: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelElastic2d::getDomainmodel: Failed to allocate memory.");
+    T *rhotrace_adv = (T *) calloc(nx, sizeof(T));
+    if(rhotrace_adv == NULL) rs_error("ModelElastic2d::getDomainmodel: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> Fvp (new File());
+    status = Fvp->input(Vpfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelElastic2D::getDomainmodel : Error reading from Vp file.");
+    }
+    std::shared_ptr<File> Fvs (new File());
+    status = Fvs->input(Vsfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelElastic2D::getLocal : Error reading from Vs file.");
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelElastic2D::getDomainmodel : Error reading from Density file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+    Index l2d(nxd,nzd);
+    Index f2d(nx,nz);
+    T M1, M2, M3, M4;
+
+    for(size_t i1=0; i1<nzd; i1++) {
+        lpos = iz0 + i1 - lpml;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        Fvp->read(vptrace, nx, fpos);
+        if(Fvp->getFail()) rs_error("ModelElastic2D::getDomainmodel: Error reading from vp file");
+        Fvs->read(vstrace, nx, fpos);
+        if(Fvs->getFail()) rs_error("ModelElastic2D::getDomainmodel: Error reading from vs file");
+        Frho->read(rhotrace, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelElastic2D::getDomainmodel: Error reading from rho file");
+
+        // Read advanced trace
+        lpos = iz0 + i1 - lpml + 1;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        Fvs->read(vstrace_adv, nx, fpos);
+        if(Fvs->getFail()) rs_error("ModelElastic2D::getDomainmodel: Error reading from vs file");
+        Frho->read(rhotrace_adv, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelElastic2D::getDomainmodel: Error reading from rho file");
+        for(size_t i2=0; i2<nxd; i2++) {
+            lpos = i + i2 + ix0 - lpml;
+            if(lpos < 0) lpos = 0;
+            if(lpos > (nx-1)) lpos = nx - 1;
+            Vp[l2d(i2,i1)] = vptrace[lpos];
+            Vs[l2d(i2,i1)] = vstrace[lpos];
+            R[l2d(i2,i1)] = rhotrace[lpos];
+            L2M[l2d(i2,i1)] = rhotrace[lpos]*vptrace[lpos]*vptrace[lpos];
+            L[l2d(i2,i1)] = rhotrace[lpos]*vptrace[lpos]*vptrace[lpos] - 2.0*rhotrace[lpos]*vstrace[lpos]*vstrace[lpos];
+            if(rhotrace[lpos] <= 0.0) rs_error("ModelElastic2D::getDomainmodel: Zero density found.");
+            if(lpos < nx-1){
+               Rx[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace[lpos+1]);
+            }else{
+               Rx[l2d(i2,i1)] = 1.0/(rhotrace[lpos]);
+            }
+            Rz[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace_adv[lpos]);
+
+            M1 = rhotrace[lpos]*vstrace[lpos]*vstrace[lpos];
+            M3 = rhotrace_adv[lpos]*vstrace_adv[lpos]*vstrace_adv[lpos];
+            if(lpos < nx-1){
+               M2 = rhotrace[lpos+1]*vstrace[lpos+1]*vstrace[lpos+1];
+               M4 = rhotrace_adv[lpos+1]*vstrace_adv[lpos+1]*vstrace_adv[lpos+1];
+            }else{
+               M2 = rhotrace[lpos]*vstrace[lpos]*vstrace[lpos];
+               M4 = rhotrace_adv[lpos]*vstrace_adv[lpos]*vstrace_adv[lpos];
+            }
+            M[l2d(i2,i1)] = 0.25*(M1+M2+M3+M4);
+        }
+    }
+
+       
+    // In case of free surface
+    if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
+        for(size_t ix=0; ix<nxd; ix++){
+            Rx[l2d(ix,lpml-iz0)] *= 2.0;
+            L[l2d(ix,lpml-iz0)] = 0.0;
+            L2M[l2d(ix,lpml-iz0)] = M[l2d(ix,lpml-iz0)];
+        }
+    }
+
+
+    /* Free traces */
+    free(vptrace);
+    free(vstrace);
+    free(vstrace_adv);
+    free(rhotrace);
+    free(rhotrace_adv);
+    
+    return local;
+}
+
 
 template<typename T>
 ModelElastic2D<T>::~ModelElastic2D() {
@@ -3367,6 +3538,33 @@ void ModelElastic3D<T>::createModel() {
 }
 
 template<typename T>
+void ModelElastic3D<T>::createPaddedmodel() {
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    /* Reallocate L Rx, and Rz */
+    free(L); free(L2M); free(M_xz); free(M_yz); 
+    free(M_xy); free(Rx); free(Ry); free(Rz);
+    L2M = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(L2M == NULL) rs_error("ModelElastic3D::createPaddedmodel: Failed to allocate memory.");
+    L = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(L == NULL) rs_error("ModelElastic3D::createPaddedmodel: Failed to allocate memory.");
+    M_xz = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(M_xz == NULL) rs_error("ModelElastic3D::createPaddedmodel: Failed to allocate memory.");
+    M_yz = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(M_yz == NULL) rs_error("ModelElastic3D::createPaddedmodel: Failed to allocate memory.");
+    M_xy = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(M_xy == NULL) rs_error("ModelElastic3D::createPaddedmodel: Failed to allocate memory.");
+    Rx = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Rx == NULL) rs_error("ModelElastic3D::createPaddedmodel: Failed to allocate memory.");
+    Ry = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Ry == NULL) rs_error("ModelElastic3D::createPaddedmodel: Failed to allocate memory.");
+    Rz = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Rz == NULL) rs_error("ModelElastic3D::createPaddedmodel: Failed to allocate memory.");
+}
+
+template<typename T>
 std::shared_ptr<ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
 
     std::shared_ptr<ModelElastic3D<T>> local;
@@ -3462,6 +3660,207 @@ std::shared_ptr<ModelElastic3D<T>> ModelElastic3D<T>::getLocal(std::shared_ptr<D
 
     return local;
 }
+
+template<typename T>
+std::shared_ptr<ModelElastic3D<T>> ModelElastic3D<T>::getDomainmodel(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map, const int d, const int nd0, const int nd1, const int nd2, const int order) {
+
+    std::shared_ptr<ModelElastic3D<T>> local;
+    T dx = this->getDx();
+    T dy = this->getDy();
+    T dz = this->getDz();
+    T ox = this->getOx();
+    T oy = this->getOy();
+    T oz = this->getOz();
+    size_t nx = this->getNx();
+    size_t ny = this->getNy();
+    size_t nz = this->getNz();
+    size_t size_x;
+    off_t start_x;
+    size_t size_y;
+    off_t start_y;
+    int nxd,nyd,nzd;
+    int ix0,iy0,iz0;
+    int lpml = this->getLpml();
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize3d(data, aperture_x, aperture_y, map, &start_x, &size_x, &start_y, &size_y);
+    (this->getDomain())->setupDomain3D(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd0,nd1,nd2,order);
+
+    nxd = (this->getDomain())->getNx_pad();
+    nyd = (this->getDomain())->getNy_pad();
+    nzd = (this->getDomain())->getNz_pad();
+    ix0 = (this->getDomain())->getIx0();
+    iy0 = (this->getDomain())->getIy0();
+    iz0 = (this->getDomain())->getIz0();
+
+    T oxl, oyl, ozl; 
+    oxl = (ox + (start_x+ix0-lpml)*dx);
+    oyl = (oy + (start_y+iy0-lpml)*dy);
+    ozl = (oz + (iz0-lpml)*dz);
+
+    /* Create local model */
+    local = std::make_shared<ModelElastic3D<T>>(nxd, nyd, nzd, lpml, dx, dy, dz, oxl, oyl, ozl, this->getFs());
+    (local->getDomain())->setupDomain3D(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd0,nd1,nd2,order);
+
+    /*Realizing local model */
+    local->createModel();
+    local->createPaddedmodel();
+
+	/* Copying from big model into local model */
+    T *Vp = local->getVp();
+    T *R = local->getR();
+    T *L2M = local->getL2M();
+    T *L = local->getL();
+    T *M_xz = local->getM_xz();
+    T *M_yz = local->getM_yz();
+    T *M_xy = local->getM_xy();
+    T *Rx = local->getRx();
+    T *Ry = local->getRx();
+    T *Rz = local->getRz();
+
+    /* Allocate two traces to read models from file */
+    T *vptrace = (T *) calloc(nx*ny, sizeof(T));
+    if(vptrace == NULL) rs_error("ModelElastic3D::getDomainmodel: Failed to allocate memory.");
+    T *vstrace = (T *) calloc(nx*ny, sizeof(T));
+    if(vstrace == NULL) rs_error("ModelElastic3D::getDomainmodel: Failed to allocate memory.");
+    T *vstrace_adv = (T *) calloc(nx*ny, sizeof(T));
+    if(vstrace_adv == NULL) rs_error("ModelElastic3D::getDomainmodel: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx*ny, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelElastic3D::getDomainmodel: Failed to allocate memory.");
+    T *rhotrace_adv = (T *) calloc(nx*ny, sizeof(T));
+    if(rhotrace_adv == NULL) rs_error("ModelElastic3D::getDomainmodel: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> Fvp (new File());
+    status = Fvp->input(Vpfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelElastic3D::getDomainmodel : Error reading from Vp file.");
+    }
+    std::shared_ptr<File> Fvs (new File());
+    status = Fvs->input(Vsfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelElastic3D::getDomainmodel : Error reading from Density file.");
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelElastic3D::getDomainmodel : Error reading from Density file.");
+    }
+
+    off_t i = start_x;
+    off_t j = start_y;
+    off_t lpos_x, lpos_y, lpos_z, fpos;
+    Index l3d(nxd, nyd, nzd);
+    Index f3d(nx, ny, nz);
+    Index l2d(nx, ny);
+    for(size_t i1=0; i1<nzd; i1++) {
+        lpos_z = iz0 + i1 - lpml;
+        if(lpos_z < 0) lpos_z = 0;
+        if(lpos_z > (nz-1)) lpos_z = nz - 1;
+        fpos = f3d(0, 0, lpos_z)*sizeof(T);
+        Fvp->read(vptrace, nx*ny, fpos);
+        if(Fvp->getFail()) rs_error("ModelElastic3D::getDomainmodel: Error reading from vp file");
+        Fvs->read(vstrace, nx*ny, fpos);
+        if(Fvs->getFail()) rs_error("ModelElastic3D::getDomainmodel: Error reading from vs file");
+        Frho->read(rhotrace, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelElastic3D::getDomainmodel: Error reading from rho file");
+
+        lpos_z = iz0 + i1 - lpml + 1;
+        if(lpos_z < 0) lpos_z = 0;
+        if(lpos_z > (nz-1)) lpos_z = nz - 1;
+        fpos = f3d(0, 0, lpos_z)*sizeof(T);
+
+        Fvs->read(vstrace_adv, nx*ny, fpos);
+        if(Fvs->getFail()) rs_error("ModelElastic3D::getDomainmodel: Error reading from vs file");
+        Frho->read(rhotrace_adv, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelElastic3D::getDomainmodel: Error reading from rho file");
+
+        T M1, M2, M3, M4, M5, M6, M7;
+        for(size_t i3=0; i3<nyd; i3++) {
+            lpos_y = j + i3 + iy0 - lpml;
+                if(lpos_y < 0) lpos_y = 0;
+                if(lpos_y > (ny-1)) lpos_y = ny - 1;
+            for(size_t i2=0; i2<nxd; i2++) {
+                lpos_x = i + i2 + ix0 - lpml;
+                if(lpos_x < 0) lpos_x = 0;
+                if(lpos_x > (nx-1)) lpos_x = nx - 1;
+                Vp[l3d(i2,i3,i1)] = vptrace[l2d(lpos_x, lpos_y)];
+                R[l3d(i2,i3,i1)] = rhotrace[l2d(lpos_x, lpos_y)];
+                L2M[l3d(i2,i3,i1)] = rhotrace[l2d(lpos_x, lpos_y)]*vptrace[l2d(lpos_x, lpos_y)]*vptrace[l2d(lpos_x, lpos_y)];
+                L[l3d(i2,i3,i1)] = rhotrace[l2d(lpos_x, lpos_y)]*vptrace[l2d(lpos_x, lpos_y)]*vptrace[l2d(lpos_x, lpos_y)]- 2.0*rhotrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)];
+
+                if(rhotrace[l2d(lpos_x, lpos_y)] <= 0.0) rs_error("ModelElastic3D::getDomainmodel: Zero density found.");
+
+                if(lpos_x < nx-1){
+                    Rx[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x+1, lpos_y)]);
+                }else{
+                    Rx[l3d(i2,i3,i1)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                }
+                if(lpos_y < ny-1){
+                    Ry[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x, lpos_y+1)]);
+                }else{
+                    Ry[l3d(i2,i3,i1)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                }
+                Rz[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace_adv[l2d(lpos_x, lpos_y)]);
+                M1 = rhotrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)];
+                M5 = rhotrace_adv[l2d(lpos_x, lpos_y)]*vstrace_adv[l2d(lpos_x, lpos_y)]*vstrace_adv[l2d(lpos_x, lpos_y)];
+
+                if(lpos_x < nx-1){
+                   M2 = rhotrace[l2d(lpos_x+1, lpos_y)]*vstrace[l2d(lpos_x+1, lpos_y)]*vstrace[l2d(lpos_x+1, lpos_y)];
+                   M6 = rhotrace_adv[l2d(lpos_x+1, lpos_y)]*vstrace_adv[l2d(lpos_x+1, lpos_y)]*vstrace_adv[l2d(lpos_x+1, lpos_y)];
+                   if(lpos_y < ny-1){
+                      M4 = rhotrace[l2d(lpos_x+1, lpos_y+1)]*vstrace[l2d(lpos_x+1, lpos_y+1)]*vstrace[l2d(lpos_x+1, lpos_y+1)];
+                   }else{
+                      M4 = rhotrace[l2d(lpos_x+1, lpos_y)]*vstrace[l2d(lpos_x+1, lpos_y)]*vstrace[l2d(lpos_x+1, lpos_y)];
+                   }
+                }else{
+                   M2 = rhotrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)];
+                   M6 = rhotrace_adv[l2d(lpos_x, lpos_y)]*vstrace_adv[l2d(lpos_x, lpos_y)]*vstrace_adv[l2d(lpos_x, lpos_y)];
+                   if(lpos_y < ny-1){
+                      M4 = rhotrace[l2d(lpos_x, lpos_y+1)]*vstrace[l2d(lpos_x, lpos_y+1)]*vstrace[l2d(lpos_x, lpos_y+1)];
+                   }else{
+                      M4 = rhotrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)];
+                   }
+                }
+
+                if(lpos_y < ny-1){
+                   M3 = rhotrace[l2d(lpos_x, lpos_y+1)]*vstrace[l2d(lpos_x, lpos_y+1)]*vstrace[l2d(lpos_x, lpos_y+1)];
+                   M7 = rhotrace_adv[l2d(lpos_x, lpos_y+1)]*vstrace_adv[l2d(lpos_x, lpos_y+1)]*vstrace_adv[l2d(lpos_x, lpos_y+1)];
+                }else{
+                   M3 = rhotrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)]*vstrace[l2d(lpos_x, lpos_y)];
+                   M7 = rhotrace_adv[l2d(lpos_x, lpos_y)]*vstrace_adv[l2d(lpos_x, lpos_y)]*vstrace_adv[l2d(lpos_x, lpos_y)];
+                }
+                M_xz[l3d(i2,i3,i1)] = 0.25*(M1+M2+M5+M6);
+                M_yz[l3d(i2,i3,i1)] = 0.25*(M1+M3+M5+M7);
+                M_xy[l3d(i2,i3,i1)] = 0.25*(M1+M2+M3+M4);
+
+            }
+        }
+    }
+
+    if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
+        for(size_t ix=0; ix<nxd; ix++){
+            for(size_t iy=0; iy<nyd; iy++){
+                Rx[l3d(ix,iy,lpml-iz0)] *= 2.0;
+                Ry[l3d(ix,iy,lpml-iz0)] *= 2.0;
+                L[l3d(ix,iy,lpml-iz0)] = 0.0;
+                L2M[l3d(ix,iy,lpml-iz0)] = M_xz[l3d(ix,iy,lpml-iz0)];
+            }
+        }
+    }
+
+    /* Free traces */
+    free(vptrace);
+    free(vstrace);
+    free(vstrace_adv);
+    free(rhotrace);
+    free(rhotrace_adv);
+
+    return local;
+}
+
+
 
 
 

@@ -514,6 +514,9 @@ PmlElastic3D<T>::PmlElastic3D(const int nx, const int ny, const int nz, const in
     ny_pml= ny;
     nz_pml= nz;
 
+    int i;
+    for (i=0; i<6; i++) this->setApplypml(i, false);
+
     /* Allocate variables */
     if(low[0]){
        Sxx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
@@ -603,6 +606,14 @@ PmlElastic3D<T>::~PmlElastic3D() {
       free(Vyy_front);
    }
    if(this->getApplypml(3)){
+      free(Sxyy_back);
+      free(Syzy_back);
+      free(Vxy_back);
+      free(Vzy_back);
+      free(Vyy_back);
+      free(Syy_back);
+   }
+   if(this->getApplypml(4)){
       free(Szz_top);
       free(Sxzz_top);
       free(Syzz_top);
@@ -610,21 +621,13 @@ PmlElastic3D<T>::~PmlElastic3D() {
       free(Vxz_top);
       free(Vyz_top);
    }
-   if(this->getApplypml(4)){
+   if(this->getApplypml(5)){
       free(Szz_bottom);
       free(Sxzz_bottom);
       free(Syzz_bottom);
       free(Vzz_bottom);
       free(Vxz_bottom);
       free(Vyz_bottom);
-   }
-   if(this->getApplypml(5)){
-      free(Sxyy_back);
-      free(Syzy_back);
-      free(Vxy_back);
-      free(Vzy_back);
-      free(Vyy_back);
-      free(Syy_back);
    }
 }
 
