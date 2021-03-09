@@ -15,7 +15,7 @@
 #define DOMAIN_OK 1
 #define DOMAIN_ERR 0
 
-#define IDWRK(i,j,k) ((k)*pad*nwrk + (j)*pad + (i)) 
+#define IDWRK(i,j,k) ((k)*nwrk0*nwrk1 + (j)*nwrk0 + (i)) 
 #define IDARRAY(i,j,k) ((k)*n0*n1 + (j)*n0 + (i)) 
 #define IDDOM(i,j,k) ((k)*nd0*nd1 + (j)*nd0 + (i)) 
 #define IDEDGE(i,j,k) ((k)*4 + (j)*2 + (i))

@@ -586,7 +586,7 @@ void Domain<T>::setupDomain3D(const int nx, const int ny, const int nz, const in
 template<typename T>
 void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array){
    size_t ix,iy,iz,io;
-   size_t padl0=0, padl1, padl2, padh0=0, padh1=0, padh2=0, n0=0, n1=0, n2=0, nwrk=0;
+   size_t padl0=0, padl1, padl2, padh0=0, padh1=0, padh2=0, n0=0, n1=0, n2=0, nwrk0=0, nwrk1=0;
 
    padl0 = this->getPadl(0);
    padl1 = this->getPadl(1);
@@ -603,12 +603,13 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
 
    switch(dim){
       case 0:
+         nwrk0 = pad;
+         nwrk1 = n1-padl1-padh1;
          if(side == 0){
             if(this->getLow(0)>=0){
-               nwrk = n1-padl1-padh1;
-               for (io=0; io < pad; io++) {
+               for (iz=0; iz < n2- padl2-padh2; iz++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
-                     for (iz=0; iz < n2- padl2-padh2; iz++) {
+                     for (io=0; io < pad; io++) {
                         wrk0[IDWRK(io,iy,iz)] = array[IDARRAY(io + pad, iy+padl1, iz+padl2)];
                      }
                   }
@@ -616,10 +617,9 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
             }
          }else{
             if(this->getHigh(0)>=0){
-               nwrk = n1-padl1-padh1;
-               for (io=0; io < pad; io++) {
+               for (iz=0; iz < n2-padl2-padh2; iz++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
-                     for (iz=0; iz < n2-padl2-padh2; iz++) {
+                     for (io=0; io < pad; io++) {
                         wrk0[IDWRK(io,iy,iz)] = array[IDARRAY(n0-2*pad + io, iy+padl1, iz+padl2)];
                      }
                   }
@@ -628,24 +628,24 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
          }
          break;
       case 1:
+         nwrk0 = n0-padl0-padh0;
+         nwrk1 = pad;
          if(side == 0){
             if(this->getLow(1)>=0){
-               nwrk = n0-padl0-padh0;
-               for (ix=0; ix < n0-padl0-padh0; ix++) {
+               for (iz=0; iz < n2-padl2-padh2; iz++) {
                   for (io=0; io < pad; io++) {
-                     for (iz=0; iz < n2-padl2-padh2; iz++) {
-                        wrk1[IDWRK(io,ix,iz)] = array[IDARRAY(ix+padl0, io+pad, iz+padl2)];
+                     for (ix=0; ix < n0-padl0-padh0; ix++) {
+                        wrk1[IDWRK(ix,io,iz)] = array[IDARRAY(ix+padl0, io+pad, iz+padl2)];
                      }
                   }
                }
             }
          }else{
             if(this->getHigh(1)>=0){
-               nwrk = n0-padl0-padh0;
-               for (ix=0; ix < n0-padl0-padh0; ix++) {
+               for (iz=0; iz < n2-padl2-padh2; iz++) {
                   for (io=0; io < pad; io++) {
-                     for (iz=0; iz < n2-padl2-padh2; iz++) {
-                        wrk1[IDWRK(io,ix,iz)] = array[IDARRAY(ix+padl0, n1-2*pad+io, iz+padl2)];
+                     for (ix=0; ix < n0-padl0-padh0; ix++) {
+                        wrk1[IDWRK(ix,io,iz)] = array[IDARRAY(ix+padl0, n1-2*pad+io, iz+padl2)];
                      }
                   }
                }
@@ -653,24 +653,24 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
          }
          break;
       case 2:
+         nwrk0 = n0-padl0-padh0;
+         nwrk1 = n1-padl1-padh1;
          if(side == 0){
             if(this->getLow(2)>=0){
-               nwrk = n0-padl0-padh0;
-               for (ix=0; ix < n0-padl0-padh0; ix++) {
+               for (io=0; io < pad; io++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
-                     for (io=0; io < pad; io++) {
-                        wrk2[IDWRK(io,ix,iy)] = array[IDARRAY(ix+padl0, iy+padl1, io+pad)];
+                     for (ix=0; ix < n0-padl0-padh0; ix++) {
+                        wrk2[IDWRK(ix,iy,io)] = array[IDARRAY(ix+padl0, iy+padl1, io+pad)];
                      }
                   }
                }
             }
          }else{
             if(this->getHigh(2)>=0){
-               nwrk = n0-padl0-padh0;
-               for (ix=0; ix < n0-padl0-padh0; ix++) {
+               for (io=0; io < pad; io++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
-                     for (io=0; io < pad; io++) {
-                        wrk2[IDWRK(io,ix,iy)] = array[IDARRAY(ix+padl0, iy+padl1, n2-2*pad+io)];
+                     for (ix=0; ix < n0-padl0-padh0; ix++) {
+                        wrk2[IDWRK(ix,iy,io)] = array[IDARRAY(ix+padl0, iy+padl1, n2-2*pad+io)];
                      }
                   }
                }
@@ -686,7 +686,7 @@ void Domain<T>::copyFromboundary(const int dim, const bool side, const T *array)
 template<typename T>
 void Domain<T>::copyFromedge(const int id, const int d0, const int d1, const T *array){
    size_t ix,iy,iz,io0,io1;
-   size_t padl0=0, padl1, padl2, padh0=0, padh1=0, padh2=0, n0=0, n1=0, n2=0, nwrk=0;
+   size_t padl0=0, padl1, padl2, padh0=0, padh1=0, padh2=0, n0=0, n1=0, n2=0, nwrk0=0, nwrk1=0;
 
    padl0 = this->getPadl(0);
    padl1 = this->getPadl(1);
@@ -715,10 +715,11 @@ void Domain<T>::copyFromedge(const int id, const int d0, const int d1, const T *
       }else{
          start1=n1 - 2*pad;
       }
-      nwrk = pad;
+      nwrk0 = pad;
+      nwrk1 = pad;
       for (iz=0; iz < n2-padl2-padh2; iz++) {
-         for (io0=0; io0 < pad; io0++) {
-            for (io1=0; io1 < pad; io1++) {
+         for (io1=0; io1 < pad; io1++) {
+            for (io0=0; io0 < pad; io0++) {
                wrkedg0[IDWRK(io0,io1,iz)]=array[IDARRAY(start0+io0, start1+io1,iz+padl2)];
             }
          }
@@ -737,11 +738,12 @@ void Domain<T>::copyFromedge(const int id, const int d0, const int d1, const T *
       }else{
          start1=n2 - 2*pad;
       }
-      nwrk = pad;
-      for (io0=0; io0 < pad; io0++) {
+      nwrk0 = pad;
+      nwrk1 = n1-padl1-padh1;
+      for (io1=0; io1 < pad; io1++) {
          for (iy=0; iy < n1-padl1-padh1; iy++) {
-            for (io1=0; io1 < pad; io1++) {
-               wrkedg1[IDWRK(io0,io1,iy)]=array[IDARRAY(start0+io0, iy+padl1, start1+io1)];
+            for (io0=0; io0 < pad; io0++) {
+               wrkedg1[IDWRK(io0,iy,io1)]=array[IDARRAY(start0+io0, iy+padl1, start1+io1)];
             }
          }
       }
@@ -759,11 +761,12 @@ void Domain<T>::copyFromedge(const int id, const int d0, const int d1, const T *
       }else{
          start1=n2 - 2*pad;
       }
-      nwrk = pad;
-      for (ix=0; ix < n0-padl0-padh0; ix++) {
+      nwrk0 = n0-padl0-padh0;
+      nwrk1 = pad;
+      for (io1=0; io1 < pad; io1++) {
          for (io0=0; io0 < pad; io0++) {
-            for (io1=0; io1 < pad; io1++) {
-               wrkedg2[IDWRK(io0,io1,ix)]=array[IDARRAY(ix+padl0, start0+io0,  start1+io1)];
+            for (ix=0; ix < n0-padl0-padh0; ix++) {
+               wrkedg2[IDWRK(ix,io0,io1)]=array[IDARRAY(ix+padl0, start0+io0,  start1+io1)];
             }
          }
       }
@@ -773,7 +776,7 @@ void Domain<T>::copyFromedge(const int id, const int d0, const int d1, const T *
 template<typename T>
 void Domain<T>::copyFromcorner(const int d0, const int d1, const int d2, const T *array){
    size_t io0,io1,io2;
-   size_t n0=0, n1=0, n2=0, nwrk=0;
+   size_t n0=0, n1=0, n2=0, nwrk0=0, nwrk1=0;
 
    int pad = this->getLpad();
 
@@ -800,10 +803,11 @@ void Domain<T>::copyFromcorner(const int d0, const int d1, const int d2, const T
    }else{
       start2=n2 - 2*pad;
    }
-   nwrk = pad;
-   for (io0=0; io0 < pad; io0++) {
+   nwrk0 = pad;
+   nwrk1 = pad;
+   for (io2=0; io2 < pad; io2++) {
       for (io1=0; io1 < pad; io1++) {
-         for (io2=0; io2 < pad; io2++) {
+         for (io0=0; io0 < pad; io0++) {
             wrkcrn[IDWRK(io0,io1,io2)]=array[IDARRAY(start0+io0, start1+io1, start2+io2)];
          }
       }
@@ -813,7 +817,7 @@ void Domain<T>::copyFromcorner(const int d0, const int d1, const int d2, const T
 template<typename T>
 void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
    size_t ix,iy,iz,io;
-   size_t padl0=0, padl1, padl2, padh0=0, padh1=0, padh2=0, n0=0, n1=0, n2=0, nwrk=0;
+   size_t padl0=0, padl1, padl2, padh0=0, padh1=0, padh2=0, n0=0, n1=0, n2=0, nwrk0=0, nwrk1=0;
 
    padl0 = this->getPadl(0);
    padl1 = this->getPadl(1);
@@ -832,10 +836,11 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
       case 0:
          if(side == 0){
             if(this->getLow(0)>=0){
-               nwrk = n1-padl1-padh1;
-               for (io=0; io < pad; io++) {
+               nwrk0 = pad;
+               nwrk1 = n1-padl1-padh1;
+               for (iz=0; iz < n2- padl2-padh2; iz++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
-                     for (iz=0; iz < n2- padl2-padh2; iz++) {
+                     for (io=0; io < pad; io++) {
                         array[IDARRAY(io, iy+padl1, iz+padl2)] = wrk0[IDWRK(io,iy,iz)];
                      }
                   }
@@ -843,10 +848,11 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
             }
          }else{
             if(this->getHigh(0)>=0){
-               nwrk = n1-padl1-padh1;
-               for (io=0; io < pad; io++) {
+               nwrk0 = pad;
+               nwrk1 = n1-padl1-padh1;
+               for (iz=0; iz < n2-padl2-padh2; iz++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
-                     for (iz=0; iz < n2-padl2-padh2; iz++) {
+                     for (io=0; io < pad; io++) {
                         array[IDARRAY(n0-pad+io, iy+padl1, iz+padl2)] = wrk0[IDWRK(io,iy,iz)];
                      }
                   }
@@ -857,22 +863,24 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
       case 1:
          if(side == 0){
             if(this->getLow(1)>=0){
-               nwrk = n0-padl0-padh0;
-               for (ix=0; ix < n0-padl0-padh0; ix++) {
+               nwrk0 = n0-padl0-padh0;
+               nwrk1 = pad;
+               for (iz=0; iz < n2-padl2-padh2; iz++) {
                   for (io=0; io < pad; io++) {
-                     for (iz=0; iz < n2-padl2-padh2; iz++) {
-                        array[IDARRAY(ix+padl0, io, iz+padl2)] = wrk1[IDWRK(io,ix,iz)];
+                     for (ix=0; ix < n0-padl0-padh0; ix++) {
+                        array[IDARRAY(ix+padl0, io, iz+padl2)] = wrk1[IDWRK(ix,io,iz)];
                      }
                   }
                }
             }
          }else{
             if(this->getHigh(1)>=0){
-               nwrk = n0-padl0-padh0;
-               for (ix=0; ix < n0-padl0-padh0; ix++) {
+               nwrk0 = n0-padl0-padh0;
+               nwrk1 = pad;
+               for (iz=0; iz < n2-padl2-padh2; iz++) {
                   for (io=0; io < pad; io++) {
-                     for (iz=0; iz < n2-padl2-padh2; iz++) {
-                        array[IDARRAY(ix+padl0, n1-pad+io, iz+padl2)] =  wrk1[IDWRK(io,ix,iz)];
+                     for (ix=0; ix < n0-padl0-padh0; ix++) {
+                        array[IDARRAY(ix+padl0, n1-pad+io, iz+padl2)] =  wrk1[IDWRK(ix,io,iz)];
                      }
                   }
                }
@@ -882,22 +890,24 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
       case 2:
          if(side == 0){
             if(this->getLow(2)>=0){
-               nwrk = n0-padl0-padh0;
-               for (ix=0; ix < n0-padl0-padh0; ix++) {
+               nwrk0 = n0-padl0-padh0;
+               nwrk1 = n1-padl1-padh1;
+               for (io=0; io < pad; io++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
-                     for (io=0; io < pad; io++) {
-                        array[IDARRAY(ix+padl0, iy+padl1, io)] = wrk2[IDWRK(io,ix,iy)];
+                     for (ix=0; ix < n0-padl0-padh0; ix++) {
+                        array[IDARRAY(ix+padl0, iy+padl1, io)] = wrk2[IDWRK(ix,iy,io)];
                      }
                   }
                }
             }
          }else{
             if(this->getHigh(2)>=0){
-               nwrk = n0-padl0-padh0;
-               for (ix=0; ix < n0-padl0-padh0; ix++) {
+               nwrk0 = n0-padl0-padh0;
+               nwrk1 = n1-padl1-padh1;
+               for (io=0; io < pad; io++) {
                   for (iy=0; iy < n1-padl1-padh1; iy++) {
-                     for (io=0; io < pad; io++) {
-                        array[IDARRAY(ix+padl0, iy+padl1, n2-pad+io)] = wrk2[IDWRK(io,ix,iy)];
+                     for (ix=0; ix < n0-padl0-padh0; ix++) {
+                        array[IDARRAY(ix+padl0, iy+padl1, n2-pad+io)] = wrk2[IDWRK(ix,iy,io)];
                      }
                   }
                }
@@ -913,7 +923,7 @@ void Domain<T>::copyToboundary(const int dim, const bool side, T *array){
 template<typename T>
 void Domain<T>::copyToedge(const int id, const int d0, const int d1, T *array){
    size_t ix,iy,iz,io0,io1;
-   size_t padl0=0, padl1, padl2, padh0=0, padh1=0, padh2=0, n0=0, n1=0, n2=0, nwrk=0;
+   size_t padl0=0, padl1, padl2, padh0=0, padh1=0, padh2=0, n0=0, n1=0, n2=0, nwrk0=0, nwrk1=0;
 
    padl0 = this->getPadl(0);
    padl1 = this->getPadl(1);
@@ -942,10 +952,11 @@ void Domain<T>::copyToedge(const int id, const int d0, const int d1, T *array){
       }else{
          start1=n1 - pad;
       }
-      nwrk = pad;
+      nwrk0 = pad;
+      nwrk1 = pad;
       for (iz=0; iz < n2-padl2-padh2; iz++) {
-         for (io0=0; io0 < pad; io0++) {
-            for (io1=0; io1 < pad; io1++) {
+         for (io1=0; io1 < pad; io1++) {
+            for (io0=0; io0 < pad; io0++) {
                array[IDARRAY(start0+io0, start1+io1,iz+padl2)] = wrkedg0[IDWRK(io0,io1,iz)];
             }
          }
@@ -964,11 +975,12 @@ void Domain<T>::copyToedge(const int id, const int d0, const int d1, T *array){
       }else{
          start1=n2 - pad;
       }
-      nwrk = pad;
-      for (io0=0; io0 < pad; io0++) {
+      nwrk0 = pad;
+      nwrk1 = n1-padl1-padh1;
+      for (io1=0; io1 < pad; io1++) {
          for (iy=0; iy < n1-padl1-padh1; iy++) {
-            for (io1=0; io1 < pad; io1++) {
-               array[IDARRAY(start0+io0, iy+padl1, start1+io1)] =  wrkedg1[IDWRK(io0,io1,iy)];
+            for (io0=0; io0 < pad; io0++) {
+               array[IDARRAY(start0+io0, iy+padl1, start1+io1)] =  wrkedg1[IDWRK(io0,iy,io1)];
             }
          }
       }
@@ -986,11 +998,12 @@ void Domain<T>::copyToedge(const int id, const int d0, const int d1, T *array){
       }else{
          start1=n2 - pad;
       }
-      nwrk = pad;
-      for (ix=0; ix < n0-padl0-padh0; ix++) {
+      nwrk0 = n0-padl0-padh0;
+      nwrk1 = pad;
+      for (io1=0; io1 < pad; io1++) {
          for (io0=0; io0 < pad; io0++) {
-            for (io1=0; io1 < pad; io1++) {
-               array[IDARRAY(ix+padl0, start0+io0,  start1+io1)] = wrkedg2[IDWRK(io0,io1,ix)];
+            for (ix=0; ix < n0-padl0-padh0; ix++) {
+               array[IDARRAY(ix+padl0, start0+io0,  start1+io1)] = wrkedg2[IDWRK(ix,io0,io1)];
             }
          }
       }
@@ -1000,7 +1013,7 @@ void Domain<T>::copyToedge(const int id, const int d0, const int d1, T *array){
 template<typename T>
 void Domain<T>::copyTocorner(const int d0, const int d1, const int d2, T *array){
    size_t io0,io1,io2;
-   size_t n0=0, n1=0, n2=0, nwrk=0;
+   size_t n0=0, n1=0, n2=0, nwrk0=0, nwrk1=0;
 
    int pad = this->getLpad();
 
@@ -1026,10 +1039,11 @@ void Domain<T>::copyTocorner(const int d0, const int d1, const int d2, T *array)
    }else{
       start2=n2 - pad;
    }
-   nwrk = pad;
-   for (io0=0; io0 < pad; io0++) {
+   nwrk0 = pad;
+   nwrk1 = pad;
+   for (io2=0; io2 < pad; io2++) {
       for (io1=0; io1 < pad; io1++) {
-         for (io2=0; io2 < pad; io2++) {
+         for (io0=0; io0 < pad; io0++) {
             array[IDARRAY(start0+io0, start1+io1, start2+io2)] = wrkcrn[IDWRK(io0,io1,io2)];
          }
       }
@@ -1038,169 +1052,175 @@ void Domain<T>::copyTocorner(const int d0, const int d1, const int d2, T *array)
 
 template<typename T>
 void Domain<T>::copyFromboundary(const bool side, const T *array){
-    size_t ix,iy,iz,io;
-    if(side){
-        if(this->getHigh() < 0) rs_error("Domain<T>::copyFromboundary: Invalid side.");
-    }else{
-        if(this->getLow() < 0) rs_error("Domain<T>::copyFromboundary: Invalid side.");
-    }
-    size_t pad=0, n0=0, n1=0, n2=0, nwrk=0;
+   size_t ix,iy,iz,io;
+   if(side){
+      if(this->getHigh() < 0) rs_error("Domain<T>::copyFromboundary: Invalid side.");
+   }else{
+      if(this->getLow() < 0) rs_error("Domain<T>::copyFromboundary: Invalid side.");
+   }
+   size_t pad=0, n0=0, n1=0, n2=0, nwrk0=0, nwrk1=0;
 
-    n0 = this->getNx_pad();
-    n1 = this->getNy_pad();
+   n0 = this->getNx_pad();
+   n1 = this->getNy_pad();
 
-    n2 = this->getNz_pad();
-    pad = this->getLpad();
+   n2 = this->getNz_pad();
+   pad = this->getLpad();
 
-    switch(this->getDim()){
-        case 0:
-            nwrk = n1;
-            if(side){
-                for (io=0; io < pad; io++) {
-                    for (iy=0; iy < n1; iy++) {
-                        for (iz=0; iz < n2; iz++) {
-                            wrk0[IDWRK(io,iy,iz)] = array[IDARRAY(n0-2*pad + io, iy, iz)];
-                        }
-                    }
-                }
-            }else{
-                for (io=0; io < pad; io++) {
-                    for (iy=0; iy < n1; iy++) {
-                        for (iz=0; iz < n2; iz++) {
-                            wrk0[IDWRK(io,iy,iz)] = array[IDARRAY(io + pad, iy, iz)];
-                        }
-                    }
-                }
+   switch(this->getDim()){
+      case 0:
+         nwrk0 = pad;
+         nwrk1 = n1;
+         if(side){
+            for (iz=0; iz < n2; iz++) {
+               for (iy=0; iy < n1; iy++) {
+                  for (io=0; io < pad; io++) {
+                     wrk0[IDWRK(io,iy,iz)] = array[IDARRAY(n0-2*pad + io, iy, iz)];
+                  }
+               }
             }
-            break;
-        case 1:
-            nwrk = n0;
-            if(side){
-                for (ix=0; ix < n0; ix++) {
-                    for (io=0; io < pad; io++) {
-                        for (iz=0; iz < n2; iz++) {
-                            wrk0[IDWRK(io,ix,iz)] = array[IDARRAY(ix, n1-2*pad + io, iz)];
-                        }
-                    }
-                }
-            }else{
-                for (ix=0; ix < n0; ix++) {
-                    for (io=0; io < pad; io++) {
-                        for (iz=0; iz < n2; iz++) {
-                            wrk0[IDWRK(io,ix,iz)] = array[IDARRAY(ix, io + pad, iz)];
-                        }
-                    }
-                }
+         }else{
+            for (iz=0; iz < n2; iz++) {
+               for (iy=0; iy < n1; iy++) {
+                  for (io=0; io < pad; io++) {
+                     wrk0[IDWRK(io,iy,iz)] = array[IDARRAY(io + pad, iy, iz)];
+                  }
+               }
             }
-            break;
-        case 2:
-            nwrk = n0;
-            if(side){
-                for (ix=0; ix < n0; ix++) {
-                    for (iy=0; iy < n1; iy++) {
-                        for (io=0; io < pad; io++) {
-                            wrk0[IDWRK(io,ix,iy)] = array[IDARRAY(ix, iy, n2-2*pad + io)];
-                        }
-                    }
-                }
-            }else{
-                for (ix=0; ix < n0; ix++) {
-                    for (iy=0; iy < n1; iy++) {
-                        for (io=0; io < pad; io++) {
-                            wrk0[IDWRK(io,ix,iy)] = array[IDARRAY(ix, iy, io + pad)];
-                        }
-                    }
-                }
+         }
+         break;
+      case 1:
+         nwrk0 = n0;
+         nwrk1 = pad;
+         if(side){
+            for (iz=0; iz < n2; iz++) {
+               for (io=0; io < pad; io++) {
+                  for (ix=0; ix < n0; ix++) {
+                     wrk0[IDWRK(ix,io,iz)] = array[IDARRAY(ix, n1-2*pad + io, iz)];
+                  }
+               }
             }
-            break;
-        default:
-            rs_error("Domain<T>::copyBoundary:Invalid dimension");
-            break;
-            break;
-    }
+         }else{
+            for (iz=0; iz < n2; iz++) {
+               for (io=0; io < pad; io++) {
+                  for (ix=0; ix < n0; ix++) {
+                     wrk0[IDWRK(ix,io,iz)] = array[IDARRAY(ix, io + pad, iz)];
+                  }
+               }
+            }
+         }
+         break;
+      case 2:
+         nwrk0 = n0;
+         nwrk1 = n1;
+         if(side){
+            for (io=0; io < pad; io++) {
+               for (iy=0; iy < n1; iy++) {
+                  for (ix=0; ix < n0; ix++) {
+                     wrk0[IDWRK(ix,iy,io)] = array[IDARRAY(ix, iy, n2-2*pad + io)];
+                  }
+               }
+            }
+         }else{
+            for (io=0; io < pad; io++) {
+               for (iy=0; iy < n1; iy++) {
+                  for (ix=0; ix < n0; ix++) {
+                     wrk0[IDWRK(ix,iy,io)] = array[IDARRAY(ix, iy, io + pad)];
+                  }
+               }
+            }
+         }
+         break;
+      default:
+         rs_error("Domain<T>::copyBoundary:Invalid dimension");
+         break;
+         break;
+   }
 }
 
 template<typename T>
 void Domain<T>::copyToboundary(const bool side, T *array){
-    size_t ix,iy,iz,io;
-    if(side){
-        if(this->getHigh() < 0) rs_error("Domain<T>::copyToboundary: Invalid side.");
-    }else{
-        if(this->getLow() < 0) rs_error("Domain<T>::copyToboundary: Invalid side.");
-    }
-    size_t pad=0, n0=0, n1=0, n2=0, nwrk=0;
+   size_t ix,iy,iz,io;
+   if(side){
+      if(this->getHigh() < 0) rs_error("Domain<T>::copyToboundary: Invalid side.");
+   }else{
+      if(this->getLow() < 0) rs_error("Domain<T>::copyToboundary: Invalid side.");
+   }
+   size_t pad=0, n0=0, n1=0, n2=0, nwrk0=0, nwrk1=0;
 
-    n0 = this->getNx_pad();
-    n1 = this->getNy_pad();
-    n2 = this->getNz_pad();
-    pad = this->getLpad();
+   n0 = this->getNx_pad();
+   n1 = this->getNy_pad();
+   n2 = this->getNz_pad();
+   pad = this->getLpad();
 
-    switch(this->getDim()){
-        case 0:
-            nwrk = n1;
-            if(side){
-                for (io=0; io < pad; io++) {
-                    for (iy=0; iy < n1; iy++) {
-                        for (iz=0; iz < n2; iz++) {
-                           array[IDARRAY(n0-pad + io, iy, iz)] = wrk0[IDWRK(io,iy,iz)];
-                        }
-                    }
-                }
-            }else{
-                for (io=0; io < pad; io++) {
-                    for (iy=0; iy < n1; iy++) {
-                        for (iz=0; iz < n2; iz++) {
-                            array[IDARRAY(io, iy, iz)] = wrk0[IDWRK(io,iy,iz)];
-                        }
-                    }
-                }
+   switch(this->getDim()){
+      case 0:
+         nwrk0 = pad;
+         nwrk1 = n1;
+         if(side){
+            for (iz=0; iz < n2; iz++) {
+               for (iy=0; iy < n1; iy++) {
+                  for (io=0; io < pad; io++) {
+                     array[IDARRAY(n0-pad + io, iy, iz)] = wrk0[IDWRK(io,iy,iz)];
+                  }
+               }
             }
-            break;
-        case 1:
-            nwrk = n0;
-            if(side){
-                for (ix=0; ix < n0; ix++) {
-                    for (io=0; io < pad; io++) {
-                        for (iz=0; iz < n2; iz++) {
-                            array[IDARRAY(ix, n1-pad + io, iz)] = wrk0[IDWRK(io,ix,iz)];
-                        }
-                    }
-                }
-            }else{
-                for (ix=0; ix < n0; ix++) {
-                    for (io=0; io < pad; io++) {
-                        for (iz=0; iz < n2; iz++) {
-                          array[IDARRAY(ix, io, iz)] = wrk0[IDWRK(io,ix,iz)];
-                        }
-                    }
-                }
+         }else{
+            for (iz=0; iz < n2; iz++) {
+               for (iy=0; iy < n1; iy++) {
+                  for (io=0; io < pad; io++) {
+                     array[IDARRAY(io, iy, iz)] = wrk0[IDWRK(io,iy,iz)];
+                  }
+               }
             }
-            break;
-        case 2:
-            nwrk = n0;
-            if(side){
-                for (ix=0; ix < n0; ix++) {
-                    for (iy=0; iy < n1; iy++) {
-                        for (io=0; io < pad; io++) {
-                            array[IDARRAY(ix, iy, n2-pad + io)] = wrk0[IDWRK(io,ix,iy)];
-                        }
-                    }
-                }
-            }else{
-                for (ix=0; ix < n0; ix++) {
-                    for (iy=0; iy < n1; iy++) {
-                        for (io=0; io < pad; io++) {
-                            array[IDARRAY(ix, iy, io)] = wrk0[IDWRK(io,ix,iy)];
-                        }
-                    }
-                }
+         }
+         break;
+      case 1:
+         nwrk0 = n0;
+         nwrk1 = pad;
+         if(side){
+            for (iz=0; iz < n2; iz++) {
+               for (io=0; io < pad; io++) {
+                  for (ix=0; ix < n0; ix++) {
+                     array[IDARRAY(ix, n1-pad + io, iz)] = wrk0[IDWRK(ix,io,iz)];
+                  }
+               }
             }
-            break;
-        default:
-            rs_error("Domain<T>::copyToboundary:Invalid dimension");
-            break;
-            break;
-    }
+         }else{
+            for (iz=0; iz < n2; iz++) {
+               for (io=0; io < pad; io++) {
+                  for (ix=0; ix < n0; ix++) {
+                     array[IDARRAY(ix, io, iz)] = wrk0[IDWRK(ix,io,iz)];
+                  }
+               }
+            }
+         }
+         break;
+      case 2:
+         nwrk0 = n0;
+         nwrk1 = n1;
+         if(side){
+            for (io=0; io < pad; io++) {
+               for (iy=0; iy < n1; iy++) {
+                  for (ix=0; ix < n0; ix++) {
+                     array[IDARRAY(ix, iy, n2-pad + io)] = wrk0[IDWRK(ix,iy,io)];
+                  }
+               }
+            }
+         }else{
+            for (io=0; io < pad; io++) {
+               for (iy=0; iy < n1; iy++) {
+                  for (ix=0; ix < n0; ix++) {
+                     array[IDARRAY(ix, iy, io)] = wrk0[IDWRK(ix,iy,io)];
+                  }
+               }
+            }
+         }
+         break;
+      default:
+         rs_error("Domain<T>::copyToboundary:Invalid dimension");
+         break;
+         break;
+   }
 
 }
 
