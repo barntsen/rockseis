@@ -32,6 +32,10 @@ int main(int argc, char** argv) {
          PRINT_DOC();
          PRINT_DOC(# Traveltime computation parameters);
          PRINT_DOC();
+         PRINT_DOC(incore = "false"; # Whether to compute the traveltimes on the fly. If false then atraveltime table must be built beforehand);
+         PRINT_DOC(homogen = "false"; # Whether to compute the traveltimes on the fly using a constant velocity taken from the velocity model);
+         PRINT_DOC(radius = "50.0"; # Radius of traveltime interpolation);
+         PRINT_DOC();
          PRINT_DOC(# Modelling parameters);
          PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
          PRINT_DOC(aperty = "1800"; # Aperture for local model (source is in the middle));

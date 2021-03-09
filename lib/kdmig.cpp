@@ -13,7 +13,7 @@ Kdmig<T>::Kdmig() {
     maxfreq = 100;
     minfreq = 4;
     rad = 50.0;
-    incore = true;
+    incore = false;
     homogen = false;
 }
 
@@ -165,6 +165,9 @@ int KdmigAcoustic2D<T>::run()
      }else{
          ttable_sou = std::make_shared<Ttable2D<T>> (model, 1);
          ttable_rec = std::make_shared<Ttable2D<T>> (model, 1);
+         // Allocate ttable arrays
+         ttable_sou->allocTtable();
+         ttable_rec->allocTtable();
      }
 
      /* Get data */
@@ -175,9 +178,6 @@ int KdmigAcoustic2D<T>::run()
      // Create image
      pimage->allocateImage();
 
-     // Create ttable arrays
-     ttable_sou->allocTtable();
-     ttable_rec->allocTtable();
 
      this->writeLog("Running 2D Kirchhoff migration.");
 
@@ -587,6 +587,9 @@ int KdmigAcoustic3D<T>::run()
      }else{
          ttable_sou = std::make_shared<Ttable3D<T>> (model, 1);
          ttable_rec = std::make_shared<Ttable3D<T>> (model, 1);
+         // Allocate ttable arrays
+         ttable_sou->allocTtable();
+         ttable_rec->allocTtable();
      }
 
      /* Get data */
@@ -596,12 +599,6 @@ int KdmigAcoustic3D<T>::run()
 
      // Create image
      pimage->allocateImage();
-
-     if(!this->getIncore()){
-         // Create ttable arrays
-         ttable_sou->allocTtable();
-         ttable_rec->allocTtable();
-     }
 
      this->writeLog("Running 3D Kirchhoff migration.");
 

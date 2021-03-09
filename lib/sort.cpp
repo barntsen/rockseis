@@ -40,6 +40,9 @@ int sort_sr_0(void const *a, void const *b)
 	if( pa->z < pb->z) return -1;
 	if( pa->z > pb->z) return 1;
 
+	if( pa->ind < pb->ind) return -1;
+	if( pa->ind > pb->ind) return 1;
+
 	if( pa->foff < pb->foff) return -1;
 	if( pa->foff > pb->foff) return 1;
 
@@ -72,6 +75,9 @@ int sort_sr_1(void const *a, void const *b)
 	if( pa->z < pb->z) return -1;
 	if( pa->z > pb->z) return 1;
 
+	if( pa->ind < pb->ind) return -1;
+	if( pa->ind > pb->ind) return 1;
+
 	if( pa->foff < pb->foff) return -1;
 	if( pa->foff > pb->foff) return 1;
 
@@ -87,7 +93,7 @@ int sort_sr_1(void const *a, void const *b)
 	return 0;
 }
 
-//Sort with z as primary key and y as secondary key 
+//Sort with z as primary key and x as secondary key 
 int sort_sr_2(void const *a, void const *b)
 {
 	position_t *pa, *pb;
@@ -103,6 +109,9 @@ int sort_sr_2(void const *a, void const *b)
 
 	if( pa->y < pb->y) return -1;
 	if( pa->y > pb->y) return 1;
+
+	if( pa->ind < pb->ind) return -1;
+	if( pa->ind > pb->ind) return 1;
 
 	if( pa->foff < pb->foff) return -1;
 	if( pa->foff > pb->foff) return 1;

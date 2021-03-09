@@ -563,11 +563,13 @@ public:
     */
     void staggerModels();
     std::shared_ptr<ModelViscoelastic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
+    std::shared_ptr<ModelViscoelastic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int order); ///< Returns a model of a domain
 
     /** Create model
     It creates an empty model of Vp, Vs and R
     */
     void createModel();
+    void createPaddedmodel();
 
 private:
     T *Vp;  // P-wave velocity
@@ -648,6 +650,7 @@ public:
     T getMaxR() {return this->getMax(R); } ///< Returns max R
 
     std::shared_ptr<ModelViscoelastic3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperture_x, T aperture_y, bool map);
+    std::shared_ptr<ModelViscoelastic3D<T>> getDomainmodel(std::shared_ptr<Data3D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int nd2, const int order); ///< Returns a model of a domain
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, Vp and Vs. 
@@ -658,6 +661,7 @@ public:
     It creates an empty model of Vp, Vs and R
     */
     void createModel();
+    void createPaddedmodel();
 
 private:
     T *Vp;  ///< P-wave velocity

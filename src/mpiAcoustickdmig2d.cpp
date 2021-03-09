@@ -28,8 +28,12 @@ int main(int argc, char** argv) {
 
     if(argc < 2){
         if(mpi.getRank() == 0){
-			PRINT_DOC(# MPI 2d acoustic reverse-time migration configuration file);
-			PRINT_DOC();
+            PRINT_DOC(# MPI 2d acoustic reverse-time migration configuration file);
+            PRINT_DOC();
+            PRINT_DOC(# Traveltime computation parameters);
+            PRINT_DOC();
+            PRINT_DOC(incore = "false"; # Whether to compute the traveltimes on the fly. If false then atraveltime table must be built beforehand);
+            PRINT_DOC();
 			PRINT_DOC(# Modelling parameters);
 			PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
 			PRINT_DOC();
@@ -63,6 +67,7 @@ int main(int argc, char** argv) {
     float minfreq;
     float maxfreq;
     float radius;
+    bool incore;
     std::string Vpfile;
     std::string Ttablefile;
     std::string Pimagefile;
@@ -88,8 +93,11 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("minfreq", &minfreq) == INPARSE_ERR) status = true;
     if(Inpar->getPar("maxfreq", &maxfreq) == INPARSE_ERR) status = true;
     if(Inpar->getPar("radius", &radius) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("Ttable", &Ttablefile) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("incore", &incore) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
+   if(!incore){
+       if(Inpar->getPar("Ttable", &Ttablefile) == INPARSE_ERR) status = true;
+   }
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Pimagefile", &Pimagefile) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
@@ -110,6 +118,13 @@ int main(int argc, char** argv) {
 	
     // Create a global model class
 	std::shared_ptr<rockseis::ModelEikonal2D<float>> gmodel (new rockseis::ModelEikonal2D<float>(Vpfile, lpml));
+
+    // Test for problematic model sampling
+    if(incore){
+        if(gmodel->getDx() != gmodel->getDz()){
+            rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dz).");
+        }
+    }
 
 	if(mpi.getRank() == 0) {
 		// Master
@@ -178,15 +193,24 @@ int main(int argc, char** argv) {
                 lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
                 lmodel->Expand();
 
+                // Map coordinates to model
+                shot2D->makeMap(lmodel->getGeom(), SMAP);
+                shot2D->makeMap(lmodel->getGeom(), GMAP);
+
                 // Make image class
                 pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
 
-                // Create traveltime table class
-                ttable = std::make_shared<rockseis::Ttable2D<float>>(Ttablefile);
-                ttable->allocTtable();
+                if(!incore){
+                    // Create traveltime table class
+                    ttable = std::make_shared<rockseis::Ttable2D<float>>(Ttablefile);
+                    ttable->allocTtable();
+                }
 
                 // Create imaging class
                 kdmig = std::make_shared<rockseis::KdmigAcoustic2D<float>>(lmodel, ttable, shot2D, pimage);
+
+                // Set traveltime parameters
+                kdmig->setIncore(incore);
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(freqinc);
@@ -212,7 +236,9 @@ int main(int argc, char** argv) {
                 lmodel.reset();
                 pimage.reset();
                 kdmig.reset();
-                ttable.reset();
+                if(!incore){
+                    ttable.reset();
+                }
 
                 // Send result back
                 work.status = WORK_FINISHED;
