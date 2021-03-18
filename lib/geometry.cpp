@@ -133,7 +133,7 @@ Geometry2D<T>::~Geometry2D() {
 
 // create map
 template<typename T>
-void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padhx, int padhy) {
+void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padhx, int padhy, T shiftx, T shifty) {
 	size_t n = this->getN(1);  //Get number of traces 
 	// Get regular model parameters
 	int nx = _geom->getN(1);
@@ -148,20 +148,20 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
     {
         // Compute index smap
         for (size_t i = 0; i < n ; i++){
-            pos = this->mapfloor((scoords[i].x - ox)/dx);
+            pos = this->mapfloor((scoords[i].x - ox + shiftx*dx)/dx);
             if(pos >=padlx && pos < nx-padhx)
             {
                 smap[i].x  = pos; // index is within bounds
-                sshift[i].x = ((scoords[i].x - ox)/dx) - pos;
+                sshift[i].x = ((scoords[i].x - ox + shiftx*dx)/dx) - pos;
             }else
             {
                 smap[i].x  = -1;  // index is off bounds
             }
-            pos = this->mapfloor((scoords[i].y - oy)/dy);
+            pos = this->mapfloor((scoords[i].y - oy + shifty*dy)/dy);
             if(pos >=padly && pos < ny-padhy)
             {
                 smap[i].y  = pos; // index is within bounds
-                sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
+                sshift[i].y = ((scoords[i].y - oy + shifty*dy)/dy) - pos;
             }else
             {
                 smap[i].y  = -1;  // index is off bounds
@@ -178,20 +178,20 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
     }else{
         // Compute index gmap
         for (size_t i = 0; i < n ; i++){
-            pos = this->mapfloor((gcoords[i].x - ox)/dx);
+            pos = this->mapfloor((gcoords[i].x - ox + shiftx*dx)/dx);
             if(pos >=padlx && pos < nx-padhx)
             {
                 gmap[i].x  = pos; // index is within bounds
-                gshift[i].x = ((gcoords[i].x - ox)/dx) - pos;
+                gshift[i].x = ((gcoords[i].x - ox)/dx + shiftx*dx) - pos;
             }else
             {
                 gmap[i].x  = -1;  // index is off bounds
             }
-            pos = this->mapfloor((gcoords[i].y - oy)/dy);
+            pos = this->mapfloor((gcoords[i].y - oy + shifty*dy)/dy);
             if(pos >=padly && pos < ny-padhy)
             {
                 gmap[i].y  = pos; // index is within bounds
-                gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
+                gshift[i].y = ((gcoords[i].y - oy + shifty*dy)/dy) - pos;
             }else
             {
                 gmap[i].y  = -1;  // index is off bounds
@@ -274,7 +274,7 @@ Geometry3D<T>::~Geometry3D() {
 
 // create map
 template<typename T>
-void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padlz, int padhx, int padhy, int padhz) {
+void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padlz, int padhx, int padhy, int padhz, T shiftx, T shifty, T shiftz) {
     size_t n = this->getN(1);  //Get number of traces 
     // Get regular model parameters
     int nx = _geom->getN(1);
@@ -290,29 +290,29 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
     int pos;
     if(map == SMAP){
         for (size_t i = 0; i < n ; i++){
-            pos = this->mapfloor((scoords[i].x - ox)/dx);
+            pos = this->mapfloor((scoords[i].x - ox + shiftx*dx)/dx);
             if(pos >=padlx && pos < nx-padhx)
             {
                 smap[i].x  = pos; // index is within bounds
-                sshift[i].x = ((scoords[i].x - ox)/dx) - pos;
+                sshift[i].x = ((scoords[i].x - ox + shiftx*dx)/dx) - pos;
             }else
             {
                 smap[i].x  = -1;  // index is off bounds
             }
-            pos = this->mapfloor((scoords[i].y - oy)/dy);
+            pos = this->mapfloor((scoords[i].y - oy + shifty*dy)/dy);
             if(pos >=padly && pos < ny-padhy)
             {
                 smap[i].y  = pos; // index is within bounds
-                sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
+                sshift[i].y = ((scoords[i].y - oy)/dy + shifty*dy) - pos;
             }else
             {
                 smap[i].y  = -1;  // index is off bounds
             }
-            pos = this->mapfloor((scoords[i].z - oz)/dz);
+            pos = this->mapfloor((scoords[i].z - oz + shiftz*dz)/dz);
             if(pos >=padlz && pos < nz-padhz)
             {
                 smap[i].z  = pos; // index is within bounds
-                sshift[i].z = ((scoords[i].z - oz)/dz) - pos;
+                sshift[i].z = ((scoords[i].z - oz + shiftz*dz)/dz) - pos;
             }else
             {
                 smap[i].z  = -1;  // index is off bounds
@@ -329,29 +329,29 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
     }else{
         for (size_t i = 0; i < n ; i++){
-            pos = this->mapfloor((gcoords[i].x - ox)/dx);
+            pos = this->mapfloor((gcoords[i].x - ox + shiftx*dx)/dx);
             if(pos >=padlx && pos < nx-padhx)
             {
                 gmap[i].x  = pos; // index is within bounds
-                gshift[i].x = ((gcoords[i].x - ox)/dx) - pos;
+                gshift[i].x = ((gcoords[i].x - ox + shiftx*dx)/dx) - pos;
             }else
             {
                 gmap[i].x  = -1;  // index is off bounds
             }
-            pos = this->mapfloor((gcoords[i].y - oy)/dy);
+            pos = this->mapfloor((gcoords[i].y - oy + shifty*dy)/dy);
             if(pos >=padly && pos < ny-padhy)
             {
                 gmap[i].y  = pos; // index is within bounds
-                gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
+                gshift[i].y = ((gcoords[i].y - oy + shifty*dy)/dy) - pos;
             }else
             {
                 gmap[i].y  = -1;  // index is off bounds
             }
-            pos = this->mapfloor((gcoords[i].z - oz)/dz);
+            pos = this->mapfloor((gcoords[i].z - oz + shiftz*dz)/dz);
             if(pos >=padlz && pos < nz-padhz)
             {
                 gmap[i].z  = pos; // index is within bounds
-                gshift[i].z = ((gcoords[i].z - oz)/dz) - pos;
+                gshift[i].z = ((gcoords[i].z - oz + shiftz*dz)/dz) - pos;
             }else
             {
                 gmap[i].z  = -1;  // index is off bounds

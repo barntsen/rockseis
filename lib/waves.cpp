@@ -3142,6 +3142,7 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<ModelElastic3D<T>> model, std
     rs_field field = data->getField();
     dataarray = data->getData();
     int i,i1,i2,i3;
+    T xtri[2], ytri[2], ztri[2];
     Index Im(this->getNx(), this->getNy(), this->getNz());
     switch(field)
     {
@@ -3159,9 +3160,24 @@ void WavesElastic3D<T>::recordData(std::shared_ptr<ModelElastic3D<T>> model, std
 
                    // Factor to make reciprocity work
                    factor = (3.*R[Im(map[i].x, map[i].y, map[i].z)]*Vp[Im(map[i].x, map[i].y, map[i].z)]*Vp[Im(map[i].x, map[i].y, map[i].z)] - 4.*R[Im(map[i].x, map[i].y, map[i].z)]*Vs[Im(map[i].x, map[i].y, map[i].z)]*Vs[Im(map[i].x, map[i].y, map[i].z)])/3.;
-                   dataarray[Idat(it,i)] += (1./3.)*Fielddata1[I3D(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]/factor;
-                   dataarray[Idat(it,i)] += (1./3.)*Fielddata2[I3D(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]/factor;
-                   dataarray[Idat(it,i)] += (1./3.)*Fielddata3[I3D(lpml + map[i].x, lpml + map[i].y, lpml + map[i].z)]/factor;
+                   xtri[0] = 1 - shift[i].x;
+                   xtri[1] = shift[i].x;
+
+                   ytri[0] = 1 - shift[i].y;
+                   ytri[1] = shift[i].y;
+
+                   ztri[0] = 1 - shift[i].z;
+                   ztri[1] = shift[i].z;
+
+                   for(i1 = 0; i1 < 2; i1++){ 
+                      for(i2 = 0; i2 < 2; i2++){ 
+                         for(i3 = 0; i3 < 2; i3++){ 
+                            dataarray[Idat(it,i)] += (1./3.)*xtri[i1]*ytri[i2]*ztri[i3]*Fielddata1[I3D(lpml + map[i].x + i1, lpml + map[i].y + i2, lpml + map[i].z + i3)]/factor;
+                            dataarray[Idat(it,i)] += (1./3.)*xtri[i1]*ytri[i2]*ztri[i3]*Fielddata2[I3D(lpml + map[i].x + i1, lpml + map[i].y + i2, lpml + map[i].z + i3)]/factor;
+                            dataarray[Idat(it,i)] += (1./3.)*xtri[i1]*ytri[i2]*ztri[i3]*Fielddata3[I3D(lpml + map[i].x + i1, lpml + map[i].y + i2, lpml + map[i].z + i3)]/factor;
+                         }
+                      }
+                   }
 //                   for(i1=0; i1<2*LANC_SIZE; i1++){
 //                      for(i2=0; i2<2*LANC_SIZE; i2++){
 //                         for(i3=0; i3<2*LANC_SIZE; i3++){

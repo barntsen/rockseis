@@ -186,22 +186,24 @@ int main(int argc, char** argv) {
         // Read wavelet data, set shot coordinates and make a map
         source->read();
         source->copyCoords(Shotgeom);
-        source->makeMap(lmodel->getGeom(), SMAP);
 
         //Setting sourcetype 
         switch(stype){
             case 0:
-                source->setField(PRESSURE);
-                break;
+               source->setField(PRESSURE);
+               source->makeMap(lmodel->getGeom(), SMAP,0,0,0,0,0.0,0.0);
+               break;
             case 1:
-                source->setField(VX);
-                break;
+               source->setField(VX);
+               source->makeMap(lmodel->getGeom(), SMAP,0,0,0,0,0.5,0.0);
+               break;
             case 3:
-                source->setField(VZ);
-                break;
+               source->setField(VZ);
+               source->makeMap(lmodel->getGeom(), SMAP,0,0,0,0,0.0,0.5);
+               break;
             default:
-                rs_error("Unknown source type: ", std::to_string(stype));
-                break;
+               rs_error("Unknown source type: ", std::to_string(stype));
+               break;
         }
 
         modelling = std::make_shared<rockseis::ModellingElastic2D<float>>(lmodel, source, order, snapinc);
@@ -226,7 +228,7 @@ int main(int argc, char** argv) {
             Pdata2D->setField(rockseis::PRESSURE);
             // Copy geometry to Data
             Pdata2D->copyCoords(Shotgeom);
-            Pdata2D->makeMap(lmodel->getGeom());
+            Pdata2D->makeMap(lmodel->getGeom(),GMAP,0,0,0,0,0.0,0.0);
             modelling->setRecP(Pdata2D);
         }
         if(Vxrecord){
@@ -234,7 +236,7 @@ int main(int argc, char** argv) {
             Vxdata2D->setField(rockseis::VX);
             // Copy geometry to Data
             Vxdata2D->copyCoords(Shotgeom);
-            Vxdata2D->makeMap(lmodel->getGeom());
+            Vxdata2D->makeMap(lmodel->getGeom(),GMAP,0,0,0,0,-0.5,0.0);
             modelling->setRecVx(Vxdata2D);
         }
         if(Vzrecord){
@@ -242,7 +244,7 @@ int main(int argc, char** argv) {
             Vzdata2D->setField(rockseis::VZ);
             // Copy geometry to Data
             Vzdata2D->copyCoords(Shotgeom);
-            Vzdata2D->makeMap(lmodel->getGeom());
+            Vzdata2D->makeMap(lmodel->getGeom(),GMAP,0,0,0,0,0.0,-0.5);
             modelling->setRecVz(Vzdata2D);
         }
 
