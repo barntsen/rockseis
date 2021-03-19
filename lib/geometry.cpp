@@ -182,7 +182,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             if(pos >=padlx && pos < nx-padhx)
             {
                 gmap[i].x  = pos; // index is within bounds
-                gshift[i].x = ((gcoords[i].x - ox)/dx + shiftx*dx) - pos;
+                gshift[i].x = ((gcoords[i].x - ox + shiftx*dx)/dx) - pos;
             }else
             {
                 gmap[i].x  = -1;  // index is off bounds
@@ -303,7 +303,7 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             if(pos >=padly && pos < ny-padhy)
             {
                 smap[i].y  = pos; // index is within bounds
-                sshift[i].y = ((scoords[i].y - oy)/dy + shifty*dy) - pos;
+                sshift[i].y = ((scoords[i].y - oy + shifty*dy)/dy) - pos;
             }else
             {
                 smap[i].y  = -1;  // index is off bounds

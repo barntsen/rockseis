@@ -195,11 +195,11 @@ int main(int argc, char** argv) {
                break;
             case 1:
                source->setField(VX);
-               source->makeMap(lmodel->getGeom(), SMAP,0,0,0,0,0.5,0.0);
+               source->makeMap(lmodel->getGeom(), SMAP,0,0,0,0,-0.5,0.0);
                break;
             case 3:
                source->setField(VZ);
-               source->makeMap(lmodel->getGeom(), SMAP,0,0,0,0,0.0,0.5);
+               source->makeMap(lmodel->getGeom(), SMAP,0,0,0,0,0.0,-0.5);
                break;
             default:
                rs_error("Unknown source type: ", std::to_string(stype));

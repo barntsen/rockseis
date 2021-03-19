@@ -95,8 +95,9 @@ public:
      * */
     void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); } 
     void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padx, int pady) { geometry->makeMap(geom, map, padx, pady, padx, pady); } 
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padhx, int padhy) { geometry->makeMap(geom, map, padlx, padly, padhx, padhy); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padx, int pady) { geometry->makeMap(geom, map, padx, pady, padx, pady, 0.0, 0.0); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padhx, int padhy) { geometry->makeMap(geom, map, padlx, padly, padhx, padhy, 0.0, 0.0); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padhx, int padhy, T shiftx, T shifty) { geometry->makeMap(geom, map, padlx, padly, padhx, padhy, shiftx, shifty); } 
     
     void copyGmap2Smap() { geometry->copyGmap2Smap(); } 
     void copySmap2Gmap() { geometry->copySmap2Gmap(); } 
@@ -147,8 +148,9 @@ public:
      * */
     void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); } 
     void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padx, int pady, int padz) { geometry->makeMap(geom, map, padx, pady, padz, padx, pady, padz); } 
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padlz, int padhx, int padhy, int padhz) { geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padx, int pady, int padz) { geometry->makeMap(geom, map, padx, pady, padz, padx, pady, padz, 0.0, 0.0, 0.0); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padlz, int padhx, int padhy, int padhz) { geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, 0.0, 0.0); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padlz, int padhx, int padhy, int padhz, T shiftx, T shifty, T shiftz) { geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, shiftx, shifty, shiftz); } 
 
     void copyGmap2Smap() { geometry->copyGmap2Smap(); } 
     void copySmap2Gmap() { geometry->copySmap2Gmap(); } 
