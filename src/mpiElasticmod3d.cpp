@@ -265,7 +265,6 @@ int main(int argc, char** argv) {
             // Read wavelet data, set shot coordinates and make a map
             source->read();
             source->copyCoords(Shotgeom);
-            source->makeMap(lmodel->getGeom(), SMAP);
 
             //Setting sourcetype 
             switch(stype){
@@ -285,6 +284,7 @@ int main(int argc, char** argv) {
                   rs_error("Unknown source type: ", std::to_string(stype));
                   break;
             }
+            source->makeMap(lmodel->getGeom(), SMAP);
 
             modelling = std::make_shared<rockseis::ModellingElastic3D<float>>(lmodel, source, order, snapinc);
 

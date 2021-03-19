@@ -432,6 +432,23 @@ Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt, const T _ot)
     }
 }
 
+
+template<typename T>
+void Data2D<T>::makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padhx, int padhy){
+   rs_field field = this->getField();
+   switch(field){
+      case VX:
+         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, -0.5, 0.0);
+         break;
+      case VZ:
+         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, 0.0, -0.5);
+         break;
+      default:
+         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, 0.0, 0.0);
+         break;
+   }
+}
+
 template<typename T>
 bool Data2D<T>::read()
 {
@@ -1067,6 +1084,25 @@ Data3D<T>::Data3D(std::string datafile, const int _nt, const T _dt, const T _ot)
 
     // Allocate the memory for the data
     data = (T *) calloc(ntrace*_nt, sizeof(T));
+}
+
+template<typename T>
+void Data3D<T>::makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padlz, int padhx, int padhy, int padhz){
+   rs_field field = this->getField();
+   switch(field){
+      case VX:
+         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, -0.5, 0.0, 0.0);
+         break;
+      case VY:
+         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, -0.5, 0.0);
+         break;
+      case VZ:
+         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, 0.0, -0.5);
+         break;
+      default:
+         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, 0.0, 0.0);
+         break;
+   }
 }
 
 template<typename T>

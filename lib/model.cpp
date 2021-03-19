@@ -3716,7 +3716,7 @@ std::shared_ptr<ModelElastic3D<T>> ModelElastic3D<T>::getDomainmodel(std::shared
     T *M_yz = local->getM_yz();
     T *M_xy = local->getM_xy();
     T *Rx = local->getRx();
-    T *Ry = local->getRx();
+    T *Ry = local->getRy();
     T *Rz = local->getRz();
 
     /* Allocate two traces to read models from file */
