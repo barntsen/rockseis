@@ -56,7 +56,7 @@ private:
     int snapinc;  ///< Snap interval
     std::string logfile; ///< Log file name
     std::ofstream Flog; ///< Logfile
-	Progress prog; ///< Progress counter
+    Progress prog; ///< Progress counter
 };
 
 /** The 2D Acoustic Modelling class

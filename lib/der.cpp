@@ -153,386 +153,390 @@ void Der<T>::setOrder(const int _order)
 // Forward derivatives
 template <typename T>
 void Der<T>::ddx_fw(T *f){
-    T *df1, *f1;
-    T* df2, *f2;
-    T* df3, *f3;
-    T* c;
+   T *df1, *f1;
+   T* df2, *f2;
+   T* df3, *f3;
+   T* c;
 
-    // Compute derivative
-    for(int iz=0; iz < nz; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        for(int iy=0; iy < ny; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
+   // Compute derivative
+   for(int iz=0; iz < nz; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      for(int iy=0; iy < ny; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
 
-            for(int ix=0; ix < order-1; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                c = coeffs + cind(ix);
-                df1[0] = (f1[ind(+1, 0, 0)]- f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<ix+1; io++){
-                    df1[0] += (f1[ind(io+1, 0, 0)] - f1[ind(-io, 0, 0)])*c[io];
-                }
-                df1[0] /= dx;
+         for(int ix=0; ix < order-1; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            c = coeffs + cind(ix);
+            df1[0] = (f1[ind(+1, 0, 0)]- f1[ind(0, 0, 0)])*c[0];
+            for(int io=1; io<ix+1; io++){
+               df1[0] += (f1[ind(io+1, 0, 0)] - f1[ind(-io, 0, 0)])*c[io];
             }
+            df1[0] /= dx;
+         }
 
-            c = coeffs + cind(order-1);
-            for(int ix=order-1; ix < nx-order-1; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(+1, 0, 0)]-f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<order; io++){
-                    df1[0] += (f1[ind(io+1, 0, 0)]-f1[ind(-io, 0, 0)])*c[io];
-                }
-                df1[0] /= dx;
+         c = coeffs + cind(order-1);
+         for(int ix=order-1; ix < nx-order-1; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(+1, 0, 0)]-f1[ind(0, 0, 0)])*c[0];
+            for(int io=1; io<order; io++){
+               df1[0] += (f1[ind(io+1, 0, 0)]-f1[ind(-io, 0, 0)])*c[io];
             }
+            df1[0] /= dx;
+         }
 
-            for(int ix=nx-order-1; ix < nx-1; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                c = coeffs + cind(nx-ix-2);
-                df1[0] = (f1[ind(+1, 0, 0)]- f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<nx-ix-1; io++){
-                    df1[0] += (f1[ind(io+1, 0, 0)] - f1[ind(-io, 0, 0)])*c[io];
-                }
-                df1[0] /= dx;
+         for(int ix=nx-order-1; ix < nx-1; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            c = coeffs + cind(nx-ix-2);
+            df1[0] = (f1[ind(+1, 0, 0)]- f1[ind(0, 0, 0)])*c[0];
+            for(int io=1; io<nx-ix-1; io++){
+               df1[0] += (f1[ind(io+1, 0, 0)] - f1[ind(-io, 0, 0)])*c[io];
             }
-            df1 = df2 + ind(nx-1,0,0);
-            df1[0] = 0.0;
-        }
-    }
+            df1[0] /= dx;
+         }
+         df1 = df2 + ind(nx-1,0,0);
+         df1[0] = 0.0;
+      }
+   }
 }
 
 template <typename T>
 void Der<T>::ddy_fw(T *f){
-    T *df1, *f1;
-    T* df2, *f2;
-    T* df3, *f3;
-    T* c;
+   T *df1, *f1;
+   T* df2, *f2;
+   T* df3, *f3;
+   T* c;
 
-    // Compute derivative
-    for(int iz=0; iz < nz; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        for(int iy=0; iy < order-1; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            c = coeffs + cind(iy);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, +1, 0)]-f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<iy+1; io++){
-                    df1[0] += (f1[ind(0, io+1, 0)]-f1[ind(0, -io, 0)])*c[io];
-                }
-                df1[0] /= dy;
-            }
-        }
-        c = coeffs + cind(order-1);
-        for(int iy=order-1; iy < ny-order-1; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, +1, 0)]-f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<order; io++){
-                    df1[0] += (f1[ind(0, io+1, 0)]-f1[ind(0, -io, 0)])*c[io];
-                }
-                df1[0] /= dy;
-            }
-        }
-        for(int iy=ny-order-1; iy < ny-1; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            c = coeffs + cind(ny-iy-2);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, +1, 0)]-f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<ny-iy-1; io++){
-                    df1[0] += (f1[ind(0, io+1, 0)]-f1[ind(0, -io, 0)])*c[io];
-                }
-                df1[0] /= dy;
-            }
-        }
-        df2 = df3 + ind(0,ny-1,0);
-        for(int ix=0; ix < nx; ix++){
+   // Compute derivative
+   for(int iz=0; iz < nz; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      for(int iy=0; iy < order-1; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         c = coeffs + cind(iy);
+         for(int ix=0; ix < nx; ix++){
             df1 = df2 + ind(ix,0,0);
-            df1[0] = 0.0;
-        }
-    }
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, +1, 0)]-f1[ind(0, 0, 0)])*c[0];
+            for(int io=1; io<iy+1; io++){
+               df1[0] += (f1[ind(0, io+1, 0)]-f1[ind(0, -io, 0)])*c[io];
+            }
+            df1[0] /= dy;
+         }
+      }
+
+      c = coeffs + cind(order-1);
+      for(int iy=order-1; iy < ny-order-1; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, +1, 0)]-f1[ind(0, 0, 0)])*c[0];
+            for(int io=1; io<order; io++){
+               df1[0] += (f1[ind(0, io+1, 0)]-f1[ind(0, -io, 0)])*c[io];
+            }
+            df1[0] /= dy;
+         }
+      }
+
+      for(int iy=ny-order-1; iy < ny-1; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         c = coeffs + cind(ny-iy-2);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, +1, 0)]-f1[ind(0, 0, 0)])*c[0];
+            for(int io=1; io<ny-iy-1; io++){
+               df1[0] += (f1[ind(0, io+1, 0)]-f1[ind(0, -io, 0)])*c[io];
+            }
+            df1[0] /= dy;
+         }
+      }
+      df2 = df3 + ind(0,ny-1,0);
+      for(int ix=0; ix < nx; ix++){
+         df1 = df2 + ind(ix,0,0);
+         df1[0] = 0.0;
+      }
+   }
+
 }
 
 template <typename T>
 void Der<T>::ddz_fw(T *f){
-    T *df1, *f1;
-    T* df2, *f2;
-    T* df3, *f3;
-    T* c;
-    
-    // Compute derivative
-    for(int iz=0; iz < order-1; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        c = coeffs + cind(iz);
-        for(int iy=0; iy < ny; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, +1)]-f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<iz+1; io++){
-                    df1[0] += (f1[ind(0, 0, io+1)]-f1[ind(0, 0, -io)])*c[io];
-                }
-                df1[0] /= dz;
-            }
-        }
-    }
+   T *df1, *f1;
+   T* df2, *f2;
+   T* df3, *f3;
+   T* c;
 
-    c = coeffs + cind(order-1);
-    for(int iz=order-1; iz < nz-order-1; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        for(int iy=0; iy < ny; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, +1)]-f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<order; io++){
-                    df1[0] += (f1[ind(0, 0, io+1)]-f1[ind(0, 0, -io)])*c[io];
-                }
-                df1[0] /= dz;
+   // Compute derivative
+   for(int iz=0; iz < order-1; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      c = coeffs + cind(iz);
+      for(int iy=0; iy < ny; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, +1)]-f1[ind(0, 0, 0)])*c[0];
+            for(int io=1; io<iz+1; io++){
+               df1[0] += (f1[ind(0, 0, io+1)]-f1[ind(0, 0, -io)])*c[io];
             }
-        }
-    }
+            df1[0] /= dz;
+         }
+      }
+   }
 
-    for(int iz=nz-order-1; iz < nz-1; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        c = coeffs + cind(nz-iz-2);
-        for(int iy=0; iy < ny; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, +1)]-f1[ind(0, 0, 0)])*c[0];
-                for(int io=1; io<nz-iz-1; io++){
-                    df1[0] += (f1[ind(0, 0, io+1)]-f1[ind(0, 0, -io)])*c[io];
-                }
-                df1[0] /= dz;
+   c = coeffs + cind(order-1);
+   for(int iz=order-1; iz < nz-order-1; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      for(int iy=0; iy < ny; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, +1)]-f1[ind(0, 0, 0)])*c[0];
+            for(int io=1; io<order; io++){
+               df1[0] += (f1[ind(0, 0, io+1)]-f1[ind(0, 0, -io)])*c[io];
             }
-        }
-    }
+            df1[0] /= dz;
+         }
+      }
+   }
 
-    df3 = df + ind(0,0,nz-1);
-    for(int iy=0; iy < ny; iy++){
-	    df2 = df3 + ind(0,iy,0);
-	    f2 = f3 + ind(0,iy,0);
-	    for(int ix=0; ix < nx; ix++){
-		    df1 = df2 + ind(ix,0,0);
-		    f1 = f2 + ind(ix,0,0);
-		    df1[0] = 0.0;
-	    }
-    }
+   for(int iz=nz-order-1; iz < nz-1; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      c = coeffs + cind(nz-iz-2);
+      for(int iy=0; iy < ny; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, +1)]-f1[ind(0, 0, 0)])*c[0];
+            for(int io=1; io<nz-iz-1; io++){
+               df1[0] += (f1[ind(0, 0, io+1)]-f1[ind(0, 0, -io)])*c[io];
+            }
+            df1[0] /= dz;
+         }
+      }
+   }
+
+   df3 = df + ind(0,0,nz-1);
+   for(int iy=0; iy < ny; iy++){
+      df2 = df3 + ind(0,iy,0);
+      f2 = f3 + ind(0,iy,0);
+      for(int ix=0; ix < nx; ix++){
+         df1 = df2 + ind(ix,0,0);
+         f1 = f2 + ind(ix,0,0);
+         df1[0] = 0.0;
+      }
+   }
 }
 
 
 // Backward derivatives
 template <typename T>
 void Der<T>::ddx_bw(T *f){
-    T *df1, *f1;
-    T* df2, *f2;
-    T* df3, *f3;
-    T* c;
-    
-    // Compute derivative
-    for(int iz=0; iz < nz; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        for(int iy=0; iy < ny; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            df1 = df2;
-            df1[0] = 0.0;
-            for(int ix=1; ix < order; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                c = coeffs + cind(ix-1);
-                df1[0] = (f1[ind(0, 0, 0)]- f1[ind(-1, 0, 0)])*c[0];
-                for(int io=1; io<ix; io++){
-                    df1[0] += (f1[ind(io, 0, 0)]-f1[ind(-(io+1), 0, 0)])*c[io];
-                }
-                df1[0] /= dx;
-            }
+   T *df1, *f1;
+   T* df2, *f2;
+   T* df3, *f3;
+   T* c;
 
-            c = coeffs + cind(order-1);
-            for(int ix=order; ix < nx-order; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, 0)]-f1[ind(-1, 0, 0)])*c[0];
-                for(int io=1; io<order; io++){
-                    df1[0] += (f1[ind(io, 0, 0)]-f1[ind(-(io+1), 0, 0)])*c[io];
-                }
-                df1[0] /= dx;
+   // Compute derivative
+   for(int iz=0; iz < nz; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      for(int iy=0; iy < ny; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         df1 = df2;
+         df1[0] = 0.0;
+         for(int ix=1; ix < order; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            c = coeffs + cind(ix-1);
+            df1[0] = (f1[ind(0, 0, 0)]- f1[ind(-1, 0, 0)])*c[0];
+            for(int io=1; io<ix; io++){
+               df1[0] += (f1[ind(io, 0, 0)]-f1[ind(-(io+1), 0, 0)])*c[io];
             }
+            df1[0] /= dx;
+         }
 
-            for(int ix=nx-order; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                c = coeffs + cind(nx-ix-1);
-                df1[0] = (f1[ind(0, 0, 0)]- f1[ind(-1, 0, 0)])*c[0];
-                for(int io=1; io<nx-ix; io++){
-                    df1[0] += (f1[ind(io, 0, 0)]-f1[ind(-(io+1), 0, 0)])*c[io];
-                }
-                df1[0] /= dx;
+         c = coeffs + cind(order-1);
+         for(int ix=order; ix < nx-order; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, 0)]-f1[ind(-1, 0, 0)])*c[0];
+            for(int io=1; io<order; io++){
+               df1[0] += (f1[ind(io, 0, 0)]-f1[ind(-(io+1), 0, 0)])*c[io];
             }
-        }
-    }
+            df1[0] /= dx;
+         }
+
+         for(int ix=nx-order; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            c = coeffs + cind(nx-ix-1);
+            df1[0] = (f1[ind(0, 0, 0)]- f1[ind(-1, 0, 0)])*c[0];
+            for(int io=1; io<nx-ix; io++){
+               df1[0] += (f1[ind(io, 0, 0)]-f1[ind(-(io+1), 0, 0)])*c[io];
+            }
+            df1[0] /= dx;
+         }
+      }
+   }
 }
 
 
 template <typename T>
 void Der<T>::ddy_bw(T *f){
-    T *df1, *f1;
-    T* df2, *f2;
-    T* df3, *f3;
-    T* c;
-    
-    // Compute derivative
-    for(int iz=0; iz < nz; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        df2 = df3;
-        for(int ix=0; ix < nx; ix++){
-            df1 = df2 + ind(ix,0,0);
-            df1[0] = 0.0;
-        }
-        for(int iy=1; iy < order; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            c = coeffs + cind(iy-1);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, -1, 0)])*c[0];
-                for(int io=1; io<iy; io++){
-                    df1[0] += (f1[ind(0, io, 0)]-f1[ind(0, -(io+1), 0)])*c[io];
-                }
-                df1[0] /= dy;
-            }
-        }
+   T *df1, *f1;
+   T* df2, *f2;
+   T* df3, *f3;
+   T* c;
 
-           
-        c = coeffs + cind(order-1);
-        for(int iy=order; iy < ny-order; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, -1, 0)])*c[0];
-                for(int io=1; io<order; io++){
-                    df1[0] += (f1[ind(0, io, 0)]-f1[ind(0, -(io+1), 0)])*c[io];
-                }
-                df1[0] /= dy;
+   // Compute derivative
+   for(int iz=0; iz < nz; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      df2 = df3;
+      for(int ix=0; ix < nx; ix++){
+         df1 = df2 + ind(ix,0,0);
+         df1[0] = 0.0;
+      }
+      for(int iy=1; iy < order; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         c = coeffs + cind(iy-1);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, -1, 0)])*c[0];
+            for(int io=1; io<iy; io++){
+               df1[0] += (f1[ind(0, io, 0)]-f1[ind(0, -(io+1), 0)])*c[io];
             }
-        }
-        for(int iy=ny-order; iy < ny; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            c = coeffs + cind(ny-iy-1);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, -1, 0)])*c[0];
-                for(int io=1; io<ny-iy; io++){
-                    df1[0] += (f1[ind(0, io, 0)]-f1[ind(0, -(io+1), 0)])*c[io];
-                }
-                df1[0] /= dy;
+            df1[0] /= dy;
+         }
+      }
+
+
+      c = coeffs + cind(order-1);
+      for(int iy=order; iy < ny-order; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, -1, 0)])*c[0];
+            for(int io=1; io<order; io++){
+               df1[0] += (f1[ind(0, io, 0)]-f1[ind(0, -(io+1), 0)])*c[io];
             }
-        }
-    }
+            df1[0] /= dy;
+         }
+      }
+
+      for(int iy=ny-order; iy < ny; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         c = coeffs + cind(ny-iy-1);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, -1, 0)])*c[0];
+            for(int io=1; io<ny-iy; io++){
+               df1[0] += (f1[ind(0, io, 0)]-f1[ind(0, -(io+1), 0)])*c[io];
+            }
+            df1[0] /= dy;
+         }
+      }
+   }
 }
 
 template <typename T>
 void Der<T>::ddz_bw(T *f){
-    T *df1, *f1;
-    T* df2, *f2;
-    T* df3, *f3;
-    T* c;
-   
-    // Compute derivative
-    df3 = df;
-    for(int iy=0; iy < ny; iy++){
-	    df2 = df3 + ind(0,iy,0);
-	    for(int ix=0; ix < nx; ix++){
-		    df1 = df2 + ind(ix,0,0);
-		    df1[0] = 0.0;
-	    }
-    }
+   T *df1, *f1;
+   T* df2, *f2;
+   T* df3, *f3;
+   T* c;
 
-    for(int iz=1; iz < order; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        c = coeffs + cind(iz-1);
-        for(int iy=0; iy < ny; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, 0, -1)])*c[0];
-                for(int io=1; io<iz; io++){
-                    df1[0] += (f1[ind(0, 0, io)]-f1[ind(0, 0, -(io+1))])*c[io];
-                }
-                df1[0] /= dz;
-            }
-        }
-    }
- 
-    c = coeffs + cind(order-1);
-    for(int iz=order; iz < nz-order; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        for(int iy=0; iy < ny; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, 0, -1)])*c[0];
-                for(int io=1; io<order; io++){
-                    df1[0] += (f1[ind(0, 0, io)]-f1[ind(0, 0, -(io+1))])*c[io];
-                }
-                df1[0] /= dz;
-            }
-        }
-    }
+   // Compute derivative
+   df3 = df;
+   for(int iy=0; iy < ny; iy++){
+      df2 = df3 + ind(0,iy,0);
+      for(int ix=0; ix < nx; ix++){
+         df1 = df2 + ind(ix,0,0);
+         df1[0] = 0.0;
+      }
+   }
 
-    for(int iz=nz-order; iz < nz; iz++){
-        df3 = df + ind(0,0,iz);
-        f3 = f + ind(0,0,iz);
-        c = coeffs + cind(nz-iz-1);
-        for(int iy=0; iy < ny; iy++){
-            df2 = df3 + ind(0,iy,0);
-            f2 = f3 + ind(0,iy,0);
-            for(int ix=0; ix < nx; ix++){
-                df1 = df2 + ind(ix,0,0);
-                f1 = f2 + ind(ix,0,0);
-                df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, 0, -1)])*c[0];
-                for(int io=1; io<nz-iz; io++){
-                    df1[0] += (f1[ind(0, 0, io)]-f1[ind(0, 0, -(io+1))])*c[io];
-                }
-                df1[0] /= dz;
+   for(int iz=1; iz < order; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      c = coeffs + cind(iz-1);
+      for(int iy=0; iy < ny; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, 0, -1)])*c[0];
+            for(int io=1; io<iz; io++){
+               df1[0] += (f1[ind(0, 0, io)]-f1[ind(0, 0, -(io+1))])*c[io];
             }
-        }
-    }
+            df1[0] /= dz;
+         }
+      }
+   }
+
+   c = coeffs + cind(order-1);
+   for(int iz=order; iz < nz-order; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      for(int iy=0; iy < ny; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, 0, -1)])*c[0];
+            for(int io=1; io<order; io++){
+               df1[0] += (f1[ind(0, 0, io)]-f1[ind(0, 0, -(io+1))])*c[io];
+            }
+            df1[0] /= dz;
+         }
+      }
+   }
+
+   for(int iz=nz-order; iz < nz; iz++){
+      df3 = df + ind(0,0,iz);
+      f3 = f + ind(0,0,iz);
+      c = coeffs + cind(nz-iz-1);
+      for(int iy=0; iy < ny; iy++){
+         df2 = df3 + ind(0,iy,0);
+         f2 = f3 + ind(0,iy,0);
+         for(int ix=0; ix < nx; ix++){
+            df1 = df2 + ind(ix,0,0);
+            f1 = f2 + ind(ix,0,0);
+            df1[0] = (f1[ind(0, 0, 0)]-f1[ind(0, 0, -1)])*c[0];
+            for(int io=1; io<nz-iz; io++){
+               df1[0] += (f1[ind(0, 0, io)]-f1[ind(0, 0, -(io+1))])*c[io];
+            }
+            df1[0] /= dz;
+         }
+      }
+   }
 }
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
