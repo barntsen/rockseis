@@ -5407,7 +5407,7 @@ std::shared_ptr<ModelViscoelastic3D<T>> ModelViscoelastic3D<T>::getDomainmodel(s
     T *M_yz = local->getM_yz();
     T *M_xy = local->getM_xy();
     T *Rx = local->getRx();
-    T *Ry = local->getRx();
+    T *Ry = local->getRy();
     T *Rz = local->getRz();
 
     T *Tp = local->getTp();

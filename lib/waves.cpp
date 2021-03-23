@@ -5327,7 +5327,7 @@ WavesViscoelastic2D<T>::~WavesViscoelastic2D() {
     free(Vz);
 }
 
-// =============== 3D ELASTIC WAVES CLASS =============== //
+// =============== 3D VISCOELASTIC WAVES CLASS =============== //
 /** The 3D Viscoelastic WAVES model class
  *
  */
