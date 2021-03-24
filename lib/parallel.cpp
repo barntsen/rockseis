@@ -887,4 +887,22 @@ void MPIdomaindecomp::receiveEdges(double *wrk, size_t wrksize, int from_rank) {
     MPI_Recv(&wrk[0],count,MPI_DOUBLE,from_rank,MPI_TAG_SHARE_EDGE,MPI_COMM_DOMAIN, &status);
 }
 
+void MPIdomaindecomp::sendrecvEdges(float *wrksnd, float *wrkrcv, size_t wrksize, int peer) {
+    if (wrksize > (2147483647)){
+       rs_error("MPIdomaindecomp::sendrcvEdges:Integer overflow in MPI count. This will be fixed soon. Need to split the send receive job into smaller chunks.");
+    }
+
+    int count = (int) wrksize;
+    MPI_Sendrecv(&wrksnd[0],count,MPI_FLOAT, peer, MPI_TAG_SHARE_EDGE, &wrkrcv[0],count,MPI_FLOAT, peer, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN, MPI_STATUS_IGNORE);
+}
+
+void MPIdomaindecomp::sendrecvEdges(double *wrksnd, double *wrkrcv, size_t wrksize, int peer) {
+    if (wrksize > (2147483647)){
+       rs_error("MPIdomaindecomp::sendrcvEdges:Integer overflow in MPI count. This will be fixed soon. Need to split the send receive job into smaller chunks.");
+    }
+
+    int count = (int) wrksize;
+    MPI_Sendrecv(&wrksnd[0],count,MPI_DOUBLE, peer, MPI_TAG_SHARE_EDGE, &wrkrcv[0],count,MPI_DOUBLE, peer, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN, MPI_STATUS_IGNORE);
+}
+
 }

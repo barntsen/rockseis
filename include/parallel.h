@@ -147,6 +147,8 @@ class MPIdomaindecomp: public MPI {
       void sendEdges(double *wrk, size_t wrksize, int to_rank); ///< Send edges between ranks
       void receiveEdges(float *wrk, size_t wrksize, int from_rank); ///< Receive edges between ranks
       void receiveEdges(double *wrk, size_t wrksize, int from_rank); ///< Receive edges between ranks
+      void sendrecvEdges(float *wrksnd, float *wrkrcv, size_t wrksize, int peer);
+      void sendrecvEdges(double *wrksnd, double *wrkrcv, size_t wrksize, int peer);
 
       // Domain decomposition functions
       int getDomainrank() { return domainrank;}	///< Get rank for current processor in domain Comm

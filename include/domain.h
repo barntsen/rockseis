@@ -59,14 +59,14 @@ public:
     void setEdge(const int val, const int i) { if(i>=0 && i<12) edge[i] = val; else rs_error("Domain::setEdge: invalid edge index."); }
 
     void setMpi(MPIdomaindecomp *_mpi) { mpi = _mpi; mpiset = true;}
-    void copyFromboundary(const int dim, const bool side, const T *array); ///< Copy from array to wrk
+    void copyFromside(const int dim, const bool side, const T *array); ///< Copy from array to wrk
     void copyFromedge(const int id, const int d0, const int d1, const T *array); ///< Get an edge from the array to send to neighour
     void copyFromcorner(const int d0, const int d1, const int d2, const T *array); ///< Get an edge from the array to send to neighour
-    void copyToboundary(const int dim, const bool side, T *array); ///< Copy from array to wrk
+    void copyToside(const int dim, const bool side, T *array); ///< Copy from array to wrk
     void copyToedge(const int id, const int d0, const int d1, T *array); ///< Get an edge from the array to send to neighour
     void copyTocorner(const int d0, const int d1, const int d2, T *array); ///< Get an edge from the array to send to neighour
-    void copyFromboundary(const bool side, const T *array); ///< Copy from array to wrk
-    void copyToboundary(const bool side, T *array); ///< Copy from wrk to array
+    void copyFromside(const bool side, const T *array); ///< Copy from array to wrk
+    void copyToside(const bool side, T *array); ///< Copy from wrk to array
     void shareEdges1D(T *array); ///< Share edges of array with neighbors
     void shareEdges3D(T *array); ///< Share edges of array with neighbors
 
@@ -121,13 +121,21 @@ public:
     int ix0, iy0, iz0; // Global indexes for the origin of domain 
     bool status; // 1 for on, 0 for off. 
     bool allocated[7];
-    T *wrk0; // Work array to be used to communicate boundaries
-    T *wrk1; // Work array to be used to communicate boundaries
-    T *wrk2; // Work array to be used to communicate boundaries
-    T *wrkedg0; // Work array to be used to communicate edges
-    T *wrkedg1; // Work array to be used to communicate edges
-    T *wrkedg2; // Work array to be used to communicate edges
-    T *wrkcrn; // Work array to be used to communicate corners
+    T *sndwrkside0; // Work array to be used to communicate boundaries
+    T *sndwrkside1; // Work array to be used to communicate boundaries
+    T *sndwrkside2; // Work array to be used to communicate boundaries
+    T *sndwrkedg0; // Work array to be used to communicate edges
+    T *sndwrkedg1; // Work array to be used to communicate edges
+    T *sndwrkedg2; // Work array to be used to communicate edges
+    T *sndwrkcrn; // Work array to be used to communicate corners
+
+    T *rcvwrkside0; // Work array to be used to communicate boundaries
+    T *rcvwrkside1; // Work array to be used to communicate boundaries
+    T *rcvwrkside2; // Work array to be used to communicate boundaries
+    T *rcvwrkedg0; // Work array to be used to communicate edges
+    T *rcvwrkedg1; // Work array to be used to communicate edges
+    T *rcvwrkedg2; // Work array to be used to communicate edges
+    T *rcvwrkcrn; // Work array to be used to communicate corners
     size_t wrksize[3]; // Size of workarray
     size_t wrkedgsize[3]; // Size of edge workarray
     size_t wrkcrnsize; // Size of corner workarray
