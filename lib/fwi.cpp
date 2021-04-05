@@ -1021,7 +1021,8 @@ int FwiAcoustic2D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      if(!this->checkStability()) rs_error("FwiAcoustic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     //(waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
      // Create snapshots
@@ -1065,7 +1066,8 @@ int FwiAcoustic2D<T>::run(){
     // Reset waves
     waves.reset();
     waves  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot);
-    (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+    //(waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+    (waves->getPml())->setSmax(SMAX);
     (waves->getPml())->computeABC();
 
     // Create images 
@@ -1146,9 +1148,9 @@ int FwiAcoustic2D<T>::run_optimal(){
      capo = 0;
 
      // Set CFS PML parameters
-    (waves_fw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_fw->getLpml()*waves_fw->getDx()));
+    (waves_fw->getPml())->setSmax(SMAX);
     (waves_fw->getPml())->computeABC();
-    (waves_bw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_bw->getLpml()*waves_bw->getDx()));
+    (waves_bw->getPml())->setSmax(SMAX);
     (waves_bw->getPml())->computeABC();
 
      // Create checkpoint file
@@ -1794,7 +1796,7 @@ int FwiAcoustic3D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
      if(!this->checkStability()) rs_error("FwiAcoustic3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
      // Create snapshots
@@ -1838,7 +1840,7 @@ int FwiAcoustic3D<T>::run(){
     // Reset waves
     waves.reset();
     waves  = std::make_shared<WavesAcoustic3D<T>>(model, nt, dt, ot);
-    (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+    (waves->getPml())->setSmax(SMAX);
     (waves->getPml())->computeABC();
 
     // Create image
@@ -1923,9 +1925,9 @@ int FwiAcoustic3D<T>::run_optimal(){
      capo = 0;
 
      // Set CFS PML parameters
-    (waves_fw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_fw->getLpml()*waves_fw->getDx()));
+    (waves_fw->getPml())->setSmax(SMAX);
     (waves_fw->getPml())->computeABC();
-    (waves_bw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_bw->getLpml()*waves_bw->getDx()));
+    (waves_bw->getPml())->setSmax(SMAX);
     (waves_bw->getPml())->computeABC();
 
      // Create checkpoint file
@@ -3339,7 +3341,7 @@ int FwiElastic2D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      if(!this->checkStability()) rs_error("FwiElastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
      // Create snapshots
@@ -3397,7 +3399,7 @@ int FwiElastic2D<T>::run(){
     // Reset waves
     waves.reset();
     waves  = std::make_shared<WavesElastic2D<T>>(model, nt, dt, ot);
-    (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+    (waves->getPml())->setSmax(SMAX);
     (waves->getPml())->computeABC();
 
     // Create image
@@ -3482,9 +3484,9 @@ int FwiElastic2D<T>::run_optimal(){
      capo = 0;
 
      // Set CFS PML parameters
-    (waves_fw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_fw->getLpml()*waves_fw->getDx()));
+   (waves_fw->getPml())->setSmax(SMAX);
     (waves_fw->getPml())->computeABC();
-    (waves_bw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_bw->getLpml()*waves_bw->getDx()));
+   (waves_bw->getPml())->setSmax(SMAX);
     (waves_bw->getPml())->computeABC();
 
      // Create checkpoint file
@@ -3652,7 +3654,7 @@ int FwiElastic2D<T>::run_DS(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      if(!this->checkStability()) rs_error("FwiElastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
      // Create snapshots
@@ -3715,7 +3717,7 @@ int FwiElastic2D<T>::run_DS(){
     // Reset waves
     waves.reset();
     waves  = std::make_shared<WavesElastic2D_DS<T>>(model, nt, dt, ot);
-    (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+    (waves->getPml())->setSmax(SMAX);
     (waves->getPml())->computeABC();
 
     // Create image
@@ -3806,10 +3808,10 @@ int FwiElastic2D<T>::run_optimal_DS(){
      capo = 0;
 
      // Set CFS PML parameters
-    (waves_fw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_fw->getLpml()*waves_fw->getDx()));
-    (waves_fw->getPml())->computeABC();
-    (waves_bw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_bw->getLpml()*waves_bw->getDx()));
-    (waves_bw->getPml())->computeABC();
+     (waves_fw->getPml())->setSmax(SMAX);
+     (waves_fw->getPml())->computeABC();
+     (waves_bw->getPml())->setSmax(SMAX);
+     (waves_bw->getPml())->computeABC();
 
      // Create checkpoint file
      optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
@@ -5225,7 +5227,7 @@ int FwiElastic3D<T>::run_DS(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
      if(!this->checkStability()) rs_error("FwiElastic3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
      // Create snapshots
@@ -5302,7 +5304,7 @@ int FwiElastic3D<T>::run_DS(){
     // Reset waves
     waves.reset();
     waves  = std::make_shared<WavesElastic3D_DS<T>>(model, nt, dt, ot);
-    (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+    (waves->getPml())->setSmax(SMAX);
     (waves->getPml())->computeABC();
 
     // Create image
@@ -5405,9 +5407,9 @@ int FwiElastic3D<T>::run_optimal_DS(){
      capo = 0;
 
      // Set CFS PML parameters
-    (waves_fw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_fw->getLpml()*waves_fw->getDx()));
+    (waves_fw->getPml())->setSmax(SMAX);
     (waves_fw->getPml())->computeABC();
-    (waves_bw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_bw->getLpml()*waves_bw->getDx()));
+    (waves_bw->getPml())->setSmax(SMAX);
     (waves_bw->getPml())->computeABC();
 
      // Create checkpoint file
@@ -5610,7 +5612,7 @@ int FwiElastic3D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
      if(!this->checkStability()) rs_error("FwiElastic3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+     (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
      // Create snapshots
@@ -5681,7 +5683,7 @@ int FwiElastic3D<T>::run(){
     // Reset waves
     waves.reset();
     waves  = std::make_shared<WavesElastic3D<T>>(model, nt, dt, ot);
-    (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
+    (waves->getPml())->setSmax(SMAX);
     (waves->getPml())->computeABC();
 
     // Create image
@@ -5777,9 +5779,9 @@ int FwiElastic3D<T>::run_optimal(){
      capo = 0;
 
      // Set CFS PML parameters
-    (waves_fw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_fw->getLpml()*waves_fw->getDx()));
+    (waves_fw->getPml())->setSmax(SMAX);
     (waves_fw->getPml())->computeABC();
-    (waves_bw->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves_bw->getLpml()*waves_bw->getDx()));
+    (waves_bw->getPml())->setSmax(SMAX);
     (waves_bw->getPml())->computeABC();
 
      // Create checkpoint file

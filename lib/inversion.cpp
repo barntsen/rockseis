@@ -2928,7 +2928,6 @@ void InversionElastic2D<T>::runGrad() {
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();
                 source->copyCoords(Uxdata2D);
-                source->makeMap(lmodel->getGeom(), SMAP);
 
                 //Setting sourcetype 
                 if(!Sort->getReciprocity()){
@@ -2953,15 +2952,14 @@ void InversionElastic2D<T>::runGrad() {
                             source->setField(VZ);
                     }
                 }
+                source->makeMap(lmodel->getGeom(), SMAP);
 
                 // Interpolate shot
                 Uxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uxdata2D, Uxdata2Di);
-                Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
 
                 Uzdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uzdata2D, Uzdata2Di);
-                Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
 
                 if(!Sort->getReciprocity()){
                     Uxdata2Di->setField(VX);
@@ -2985,6 +2983,8 @@ void InversionElastic2D<T>::runGrad() {
                             break;
                     }
                 }
+                Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
+                Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
 
                 // Create fwi object
                 fwi = std::make_shared<rockseis::FwiElastic2D<T>>(lmodel, source, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
@@ -2992,17 +2992,13 @@ void InversionElastic2D<T>::runGrad() {
                 // Create modelled and residual data objects 
                 Uxdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uxdatamod2D->copyCoords(Uxdata2D);
-                Uxdatamod2D->makeMap(lmodel->getGeom(), GMAP);
                 Uxdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uxdatares2D->copyCoords(Uxdata2D);
-                Uxdatares2D->makeMap(lmodel->getGeom(), GMAP);
 
                 Uzdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatamod2D->copyCoords(Uzdata2D);
-                Uzdatamod2D->makeMap(lmodel->getGeom(), GMAP);
                 Uzdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatares2D->copyCoords(Uzdata2D);
-                Uzdatares2D->makeMap(lmodel->getGeom(), GMAP);
 
                 if(!Sort->getReciprocity()){
                     Uxdatamod2D->setField(VX);
@@ -3034,6 +3030,11 @@ void InversionElastic2D<T>::runGrad() {
                             break;
                     }
                 }
+
+                Uxdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+                Uxdatares2D->makeMap(lmodel->getGeom(), GMAP);
+                Uzdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+                Uzdatares2D->makeMap(lmodel->getGeom(), GMAP);
 
                 fwi->setDatamodUx(Uxdatamod2D);
                 fwi->setDataresUx(Uxdatares2D);
@@ -3073,7 +3074,6 @@ void InversionElastic2D<T>::runGrad() {
                     wavgrad = std::make_shared<rockseis::Data2D<T>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
                     // Copy geometry
                     wavgrad->copyCoords(source);
-                    wavgrad->makeMap(lmodel->getGeom(), SMAP);
                     if(!Sort->getReciprocity()){
                         switch(this->getSourcetype()){
                             case 0:
@@ -3096,7 +3096,7 @@ void InversionElastic2D<T>::runGrad() {
                             wavgrad->setField(VZ);
                         }
                     }
-
+                    wavgrad->makeMap(lmodel->getGeom(), SMAP);
                     fwi->setWavgrad(wavgrad);
                 }
 
@@ -4783,7 +4783,6 @@ void InversionElastic3D<T>::runGrad() {
                 // Read wavelet data, set shot coordinates and make a map
                 source->read();
                 source->copyCoords(Uxdata3D);
-                source->makeMap(lmodel->getGeom(), SMAP);
 
                 //Setting sourcetype 
                 if(!Sort->getReciprocity()){
@@ -4819,19 +4818,17 @@ void InversionElastic3D<T>::runGrad() {
                             break;
                     }
                 }
+                source->makeMap(lmodel->getGeom(), SMAP);
 
                 // Interpolate shot
                 Uxdata3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uxdata3D, Uxdata3Di);
-                Uxdata3Di->makeMap(lmodel->getGeom(), GMAP);
 
                 Uydata3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uydata3D, Uydata3Di);
-                Uydata3Di->makeMap(lmodel->getGeom(), GMAP);
 
                 Uzdata3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 interp->interp(Uzdata3D, Uzdata3Di);
-                Uzdata3Di->makeMap(lmodel->getGeom(), GMAP);
 
                 if(!Sort->getReciprocity()){
                     Uxdata3Di->setField(VX);
@@ -4864,6 +4861,9 @@ void InversionElastic3D<T>::runGrad() {
                             break;
                     }
                 }
+                Uxdata3Di->makeMap(lmodel->getGeom(), GMAP);
+                Uydata3Di->makeMap(lmodel->getGeom(), GMAP);
+                Uzdata3Di->makeMap(lmodel->getGeom(), GMAP);
 
 
                 // Create fwi object
@@ -4872,24 +4872,18 @@ void InversionElastic3D<T>::runGrad() {
                 // Create modelled and residual data objects 
                 Uxdatamod3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uxdatamod3D->copyCoords(Uxdata3D);
-                Uxdatamod3D->makeMap(lmodel->getGeom(), GMAP);
                 Uxdatares3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uxdatares3D->copyCoords(Uxdata3D);
-                Uxdatares3D->makeMap(lmodel->getGeom(), GMAP);
 
                 Uydatamod3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uydatamod3D->copyCoords(Uydata3D);
-                Uydatamod3D->makeMap(lmodel->getGeom(), GMAP);
                 Uydatares3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uydatares3D->copyCoords(Uydata3D);
-                Uydatares3D->makeMap(lmodel->getGeom(), GMAP);
 
                 Uzdatamod3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatamod3D->copyCoords(Uzdata3D);
-                Uzdatamod3D->makeMap(lmodel->getGeom(), GMAP);
                 Uzdatares3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 Uzdatares3D->copyCoords(Uzdata3D);
-                Uzdatares3D->makeMap(lmodel->getGeom(), GMAP);
 
                 if(!Sort->getReciprocity()){
                     Uxdatamod3D->setField(VX);
@@ -4938,6 +4932,12 @@ void InversionElastic3D<T>::runGrad() {
                     }
                 }
 
+                Uxdatamod3D->makeMap(lmodel->getGeom(), GMAP);
+                Uxdatares3D->makeMap(lmodel->getGeom(), GMAP);
+                Uydatamod3D->makeMap(lmodel->getGeom(), GMAP);
+                Uydatares3D->makeMap(lmodel->getGeom(), GMAP);
+                Uzdatamod3D->makeMap(lmodel->getGeom(), GMAP);
+                Uzdatares3D->makeMap(lmodel->getGeom(), GMAP);
                 fwi->setDatamodUx(Uxdatamod3D);
                 fwi->setDataresUx(Uxdatares3D);
                 fwi->setDatamodUy(Uydatamod3D);
@@ -4985,7 +4985,6 @@ void InversionElastic3D<T>::runGrad() {
                     wavgrad = std::make_shared<rockseis::Data3D<T>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
                     // Copy geometry
                     wavgrad->copyCoords(source);
-                    wavgrad->makeMap(lmodel->getGeom(), SMAP);
                     if(!Sort->getReciprocity()){
                         switch(this->getSourcetype()){
                             case 0:
@@ -5019,7 +5018,7 @@ void InversionElastic3D<T>::runGrad() {
                                 break;
                         }
                     }
-
+                    wavgrad->makeMap(lmodel->getGeom(), SMAP);
                     fwi->setWavgrad(wavgrad);
                 }
 
