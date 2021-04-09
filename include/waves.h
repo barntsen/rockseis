@@ -410,6 +410,10 @@ public:
     T * getSzz() { return Szz; }  ///< Get Stress component at time t+1
     T * getSxz() { return Sxz; }  ///< Get Stress component at time t+1
 
+    T * getMxx() { return Mxx; }  ///< Get Stress component at time t+1
+    T * getMzz() { return Mzz; }  ///< Get Stress component at time t+1
+    T * getMxz() { return Mxz; }  ///< Get Stress component at time t+1
+
     T * getVx() { return Vx; }  ///< Get Velocity component at time t+1/2
     T * getVz() { return Vz; }  ///< Get Velocity component at time t+1/2
 
@@ -455,6 +459,12 @@ public:
     T * getSyz() { return Syz; }    ///< Get Stress component at time t+1
     T * getSxz() { return Sxz; }    ///< Get Stress component at time t+1
     T * getSxy() { return Sxy; }    ///< Get Stress component at time t+1
+    T * getMxx() { return Mxx; }    ///< Get Stress component at time t+1
+    T * getMyy() { return Myy; }    ///< Get Stress component at time t+1
+    T * getMzz() { return Mzz; }    ///< Get Stress component at time t+1
+    T * getMyz() { return Myz; }    ///< Get Stress component at time t+1
+    T * getMxz() { return Mxz; }    ///< Get Stress component at time t+1
+    T * getMxy() { return Mxy; }    ///< Get Stress component at time t+1
     T * getVx() { return Vx; }    ///< Get Velocity component at time t+1/2
     T * getVy() { return Vy; }    ///< Get Velocity component at time t+1/2
     T * getVz() { return Vz; }    ///< Get Velocity component at time t+1/2

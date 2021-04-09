@@ -1338,10 +1338,22 @@ int ModellingViscoelastic2D<T>::run(){
     // Loop over time
     for(int it=0; it < nt; it++)
     {
-    	// Time stepping
-    	waves->forwardstepStress(model, der);
-    	waves->forwardstepVelocity(model, der);
-    
+       // Time stepping
+       waves->forwardstepVelocity(model, der);
+       if((model->getDomain()->getStatus())){
+          (model->getDomain())->shareEdges3D(waves->getVx());
+          (model->getDomain())->shareEdges3D(waves->getVz());
+       }
+       waves->forwardstepStress(model, der);
+       if((model->getDomain()->getStatus())){
+          (model->getDomain())->shareEdges3D(waves->getSxx());
+          (model->getDomain())->shareEdges3D(waves->getSzz());
+          (model->getDomain())->shareEdges3D(waves->getSxz());
+          (model->getDomain())->shareEdges3D(waves->getMxx());
+          (model->getDomain())->shareEdges3D(waves->getMzz());
+          (model->getDomain())->shareEdges3D(waves->getMxz());
+       }
+
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
