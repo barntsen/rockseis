@@ -5578,62 +5578,111 @@ WavesViscoelastic3D<T>::WavesViscoelastic3D(const int _nx, const int _ny, const 
 
 template<typename T>
 WavesViscoelastic3D<T>::WavesViscoelastic3D(std::shared_ptr<rockseis::ModelViscoelastic3D<T>> model, int _nt, T _dt, T _ot): Waves<T>() {
-    int _nx, _ny, _nz;
-    T _dx, _dy, _dz; 
-    T _ox, _oy, _oz; 
-    int _dim, _lpml;
+   int _nx, _ny, _nz;
+   T _dx, _dy, _dz; 
+   T _ox, _oy, _oz; 
+   int _dim, _lpml;
 
-    /* Get necessary parameters from model class */
-    _nx=model->getNx();
-    _ny=model->getNy();
-    _nz=model->getNz();
-    _dx=model->getDx();
-    _dy=model->getDy();
-    _dz=model->getDz();
-    _ox=model->getOx();
-    _oy=model->getOy();
-    _oz=model->getOz();
-    _dim = model->getDim();
-    _lpml = model->getLpml();
-    this->setNx(_nx);
-    this->setNy(_ny);
-    this->setNz(_nz);
-    this->setNt(_nt);
-    this->setDx(_dx);
-    this->setDy(_dy);
-    this->setDz(_dz);
-    this->setDt(_dt);
-    this->setOx(_ox);
-    this->setOy(_oy);
-    this->setOz(_oz);
-    this->setOt(_ot);
-    this->setLpml(_lpml);
-    this->setDim(_dim);
+   /* Get necessary parameters from model class */
+   _nx=model->getNx();
+   _ny=model->getNy();
+   _nz=model->getNz();
+   _dx=model->getDx();
+   _dy=model->getDy();
+   _dz=model->getDz();
+   _ox=model->getOx();
+   _oy=model->getOy();
+   _oz=model->getOz();
+   _dim = model->getDim();
+   _lpml = model->getLpml();
+   this->setNx(_nx);
+   this->setNy(_ny);
+   this->setNz(_nz);
+   this->setNt(_nt);
+   this->setDx(_dx);
+   this->setDy(_dy);
+   this->setDz(_dz);
+   this->setDt(_dt);
+   this->setOx(_ox);
+   this->setOy(_oy);
+   this->setOz(_oz);
+   this->setOt(_ot);
+   this->setLpml(_lpml);
+   this->setDim(_dim);
 
-    /* Create associated PML class */
-    Pml = std::make_shared<PmlElastic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
-    
-    /* Allocate memory variables */
-    int nx_pml, ny_pml, nz_pml;
-    this->setDim(2);
-    nx_pml = _nx + 2*_lpml;
-    ny_pml = _ny + 2*_lpml;
-    nz_pml = _nz + 2*_lpml;
-    Sxx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Syy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Szz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Sxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Syz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Sxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Mxx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Myy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Mzz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Mxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Myz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Mxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition mode
+      this->setDomain(model->getDomain());
+      int ix0, nxo, iy0, nyo, iz0, nzo;
+      bool low[3],high[3];
+      for (int i=0; i<3; i++){
+         low[i] = false;
+         high[i] = false;
+      }
+      ix0 = (model->getDomain())->getIx0();
+      iy0 = (model->getDomain())->getIy0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nyo = (model->getDomain())->getNy_orig();
+      nzo = (model->getDomain())->getNz_orig();
+      if(ix0 < _lpml) low[0]=true;
+      if(ix0 + _nx >= nxo-_lpml) high[0]=true;
+      if(iy0 < _lpml) low[1]=true;
+      if(iy0 + _ny >= nyo-_lpml) high[1]=true;
+      if(iz0 < _lpml) low[2]=true;
+      if(iz0 + _nz >= nzo-_lpml) high[2]=true;
+
+      /* Create associated PML class */
+      Pml = std::make_shared<PmlElastic3D<T>>(_nx, _ny, _nz, _lpml, _dt, &low[0], &high[0]);
+
+      /* Allocate memory variables */
+      int nx_pml, ny_pml, nz_pml;
+      nx_pml = _nx;
+      ny_pml = _ny;
+      nz_pml = _nz;
+
+      Sxx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Syy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Szz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Sxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Syz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Sxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Mxx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Myy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Mzz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Mxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Myz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Mxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+   }else{
+
+      /* Create associated PML class */
+      Pml = std::make_shared<PmlElastic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
+
+      /* Allocate memory variables */
+      int nx_pml, ny_pml, nz_pml;
+      this->setDim(2);
+      nx_pml = _nx + 2*_lpml;
+      ny_pml = _ny + 2*_lpml;
+      nz_pml = _nz + 2*_lpml;
+      Sxx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Syy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Szz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Sxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Syz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Sxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Mxx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Myy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Mzz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Mxz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Myz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Mxy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+   }
 }
 
 template<typename T>
@@ -5658,11 +5707,8 @@ WavesViscoelastic3D<T>::~WavesViscoelastic3D() {
 
 template<typename T>
 void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelViscoelastic3D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
-    int i, ix, iy, iz, nx, ny, nz, lpml;
+    int i, ix0, ix, iy0, iy, iz0, iz, nx, ny, nz, lpml, nxo, nyo, nzo;
     lpml = model->getLpml();
-    nx = model->getNx() + 2*lpml;
-    ny = model->getNy() + 2*lpml;
-    nz = model->getNz() + 2*lpml;
     T *Rx, *Ry, *Rz, *df;
     T dt;
     dt = this->getDt();
@@ -5670,6 +5716,29 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
     Ry = model->getRx();
     Rz = model->getRz();
     df = der->getDf();
+
+if((model->getDomain())->getStatus()){
+        // Domain decomposition 
+        nx = model->getNx();
+        ny = model->getNy();
+        nz = model->getNz();
+        ix0 = (model->getDomain())->getIx0();
+        iy0 = (model->getDomain())->getIy0();
+        iz0 = (model->getDomain())->getIz0();
+        nxo = (model->getDomain())->getNx_orig();
+        nyo = (model->getDomain())->getNy_orig();
+        nzo = (model->getDomain())->getNz_orig();
+    }else{
+        nx = model->getNx() + 2*lpml;
+        ny = model->getNy() + 2*lpml;
+        nz = model->getNz() + 2*lpml;
+        ix0 = 0;
+        iy0 = 0;
+        iz0 = 0;
+        nxo = nx;
+        nyo = ny;
+        nzo = nz;
+    }
     
    //////////////////////////// VX //////////////////////////
    //
@@ -5685,19 +5754,30 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
     }
     
     // Attenuate left and right using staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < lpml; ix++){
-                // Left
-                Pml->Sxx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->Sxx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix,iy,iz)];
-                
-                Vx[I3D(ix,iy,iz)] -= dt*Rx[I3D(ix,iy,iz)]*(Pml->Sxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix,iy,iz)]);
-                // Right
-                i = ix + nx - lpml;
-                Pml->Sxx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->Sxx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i,iy,iz)];
-                Vx[I3D(i,iy,iz)] -= dt*Rx[I3D(i,iy,iz)]*(Pml->Sxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i,iy,iz)]);
-            }
-        }
+    if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+       for(iz=0; iz < nz; iz++){
+          for(iy=0; iy < ny; iy++){
+             for(ix=0; ix < lpml; ix++){
+                if(Pml->getApplypml(0)){
+                   if(ix >= ix0 && ix < (ix0 + nx)){
+                      // Left
+                      Pml->Sxx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->Sxx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)];
+
+                      Vx[I3D(ix-ix0,iy,iz)] -= dt*Rx[I3D(ix-ix0,iy,iz)]*(Pml->Sxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)]);
+                   }
+                }
+
+                if(Pml->getApplypml(1)){
+                   i = ix + nxo - lpml;
+                   if(i >= ix0 && i < (ix0 + nx)){
+                   // Right
+                      Pml->Sxx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->Sxx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)];
+                      Vx[I3D(i-ix0,iy,iz)] -= dt*Rx[I3D(i-ix0,iy,iz)]*(Pml->Sxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)]);
+                   }
+                }
+             }
+          }
+       }
     }
 
     // Derivate Sxy backward with respect to y
@@ -5712,19 +5792,29 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
     }
 
     // Attenuate front and back using non-staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < lpml; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Front
-                Pml->Sxyy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Sxyy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy,iz)];
-                
-                Vx[I3D(ix,iy,iz)] -= dt*Rx[I3D(ix,iy,iz)]*(Pml->Sxyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy,iz)]);
-                i = iy + ny - lpml;
-                //Back
-                Pml->Sxyy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Sxyy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i,iz)];
-                Vx[I3D(ix,i,iz)] -= dt*Rx[I3D(ix,i,iz)]*(Pml->Sxyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i,iz)]);
-            }
-        }
+    if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+       for(iz=0; iz < nz; iz++){
+          for(iy=0; iy < lpml; iy++){
+             for(ix=0; ix < nx; ix++){
+                if(Pml->getApplypml(2)){
+                   if(iy >= iy0 && iy < (iy0 + ny)){
+                      // Front
+                      Pml->Sxyy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Sxyy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                      Vx[I3D(ix,iy-iy0,iz)] -= dt*Rx[I3D(ix,iy-iy0,iz)]*(Pml->Sxyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                   }
+                }
+                if(Pml->getApplypml(3)){
+                   i = iy + nyo - lpml;
+                   if(i >= iy0 && i < (iy0 + ny)){
+                      //Back
+                      Pml->Sxyy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Sxyy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i-iy0,iz)];
+                      Vx[I3D(ix,i-iy0,iz)] -= dt*Rx[I3D(ix,i-iy0,iz)]*(Pml->Sxyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                   }
+                }
+             }
+          }
+       }
     }
  
 
@@ -5740,19 +5830,29 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
     }
 
     // Attenuate bottom and top using non-staggered variables
-    for(iz=0; iz < lpml; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Top
-                Pml->Sxzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Sxzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz)];
-                
-                Vx[I3D(ix,iy,iz)] -= dt*Rx[I3D(ix,iy,iz)]*(Pml->Sxzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz)]);
-                i = iz + nz - lpml;
-                //Bottom
-                Pml->Sxzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Sxzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i)];
-                Vx[I3D(ix,iy,i)] -= dt*Rx[I3D(ix,iy,i)]*(Pml->Sxzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
-            }
-        }
+    if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+       for(iz=0; iz < lpml; iz++){
+          for(iy=0; iy < ny; iy++){
+             for(ix=0; ix < nx; ix++){
+                if(Pml->getApplypml(4)){
+                   if(iz >= iz0 && iz < (iz0 + nz)){
+                      // Top
+                      Pml->Sxzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Sxzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz-iz0)];
+
+                      Vx[I3D(ix,iy,iz-iz0)] -= dt*Rx[I3D(ix,iy,iz-iz0)]*(Pml->Sxzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                   }
+                }
+                if(Pml->getApplypml(5)){
+                   i = iz + nzo - lpml;
+                   if(i >= iz0 && i < (iz0 + nz)){
+                      //Bottom
+                      Pml->Sxzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Sxzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i-iz0)];
+                      Vx[I3D(ix,iy,i-iz0)] -= dt*Rx[I3D(ix,iy,i-iz0)]*(Pml->Sxzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                   }
+                }
+             }
+          }
+       }
     }
  
    
@@ -5771,19 +5871,29 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
     }
 
     // Attenuate left and right using non-staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < lpml; ix++){
-                // Left
-                Pml->Sxyx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Sxyx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix,iy,iz)];
-                
-                Vy[I3D(ix,iy,iz)] -= dt*Ry[I3D(ix,iy,iz)]*(Pml->Sxyx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix,iy,iz)]);
-                // Right
-                i = ix + nx - lpml;
-                Pml->Sxyx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Sxyx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i,iy,iz)];
-                Vy[I3D(i,iy,iz)] -= dt*Ry[I3D(i,iy,iz)]*(Pml->Sxyx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i,iy,iz)]);
-            }
-        }
+    if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+       for(iz=0; iz < nz; iz++){
+          for(iy=0; iy < ny; iy++){
+             for(ix=0; ix < lpml; ix++){
+                if(Pml->getApplypml(0)){
+                   if(ix >= ix0 && ix < (ix0 + nx)){
+                      // Left
+                      Pml->Sxyx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Sxyx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix-ix0,iy,iz)];
+
+                      Vy[I3D(ix-ix0,iy,iz)] -= dt*Ry[I3D(ix-ix0,iy,iz)]*(Pml->Sxyx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                   }
+                }
+                if(Pml->getApplypml(1)){
+                   i = ix + nxo - lpml;
+                   if(i >= ix0 && i < (ix0 + nx)){
+                      // Right
+                      Pml->Sxyx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Sxyx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i-ix0,iy,iz)];
+                      Vy[I3D(i-ix0,iy,iz)] -= dt*Ry[I3D(i-ix0,iy,iz)]*(Pml->Sxyx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                   }
+                }
+             }
+          }
+       }
     }
 
 
@@ -5797,21 +5907,31 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
             }
         }
     }
-    
+
     // Attenuate front and back using staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < lpml; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Front
-                Pml->Syy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->Syy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy,iz)];
-                
-                Vy[I3D(ix,iy,iz)] -= dt*Ry[I3D(ix,iy,iz)]*(Pml->Syy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy,iz)]);
-                //Back
-                i = iy + ny - lpml;
-                Pml->Syy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->Syy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i,iz)];
-                Vy[I3D(ix,i,iz)] -= dt*Ry[I3D(ix,i,iz)]*(Pml->Syy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i,iz)]);
-            }
-        }
+    if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+       for(iz=0; iz < nz; iz++){
+          for(iy=0; iy < lpml; iy++){
+             for(ix=0; ix < nx; ix++){
+                if(Pml->getApplypml(2)){
+                   if(iy >= iy0 && iy < (iy0 + ny)){
+                      // Front
+                      Pml->Syy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->Syy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                      Vy[I3D(ix,iy-iy0,iz)] -= dt*Ry[I3D(ix,iy-iy0,iz)]*(Pml->Syy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
+                   }
+                }
+                if(Pml->getApplypml(3)){
+                   i = iy + nyo - lpml;
+                   if(i >= iy0 && i < (iy0 + ny)){
+                      //Back
+                      Pml->Syy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->Syy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)];
+                      Vy[I3D(ix,i-iy0,iz)] -= dt*Ry[I3D(ix,i-iy0,iz)]*(Pml->Syy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
+                   }
+                }
+             }
+          }
+       }
     }
  
 
@@ -5827,19 +5947,29 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
     }
 
     // Attenuate bottom and top using non-staggered variables
-    for(iz=0; iz < lpml; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Top
-                Pml->Syzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Syzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz)];
-                
-                Vy[I3D(ix,iy,iz)] -= dt*Ry[I3D(ix,iy,iz)]*(Pml->Syzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz)]);
-                //Bottom
-                i = iz + nz - lpml;
-                Pml->Syzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Syzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i)];
-                Vy[I3D(ix,iy,i)] -= dt*Ry[I3D(ix,iy,i)]*(Pml->Syzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
-            }
-        }
+    if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+       for(iz=0; iz < lpml; iz++){
+          for(iy=0; iy < ny; iy++){
+             for(ix=0; ix < nx; ix++){
+                if(Pml->getApplypml(4)){
+                   if(iz >= iz0 && iz < (iz0 + nz)){
+                      // Top
+                      Pml->Syzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Syzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz-iz0)];
+
+                      Vy[I3D(ix,iy,iz-iz0)] -= dt*Ry[I3D(ix,iy,iz-iz0)]*(Pml->Syzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                   }
+                }
+                if(Pml->getApplypml(5)){
+                   i = iz + nzo - lpml;
+                   if(i >= iz0 && i < (iz0 + nz)){
+                      //Bottom
+                      Pml->Syzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Syzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i-iz0)];
+                      Vy[I3D(ix,iy,i-iz0)] -= dt*Ry[I3D(ix,iy,i-iz0)]*(Pml->Syzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                   }
+                }
+             }
+          }
+       }
     }
  
  
@@ -5857,19 +5987,31 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
     }
     
     // Attenuate left and right using non-staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < lpml; ix++){
-                // Left
-                Pml->Sxzx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Sxzx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix,iy,iz)];
-                
-                Vz[I3D(ix,iy,iz)] -= dt*Rz[I3D(ix,iy,iz)]*(Pml->Sxzx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix,iy,iz)]);
-                // Right
-                i = ix + nx - lpml;
-                Pml->Sxzx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Sxzx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i,iy,iz)];
-                Vz[I3D(i,iy,iz)] -= dt*Rz[I3D(i,iy,iz)]*(Pml->Sxzx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i,iy,iz)]);
-            }
-        }
+    if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+       for(iz=0; iz < nz; iz++){
+          for(iz=0; iz < nz; iz++){
+             for(iy=0; iy < ny; iy++){
+                for(ix=0; ix < lpml; ix++){
+                   if(Pml->getApplypml(0)){
+                      if(ix >= ix0 && ix < (ix0 + nx)){
+                         // Left
+                         Pml->Sxzx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Sxzx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix-ix0,iy,iz)];
+
+                         Vz[I3D(ix-ix0,iy,iz)] -= dt*Rz[I3D(ix-ix0,iy,iz)]*(Pml->Sxzx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                      }
+                   }
+                   if(Pml->getApplypml(1)){
+                      i = ix + nxo - lpml;
+                      if(i >= ix0 && i < (ix0 + nx)){
+                         // Right
+                         Pml->Sxzx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Sxzx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i-ix0,iy,iz)];
+                         Vz[I3D(i-ix0,iy,iz)] -= dt*Rz[I3D(i-ix0,iy,iz)]*(Pml->Sxzx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                      }
+                   }
+                }
+             }
+          }
+       }
     }
 
     // Derivate Syz backward with respect to y
@@ -5884,21 +6026,31 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
     }
 
     // Attenuate front and back using non-staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < lpml; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Front
-                Pml->Syzy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Syzy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy,iz)];
-                
-                Vz[I3D(ix,iy,iz)] -= dt*Rz[I3D(ix,iy,iz)]*(Pml->Syzy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy,iz)]);
-                //Back
-                i = iy + ny - lpml;
-                Pml->Syzy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Syzy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i,iz)];
-                Vz[I3D(ix,i,iz)] -= dt*Rz[I3D(ix,i,iz)]*(Pml->Syzy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i,iz)]);
-            }
-        }
+    if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+       for(iz=0; iz < nz; iz++){
+          for(iy=0; iy < lpml; iy++){
+             for(ix=0; ix < nx; ix++){
+                if(Pml->getApplypml(2)){
+                   if(iy >= iy0 && iy < (iy0 + ny)){
+                      // Front
+                      Pml->Syzy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Syzy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                      Vz[I3D(ix,iy-iy0,iz)] -= dt*Rz[I3D(ix,iy-iy0,iz)]*(Pml->Syzy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                   }
+                }
+                if(Pml->getApplypml(3)){
+                   i = iy + nyo - lpml;
+                   if(i >= iy0 && i < (iy0 + ny)){
+                      //Back
+                      Pml->Syzy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Syzy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i-iy0,iz)];
+                      Vz[I3D(ix,i-iy0,iz)] -= dt*Rz[I3D(ix,i-iy0,iz)]*(Pml->Syzy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                   }
+                }
+             }
+          }
+       }
     }
- 
+
     // Derivate Szz forward with respect to z
     der->ddz_fw(Szz);
     // Compute Vz
@@ -5909,487 +6061,592 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
             }
         }
     }
-    
+
     // Attenuate bottom and top using staggered variables
-    for(iz=0; iz < lpml; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Top
-                Pml->Szz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Szz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz)];
-                Vz[I3D(ix,iy,iz)] -= dt*Rz[I3D(ix,iy,iz)]*(Pml->Szz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz)]);
-                i = iz + nz - lpml;
-                //Bottom
-                Pml->Szz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Szz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i)];
-                Vz[I3D(ix,iy,i)] -= dt*Rz[I3D(ix,iy,i)]*(Pml->Szz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i)]);
-            }
-        }
+    if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+       for(iz=0; iz < lpml; iz++){
+          for(iy=0; iy < ny; iy++){
+             for(ix=0; ix < nx; ix++){
+                if(Pml->getApplypml(4)){
+                   if(iz >= iz0 && iz < (iz0 + nz)){
+                      // Top
+                      Pml->Szz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Szz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)];
+                      Vz[I3D(ix,iy,iz-iz0)] -= dt*Rz[I3D(ix,iy,iz-iz0)]*(Pml->Szz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
+                   }
+                }
+                if(Pml->getApplypml(5)){
+                   i = iz + nzo - lpml;
+                   if(i >= iz0 && i < (iz0 + nz)){
+                      //Bottom
+                      Pml->Szz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Szz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)];
+                      Vz[I3D(ix,iy,i-iz0)] -= dt*Rz[I3D(ix,iy,i-iz0)]*(Pml->Szz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
+                   }
+                }
+             }
+          }
+       }
     }
-    
-    
+
 } // End of forwardstepVelocity
+
 
 template<typename T>
 void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelViscoelastic3D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
-    int i, ix, iy, iz, nx, ny, nz, lpml;
-    T dt;
-    lpml = model->getLpml();
-    nx = model->getNx() + 2*lpml;
-    ny = model->getNy() + 2*lpml;
-    nz = model->getNz() + 2*lpml;
-    dt = this->getDt();
-    T to = dt*(2*PI*model->getF0());
-    T *L2M, *M, *M_xz, *M_yz, *M_xy, *Tp, *Ts, *Ts_xz, *Ts_yz, *Ts_xy, *df;
+   int i, ix0, ix, iy0, iy, iz0, iz, nx, ny, nz, lpml, nxo, nyo, nzo;
+   T dt;
+   lpml = model->getLpml();
+   nx = model->getNx() + 2*lpml;
+   ny = model->getNy() + 2*lpml;
+   nz = model->getNz() + 2*lpml;
+   dt = this->getDt();
+   T to = dt*(2*PI*model->getF0());
+   T *L2M, *M, *M_xz, *M_yz, *M_xy, *Tp, *Ts, *Ts_xz, *Ts_yz, *Ts_xy, *df;
 
-    L2M = model->getL2M();
-    M = model->getM();
-    M_xz = model->getM_xz();
-    M_xy = model->getM_xy();
-    M_yz = model->getM_yz();
+   L2M = model->getL2M();
+   M = model->getM();
+   M_xz = model->getM_xz();
+   M_xy = model->getM_xy();
+   M_yz = model->getM_yz();
 
-    Tp = model->getTp();
-    Ts = model->getTs();
-    Ts_xz = model->getTs_xz();
-    Ts_xy = model->getTs_xy();
-    Ts_yz = model->getTs_yz();
-    df = der->getDf();
-    T C11, C13, C44, T11, T13, T44;
-    
-    // Derivate Vx backward with respect to x
-    der->ddx_bw(Vx);
-    // Compute Sxx,Syy,Szz
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
-                if(iz == lpml && model->getFs()){
-                    // Free surface conditions
-                    C13 = 0.0;
-                }else{
-                    C13 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)] - 2*M[I3D(ix,iy,iz)]*Ts[I3D(ix,iy,iz)];
-                }
-                Sxx[I3D(ix,iy,iz)] += dt*C11*df[I3D(ix,iy,iz)];
-                Syy[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
-                Szz[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
+   Tp = model->getTp();
+   Ts = model->getTs();
+   Ts_xz = model->getTs_xz();
+   Ts_xy = model->getTs_xy();
+   Ts_yz = model->getTs_yz();
+   df = der->getDf();
+   T C11, C13, C44, T11, T13, T44;
 
-                Mxx[I3D(ix,iy,iz)] = ( (1-0.5*to)*Mxx[I3D(ix,iy,iz)]- to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
-                Myy[I3D(ix,iy,iz)] = ( (1-0.5*to)*Myy[I3D(ix,iy,iz)]- to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
-                Mzz[I3D(ix,iy,iz)] = ( (1-0.5*to)*Mzz[I3D(ix,iy,iz)]- to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition 
+      nx = model->getNx();
+      ny = model->getNy();
+      nz = model->getNz();
+      ix0 = (model->getDomain())->getIx0();
+      iy0 = (model->getDomain())->getIy0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nyo = (model->getDomain())->getNy_orig();
+      nzo = (model->getDomain())->getNz_orig();
+   }else{
+      nx = model->getNx() + 2*lpml;
+      ny = model->getNy() + 2*lpml;
+      nz = model->getNz() + 2*lpml;
+      ix0 = 0;
+      iy0 = 0;
+      iz0 = 0;
+      nxo = nx;
+      nyo = ny;
+      nzo = nz;
+   }
+
+
+   // Derivate Vx backward with respect to x
+   der->ddx_bw(Vx);
+   // Compute Sxx,Syy,Szz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
+            if(iz == lpml && model->getFs()){
+               // Free surface conditions
+               C13 = 0.0;
+            }else{
+               C13 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)] - 2*M[I3D(ix,iy,iz)]*Ts[I3D(ix,iy,iz)];
             }
-        }
-    }
+            Sxx[I3D(ix,iy,iz)] += dt*C11*df[I3D(ix,iy,iz)];
+            Syy[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
+            Szz[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
 
-    // Free surface conditions
-    if(model->getFs()){
-        iz = lpml;
-        for(ix=0; ix < nx; ix++){
-            for(iy=0; iy < ny; iy++){
-                Szz[I3D(ix,iy,iz)] = 0.0;
-            }
-        }
-    }
+            Mxx[I3D(ix,iy,iz)] = ( (1-0.5*to)*Mxx[I3D(ix,iy,iz)]- to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+            Myy[I3D(ix,iy,iz)] = ( (1-0.5*to)*Myy[I3D(ix,iy,iz)]- to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+            Mzz[I3D(ix,iy,iz)] = ( (1-0.5*to)*Mzz[I3D(ix,iy,iz)]- to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+         }
+      }
+   }
 
-    // Attenuate left and right using non-staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
+   // Attenuate left and right using non-staggered variables
+   if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < ny; iy++){
             for(ix=0; ix < lpml; ix++){
-                // Left
-                C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
-                C13 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)] - 2*M[I3D(ix,iy,iz)]*Ts[I3D(ix,iy,iz)];
-                T11 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1));
-                T13 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1));
-                Pml->Vxx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix,iy,iz)];
-                
-                Sxx[I3D(ix,iy,iz)] -= dt*C11*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix,iy,iz)]);
-                Syy[I3D(ix,iy,iz)] -= dt*C13*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix,iy,iz)]);
-                Szz[I3D(ix,iy,iz)] -= dt*C13*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix,iy,iz)]);
-                Mxx[I3D(ix,iy,iz)] += T11*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix,iy,iz)]);
-                Myy[I3D(ix,iy,iz)] += T13*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix,iy,iz)]);
-                Mzz[I3D(ix,iy,iz)] += T13*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix,iy,iz)]);
+               if(Pml->getApplypml(0)){
+                  if(ix >= ix0 && ix < (ix0 + nx)){
+                     // Left
+                     C11 = L2M[I3D(ix-ix0,iy,iz)]*Tp[I3D(ix-ix0,iy,iz)];
+                     C13 = L2M[I3D(ix-ix0,iy,iz)]*Tp[I3D(ix-ix0,iy,iz)] - 2*M[I3D(ix-ix0,iy,iz)]*Ts[I3D(ix-ix0,iy,iz)];
+                     T11 = (to/(1.+0.5*to))*(L2M[I3D(ix-ix0,iy,iz)]*(Tp[I3D(ix-ix0,iy,iz)]-1));
+                     T13 = (to/(1.+0.5*to))*(L2M[I3D(ix-ix0,iy,iz)]*(Tp[I3D(ix-ix0,iy,iz)]-1)-2*M[I3D(ix-ix0,iy,iz)]*(Ts[I3D(ix-ix0,iy,iz)]-1));
+                     Pml->Vxx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix-ix0,iy,iz)];
 
-                // Right
-                i = ix + nx - lpml;
-                C11 = L2M[I3D(i,iy,iz)]*Tp[I3D(i,iy,iz)];
-                C13 = L2M[I3D(i,iy,iz)]*Tp[I3D(i,iy,iz)] - 2*M[I3D(i,iy,iz)]*Ts[I3D(i,iy,iz)];
-                T11 = (to/(1.+0.5*to))*(L2M[I3D(i,iy,iz)]*(Tp[I3D(i,iy,iz)]-1));
-                T13 = (to/(1.+0.5*to))*(L2M[I3D(i,iy,iz)]*(Tp[I3D(i,iy,iz)]-1)-2*M[I3D(i,iy,iz)]*(Ts[I3D(i,iy,iz)]-1));
-                Pml->Vxx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i,iy,iz)];
-                Sxx[I3D(i,iy,iz)] -= dt*C11*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i,iy,iz)]);
-                Syy[I3D(i,iy,iz)] -= dt*C13*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i,iy,iz)]);
-                Szz[I3D(i,iy,iz)] -= dt*C13*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i,iy,iz)]);
-                Mxx[I3D(i,iy,iz)] += T11*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i,iy,iz)]);
-                Myy[I3D(i,iy,iz)] += T13*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i,iy,iz)]);
-                Mzz[I3D(i,iy,iz)] += T13*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i,iy,iz)]);
+                     Sxx[I3D(ix-ix0,iy,iz)] -= dt*C11*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     Syy[I3D(ix-ix0,iy,iz)] -= dt*C13*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     Szz[I3D(ix-ix0,iy,iz)] -= dt*C13*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     Mxx[I3D(ix-ix0,iy,iz)] += T11*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     Myy[I3D(ix-ix0,iy,iz)] += T13*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     Mzz[I3D(ix-ix0,iy,iz)] += T13*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(1)){
+                  i = ix + nxo - lpml;
+                  if(i >= ix0 && i < (ix0 + nx)){
+                     // Right
+                     C11 = L2M[I3D(i-ix0,iy,iz)]*Tp[I3D(i-ix0,iy,iz)];
+                     C13 = L2M[I3D(i-ix0,iy,iz)]*Tp[I3D(i-ix0,iy,iz)] - 2*M[I3D(i-ix0,iy,iz)]*Ts[I3D(i-ix0,iy,iz)];
+                     T11 = (to/(1.+0.5*to))*(L2M[I3D(i-ix0,iy,iz)]*(Tp[I3D(i-ix0,iy,iz)]-1));
+                     T13 = (to/(1.+0.5*to))*(L2M[I3D(i-ix0,iy,iz)]*(Tp[I3D(i-ix0,iy,iz)]-1)-2*M[I3D(i-ix0,iy,iz)]*(Ts[I3D(i-ix0,iy,iz)]-1));
+                     Pml->Vxx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i-ix0,iy,iz)];
+                     Sxx[I3D(i-ix0,iy,iz)] -= dt*C11*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Syy[I3D(i-ix0,iy,iz)] -= dt*C13*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Szz[I3D(i-ix0,iy,iz)] -= dt*C13*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Mxx[I3D(i-ix0,iy,iz)] += T11*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Myy[I3D(i-ix0,iy,iz)] += T13*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Mzz[I3D(i-ix0,iy,iz)] += T13*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                  }
+               }
             }
-        }
-    }
-    
+         }
+      }
+   }
 
-    // Derivate Vy backward with respect to y
-    der->ddy_bw(Vy);
-    // Compute Sxx,Syy,Szz
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
+
+   // Derivate Vy backward with respect to y
+   der->ddy_bw(Vy);
+   // Compute Sxx,Syy,Szz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
+            if(iz == lpml && model->getFs()){
+               // Free surface conditions
+               C13 = 0.0;
+            }else{
+               C13 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)] - 2*M[I3D(ix,iy,iz)]*Ts[I3D(ix,iy,iz)];
+            }
+            Sxx[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
+            Syy[I3D(ix,iy,iz)] += dt*C11*df[I3D(ix,iy,iz)];
+            Szz[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
+            Mxx[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+            Myy[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+            Mzz[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+         }
+      }
+   }
+
+   // Attenuate front and back using non-staggered variables
+   if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < lpml; iy++){
             for(ix=0; ix < nx; ix++){
-                C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
-                if(iz == lpml && model->getFs()){
-                    // Free surface conditions
-                    C13 = 0.0;
-                }else{
-                    C13 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)] - 2*M[I3D(ix,iy,iz)]*Ts[I3D(ix,iy,iz)];
-                }
-                Sxx[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
-                Syy[I3D(ix,iy,iz)] += dt*C11*df[I3D(ix,iy,iz)];
-                Szz[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
-                Mxx[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
-                Myy[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
-                Mzz[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+               if(Pml->getApplypml(2)){
+                  if(iy >= iy0 && iy < (iy0 + ny)){
+                     // Front
+                     C11 = L2M[I3D(ix,iy-iy0,iz)]*Tp[I3D(ix,iy-iy0,iz)];
+                     C13 = L2M[I3D(ix,iy-iy0,iz)]*Tp[I3D(ix,iy-iy0,iz)] - 2*M[I3D(ix,iy-iy0,iz)]*Ts[I3D(ix,iy-iy0,iz)];
+                     T11 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy-iy0,iz)]*(Tp[I3D(ix,iy-iy0,iz)]-1));
+                     T13 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy-iy0,iz)]*(Tp[I3D(ix,iy-iy0,iz)]-1)-2*M[I3D(ix,iy-iy0,iz)]*(Ts[I3D(ix,iy-iy0,iz)]-1));
+                     Pml->Vyy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                     Sxx[I3D(ix,iy-iy0,iz)] -= dt*C13*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Syy[I3D(ix,iy-iy0,iz)] -= dt*C11*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Szz[I3D(ix,iy-iy0,iz)] -= dt*C13*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Mxx[I3D(ix,iy-iy0,iz)] += T13*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Myy[I3D(ix,iy-iy0,iz)] += T11*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Mzz[I3D(ix,iy-iy0,iz)] += T13*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(3)){
+                  i = iy + nyo - lpml;
+                  if(i >= iy0 && i < (iy0 + ny)){
+                     //Back
+                     C11 = L2M[I3D(ix,i-iy0,iz)]*Tp[I3D(ix,i-iy0,iz)];
+                     C13 = L2M[I3D(ix,i-iy0,iz)]*Tp[I3D(ix,i-iy0,iz)] - 2*M[I3D(ix,i-iy0,iz)]*Ts[I3D(ix,i-iy0,iz)];
+                     T11 = (to/(1.+0.5*to))*(L2M[I3D(ix,i-iy0,iz)]*(Tp[I3D(ix,i-iy0,iz)]-1));
+                     T13 = (to/(1.+0.5*to))*(L2M[I3D(ix,i-iy0,iz)]*(Tp[I3D(ix,i-iy0,iz)]-1)-2*M[I3D(ix,i-iy0,iz)]*(Ts[I3D(ix,i-iy0,iz)]-1));
+                     Pml->Vyy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i-iy0,iz)];
+                     Sxx[I3D(ix,i-iy0,iz)] -= dt*C13*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Syy[I3D(ix,i-iy0,iz)] -= dt*C11*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Szz[I3D(ix,i-iy0,iz)] -= dt*C13*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Mxx[I3D(ix,i-iy0,iz)] += T13*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Myy[I3D(ix,i-iy0,iz)] += T11*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Mzz[I3D(ix,i-iy0,iz)] += T13*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                  }
+               }
             }
-        }
-    }
-    
-    // Free surface conditions
-    if(model->getFs()){
-        iz = lpml;
-        for(ix=0; ix < nx; ix++){
+         }
+      }
+   }
+
+   // Derivate Vz backward with respect to z
+   der->ddz_bw(Vz);
+   // Compute Sxx,Syy,Szz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
+            if(iz == lpml && model->getFs()){
+               // Free surface conditions
+               C13 = 0.0;
+            }else{
+               C13 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)] - 2*M[I3D(ix,iy,iz)]*Ts[I3D(ix,iy,iz)];
+            }
+            Sxx[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
+            Syy[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
+            Szz[I3D(ix,iy,iz)] += dt*C11*df[I3D(ix,iy,iz)];
+
+            Mxx[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+            Myy[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+            Mzz[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
+
+
+            // Convolution sum
+            Sxx[I3D(ix,iy,iz)] += dt*Mxx[I3D(ix,iy,iz)];
+            Syy[I3D(ix,iy,iz)] += dt*Myy[I3D(ix,iy,iz)];
+            Szz[I3D(ix,iy,iz)] += dt*Mzz[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Free surface conditions
+   if(model->getFs()){
+      iz = lpml;
+      if(iz >= iz0 && iz < (iz0 + nz)){
+         for(ix=0; ix < nx; ix++){
             for(iy=0; iy < ny; iy++){
-                Szz[I3D(ix,iy,iz)] = 0.0;
+               Szz[I3D(ix,iy,iz-iz0)] = 0.0;
             }
-        }
-    }
+         }
+      }
+   }
 
-    // Attenuate front and back using non-staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < lpml; iy++){
+   // Attenuate top and bottom using non-staggered variables
+   if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+      for(iz=0; iz < lpml; iz++){
+         for(iy=0; iy < ny; iy++){
             for(ix=0; ix < nx; ix++){
-                // Front
-                C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
-                C13 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)] - 2*M[I3D(ix,iy,iz)]*Ts[I3D(ix,iy,iz)];
-                T11 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1));
-                T13 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1));
-                Pml->Vyy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy,iz)];
-                
-                Sxx[I3D(ix,iy,iz)] -= dt*C13*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy,iz)]);
-                Syy[I3D(ix,iy,iz)] -= dt*C11*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy,iz)]);
-                Szz[I3D(ix,iy,iz)] -= dt*C13*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy,iz)]);
-                Mxx[I3D(ix,iy,iz)] += T13*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy,iz)]);
-                Myy[I3D(ix,iy,iz)] += T11*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy,iz)]);
-                Mzz[I3D(ix,iy,iz)] += T13*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy,iz)]);
-                //Back
-                i = iy + ny - lpml;
-                C11 = L2M[I3D(ix,i,iz)]*Tp[I3D(ix,i,iz)];
-                C13 = L2M[I3D(ix,i,iz)]*Tp[I3D(ix,i,iz)] - 2*M[I3D(ix,i,iz)]*Ts[I3D(ix,i,iz)];
-                T11 = (to/(1.+0.5*to))*(L2M[I3D(ix,i,iz)]*(Tp[I3D(ix,i,iz)]-1));
-                T13 = (to/(1.+0.5*to))*(L2M[I3D(ix,i,iz)]*(Tp[I3D(ix,i,iz)]-1)-2*M[I3D(ix,i,iz)]*(Ts[I3D(ix,i,iz)]-1));
-                Pml->Vyy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i,iz)];
-                Sxx[I3D(ix,i,iz)] -= dt*C13*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i,iz)]);
-                Syy[I3D(ix,i,iz)] -= dt*C11*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i,iz)]);
-                Szz[I3D(ix,i,iz)] -= dt*C13*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i,iz)]);
-                Mxx[I3D(ix,i,iz)] += T13*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i,iz)]);
-                Myy[I3D(ix,i,iz)] += T11*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i,iz)]);
-                Mzz[I3D(ix,i,iz)] += T13*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i,iz)]);
+               if(Pml->getApplypml(4)){
+                  if(iz >= iz0 && iz < (iz0 + nz)){
+                     // Top
+                     C11 = L2M[I3D(ix,iy,iz-iz0)]*Tp[I3D(ix,iy,iz-iz0)];
+                     C13 = L2M[I3D(ix,iy,iz-iz0)]*Tp[I3D(ix,iy,iz-iz0)] - 2*M[I3D(ix,iy,iz-iz0)]*Ts[I3D(ix,iy,iz-iz0)];
+                     T11 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,iz-iz0)]*(Tp[I3D(ix,iy,iz-iz0)]-1));
+                     T13 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,iz-iz0)]*(Tp[I3D(ix,iy,iz-iz0)]-1)-2*M[I3D(ix,iy,iz-iz0)]*(Ts[I3D(ix,iy,iz-iz0)]-1));
+                     Pml->Vzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz-iz0)];
+
+                     Sxx[I3D(ix,iy,iz-iz0)] -= dt*C13*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Syy[I3D(ix,iy,iz-iz0)] -= dt*C13*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Szz[I3D(ix,iy,iz-iz0)] -= dt*C11*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Mxx[I3D(ix,iy,iz-iz0)] += T13*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Myy[I3D(ix,iy,iz-iz0)] += T13*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Mzz[I3D(ix,iy,iz-iz0)] += T11*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                  }
+               }
+               if(Pml->getApplypml(5)){
+                  i = iz + nzo - lpml;
+                  if(i >= iz0 && i < (iz0 + nz)){
+                     //Bottom
+                     C11 = L2M[I3D(ix,iy,i-iz0)]*Tp[I3D(ix,iy,i-iz0)];
+                     C13 = L2M[I3D(ix,iy,i-iz0)]*Tp[I3D(ix,iy,i-iz0)] - 2*M[I3D(ix,iy,i-iz0)]*Ts[I3D(ix,iy,i-iz0)];
+                     T11 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,i-iz0)]*(Tp[I3D(ix,iy,i-iz0)]-1));
+                     T13 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,i-iz0)]*(Tp[I3D(ix,iy,i-iz0)]-1)-2*M[I3D(ix,iy,i-iz0)]*(Ts[I3D(ix,iy,i-iz0)]-1));
+                     Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i-iz0)];
+                     Sxx[I3D(ix,iy,i-iz0)] -= dt*C13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Syy[I3D(ix,iy,i-iz0)] -= dt*C13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Szz[I3D(ix,iy,i-iz0)] -= dt*C11*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Mxx[I3D(ix,iy,i-iz0)] += T13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Myy[I3D(ix,iy,i-iz0)] += T13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Mzz[I3D(ix,iy,i-iz0)] += T11*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                  }
+               }
             }
-        }
-    }
-    
-    // Derivate Vz backward with respect to z
-    der->ddz_bw(Vz);
-    // Compute Sxx,Syy,Szz
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
-                if(iz == lpml && model->getFs()){
-                    // Free surface conditions
-                    C13 = 0.0;
-                }else{
-                    C13 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)] - 2*M[I3D(ix,iy,iz)]*Ts[I3D(ix,iy,iz)];
-                }
-                Sxx[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
-                Syy[I3D(ix,iy,iz)] += dt*C13*df[I3D(ix,iy,iz)];
-                Szz[I3D(ix,iy,iz)] += dt*C11*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
 
-                Mxx[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
-                Myy[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
-                Mzz[I3D(ix,iy,iz)] -= (to*((L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1))*df[I3D(ix,iy,iz)] ) ) / (1 + 0.5*to);
-
-
-                // Convolution sum
-                Sxx[I3D(ix,iy,iz)] += dt*Mxx[I3D(ix,iy,iz)];
-                Syy[I3D(ix,iy,iz)] += dt*Myy[I3D(ix,iy,iz)];
-                Szz[I3D(ix,iy,iz)] += dt*Mzz[I3D(ix,iy,iz)];
-            }
-        }
-    }
-
-    // Free surface conditions
-    if(model->getFs()){
-        iz = lpml;
-        for(ix=0; ix < nx; ix++){
-            for(iy=0; iy < ny; iy++){
-                Szz[I3D(ix,iy,iz)] = 0.0;
-            }
-        }
-    }
-    
-    // Attenuate top and bottom using non-staggered variables
-    for(iz=0; iz < lpml; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Top
-                C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
-                C13 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)] - 2*M[I3D(ix,iy,iz)]*Ts[I3D(ix,iy,iz)];
-                T11 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1));
-                T13 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,iz)]*(Tp[I3D(ix,iy,iz)]-1)-2*M[I3D(ix,iy,iz)]*(Ts[I3D(ix,iy,iz)]-1));
-                Pml->Vzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz)];
-
-                Sxx[I3D(ix,iy,iz)] -= dt*C13*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz)]);
-                Syy[I3D(ix,iy,iz)] -= dt*C13*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz)]);
-                Szz[I3D(ix,iy,iz)] -= dt*C11*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz)]);
-                Mxx[I3D(ix,iy,iz)] += T13*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz)]);
-                Myy[I3D(ix,iy,iz)] += T13*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz)]);
-                Mzz[I3D(ix,iy,iz)] += T11*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz)]);
-                //Bottom
-                i = iz + nz - lpml;
-                C11 = L2M[I3D(ix,iy,i)]*Tp[I3D(ix,iy,i)];
-                C13 = L2M[I3D(ix,iy,i)]*Tp[I3D(ix,iy,i)] - 2*M[I3D(ix,iy,i)]*Ts[I3D(ix,iy,i)];
-                T11 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,i)]*(Tp[I3D(ix,iy,i)]-1));
-                T13 = (to/(1.+0.5*to))*(L2M[I3D(ix,iy,i)]*(Tp[I3D(ix,iy,i)]-1)-2*M[I3D(ix,iy,i)]*(Ts[I3D(ix,iy,i)]-1));
-                Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i)];
-                Sxx[I3D(ix,iy,i)] -= dt*C13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
-                Syy[I3D(ix,iy,i)] -= dt*C13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
-                Szz[I3D(ix,iy,i)] -= dt*C11*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
-                Mxx[I3D(ix,iy,i)] += T13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
-                Myy[I3D(ix,iy,i)] += T13*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
-                Mzz[I3D(ix,iy,i)] += T11*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i)]);
-            }
-        }
-    }
-    
    //////////////////////////// Sxz //////////////////////////
-  
-    // Derivate Vz forward with respect to x
-    der->ddx_fw(Vz);
-    // Compute Sxz
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                C44 = M_xz[I3D(ix,iy,iz)]*Ts_xz[I3D(ix,iy,iz)];
-                Sxz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
-                Mxz[I3D(ix,iy,iz)] = ( (1-0.5*to)*Mxz[I3D(ix,iy,iz)]- to*M_xz[I3D(ix,iy,iz)]*(Ts_xz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
-            }
-        }
-    }
 
-    // Attenuate left and right using staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
+   // Derivate Vz forward with respect to x
+   der->ddx_fw(Vz);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            C44 = M_xz[I3D(ix,iy,iz)]*Ts_xz[I3D(ix,iy,iz)];
+            Sxz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
+            Mxz[I3D(ix,iy,iz)] = ( (1-0.5*to)*Mxz[I3D(ix,iy,iz)]- to*M_xz[I3D(ix,iy,iz)]*(Ts_xz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+         }
+      }
+   }
+
+   // Attenuate left and right using staggered variables
+   if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < ny; iy++){
             for(ix=0; ix < lpml; ix++){
-                // Left
-                C44 = M_xz[I3D(ix,iy,iz)]*Ts_xz[I3D(ix,iy,iz)];
-                T44 = (to/(1.+0.5*to))*M_xz[I3D(ix,iy,iz)]*(Ts_xz[I3D(ix,iy,iz)]-1);
-                Pml->Vzx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->Vzx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix,iy,iz)];
-                
-                Sxz[I3D(ix,iy,iz)] -= dt*C44*(Pml->Vzx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix,iy,iz)]);
-                Mxz[I3D(ix,iy,iz)] += T44*(Pml->Vzx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix,iy,iz)]);
-                // Right
-                i = ix + nx - lpml;
-                C44 = M_xz[I3D(i,iy,iz)]*Ts_xz[I3D(i,iy,iz)];
-                T44 = (to/(1.+0.5*to))*M_xz[I3D(i,iy,iz)]*(Ts_xz[I3D(i,iy,iz)]-1);
-                Pml->Vzx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->Vzx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i,iy,iz)];
-                Sxz[I3D(i,iy,iz)] -= dt*C44*(Pml->Vzx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i,iy,iz)]);
-                Mxz[I3D(i,iy,iz)] += T44*(Pml->Vzx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i,iy,iz)]);
-            }
-        }
-    }
- 
+               if(Pml->getApplypml(0)){
+                  if(ix >= ix0 && ix < (ix0 + nx)){
+                     // Left
+                     C44 = M_xz[I3D(ix-ix0,iy,iz)]*Ts_xz[I3D(ix-ix0,iy,iz)];
+                     T44 = (to/(1.+0.5*to))*M_xz[I3D(ix-ix0,iy,iz)]*(Ts_xz[I3D(ix-ix0,iy,iz)]-1);
+                     Pml->Vzx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->Vzx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)];
 
-    // Derivate Vx forward with respect to z
-    der->ddz_fw(Vx);
-    // Compute Sxz
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
+                     Sxz[I3D(ix-ix0,iy,iz)] -= dt*C44*(Pml->Vzx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     Mxz[I3D(ix-ix0,iy,iz)] += T44*(Pml->Vzx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(1)){
+                  i = ix + nxo - lpml;
+                  if(i >= ix0 && i < (ix0 + nx)){
+                     // Right
+                     C44 = M_xz[I3D(i-ix0,iy,iz)]*Ts_xz[I3D(i-ix0,iy,iz)];
+                     T44 = (to/(1.+0.5*to))*M_xz[I3D(i-ix0,iy,iz)]*(Ts_xz[I3D(i-ix0,iy,iz)]-1);
+                     Pml->Vzx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->Vzx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)];
+                     Sxz[I3D(i-ix0,iy,iz)] -= dt*C44*(Pml->Vzx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Mxz[I3D(i-ix0,iy,iz)] += T44*(Pml->Vzx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+   // Derivate Vx forward with respect to z
+   der->ddz_fw(Vx);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            C44 = M_xz[I3D(ix,iy,iz)]*Ts_xz[I3D(ix,iy,iz)];
+            Sxz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
+            Mxz[I3D(ix,iy,iz)] -= (to*M_xz[I3D(ix,iy,iz)]*(Ts_xz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+
+            // Convolution sum
+            Sxz[I3D(ix,iy,iz)] += dt*Mxz[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate top and bottom using staggered variables
+   if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+      for(iz=0; iz < lpml; iz++){
+         for(iy=0; iy < ny; iy++){
             for(ix=0; ix < nx; ix++){
-                C44 = M_xz[I3D(ix,iy,iz)]*Ts_xz[I3D(ix,iy,iz)];
-                Sxz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
-                Mxz[I3D(ix,iy,iz)] -= (to*M_xz[I3D(ix,iy,iz)]*(Ts_xz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+               if(Pml->getApplypml(4)){
+                  if(iz >= iz0 && iz < (iz0 + nz)){
+                     // Top
+                     C44 = M_xz[I3D(ix,iy,iz)]*Ts_xz[I3D(ix,iy,iz)];
+                     T44 = (to/(1.+0.5*to))*M_xz[I3D(ix,iy,iz)]*(Ts_xz[I3D(ix,iy,iz)]-1);
+                     Pml->Vxz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz)];
 
-                // Convolution sum
-                Sxz[I3D(ix,iy,iz)] += dt*Mxz[I3D(ix,iy,iz)];
+                     Sxz[I3D(ix,iy,iz)] -= dt*C44*(Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz)]);
+                     Mxz[I3D(ix,iy,iz)] += T44*(Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(5)){
+                  i = iz + nzo - lpml;
+                  if(i >= iz0 && i < (iz0 + nz)){
+                     //Bottom
+                     C44 = M_xz[I3D(ix,iy,i)]*Ts_xz[I3D(ix,iy,i)];
+                     T44 = (to/(1.+0.5*to))*M_xz[I3D(ix,iy,i)]*(Ts_xz[I3D(ix,iy,i)]-1);
+                     Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i)];
+                     Sxz[I3D(ix,iy,i)] -= dt*C44*(Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i)]);
+                     Mxz[I3D(ix,iy,i)] += T44*(Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i)]);
+                  }
+               }
             }
-        }
-    }
-
-    // Attenuate top and bottom using staggered variables
-    for(iz=0; iz < lpml; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Top
-                C44 = M_xz[I3D(ix,iy,iz)]*Ts_xz[I3D(ix,iy,iz)];
-                T44 = (to/(1.+0.5*to))*M_xz[I3D(ix,iy,iz)]*(Ts_xz[I3D(ix,iy,iz)]-1);
-                Pml->Vxz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz)];
-                
-                Sxz[I3D(ix,iy,iz)] -= dt*C44*(Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz)]);
-                Mxz[I3D(ix,iy,iz)] += T44*(Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz)]);
-                //Bottom
-                i = iz + nz - lpml;
-                C44 = M_xz[I3D(ix,iy,i)]*Ts_xz[I3D(ix,iy,i)];
-                T44 = (to/(1.+0.5*to))*M_xz[I3D(ix,iy,i)]*(Ts_xz[I3D(ix,iy,i)]-1);
-                Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i)];
-                Sxz[I3D(ix,iy,i)] -= dt*C44*(Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i)]);
-                Mxz[I3D(ix,iy,i)] += T44*(Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i)]);
-            }
-        }
-    }
+         }
+      }
+   }
 
 
    //////////////////////////// Syz //////////////////////////
-    // Derivate Vy forward with respect to z
-    der->ddz_fw(Vy);
-    // Compute Syz
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                C44 = M_yz[I3D(ix,iy,iz)]*Ts_yz[I3D(ix,iy,iz)];
-                Syz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
-                Myz[I3D(ix,iy,iz)] = ( (1-0.5*to)*Myz[I3D(ix,iy,iz)]- to*M_yz[I3D(ix,iy,iz)]*(Ts_yz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
-            }
-        }
-    }
+   // Derivate Vy forward with respect to z
+   der->ddz_fw(Vy);
+   // Compute Syz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            C44 = M_yz[I3D(ix,iy,iz)]*Ts_yz[I3D(ix,iy,iz)];
+            Syz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
+            Myz[I3D(ix,iy,iz)] = ( (1-0.5*to)*Myz[I3D(ix,iy,iz)]- to*M_yz[I3D(ix,iy,iz)]*(Ts_yz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+         }
+      }
+   }
 
-    // Attenuate top and bottom using staggered variables
-    for(iz=0; iz < lpml; iz++){
-        for(iy=0; iy < ny; iy++){
+   // Attenuate top and bottom using staggered variables
+   if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+      for(iz=0; iz < lpml; iz++){
+         for(iy=0; iy < ny; iy++){
             for(ix=0; ix < nx; ix++){
-                // Top
-                C44 = M_yz[I3D(ix,iy,iz)]*Ts_yz[I3D(ix,iy,iz)];
-                T44 = (to/(1.+0.5*to))*M_yz[I3D(ix,iy,iz)]*(Ts_yz[I3D(ix,iy,iz)]-1);
-                Pml->Vyz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Vyz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz)];
-                
-                Syz[I3D(ix,iy,iz)] -= dt*C44*(Pml->Vyz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz)]);
-                Myz[I3D(ix,iy,iz)] += T44*(Pml->Vyz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz)]);
-                //Bottom
-                i = iz + nz - lpml;
-                C44 = M_yz[I3D(ix,iy,i)]*Ts_yz[I3D(ix,iy,i)];
-                T44 = (to/(1.+0.5*to))*M_yz[I3D(ix,iy,i)]*(Ts_yz[I3D(ix,iy,i)]-1);
-                Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i)];
-                Syz[I3D(ix,iy,i)] -= dt*C44*(Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i)]);
-                Myz[I3D(ix,iy,i)] += T44*(Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i)]);
-            }
-        }
-    }
+               if(Pml->getApplypml(4)){
+                  if(iz >= iz0 && iz < (iz0 + nz)){
+                     // Top
+                     C44 = M_yz[I3D(ix,iy,iz-iz0)]*Ts_yz[I3D(ix,iy,iz-iz0)];
+                     T44 = (to/(1.+0.5*to))*M_yz[I3D(ix,iy,iz-iz0)]*(Ts_yz[I3D(ix,iy,iz-iz0)]-1);
+                     Pml->Vyz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Vyz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)];
 
-    // Derivate Vz forward with respect to y
-    der->ddy_fw(Vz);
-    // Compute Syz
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
+                     Syz[I3D(ix,iy,iz-iz0)] -= dt*C44*(Pml->Vyz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Myz[I3D(ix,iy,iz-iz0)] += T44*(Pml->Vyz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
+                  }
+               }
+               if(Pml->getApplypml(5)){
+                  i = iz + nzo - lpml;
+                  if(i >= iz0 && i < (iz0 + nz)){
+                     //Bottom
+                     C44 = M_yz[I3D(ix,iy,i-iz0)]*Ts_yz[I3D(ix,iy,i-iz0)];
+                     T44 = (to/(1.+0.5*to))*M_yz[I3D(ix,iy,i-iz0)]*(Ts_yz[I3D(ix,iy,i-iz0)]-1);
+                     Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)];
+                     Syz[I3D(ix,iy,i-iz0)] -= dt*C44*(Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Myz[I3D(ix,iy,i-iz0)] += T44*(Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   // Derivate Vz forward with respect to y
+   der->ddy_fw(Vz);
+   // Compute Syz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            C44 = M_yz[I3D(ix,iy,iz)]*Ts_yz[I3D(ix,iy,iz)];
+            Syz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
+            Myz[I3D(ix,iy,iz)] -= (to*M_yz[I3D(ix,iy,iz)]*(Ts_yz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+
+            // Convolution sum
+            Syz[I3D(ix,iy,iz)] += dt*Myz[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate front and back using staggered variables
+   if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < lpml; iy++){
             for(ix=0; ix < nx; ix++){
-                C44 = M_yz[I3D(ix,iy,iz)]*Ts_yz[I3D(ix,iy,iz)];
-                Syz[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
-                Myz[I3D(ix,iy,iz)] -= (to*M_yz[I3D(ix,iy,iz)]*(Ts_yz[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+               if(Pml->getApplypml(2)){
+                  if(iy >= iy0 && iy < (iy0 + ny)){
+                     // Front
+                     C44 = M_yz[I3D(ix,iy-iy0,iz)]*Ts_yz[I3D(ix,iy-iy0,iz)];
+                     T44 = (to/(1.+0.5*to))*M_yz[I3D(ix,iy-iy0,iz)]*(Ts_yz[I3D(ix,iy-iy0,iz)]-1);
+                     Pml->Vzy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->Vzy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)];
 
-                // Convolution sum
-                Syz[I3D(ix,iy,iz)] += dt*Myz[I3D(ix,iy,iz)];
+                     Syz[I3D(ix,iy-iy0,iz)] -= dt*C44*(Pml->Vzy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Myz[I3D(ix,iy-iy0,iz)] += T44*(Pml->Vzy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(3)){
+                  i = iy + nyo - lpml;
+                  if(i >= iy0 && i < (iy0 + ny)){
+                     //Back
+                     C44 = M_yz[I3D(ix,i-iy0,iz)]*Ts_yz[I3D(ix,i-iy0,iz)];
+                     T44 = (to/(1.+0.5*to))*M_yz[I3D(ix,i-iy0,iz)]*(Ts_yz[I3D(ix,i-iy0,iz)]-1);
+                     Pml->Vzy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->Vzy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)];
+                     Syz[I3D(ix,i-iy0,iz)] -= dt*C44*(Pml->Vzy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Myz[I3D(ix,i-iy0,iz)] += T44*(Pml->Vzy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
+                  }
+               }
             }
-        }
-    }
-
-    // Attenuate front and back using staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < lpml; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Front
-                C44 = M_yz[I3D(ix,iy,iz)]*Ts_yz[I3D(ix,iy,iz)];
-                T44 = (to/(1.+0.5*to))*M_yz[I3D(ix,iy,iz)]*(Ts_yz[I3D(ix,iy,iz)]-1);
-                Pml->Vzy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->Vzy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy,iz)];
-                
-                Syz[I3D(ix,iy,iz)] -= dt*C44*(Pml->Vzy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy,iz)]);
-                Myz[I3D(ix,iy,iz)] += T44*(Pml->Vzy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy,iz)]);
-                //Back
-                i = iy + ny - lpml;
-                C44 = M_yz[I3D(ix,i,iz)]*Ts_yz[I3D(ix,i,iz)];
-                T44 = (to/(1.+0.5*to))*M_yz[I3D(ix,i,iz)]*(Ts_yz[I3D(ix,i,iz)]-1);
-                Pml->Vzy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->Vzy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i,iz)];
-                Syz[I3D(ix,i,iz)] -= dt*C44*(Pml->Vzy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i,iz)]);
-                Myz[I3D(ix,i,iz)] += T44*(Pml->Vzy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i,iz)]);
-            }
-        }
-    }
+         }
+      }
+   }
 
 
    //////////////////////////// Sxy //////////////////////////
-    // Derivate Vx forward with respect to y
-    der->ddy_fw(Vx);
-    // Compute Sxy
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
+   // Derivate Vx forward with respect to y
+   der->ddy_fw(Vx);
+   // Compute Sxy
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            C44 = M_xy[I3D(ix,iy,iz)]*Ts_xy[I3D(ix,iy,iz)];
+            Sxy[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
+            Mxy[I3D(ix,iy,iz)] = ( (1-0.5*to)*Mxy[I3D(ix,iy,iz)]- to*M_xy[I3D(ix,iy,iz)]*(Ts_xy[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+         }
+      }
+   }
+
+   // Attenuate front and back using staggered variables
+   if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < lpml; iy++){
             for(ix=0; ix < nx; ix++){
-                C44 = M_xy[I3D(ix,iy,iz)]*Ts_xy[I3D(ix,iy,iz)];
-                Sxy[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
-                Mxy[I3D(ix,iy,iz)] = ( (1-0.5*to)*Mxy[I3D(ix,iy,iz)]- to*M_xy[I3D(ix,iy,iz)]*(Ts_xy[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+               if(Pml->getApplypml(2)){
+                  if(iy >= iy0 && iy < (iy0 + ny)){
+                     // Front
+                     C44 = M_xy[I3D(ix,iy-iy0,iz)]*Ts_xy[I3D(ix,iy-iy0,iz)];
+                     T44 = (to/(1.+0.5*to))*M_xy[I3D(ix,iy-iy0,iz)]*(Ts_xy[I3D(ix,iy-iy0,iz)]-1);
+                     Pml->Vxy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->Vxy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                     Sxy[I3D(ix,iy-iy0,iz)] -= dt*C44*(Pml->Vxy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Mxy[I3D(ix,iy-iy0,iz)] += T44*(Pml->Vxy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(3)){
+                  i = iy + nyo - lpml;
+                  if(i >= iy0 && i < (iy0 + ny)){
+                     //Back
+                     C44 = M_xy[I3D(ix,i-iy0,iz)]*Ts_xy[I3D(ix,i-iy0,iz)];
+                     T44 = (to/(1.+0.5*to))*M_xy[I3D(ix,i-iy0,iz)]*(Ts_xy[I3D(ix,i-iy0,iz)]-1);
+                     Pml->Vxy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->Vxy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)];
+                     Sxy[I3D(ix,i-iy0,iz)] -= dt*C44*(Pml->Vxy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Mxy[I3D(ix,i-iy0,iz)] += T44*(Pml->Vxy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
+                  }
+               }
             }
-        }
-    }
+         }
+      }
+   }
 
-    // Attenuate front and back using staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < lpml; iy++){
-            for(ix=0; ix < nx; ix++){
-                // Front
-                C44 = M_xy[I3D(ix,iy,iz)]*Ts_xy[I3D(ix,iy,iz)];
-                T44 = (to/(1.+0.5*to))*M_xy[I3D(ix,iy,iz)]*(Ts_xy[I3D(ix,iy,iz)]-1);
-                Pml->Vxy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->Vxy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy,iz)];
-                
-                Sxy[I3D(ix,iy,iz)] -= dt*C44*(Pml->Vxy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy,iz)]);
-                Mxy[I3D(ix,iy,iz)] += T44*(Pml->Vxy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy,iz)]);
-                //Back
-                i = iy + ny - lpml;
-                C44 = M_xy[I3D(ix,i,iz)]*Ts_xy[I3D(ix,i,iz)];
-                T44 = (to/(1.+0.5*to))*M_xy[I3D(ix,i,iz)]*(Ts_xy[I3D(ix,i,iz)]-1);
-                Pml->Vxy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->Vxy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i,iz)];
-                Sxy[I3D(ix,i,iz)] -= dt*C44*(Pml->Vxy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i,iz)]);
-                Mxy[I3D(ix,i,iz)] += T44*(Pml->Vxy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i,iz)]);
-            }
-        }
-    }
+   // Derivate Vy forward with respect to x
+   der->ddx_fw(Vy);
+   // Compute Sxy
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            C44 = M_xy[I3D(ix,iy,iz)]*Ts_xy[I3D(ix,iy,iz)];
+            Sxy[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
+            Mxy[I3D(ix,iy,iz)] -= (to*M_xy[I3D(ix,iy,iz)]*(Ts_xy[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
 
-    // Derivate Vy forward with respect to x
-    der->ddx_fw(Vy);
-    // Compute Sxy
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
-            for(ix=0; ix < nx; ix++){
-                C44 = M_xy[I3D(ix,iy,iz)]*Ts_xy[I3D(ix,iy,iz)];
-                Sxy[I3D(ix,iy,iz)] += dt*C44*df[I3D(ix,iy,iz)];
-                Mxy[I3D(ix,iy,iz)] -= (to*M_xy[I3D(ix,iy,iz)]*(Ts_xy[I3D(ix,iy,iz)]-1)*df[I3D(ix,iy,iz)] ) / (1 + 0.5*to);
+            // Convolution sum
+            Sxy[I3D(ix,iy,iz)] += dt*Mxy[I3D(ix,iy,iz)];
+         }
+      }
+   }
 
-                // Convolution sum
-                Sxy[I3D(ix,iy,iz)] += dt*Mxy[I3D(ix,iy,iz)];
-            }
-        }
-    }
-
-    // Attenuate left and right using staggered variables
-    for(iz=0; iz < nz; iz++){
-        for(iy=0; iy < ny; iy++){
+   // Attenuate left and right using staggered variables
+   if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < ny; iy++){
             for(ix=0; ix < lpml; ix++){
-                // Left
-                C44 = M_xy[I3D(ix,iy,iz)]*Ts_xy[I3D(ix,iy,iz)];
-                T44 = (to/(1.+0.5*to))*M_xy[I3D(ix,iy,iz)]*(Ts_xy[I3D(ix,iy,iz)]-1);
-                Pml->Vyx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->Vyx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix,iy,iz)];
-                
-                Sxy[I3D(ix,iy,iz)] -= dt*C44*(Pml->Vyx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix,iy,iz)]);
-                Mxy[I3D(ix,iy,iz)] += T44*(Pml->Vyx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix,iy,iz)]);
-                // Right
-                i = ix + nx - lpml;
-                C44 = M_xy[I3D(i,iy,iz)]*Ts_xy[I3D(i,iy,iz)];
-                T44 = (to/(1.+0.5*to))*M_xy[I3D(i,iy,iz)]*(Ts_xy[I3D(i,iy,iz)]-1);
-                Pml->Vyx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->Vyx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i,iy,iz)];
-                Sxy[I3D(i,iy,iz)] -= dt*C44*(Pml->Vyx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i,iy,iz)]);
-                Mxy[I3D(i,iy,iz)] += T44*(Pml->Vyx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i,iy,iz)]);
+               if(Pml->getApplypml(0)){
+                  if(ix >= ix0 && ix < (ix0 + nx)){
+                     // Left
+                     C44 = M_xy[I3D(ix,iy,iz)]*Ts_xy[I3D(ix,iy,iz)];
+                     T44 = (to/(1.+0.5*to))*M_xy[I3D(ix,iy,iz)]*(Ts_xy[I3D(ix,iy,iz)]-1);
+                     Pml->Vyx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->Vyx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix,iy,iz)];
+
+                     Sxy[I3D(ix,iy,iz)] -= dt*C44*(Pml->Vyx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix,iy,iz)]);
+                     Mxy[I3D(ix,iy,iz)] += T44*(Pml->Vyx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix,iy,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(1)){
+                  i = ix + nxo - lpml;
+                  if(i >= ix0 && i < (ix0 + nx)){
+                     // Right
+                     C44 = M_xy[I3D(i,iy,iz)]*Ts_xy[I3D(i,iy,iz)];
+                     T44 = (to/(1.+0.5*to))*M_xy[I3D(i,iy,iz)]*(Ts_xy[I3D(i,iy,iz)]-1);
+                     Pml->Vyx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->Vyx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i,iy,iz)];
+                     Sxy[I3D(i,iy,iz)] -= dt*C44*(Pml->Vyx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i,iy,iz)]);
+                     Mxy[I3D(i,iy,iz)] += T44*(Pml->Vyx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i,iy,iz)]);
+                  }
+               }
             }
-        }
-    }
+         }
+      }
+   }
 }
 
 template<typename T>
@@ -6400,8 +6657,16 @@ void WavesViscoelastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelViscoel
     int ntrace = source->getNtrace();
     int nx, ny, lpml;
     lpml = this->getLpml();
-    nx = this->getNx() + 2*lpml;
-    ny = this->getNy() + 2*lpml;
+    if(this->getDomdec()){
+        lpml = 0;
+        nx = this->getNx();
+        ny = this->getNy();
+    }else{
+        lpml = this->getLpml();
+        nx = this->getNx() + 2*lpml;
+        ny = this->getNy() + 2*lpml;
+    }
+
     T *Mod;
     int nt = this->getNt();
     T dt = this->getDt();
@@ -6417,74 +6682,112 @@ void WavesViscoelastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelViscoel
     rs_field sourcetype = source->getField();
     wav = source->getData();
     int i,i1,i2,i3;
+    T xtri[2], ytri[2], ztri[2];
     switch(sourcetype)
     {
-        case PRESSURE:
-            for (i=0; i < ntrace; i++) 
-            { 
-                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-                {
-                    for(i1=0; i1<2*LANC_SIZE; i1++){
-                        for(i2=0; i2<2*LANC_SIZE; i2++){
-                            for(i3=0; i3<2*LANC_SIZE; i3++){
-                                Sxx[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)] -= dt*wav[Idat(it,i)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE); 
-                                Syy[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)] -= dt*wav[Idat(it,i)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE); 
-                                Szz[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)] -= dt*wav[Idat(it,i)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE); 
-                            }
-                        }
-                    }
+       case PRESSURE:
+          for (i=0; i < ntrace; i++) 
+          { 
+             if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+             {
+
+                xtri[0] = 1 - shift[i].x;
+                xtri[1] = shift[i].x;
+
+                ytri[0] = 1 - shift[i].y;
+                ytri[1] = shift[i].y;
+
+                ztri[0] = 1 - shift[i].z;
+                ztri[1] = shift[i].z;
+
+                for(i1 = 0; i1 < 2; i1++){ 
+                   for(i2 = 0; i2 < 2; i2++){ 
+                      for(i3 = 0; i3 < 2; i3++){ 
+                         Sxx[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] -= dt*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                         Syy[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] -= dt*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                         Szz[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] -= dt*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                      }
+                   }
                 }
-            }
-            break;
-        case VX:
-            Mod = model->getRx();
-            for (i=0; i < ntrace; i++) 
-            { 
-                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-                {
-                    for(i1=0; i1<2*LANC_SIZE; i1++){
-                        for(i2=0; i2<2*LANC_SIZE; i2++){
-                            for(i3=0; i3<2*LANC_SIZE; i3++){
-                                Vx[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)] += dt*Mod[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE); 
-                            }
-                        }
-                    }
+             }
+          }
+          break;
+       case VX:
+          Mod = model->getRx();
+          for (i=0; i < ntrace; i++) 
+          { 
+             if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+             {
+
+                xtri[0] = 1 - shift[i].x;
+                xtri[1] = shift[i].x;
+
+                ytri[0] = 1 - shift[i].y;
+                ytri[1] = shift[i].y;
+
+                ztri[0] = 1 - shift[i].z;
+                ztri[1] = shift[i].z;
+                for(i1=0; i1<2; i1++){
+                   for(i2=0; i2<2; i2++){
+                      for(i3=0; i3<2; i3++){
+                         Vx[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                      }
+                   }
                 }
-            }
-            break;
-        case VY:
-            Mod = model->getRy();
-            for (i=0; i < ntrace; i++) 
-            { 
-                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-                {
-                    for(i1=0; i1<2*LANC_SIZE; i1++){
-                        for(i2=0; i2<2*LANC_SIZE; i2++){
-                            for(i3=0; i3<2*LANC_SIZE; i3++){
-                                Vy[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)] += dt*Mod[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE); 
-                            }
-                        }
-                    }
+             }
+          }
+          break;
+       case VY:
+          Mod = model->getRy();
+          for (i=0; i < ntrace; i++) 
+          { 
+             if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+             {
+
+                xtri[0] = 1 - shift[i].x;
+                xtri[1] = shift[i].x;
+
+                ytri[0] = 1 - shift[i].y;
+                ytri[1] = shift[i].y;
+
+                ztri[0] = 1 - shift[i].z;
+                ztri[1] = shift[i].z;
+                for(i1=0; i1<2; i1++){
+                   for(i2=0; i2<2; i2++){
+                      for(i3=0; i3<2; i3++){
+                         Vy[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                      }
+                   }
                 }
-            }
-            break;
-        case VZ:
-            Mod = model->getRz();
-            for (i=0; i < ntrace; i++) 
-            { 
-                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-                {
-                    for(i1=0; i1<2*LANC_SIZE; i1++){
-                        for(i2=0; i2<2*LANC_SIZE; i2++){
-                            for(i3=0; i3<2*LANC_SIZE; i3++){
-                                Vz[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)] += dt*Mod[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE); 
-                            }
-                        }
-                    }
+             }
+          }
+          break;
+       case VZ:
+          Mod = model->getRz();
+          for (i=0; i < ntrace; i++) 
+          { 
+             if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+             {
+
+                xtri[0] = 1 - shift[i].x;
+                xtri[1] = shift[i].x;
+
+                ytri[0] = 1 - shift[i].y;
+                ytri[1] = shift[i].y;
+
+                ztri[0] = 1 - shift[i].z;
+                ztri[1] = shift[i].z;
+                for(i1=0; i1<2; i1++){
+                   for(i2=0; i2<2; i2++){
+                      for(i3=0; i3<2; i3++){
+                         Vz[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                      }
+                   }
                 }
-            }
-            break;
-        default:
+             }
+          }
+          break;
+       default:
             break;
     }
 }
@@ -6503,8 +6806,15 @@ void WavesViscoelastic3D<T>::recordData(std::shared_ptr<ModelViscoelastic3D<T>> 
     int nt = data->getNt();
     int nx, ny, lpml;
     lpml = this->getLpml();
-    nx = this->getNx() + 2*lpml;
-    ny = this->getNy() + 2*lpml;
+    if(this->getDomdec()){
+        lpml = 0;
+        nx = this->getNx();
+        ny = this->getNy();
+    }else{
+        lpml = this->getLpml();
+        nx = this->getNx() + 2*lpml;
+        ny = this->getNy() + 2*lpml;
+    }
 
     // Get correct map (data or receiver mapping)
     if(maptype == SMAP) {
@@ -6518,6 +6828,7 @@ void WavesViscoelastic3D<T>::recordData(std::shared_ptr<ModelViscoelastic3D<T>> 
     rs_field field = data->getField();
     dataarray = data->getData();
     int i,i1,i2,i3;
+    T xtri[2], ytri[2], ztri[2];
     Index Im(this->getNx(), this->getNy(), this->getNz());
     switch(field)
     {
@@ -6533,17 +6844,26 @@ void WavesViscoelastic3D<T>::recordData(std::shared_ptr<ModelViscoelastic3D<T>> 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
 
-                    // Factor to make reciprocity work
-                    factor = (3.*R[Im(map[i].x, map[i].y, map[i].z)]*Vp[Im(map[i].x, map[i].y, map[i].z)]*Vp[Im(map[i].x, map[i].y, map[i].z)] - 4.*R[Im(map[i].x, map[i].y, map[i].z)]*Vs[Im(map[i].x, map[i].y, map[i].z)]*Vs[Im(map[i].x, map[i].y, map[i].z)])/3.;
-                    for(i1=0; i1<2*LANC_SIZE; i1++){
-                        for(i2=0; i2<2*LANC_SIZE; i2++){
-                            for(i3=0; i3<2*LANC_SIZE; i3++){
-                                dataarray[Idat(it,i)] += (1./3.)*Fielddata1[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE)/factor;
-                                dataarray[Idat(it,i)] += (1./3.)*Fielddata2[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE)/factor;
-                                dataarray[Idat(it,i)] += (1./3.)*Fielddata3[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE)/factor;
-                            }
-                        }
-                    }
+                   // Factor to make reciprocity work
+                   factor = (3.*R[Im(map[i].x, map[i].y, map[i].z)]*Vp[Im(map[i].x, map[i].y, map[i].z)]*Vp[Im(map[i].x, map[i].y, map[i].z)] - 4.*R[Im(map[i].x, map[i].y, map[i].z)]*Vs[Im(map[i].x, map[i].y, map[i].z)]*Vs[Im(map[i].x, map[i].y, map[i].z)])/3.;
+                   xtri[0] = 1 - shift[i].x;
+                   xtri[1] = shift[i].x;
+
+                   ytri[0] = 1 - shift[i].y;
+                   ytri[1] = shift[i].y;
+
+                   ztri[0] = 1 - shift[i].z;
+                   ztri[1] = shift[i].z;
+
+                   for(i1 = 0; i1 < 2; i1++){ 
+                      for(i2 = 0; i2 < 2; i2++){ 
+                         for(i3 = 0; i3 < 2; i3++){ 
+                            dataarray[Idat(it,i)] += (1./3.)*xtri[i3]*ytri[i2]*ztri[i1]*Fielddata1[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]/factor;
+                            dataarray[Idat(it,i)] += (1./3.)*xtri[i3]*ytri[i2]*ztri[i1]*Fielddata2[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]/factor;
+                            dataarray[Idat(it,i)] += (1./3.)*xtri[i3]*ytri[i2]*ztri[i1]*Fielddata3[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]/factor;
+                         }
+                      }
+                   }
                 }
             }
             break;
@@ -6553,13 +6873,22 @@ void WavesViscoelastic3D<T>::recordData(std::shared_ptr<ModelViscoelastic3D<T>> 
             { 
                 if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
                 {
-                    for(i1=0; i1<2*LANC_SIZE; i1++){
-                        for(i2=0; i2<2*LANC_SIZE; i2++){
-                            for(i3=0; i3<2*LANC_SIZE; i3++){
-                                dataarray[Idat(it,i)] += Fielddata1[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE);
-                            }
-                        }
-                    }
+                   xtri[0] = 1 - shift[i].x;
+                   xtri[1] = shift[i].x;
+
+                   ytri[0] = 1 - shift[i].y;
+                   ytri[1] = shift[i].y;
+
+                   ztri[0] = 1 - shift[i].z;
+                   ztri[1] = shift[i].z;
+
+                   for(i1 = 0; i1 < 2; i1++){ 
+                      for(i2 = 0; i2 < 2; i2++){ 
+                         for(i3 = 0; i3 < 2; i3++){ 
+                            dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*Fielddata1[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
+                         }
+                      }
+                   }
                 }
             }
             break;
@@ -6567,16 +6896,26 @@ void WavesViscoelastic3D<T>::recordData(std::shared_ptr<ModelViscoelastic3D<T>> 
             Fielddata1 = this->getVy();
             for (i=0; i < ntrace; i++) 
             { 
-                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-                {
-                    for(i1=0; i1<2*LANC_SIZE; i1++){
-                        for(i2=0; i2<2*LANC_SIZE; i2++){
-                            for(i3=0; i3<2*LANC_SIZE; i3++){
-                                dataarray[Idat(it,i)] += Fielddata1[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE);
-                            }
+               if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+               {
+
+                  xtri[0] = 1 - shift[i].x;
+                  xtri[1] = shift[i].x;
+
+                  ytri[0] = 1 - shift[i].y;
+                  ytri[1] = shift[i].y;
+
+                  ztri[0] = 1 - shift[i].z;
+                  ztri[1] = shift[i].z;
+
+                  for(i1 = 0; i1 < 2; i1++){ 
+                     for(i2 = 0; i2 < 2; i2++){ 
+                        for(i3 = 0; i3 < 2; i3++){ 
+                           dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*Fielddata1[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
                         }
-                    }
-                }
+                     }
+                  }
+               }
             }
             break;
 
@@ -6584,16 +6923,26 @@ void WavesViscoelastic3D<T>::recordData(std::shared_ptr<ModelViscoelastic3D<T>> 
             Fielddata1 = this->getVz();
             for (i=0; i < ntrace; i++) 
             { 
-                if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-                {
-                    for(i1=0; i1<2*LANC_SIZE; i1++){
-                        for(i2=0; i2<2*LANC_SIZE; i2++){
-                            for(i3=0; i3<2*LANC_SIZE; i3++){
-                                dataarray[Idat(it,i)] += Fielddata1[I3D(lpml + map[i].x - (LANC_SIZE-1) + i3, lpml + map[i].y - (LANC_SIZE-1) + i2, lpml + map[i].z - (LANC_SIZE-1) + i1)]*LANC(shift[i].x + (LANC_SIZE-1-i3), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i2) ,LANC_SIZE)*LANC(shift[i].z + (LANC_SIZE-1-i1) ,LANC_SIZE);
-                            }
+               if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
+               {
+
+                  xtri[0] = 1 - shift[i].x;
+                  xtri[1] = shift[i].x;
+
+                  ytri[0] = 1 - shift[i].y;
+                  ytri[1] = shift[i].y;
+
+                  ztri[0] = 1 - shift[i].z;
+                  ztri[1] = shift[i].z;
+
+                  for(i1 = 0; i1 < 2; i1++){ 
+                     for(i2 = 0; i2 < 2; i2++){ 
+                        for(i3 = 0; i3 < 2; i3++){ 
+                           dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*Fielddata1[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
                         }
-                    }
-                }
+                     }
+                  }
+               }
             }
             break;
         default:

@@ -1021,7 +1021,6 @@ int FwiAcoustic2D<T>::run(){
      std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
 
      if(!this->checkStability()) rs_error("FwiAcoustic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
-     //(waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
      (waves->getPml())->setSmax(SMAX);
      (waves->getPml())->computeABC();
 
@@ -1066,7 +1065,6 @@ int FwiAcoustic2D<T>::run(){
     // Reset waves
     waves.reset();
     waves  = std::make_shared<WavesAcoustic2D<T>>(model, nt, dt, ot);
-    //(waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-5)/(2*waves->getLpml()*waves->getDx()));
     (waves->getPml())->setSmax(SMAX);
     (waves->getPml())->computeABC();
 

@@ -1477,114 +1477,136 @@ bool ModellingViscoelastic3D<T>::checkStability(){
 
 template<typename T>
 int ModellingViscoelastic3D<T>::run(){
-     int result = MOD_ERR;
-     int nt;
-     T dt;
-     T ot;
+   int result = MOD_ERR;
+   int nt;
+   T dt;
+   T ot;
 
-     nt = source->getNt();
-     dt = source->getDt();
-     ot = source->getOt();
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
 
-     if(!this->checkStability()) rs_error("ModellingViscoelastic3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+   if(!this->checkStability()) rs_error("ModellingViscoelastic3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
 
-     // Create the classes 
-     std::shared_ptr<WavesViscoelastic3D<T>> waves (new WavesViscoelastic3D<T>(model, nt, dt, ot));
-     std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
+   // Create the classes 
+   std::shared_ptr<WavesViscoelastic3D<T>> waves (new WavesViscoelastic3D<T>(model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
 
-     (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
-     (waves->getPml())->setSmax(SMAX);
-     (waves->getPml())->computeABC();
+   (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+   (waves->getPml())->setSmax(SMAX);
+   (waves->getPml())->computeABC();
 
-	// Create log file
-     this->createLog(this->getLogfile());
+   // Create log file
+   this->createLog(this->getLogfile());
 
-    // Create snapshots
-     std::shared_ptr<Snapshot3D<T>> Psnap;
-     std::shared_ptr<Snapshot3D<T>> Vxsnap;
-     std::shared_ptr<Snapshot3D<T>> Vysnap;
-     std::shared_ptr<Snapshot3D<T>> Vzsnap;
-    if(this->snapPset){ 
-        Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-        Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
-        Psnap->setData(waves->getSxx(), 0); //Set Stress as first field 
-        Psnap->setData(waves->getSyy(), 1); //Set Stress as second field 
-        Psnap->setData(waves->getSzz(), 2); //Set Stress as third field
-    }
-    if(this->snapVxset){ 
-        Vxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-        Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
-        Vxsnap->setData(waves->getVx(), 0); //Set Vx as field to snap
-    }
-    if(this->snapVyset){ 
-        Vysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-        Vysnap->openSnap(this->snapVy, 'w'); // Create a new snapshot file
-        Vysnap->setData(waves->getVy(), 0); //Set Vy as field to snap
-    }
-    if(this->snapVzset){ 
-        Vzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-        Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
-        Vzsnap->setData(waves->getVz(), 0); //Set Vz as field to snap
-    }
+   // Create snapshots
+   std::shared_ptr<Snapshot3D<T>> Psnap;
+   std::shared_ptr<Snapshot3D<T>> Vxsnap;
+   std::shared_ptr<Snapshot3D<T>> Vysnap;
+   std::shared_ptr<Snapshot3D<T>> Vzsnap;
+   if(this->snapPset){ 
+      Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
+      Psnap->setData(waves->getSxx(), 0); //Set Stress as first field 
+      Psnap->setData(waves->getSyy(), 1); //Set Stress as second field 
+      Psnap->setData(waves->getSzz(), 2); //Set Stress as third field
+   }
+   if(this->snapVxset){ 
+      Vxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
+      Vxsnap->setData(waves->getVx(), 0); //Set Vx as field to snap
+   }
+   if(this->snapVyset){ 
+      Vysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Vysnap->openSnap(this->snapVy, 'w'); // Create a new snapshot file
+      Vysnap->setData(waves->getVy(), 0); //Set Vy as field to snap
+   }
+   if(this->snapVzset){ 
+      Vzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
+      Vzsnap->setData(waves->getVz(), 0); //Set Vz as field to snap
+   }
 
-     this->writeLog("Running 3D Viscoelastic modelling.");
-    // Loop over time
-    for(int it=0; it < nt; it++)
-    {
-    	// Time stepping displacement
-    	waves->forwardstepVelocity(model, der);
+   this->writeLog("Running 3D Viscoelastic modelling.");
+   // Loop over time
+   for(int it=0; it < nt; it++)
+   {
+      // Time stepping displacement
+      waves->forwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVy());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
 
-    	// Time stepping stress
-    	waves->forwardstepStress(model, der);
 
-    	// Inserting pressure source 
-    	waves->insertSource(model, source, SMAP, it);
-    
-        // Recording data 
-        if(this->recPset){
-            waves->recordData(model, this->recP, GMAP, it);
-        }
+      // Time stepping stress
+      waves->forwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSyy());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+         (model->getDomain())->shareEdges3D(waves->getSyz());
+         (model->getDomain())->shareEdges3D(waves->getSxy());
 
-        // Recording data (Vx)
-        if(this->recVxset){
-            waves->recordData(model, this->recVx, GMAP, it);
-        }
+         (model->getDomain())->shareEdges3D(waves->getMxx());
+         (model->getDomain())->shareEdges3D(waves->getMyy());
+         (model->getDomain())->shareEdges3D(waves->getMzz());
+         (model->getDomain())->shareEdges3D(waves->getMxz());
+         (model->getDomain())->shareEdges3D(waves->getMyz());
+         (model->getDomain())->shareEdges3D(waves->getMxy());
+      }
 
-        // Recording data (Vy)
-        if(this->recVyset){
-            waves->recordData(model, this->recVy, GMAP, it);
-        }
 
-        // Recording data (Vz)
-        if(this->recVzset){
-            waves->recordData(model, this->recVz, GMAP, it);
-        }
+      // Inserting pressure source 
+      waves->insertSource(model, source, SMAP, it);
 
-    
-    	//Writting out results to snapshot file
-        if(this->snapPset){ 
-            Psnap->writeSnap(it);
-        }
+      // Recording data 
+      if(this->recPset){
+         waves->recordData(model, this->recP, GMAP, it);
+      }
 
-        if(this->snapVxset){ 
-            Vxsnap->writeSnap(it);
-        }
+      // Recording data (Vx)
+      if(this->recVxset){
+         waves->recordData(model, this->recVx, GMAP, it);
+      }
 
-        if(this->snapVyset){ 
-            Vysnap->writeSnap(it);
-        }
+      // Recording data (Vy)
+      if(this->recVyset){
+         waves->recordData(model, this->recVy, GMAP, it);
+      }
 
-        if(this->snapVzset){ 
-            Vzsnap->writeSnap(it);
-        }
-        
-        // Output progress to logfile
-        this->writeProgress(it, nt-1, 20, 48);
-    }	
-    
-    this->writeLog("Modelling is complete.");
-    result=MOD_OK;
-    return result;
+      // Recording data (Vz)
+      if(this->recVzset){
+         waves->recordData(model, this->recVz, GMAP, it);
+      }
+
+
+      //Writting out results to snapshot file
+      if(this->snapPset){ 
+         Psnap->writeSnap(it);
+      }
+
+      if(this->snapVxset){ 
+         Vxsnap->writeSnap(it);
+      }
+
+      if(this->snapVyset){ 
+         Vysnap->writeSnap(it);
+      }
+
+      if(this->snapVzset){ 
+         Vzsnap->writeSnap(it);
+      }
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }	
+
+   this->writeLog("Modelling is complete.");
+   result=MOD_OK;
+   return result;
 }
 
 
