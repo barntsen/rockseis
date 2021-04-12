@@ -270,13 +270,11 @@ int main(int argc, char** argv) {
             size_t ntr = Shotgeom->getNtrace();
             lmodel = gmodel->getDomainmodel(Shotgeom, apertx, aperty, SMAP, mpi.getDomainrank(), ndomain0, ndomain1, ndomain2, order);
             (lmodel->getDomain())->setMpi(&mpi);
-            std::cerr << "Debug out point 1." << std::endl;
 
             // Read wavelet data, set shot coordinates and make a map
             source->read();
             source->copyCoords(Shotgeom);
 
-            std::cerr << "Debug out point 2." << std::endl;
             //Setting sourcetype 
             switch(stype){
                case 0:

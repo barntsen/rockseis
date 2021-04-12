@@ -6434,23 +6434,23 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
                if(Pml->getApplypml(4)){
                   if(iz >= iz0 && iz < (iz0 + nz)){
                      // Top
-                     C44 = M_xz[I3D(ix,iy,iz)]*Ts_xz[I3D(ix,iy,iz)];
-                     T44 = (to/(1.+0.5*to))*M_xz[I3D(ix,iy,iz)]*(Ts_xz[I3D(ix,iy,iz)]-1);
-                     Pml->Vxz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz)];
+                     C44 = M_xz[I3D(ix,iy,iz-iz0)]*Ts_xz[I3D(ix,iy,iz-iz0)];
+                     T44 = (to/(1.+0.5*to))*M_xz[I3D(ix,iy,iz-iz0)]*(Ts_xz[I3D(ix,iy,iz-iz0)]-1);
+                     Pml->Vxz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)];
 
-                     Sxz[I3D(ix,iy,iz)] -= dt*C44*(Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz)]);
-                     Mxz[I3D(ix,iy,iz)] += T44*(Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz)]);
+                     Sxz[I3D(ix,iy,iz-iz0)] -= dt*C44*(Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Mxz[I3D(ix,iy,iz-iz0)] += T44*(Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
                   }
                }
                if(Pml->getApplypml(5)){
                   i = iz + nzo - lpml;
                   if(i >= iz0 && i < (iz0 + nz)){
                      //Bottom
-                     C44 = M_xz[I3D(ix,iy,i)]*Ts_xz[I3D(ix,iy,i)];
-                     T44 = (to/(1.+0.5*to))*M_xz[I3D(ix,iy,i)]*(Ts_xz[I3D(ix,iy,i)]-1);
-                     Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i)];
-                     Sxz[I3D(ix,iy,i)] -= dt*C44*(Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i)]);
-                     Mxz[I3D(ix,iy,i)] += T44*(Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i)]);
+                     C44 = M_xz[I3D(ix,iy,i-iz0)]*Ts_xz[I3D(ix,iy,i-iz0)];
+                     T44 = (to/(1.+0.5*to))*M_xz[I3D(ix,iy,i-iz0)]*(Ts_xz[I3D(ix,iy,i-iz0)]-1);
+                     Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)];
+                     Sxz[I3D(ix,iy,i-iz0)] -= dt*C44*(Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Mxz[I3D(ix,iy,i-iz0)] += T44*(Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
                   }
                }
             }
