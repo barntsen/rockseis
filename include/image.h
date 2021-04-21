@@ -44,11 +44,12 @@ public:
     /** Read and write image files */
     bool read(); ///< Read image and coordinates
     bool write(); ///< Writes image
+    bool write(int ix0,int nxd,int iz0,int nzd,int lpml); ///< Writes image for domain decomposition case
     void allocateImage(); /// Allocate memory for image
     void freeImage(); /// Free memory for imagedata
     bool createEmpty(); ///< Create empty image for stacking
     bool stackImage(std::string infile); ///< Stack image
-    bool stackImage_parallel(std::string infile); ///< Stack image in parallel
+    bool stackImage_parallel(std::string infile,int padlx, int padhx, int padlz, int padhz); ///< Stack image in parallel
     std::shared_ptr<Image2D<T>> getLocal(std::shared_ptr<Data2D<T>> data, T aperture, bool map); ///< Get image over aperture
 
 private:
@@ -98,7 +99,7 @@ public:
     bool createEmpty(); ///< Create empty image for stacking
     bool stackImage(std::string infile); ///< Stack image
     bool stackImage(std::shared_ptr<Image3D<T>> imagein); ///< Stack image
-    bool stackImage_parallel(std::string infile); ///< Stack image in parallel
+    bool stackImage_parallel(std::string infile,int padlx, int padhx, int padly, int padhy, int padlz, int padhz); ///< Stack image in parallel); 
     std::shared_ptr<Image3D<T>> getLocal(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map);///< Get image over aperture
 
 private:

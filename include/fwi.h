@@ -148,7 +148,8 @@ public:
 
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
-    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho);
+    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho, bool domdec);
+    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T *vp, T* rho) {crossCorr(wsp, pads, wrp, wrx, wrz, padr, vp, rho, false);}
 
     void computeMisfit();
     void computeResiduals();
@@ -204,7 +205,8 @@ public:
     void setDataweight(std::shared_ptr<Data3D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
-    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wry, T* wrz, int padr, T *vp, T* rho);
+    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wry, T* wrz, int padr, T *vp, T* rho, bool domdec);
+    void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wry, T* wrz, int padr, T *vp, T* rho) {this->crossCorr(wsp, pads, wrp, wrx, wry, wrz, padr, vp, rho, false);}
     void computeMisfit();
     void computeResiduals();
 

@@ -162,6 +162,9 @@ class MPIdomaindecomp: public MPI {
       // MPI Comm functions
       void splitDomains();
       bool ifActive() {return (MPI_COMM_DOMAIN != MPI_COMM_NULL) ? true : false;}
+      void barrier(); ///< Synchronize all ranks in domain
+      void reduce(float *wrk, size_t count); ///< Stack in domain array at rank 0
+      void reduce(double *wrk, size_t count); ///< Stack in domain array at rank 0
       void stopDomainSlaves() { stopSlaves(&MPI_COMM_DOMAIN); }		///< Stop slaves of the domain
 
    private:

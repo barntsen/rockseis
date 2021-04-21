@@ -905,4 +905,24 @@ void MPIdomaindecomp::sendrecvEdges(double *wrksnd, double *wrkrcv, size_t wrksi
     MPI_Sendrecv(&wrksnd[0],count,MPI_DOUBLE, peer, MPI_TAG_SHARE_EDGE, &wrkrcv[0],count,MPI_DOUBLE, peer, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN, MPI_STATUS_IGNORE);
 }
 
+void MPIdomaindecomp::barrier() {
+    MPI_Barrier(MPI_COMM_DOMAIN);
+}
+
+void MPIdomaindecomp::reduce(float *wrk, size_t wrksize) {
+   if(this->getDomainrank() == 0){
+      MPI_Reduce(MPI_IN_PLACE, wrk, wrksize, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_DOMAIN);
+   }else{
+      MPI_Reduce(wrk, wrk, wrksize, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_DOMAIN);
+   }
+}
+
+void MPIdomaindecomp::reduce(double *wrk, size_t wrksize) {
+   if(this->getDomainrank() == 0){
+      MPI_Reduce(MPI_IN_PLACE, wrk, wrksize, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_DOMAIN);
+   }else{
+      MPI_Reduce(wrk, wrk, wrksize, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_DOMAIN);
+   }
+}
+
 }

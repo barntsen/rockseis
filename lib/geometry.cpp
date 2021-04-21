@@ -14,6 +14,7 @@ Geometry<T>::Geometry()
         d[i] = 0.0;
         o[i] = 0.0;
     } 
+    verbose = false;
 }
 
 // Clear geometry
@@ -173,7 +174,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         {
             if ((smap[i].x >= 0)  && (smap[i].y >= 0)) s_inbound = true;
         }
-        if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+        if (!s_inbound && this->getVerbose()) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
 
     }else{
         // Compute index gmap
@@ -203,7 +204,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         {
             if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)) g_inbound = true;
         }
-        if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+        if (!g_inbound && this->getVerbose()) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
     }
 
 }
@@ -326,7 +327,7 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         {
             if ((smap[i].x >= 0)  && (smap[i].y >= 0)  && (smap[i].z >= 0)) s_inbound = true;
         }
-        if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+        if (!s_inbound && this->getVerbose()) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
     }else{
         for (size_t i = 0; i < n ; i++){
             pos = this->mapfloor((gcoords[i].x - ox + shiftx*dx)/dx);
@@ -365,7 +366,7 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         {
             if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)  && (gmap[i].z >= 0)) g_inbound = true;
         }
-        if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+        if (!g_inbound && this->getVerbose()) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
     }
 }
 

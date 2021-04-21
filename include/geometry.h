@@ -50,10 +50,14 @@ public:
     // Compare geometry
     bool compare(std::shared_ptr<Geometry<T>> other);  ///< Returns 0 if non-zero entries in two geometries are equal
 
+    bool getVerbose() { return verbose; } ///< If to print warnings 
+    void setVerbose(bool val) { verbose = val; } ///< Switch to print warnings 
+
 private:
     size_t n[MAXDIMS];	// Dimension sizes
     T d[MAXDIMS];	// Sampling interval
     T o[MAXDIMS];	// Origin 
+    bool verbose;
 };
 
 
