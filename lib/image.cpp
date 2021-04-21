@@ -1315,11 +1315,11 @@ bool Image3D<T>::stackImage_parallel(std::string infile,int padlx, int padhx, in
                               Fout->read(&trcout, 1, Iout((ix+ix_start), (iy+iy_start), (iz+iz_start),ihx,ihy,ihz)*sizeof(T));
                               if(Fout->getFail()) rs_error("Image3D::stackImage: Failed to write data to file");
                               trcout += trcin[Iin(ix,iy,iz,ihx,ihy,ihz)];
+                              // Write trc 
+                              Fout->write(&trcout, 1, Iout((ix+ix_start), (iy+iy_start), (iz+iz_start),ihx,ihy,ihz)*sizeof(T));
+                              if(Fout->getFail()) rs_error("Image3D::stackImage: Failed to write data to file");
                            }
                         }
-                        // Write trc 
-                        Fout->write(&trcout, 1, Iout((ix+ix_start), (iy+iy_start), (iz+iz_start),ihx,ihy,ihz)*sizeof(T));
-                        if(Fout->getFail()) rs_error("Image3D::stackImage: Failed to write data to file");
                      }
                   }
                }
