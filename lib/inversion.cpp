@@ -310,9 +310,9 @@ void InversionAcoustic2D<T>::runGrad() {
 
       for(long int i=0; i<ngathers; i++) {
          vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-         //remove_file(Vpgradfile + "-" + std::to_string(i));
+         remove_file(Vpgradfile + "-" + std::to_string(i));
          rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
-         //remove_file(Rhogradfile + "-" + std::to_string(i));
+         remove_file(Rhogradfile + "-" + std::to_string(i));
 
          if(this->srcilumset){
             srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
@@ -1665,9 +1665,9 @@ void InversionAcoustic3D<T>::runGrad() {
 
       for(long int i=0; i<ngathers; i++) {
          vpgrad->stackImage(Vpgradfile + "-" + std::to_string(i));
-         remove_file(Vpgradfile + "-" + std::to_string(i));
+         //remove_file(Vpgradfile + "-" + std::to_string(i));
          rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
-         remove_file(Rhogradfile + "-" + std::to_string(i));
+         //remove_file(Rhogradfile + "-" + std::to_string(i));
 
          if(this->srcilumset){
             srcilum->stackImage(Srcilumfile + "-" + std::to_string(i));
@@ -1843,6 +1843,8 @@ void InversionAcoustic3D<T>::runGrad() {
             vpgrad->stackImage_parallel(Vpgradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             rhograd->stackImage_parallel(Rhogradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
 
+            // Synchronize
+            mpi->barrier();
 
             // Reset all classes
             shot3D.reset();

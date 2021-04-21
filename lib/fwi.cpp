@@ -1436,8 +1436,8 @@ void FwiAcoustic3D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wry, T*wrz
    if(domdec) {
       nxs = nx;
       nxr = nx;
-      nys = nx;
-      nyr = nx;
+      nys = ny;
+      nyr = ny;
       pads = 0;
       padr = 0;
    }else{

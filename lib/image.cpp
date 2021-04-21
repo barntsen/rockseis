@@ -1248,12 +1248,12 @@ bool Image3D<T>::stackImage_parallel(std::string infile,int padlx, int padhx, in
 {
    bool status;
    if(infile.empty()){
-      rs_error("Image3D::stackImage: Input filename is empty. ");
+      rs_error("Image3D::stackImage_parallel: Input filename is empty. ");
    }
 
    std::shared_ptr<rockseis::File> Fout (new rockseis::File());
    Fout->append(infile.c_str());
-   if ( !Fout->is_open()) rs_error("Image3D::stackImage: Failed to open output image.");
+   if ( !Fout->is_open()) rs_error("Image3D::stackImage_parallel: Failed to open output image: ", infile);
 
    long int nxg, nyg,nzg;
    int nhxg, nhyg, nhzg;
@@ -1288,7 +1288,7 @@ bool Image3D<T>::stackImage_parallel(std::string infile,int padlx, int padhx, in
    ozl = this->getOz();
 
    if(nhxg != nhxl || nhyg != nhyl || nhzg != nhzl || dxg != dxl || dyg != dyl || dzg != dzl){
-      rs_error("Image3D::stackImage: Images are not compatible. Cannot stack.");
+      rs_error("Image3D::stackImage_parallel: Images are not compatible. Cannot stack.");
    }
 
    T *trcin = this->getImagedata();
@@ -1313,11 +1313,11 @@ bool Image3D<T>::stackImage_parallel(std::string infile,int padlx, int padhx, in
                            if((ix + ix_start) >= 0 && (ix + ix_start) < nxg){
                               // Read traces 
                               Fout->read(&trcout, 1, Iout((ix+ix_start), (iy+iy_start), (iz+iz_start),ihx,ihy,ihz)*sizeof(T));
-                              if(Fout->getFail()) rs_error("Image3D::stackImage: Failed to write data to file");
+                              if(Fout->getFail()) rs_error("Image3D::stackImage_parallel: Failed to write data to file");
                               trcout += trcin[Iin(ix,iy,iz,ihx,ihy,ihz)];
                               // Write trc 
                               Fout->write(&trcout, 1, Iout((ix+ix_start), (iy+iy_start), (iz+iz_start),ihx,ihy,ihz)*sizeof(T));
-                              if(Fout->getFail()) rs_error("Image3D::stackImage: Failed to write data to file");
+                              if(Fout->getFail()) rs_error("Image3D::stackImage_parallel: Failed to write data to file");
                            }
                         }
                      }

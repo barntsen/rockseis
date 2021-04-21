@@ -326,7 +326,7 @@ int main(int argc, char** argv) {
    }
 
    // Setup Domain decomposition
-   mpi.setNdomain(ndomain0*ndomain1);
+   mpi.setNdomain(ndomain0*ndomain1*ndomain2);
    mpi.splitDomains();
 
    inv->setOrder(order);
