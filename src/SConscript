@@ -122,8 +122,8 @@ if(env['MPI']):
     Acousticfwi3d = mpi.Program(prefix + 'Acousticfwi3d','Acousticfwi3d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
     mpi.Install('../bin/',Acousticfwi3d)
 
-#   Elasticfwi2d = mpi.Program(prefix + 'Elasticfwi2d','Elasticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
-#   mpi.Install('../bin/',Elasticfwi2d)
+    Elasticfwi2d = mpi.Program(prefix + 'Elasticfwi2d','Elasticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
+    mpi.Install('../bin/',Elasticfwi2d)
 
 #   Elasticfwi3d = mpi.Program(prefix + 'Elasticfwi3d','Elasticfwi3d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
 #   mpi.Install('../bin/',Elasticfwi3d)

@@ -501,6 +501,9 @@ void InversionAcoustic2D<T>::runGrad() {
                srcilum->stackImage_parallel(Srcilumfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
 
+            // Synchronize
+            mpi->barrier();
+
             // Reset all classes
             shot2D.reset();
             shot2Di.reset();
@@ -2921,6 +2924,9 @@ void InversionElastic2D<T>::runGrad() {
       /* Slave */
       std::shared_ptr<rockseis::FwiElastic2D<T>> fwi;
       while(1) {
+         if(!mpi->ifActive()){
+            break;
+         }
          workModeling_t work = mpi->receiveWork();
 
          if(work.MPItag == MPI_TAG_DIE) {
@@ -2928,7 +2934,7 @@ void InversionElastic2D<T>::runGrad() {
          }
 
          if(work.MPItag == MPI_TAG_NO_WORK) {
-            mpi->sendNoWork(0);
+            mpi->sendNoWork(mpi->getMasterComm(), 0);
          }
          else {
             // Do migration
@@ -2981,8 +2987,34 @@ void InversionElastic2D<T>::runGrad() {
                }
             }
 
-            // Get local model
-            lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
+            if(mpi->getDomainrank() == 0){
+               // create and write empty gradfiles, with the size of the local model
+               lmodel = gmodel->getLocal(Uxdata2D, apertx, SMAP);
+               if(update_vp){
+                  vpgrad = std::make_shared<rockseis::Image2D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                  vpgrad->createEmpty();
+                  vpgrad.reset();
+               }
+               if(update_vs){
+                  vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                  vsgrad->createEmpty();
+                  vsgrad.reset();
+               }
+               if(update_rho){
+                  rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                  rhograd->createEmpty();
+                  rhograd.reset();
+               }
+               lmodel.reset();
+               // Synchronize
+               mpi->barrier();
+            }else{
+               // Synchronize
+               mpi->barrier();
+            }
+            lmodel = gmodel->getDomainmodel(Uxdata2D, apertx, SMAP, mpi->getDomainrank(), this->getNdomain(0), this->getNdomain(1), this->getOrder());
+            (lmodel->getDomain())->setMpi(mpi);
+
 
             // Read wavelet data, set shot coordinates and make a map
             source->read();
@@ -3155,23 +3187,19 @@ void InversionElastic2D<T>::runGrad() {
                      wavgrad->setField(VZ);
                   }
                }
-               wavgrad->makeMap(lmodel->getGeom(), SMAP);
+               wavgrad->makeMap(lmodel->getGeom(),SMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
                fwi->setWavgrad(wavgrad);
             }
 
-
             // Setting Snapshot file 
-            fwi->setSnapfile(Snapfile + "-" + std::to_string(work.id));
+            fwi->setSnapfile(Snapfile + "-" + std::to_string(work.id) + "-" + std::to_string(mpi->getDomainrank()));
 
             // Setting Snapshot parameters
             fwi->setNcheck(this->getNsnaps());
             fwi->setIncore(this->getIncore());
 
             // Set logfile
-            fwi->setLogfile("log.txt-" + std::to_string(work.id));
-
-            // Stagger model
-            lmodel->staggerModels();
+            fwi->setLogfile("log.txt-" + std::to_string(work.id) + "-" + std::to_string(mpi->getDomainrank()));
 
             // Set reverse flag (For forward modelling only)
             fwi->setNoreverse(this->getNoreverse());
@@ -3188,77 +3216,100 @@ void InversionElastic2D<T>::runGrad() {
                   rockseis::rs_error("Invalid option of snapshot saving."); 
             }
 
-
-            // Output misfit
-            Fmisfit->append(Misfitfile);
-            T val = fwi->getMisfit();
-            Fmisfit->write(&val, 1, work.id*sizeof(T));
-            Fmisfit->close();
-
             // Output modelled and residual data
             if(!Sort->getReciprocity()){
                Uxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                Uxdatamod2Di->setFile(Uxmodelledfile);
                interp->interp(Uxdatamod2D, Uxdatamod2Di);
-               Sort->put2DGather(Uxdatamod2Di, gatherid);
+               Uxdatamod2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Sort->put2DGather(Uxdatamod2Di, gatherid, (Uxdatamod2Di->getGeom())->getGmap());
 
                Uxdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                Uxdatares2Di->setFile(Uxresidualfile);
                interp->interp(Uxdatares2D, Uxdatares2Di);
-               Sort->put2DGather(Uxdatares2Di, gatherid);
+               Uxdatares2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Sort->put2DGather(Uxdatares2Di, gatherid, (Uxdatares2Di->getGeom())->getGmap());
 
                Uzdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                Uzdatamod2Di->setFile(Uzmodelledfile);
                interp->interp(Uzdatamod2D, Uzdatamod2Di);
-               Sort->put2DGather(Uzdatamod2Di, gatherid);
+               Uzdatamod2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Sort->put2DGather(Uzdatamod2Di, gatherid, (Uzdatamod2Di->getGeom())->getGmap());
 
                Uzdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                Uzdatares2Di->setFile(Uzresidualfile);
                interp->interp(Uzdatares2D, Uzdatares2Di);
-               Sort->put2DGather(Uzdatares2Di, gatherid);
+               Uzdatares2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Sort->put2DGather(Uzdatares2Di, gatherid, (Uzdatares2Di->getGeom())->getGmap());
             }else{
                switch(work.id % 2){
                   case 0:
                      Uxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                      Uxdatamod2Di->setFile(Uxmodelledfile);
                      interp->interp(Uxdatamod2D, Uxdatamod2Di);
-                     Sort->put2DGather(Uxdatamod2Di, gatherid);
+                     Uxdatamod2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+                     Sort->put2DGather(Uxdatamod2Di, gatherid, (Uxdatamod2Di->getGeom())->getGmap());
 
                      Uxdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                      Uxdatares2Di->setFile(Uxresidualfile);
                      interp->interp(Uxdatares2D, Uxdatares2Di);
-                     Sort->put2DGather(Uxdatares2Di, gatherid);
+                     Uxdatares2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+                     Sort->put2DGather(Uxdatares2Di, gatherid, (Uxdatares2Di->getGeom())->getGmap());
                      break;
                   case 1:
                      Uzdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                      Uzdatamod2Di->setFile(Uzmodelledfile);
                      interp->interp(Uzdatamod2D, Uzdatamod2Di);
-                     Sort->put2DGather(Uzdatamod2Di, gatherid);
+                     Uzdatamod2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+                     Sort->put2DGather(Uzdatamod2Di, gatherid, (Uzdatamod2Di->getGeom())->getGmap());
 
                      Uzdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                      Uzdatares2Di->setFile(Uzresidualfile);
                      interp->interp(Uzdatares2D, Uzdatares2Di);
-                     Sort->put2DGather(Uzdatares2Di, gatherid);
+                     Uzdatares2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+                     Sort->put2DGather(Uzdatares2Di, gatherid, (Uzdatares2Di->getGeom())->getGmap());
                      break;
                   default:
                      break;
                }
             }
 
+            // Recompute and Output misfit
+            Uxdata2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+            Uxdatamod2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+            Uzdata2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+            Uzdatamod2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+            fwi->computeMisfit();
+            T val = fwi->getMisfit();
+            mpi->reduce(&val,1);
+            if(mpi->getDomainrank() == 0){
+            // Output misfit
+               Fmisfit->append(Misfitfile);
+               Fmisfit->write(&val, 1, work.id*sizeof(T));
+               Fmisfit->close();
+            }
+
             // Output gradients
             if(update_source){
-               wavgrad->putTrace(Wavgradfile, work.id);
+               // Reduce wavelet gradient
+               mpi->reduce(wavgrad->getData(), wavgrad->getNt());
+               if(mpi->getDomainrank() == 0){
+                  wavgrad->putTrace(Wavgradfile, work.id);
+               }
             }
 
             if(update_vp){
-               vpgrad->write();
+               vpgrad->stackImage_parallel(Vpgradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
             if(update_vs){
-               vsgrad->write();
+               vsgrad->stackImage_parallel(Vsgradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
             if(update_rho){
-               rhograd->write();
+               rhograd->stackImage_parallel(Rhogradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
+
+            // Synchronize
+            mpi->barrier();
 
             // Reset all classes
             Uxdata2D.reset();

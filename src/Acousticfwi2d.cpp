@@ -154,8 +154,8 @@ int main(int argc, char** argv) {
          PRINT_DOC(# MPI 2d acoustic full-waveform inversion configuration file);
          PRINT_DOC();
          PRINT_DOC(# Domain decomposition parameter);
-         PRINT_DOC(        ndomain0 = "1";  # Number of domains along x direction to split the model into);
-         PRINT_DOC(        ndomain1 = "1";  # Number of domains along z direction to split the model into);
+         PRINT_DOC(ndomain0 = "1";  # Number of domains along x direction to split the model into);
+         PRINT_DOC(ndomain1 = "1";  # Number of domains along z direction to split the model into);
          PRINT_DOC();
          PRINT_DOC(# Modelling parameters);
          PRINT_DOC(freesurface = "true"; # True if free surface should be on);
