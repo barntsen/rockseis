@@ -684,6 +684,7 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
    rs_field sourcetype = source->getField();
    wav = source->getData();
    int i,i1,i2;
+   T xtri[2], ytri[2];
    switch(sourcetype)
    {
       case VX:
@@ -712,10 +713,14 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
          {
             if(map[i].x >= 0 && map[i].y >=0)
             { 
-               // Interpolation using sinc lanczos
-               for(i1=0; i1<2*LANC_SIZE; i1++){
-                  for(i2=0; i2<2*LANC_SIZE; i2++){
-                     P2[I2D(lpml + map[i].x - (LANC_SIZE-1) + i2, lpml + map[i].y - (LANC_SIZE-1) + i1)] += dt*dt*Mod[I2D(lpml + map[i].x - (LANC_SIZE-1) + i2, lpml + map[i].y - (LANC_SIZE-1) + i1)]*wav[Idat(it,i)]*LANC(shift[i].x + (LANC_SIZE-1-i2), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i1) ,LANC_SIZE); 
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     P2[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)] += dt*dt*Mod[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)]*wav[Idat(it,i)]*xtri[i2]*ytri[i1];
                   }
                }
             }
@@ -756,6 +761,7 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, b
    rs_field field = data->getField();
    dataarray = data->getData();
    int i, i1, i2;
+   T xtri[2], ytri[2];
    switch(field)
    {
       case PRESSURE:
@@ -764,9 +770,14 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, b
          { 
             if(map[i].x >= 0 && map[i].y >=0)
             {
-               for(i1=0; i1<2*LANC_SIZE; i1++){
-                  for(i2=0; i2<2*LANC_SIZE; i2++){
-                     dataarray[Idat(it,i)] += Fielddata[I2D(lpml + map[i].x - (LANC_SIZE-1) + i2, lpml + map[i].y - (LANC_SIZE-1) + i1)]*LANC(shift[i].x + (LANC_SIZE-1-i2), LANC_SIZE)*LANC(shift[i].y + (LANC_SIZE-1-i1) ,LANC_SIZE);
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     dataarray[Idat(it,i)] += xtri[i2]*ytri[i1]*Fielddata[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)];
                   }
                }
             }
