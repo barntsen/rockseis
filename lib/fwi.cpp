@@ -4516,6 +4516,7 @@ void FwiElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr
    int ix, iy, iz;
 
    int padr = waves_bw->getLpml();
+   bool domdec = waves_bw->getDomdec();
    T* wrx = waves_bw->getVx();
    T* wry = waves_bw->getVy();
    T* wrz = waves_bw->getVz();
@@ -4592,10 +4593,20 @@ void FwiElastic3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr
    dy = waves_bw->getDy(); 
    dz = waves_bw->getDz(); 
 
-   int nxs = nx + 2*pads;
-   int nxr = nx + 2*padr;
-   int nys = ny + 2*pads;
-   int nyr = ny + 2*padr;
+   int nxs, nxr, nys, nyr;
+   if(domdec) {
+      nxs = nx;
+      nxr = nx;
+      nys = ny;
+      nyr = ny;
+      pads = 0;
+      padr = 0;
+   }else{
+      nxs = nx + 2*pads;
+      nxr = nx + 2*padr;
+      nys = ny + 2*pads;
+      nyr = ny + 2*padr;
+   }
 
    for (ix=1; ix<nx-1; ix++){
       for (iy=1; iy<ny-1; iy++){
@@ -5846,9 +5857,22 @@ int FwiElastic3D<T>::run(){
 
       // Time stepping velocity
       waves->forwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVy());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
 
       // Time stepping stress
       waves->forwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSyy());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+         (model->getDomain())->shareEdges3D(waves->getSyz());
+         (model->getDomain())->shareEdges3D(waves->getSxy());
+      }
 
       // Inserting source 
       waves->insertSource(model, source, SMAP, it);
@@ -5912,9 +5936,21 @@ int FwiElastic3D<T>::run(){
 
          // Time stepping velocity
          waves->forwardstepVelocity(model, der);
-
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves->getVx());
+            (model->getDomain())->shareEdges3D(waves->getVy());
+            (model->getDomain())->shareEdges3D(waves->getVz());
+         }
          // Time stepping stress
          waves->forwardstepStress(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves->getSxx());
+            (model->getDomain())->shareEdges3D(waves->getSyy());
+            (model->getDomain())->shareEdges3D(waves->getSzz());
+            (model->getDomain())->shareEdges3D(waves->getSxz());
+            (model->getDomain())->shareEdges3D(waves->getSyz());
+            (model->getDomain())->shareEdges3D(waves->getSxy());
+         }
 
          // Inserting residuals
          waves->insertSource(model, dataresUx, GMAP, (nt - 1 - it));
@@ -6006,9 +6042,22 @@ int FwiElastic3D<T>::run_optimal(){
 
             // Time stepping velocity
             waves_fw->forwardstepVelocity(model, der);
+            if((model->getDomain()->getStatus())){
+               (model->getDomain())->shareEdges3D(waves_fw->getVx());
+               (model->getDomain())->shareEdges3D(waves_fw->getVy());
+               (model->getDomain())->shareEdges3D(waves_fw->getVz());
+            }
 
             // Time stepping stress
             waves_fw->forwardstepStress(model, der);
+            if((model->getDomain()->getStatus())){
+               (model->getDomain())->shareEdges3D(waves_fw->getSxx());
+               (model->getDomain())->shareEdges3D(waves_fw->getSyy());
+               (model->getDomain())->shareEdges3D(waves_fw->getSzz());
+               (model->getDomain())->shareEdges3D(waves_fw->getSxz());
+               (model->getDomain())->shareEdges3D(waves_fw->getSyz());
+               (model->getDomain())->shareEdges3D(waves_fw->getSxy());
+            }
 
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, it);
@@ -6040,9 +6089,22 @@ int FwiElastic3D<T>::run_optimal(){
 
          // Time stepping velocity
          waves_fw->forwardstepVelocity(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_fw->getVx());
+            (model->getDomain())->shareEdges3D(waves_fw->getVy());
+            (model->getDomain())->shareEdges3D(waves_fw->getVz());
+         }
 
          // Time stepping stress
          waves_fw->forwardstepStress(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_fw->getSxx());
+            (model->getDomain())->shareEdges3D(waves_fw->getSyy());
+            (model->getDomain())->shareEdges3D(waves_fw->getSzz());
+            (model->getDomain())->shareEdges3D(waves_fw->getSxz());
+            (model->getDomain())->shareEdges3D(waves_fw->getSyz());
+            (model->getDomain())->shareEdges3D(waves_fw->getSxy());
+         }
 
          // Inserting source 
          waves_fw->insertSource(model, source, SMAP, capo);
@@ -6095,9 +6157,22 @@ int FwiElastic3D<T>::run_optimal(){
       {
          // Time stepping velocity
          waves_bw->forwardstepVelocity(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_bw->getVx());
+            (model->getDomain())->shareEdges3D(waves_bw->getVy());
+            (model->getDomain())->shareEdges3D(waves_bw->getVz());
+         }
 
          // Time stepping stress
          waves_bw->forwardstepStress(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_bw->getSxx());
+            (model->getDomain())->shareEdges3D(waves_bw->getSyy());
+            (model->getDomain())->shareEdges3D(waves_bw->getSzz());
+            (model->getDomain())->shareEdges3D(waves_bw->getSxz());
+            (model->getDomain())->shareEdges3D(waves_bw->getSyz());
+            (model->getDomain())->shareEdges3D(waves_bw->getSxy());
+         }
 
          // Inserting residuals
          waves_bw->insertSource(model, dataresUx, GMAP, capo);

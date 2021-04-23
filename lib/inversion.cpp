@@ -582,7 +582,7 @@ void InversionAcoustic2D<T>::runBsproj() {
       }
 
       // Perform work in parallel
-      mpi->performWork();
+      mpi->performWorkatWorld();
 
       //Clear work vector 
       mpi->clearWork();
@@ -623,7 +623,7 @@ void InversionAcoustic2D<T>::runBsproj() {
    }else {
       /* Slave */
       while(1) {
-         workModeling_t work = mpi->receiveWork();
+         workModeling_t work = mpi->receiveWorkWorld();
 
          if(work.MPItag == MPI_TAG_DIE) {
             break;
@@ -651,7 +651,7 @@ void InversionAcoustic2D<T>::runBsproj() {
 
          // Send result back
          work.status = WORK_FINISHED;
-         mpi->sendResult(work);		
+         mpi->sendResultWorld(work);		
       }
 
       global_stack= (float *) calloc(nc, sizeof(float));
@@ -1927,7 +1927,7 @@ void InversionAcoustic3D<T>::runBsproj() {
       }
 
       // Perform work in parallel
-      mpi->performWork();
+      mpi->performWorkatWorld();
 
       //Clear work vector 
       mpi->clearWork();
@@ -1968,7 +1968,7 @@ void InversionAcoustic3D<T>::runBsproj() {
    }else {
       /* Slave */
       while(1) {
-         workModeling_t work = mpi->receiveWork();
+         workModeling_t work = mpi->receiveWorkWorld();
 
          if(work.MPItag == MPI_TAG_DIE) {
             break;
@@ -2000,7 +2000,7 @@ void InversionAcoustic3D<T>::runBsproj() {
 
          // Send result back
          work.status = WORK_FINISHED;
-         mpi->sendResult(work);		
+         mpi->sendResultWorld(work);		
       }
 
       global_stack= (float *) calloc(nc, sizeof(float));
@@ -3406,7 +3406,7 @@ void InversionElastic2D<T>::runBsproj() {
       }
 
       // Perform work in parallel
-      mpi->performWork();
+      mpi->performWorkatWorld();
 
       //Clear work vector 
       mpi->clearWork();
@@ -3466,7 +3466,7 @@ void InversionElastic2D<T>::runBsproj() {
    }else {
       /* Slave */
       while(1) {
-         workModeling_t work = mpi->receiveWork();
+         workModeling_t work = mpi->receiveWorkWorld();
 
          if(work.MPItag == MPI_TAG_DIE) {
             break;
@@ -3503,7 +3503,7 @@ void InversionElastic2D<T>::runBsproj() {
 
          // Send result back
          work.status = WORK_FINISHED;
-         mpi->sendResult(work);		
+         mpi->sendResultWorld(work);		
       }
 
       global_stack= (float *) calloc(nc, sizeof(float));
@@ -4801,7 +4801,7 @@ void InversionElastic3D<T>::runGrad() {
          }
 
          if(work.MPItag == MPI_TAG_NO_WORK) {
-            mpi->sendNoWork(0);
+            mpi->sendNoWork(mpi->getMasterComm(), 0);
          }
          else {
             // Do migration
@@ -4887,8 +4887,34 @@ void InversionElastic3D<T>::runGrad() {
                }
             }
 
-            // Get local model
-            lmodel = gmodel->getLocal(Uxdata3D, apertx, aperty, SMAP);
+            if(mpi->getDomainrank() == 0){
+               // create and write an empty vpgradfile, with the size of the local model
+               lmodel = gmodel->getLocal(Uxdata3D, apertx, aperty, SMAP);
+               if(update_vp){
+                  vpgrad = std::make_shared<rockseis::Image3D<T>>(Vpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1, 1);
+                  vpgrad->createEmpty();
+                  vpgrad.reset();
+               }
+               if(update_vs){
+                  vsgrad = std::make_shared<rockseis::Image3D<T>>(Vsgradfile + "-" + std::to_string(work.id), lmodel, 1, 1, 1);
+                  vsgrad->createEmpty();
+                  vsgrad.reset();
+               }
+               if(update_rho){
+                  rhograd = std::make_shared<rockseis::Image3D<T>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, 1, 1, 1);
+                  rhograd->createEmpty();
+                  rhograd.reset();
+               }
+               lmodel.reset();
+               // Synchronize
+               mpi->barrier();
+            }else{
+               // Synchronize
+               mpi->barrier();
+            }
+
+            lmodel = gmodel->getDomainmodel(Uxdata3D, apertx, aperty, SMAP, mpi->getDomainrank(), this->getNdomain(0), this->getNdomain(1), this->getNdomain(2), this->getOrder());
+            (lmodel->getDomain())->setMpi(mpi);
 
             // Read wavelet data, set shot coordinates and make a map
             source->read();
@@ -5128,22 +5154,19 @@ void InversionElastic3D<T>::runGrad() {
                         break;
                   }
                }
-               wavgrad->makeMap(lmodel->getGeom(), SMAP);
+               wavgrad->makeMap(lmodel->getGeom(),SMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
                fwi->setWavgrad(wavgrad);
             }
 
             // Setting Snapshot file 
-            fwi->setSnapfile(Snapfile + "-" + std::to_string(work.id));
+            fwi->setSnapfile(Snapfile + "-" + std::to_string(work.id) + "-" + std::to_string(mpi->getDomainrank()));
 
             // Setting Snapshot parameters
             fwi->setNcheck(this->getNsnaps());
             fwi->setIncore(this->getIncore());
 
             // Set logfile
-            fwi->setLogfile("log.txt-" + std::to_string(work.id));
-
-            // Stagger model
-            lmodel->staggerModels();
+            fwi->setLogfile("log.txt-" + std::to_string(work.id) + "-" + std::to_string(mpi->getDomainrank()));
 
             // Set reverse flag (For forward modelling only)
             fwi->setNoreverse(this->getNoreverse());
@@ -5173,85 +5196,102 @@ void InversionElastic3D<T>::runGrad() {
                Uxdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                Uxdatamod3Di->setFile(Uxmodelledfile);
                interp->interp(Uxdatamod3D, Uxdatamod3Di);
-               Sort->put3DGather(Uxdatamod3Di, gatherid);
+               Uxdatamod3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+               Sort->put3DGather(Uxdatamod3Di, gatherid, (Uxdatamod3Di->getGeom())->getGmap());
 
                Uxdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                Uxdatares3Di->setFile(Uxresidualfile);
                interp->interp(Uxdatares3D, Uxdatares3Di);
-               Sort->put3DGather(Uxdatares3Di, gatherid);
+               Uxdatares3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+               Sort->put3DGather(Uxdatares3Di, gatherid, (Uxdatares3Di->getGeom())->getGmap());
 
                Uydatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
                Uydatamod3Di->setFile(Uymodelledfile);
                interp->interp(Uydatamod3D, Uydatamod3Di);
-               Sort->put3DGather(Uydatamod3Di, gatherid);
+               Uydatamod3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+               Sort->put3DGather(Uydatamod3Di, gatherid, (Uydatamod3Di->getGeom())->getGmap());
 
                Uydatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
                Uydatares3Di->setFile(Uyresidualfile);
                interp->interp(Uydatares3D, Uydatares3Di);
-               Sort->put3DGather(Uydatares3Di, gatherid);
+               Uydatares3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+               Sort->put3DGather(Uydatares3Di, gatherid, (Uydatares3Di->getGeom())->getGmap());
 
                Uzdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                Uzdatamod3Di->setFile(Uzmodelledfile);
                interp->interp(Uzdatamod3D, Uzdatamod3Di);
-               Sort->put3DGather(Uzdatamod3Di, gatherid);
+               Uzdatamod3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+               Sort->put3DGather(Uzdatamod3Di, gatherid, (Uzdatamod3Di->getGeom())->getGmap());
 
                Uzdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                Uzdatares3Di->setFile(Uzresidualfile);
                interp->interp(Uzdatares3D, Uzdatares3Di);
-               Sort->put3DGather(Uzdatares3Di, gatherid);
+               Uzdatares3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+               Sort->put3DGather(Uzdatares3Di, gatherid, (Uzdatares3Di->getGeom())->getGmap());
             }else{
                switch(work.id % 3){
                   case 0:
                      Uxdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                      Uxdatamod3Di->setFile(Uxmodelledfile);
                      interp->interp(Uxdatamod3D, Uxdatamod3Di);
-                     Sort->put3DGather(Uxdatamod3Di, gatherid);
+                     Uxdatamod3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                     Sort->put3DGather(Uxdatamod3Di, gatherid, (Uxdatamod3Di->getGeom())->getGmap());
 
                      Uxdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                      Uxdatares3Di->setFile(Uxresidualfile);
                      interp->interp(Uxdatares3D, Uxdatares3Di);
-                     Sort->put3DGather(Uxdatares3Di, gatherid);
+                     Uxdatares3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                     Sort->put3DGather(Uxdatares3Di, gatherid, (Uxdatares3Di->getGeom())->getGmap());
                      break;
                   case 1:
                      Uydatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
                      Uydatamod3Di->setFile(Uymodelledfile);
                      interp->interp(Uydatamod3D, Uydatamod3Di);
-                     Sort->put3DGather(Uydatamod3Di, gatherid);
+                     Uydatamod3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                     Sort->put3DGather(Uydatamod3Di, gatherid, (Uydatamod3Di->getGeom())->getGmap());
 
                      Uydatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uydata3D->getNt(), Uydata3D->getDt(), Uydata3D->getOt());
                      Uydatares3Di->setFile(Uyresidualfile);
                      interp->interp(Uydatares3D, Uydatares3Di);
-                     Sort->put3DGather(Uydatares3Di, gatherid);
+                     Uydatares3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                     Sort->put3DGather(Uydatares3Di, gatherid, (Uydatares3Di->getGeom())->getGmap());
                      break;
                   case 2:
                      Uzdatamod3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                      Uzdatamod3Di->setFile(Uzmodelledfile);
                      interp->interp(Uzdatamod3D, Uzdatamod3Di);
-                     Sort->put3DGather(Uzdatamod3Di, gatherid);
+                     Uzdatamod3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                     Sort->put3DGather(Uzdatamod3Di, gatherid, (Uzdatamod3Di->getGeom())->getGmap());
 
                      Uzdatares3Di = std::make_shared<rockseis::Data3D<T>>(ntr, Uxdata3D->getNt(), Uxdata3D->getDt(), Uxdata3D->getOt());
                      Uzdatares3Di->setFile(Uzresidualfile);
                      interp->interp(Uzdatares3D, Uzdatares3Di);
-                     Sort->put3DGather(Uzdatares3Di, gatherid);
+                     Uzdatares3Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
+                     Sort->put3DGather(Uzdatares3Di, gatherid, (Uzdatares3Di->getGeom())->getGmap());
                      break;
                   default:
                      break;
                }
             }
 
-            // Output gradients
             if(update_source){
-               wavgrad->putTrace(Wavgradfile, work.id);
+            // Output gradients
+               // Reduce wavelet gradient
+               mpi->reduce(wavgrad->getData(), wavgrad->getNt());
+               if(mpi->getDomainrank() == 0){
+                  // Output gradients
+                  wavgrad->putTrace(Wavgradfile, work.id);
+               }
             }
 
             if(update_vp){
-               vpgrad->write();
+               vpgrad->stackImage_parallel(Vpgradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
             if(update_vs){
-               vsgrad->write();
+               vsgrad->stackImage_parallel(Vsgradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
             if(update_rho){
-               rhograd->write();
+               rhograd->stackImage_parallel(Rhogradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
 
             // Reset all classes
@@ -5354,7 +5394,7 @@ void InversionElastic3D<T>::runBsproj() {
       }
 
       // Perform work in parallel
-      mpi->performWork();
+      mpi->performWorkatWorld();
 
       //Clear work vector 
       mpi->clearWork();
@@ -5413,7 +5453,7 @@ void InversionElastic3D<T>::runBsproj() {
    }else {
       /* Slave */
       while(1) {
-         workModeling_t work = mpi->receiveWork();
+         workModeling_t work = mpi->receiveWorkWorld();
 
          if(work.MPItag == MPI_TAG_DIE) {
             break;
@@ -5450,7 +5490,7 @@ void InversionElastic3D<T>::runBsproj() {
 
          // Send result back
          work.status = WORK_FINISHED;
-         mpi->sendResult(work);		
+         mpi->sendResultWorld(work);		
       }
 
       global_stack= (float *) calloc(nc, sizeof(float));

@@ -786,13 +786,14 @@ int ModellingElastic3D<T>::run(){
    // Loop over time
    for(int it=0; it < nt; it++)
    {
-      // Time stepping
+         // Time stepping velocity
       waves->forwardstepVelocity(model, der);
       if((model->getDomain()->getStatus())){
          (model->getDomain())->shareEdges3D(waves->getVx());
          (model->getDomain())->shareEdges3D(waves->getVy());
          (model->getDomain())->shareEdges3D(waves->getVz());
       }
+         // Time stepping stress
       waves->forwardstepStress(model, der);
       if((model->getDomain()->getStatus())){
          (model->getDomain())->shareEdges3D(waves->getSxx());

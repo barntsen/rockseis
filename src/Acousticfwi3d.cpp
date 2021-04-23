@@ -316,11 +316,6 @@ int main(int argc, char** argv) {
    if(Inpar->getPar("linesearch", &linesearch) == INPARSE_ERR) status = true;
    if(Inpar->getPar("optmethod", &optmethod) == INPARSE_ERR) status = true;
 
-   // Set scaling according to updates
-   if(!update_vp) kvp = 0.0;
-   if(!update_rho) krho = 0.0;
-   if(!update_source) ksource = 0.0;
-
    if(status == true){
       rs_error("Program terminated due to input errors.");
    }
@@ -328,6 +323,11 @@ int main(int argc, char** argv) {
    // Setup Domain decomposition
    mpi.setNdomain(ndomain0*ndomain1*ndomain2);
    mpi.splitDomains();
+
+   // Set scaling according to updates
+   if(!update_vp) kvp = 0.0;
+   if(!update_rho) krho = 0.0;
+   if(!update_source) ksource = 0.0;
 
    inv->setOrder(order);
    inv->setLpml(lpml);

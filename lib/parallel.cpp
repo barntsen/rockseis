@@ -925,4 +925,119 @@ void MPIdomaindecomp::reduce(double *wrk, size_t wrksize) {
    }
 }
 
+/* MPI_COMM_WORLD_FUNCTIONS  (Workaround to use Comm world when doing domain decomposition) */ 
+void MPIdomaindecomp::performWorkatWorld() {
+   // Sending initial work to all ranks
+   sendWorkToAllWorld();
+
+   // Working through queue
+   std::shared_ptr<workModeling_t> work = getWork();
+   // Print initial queue	
+   printWork();
+   while(work != NULL) {
+      // Receive work from slaves
+      workResult_t result = receiveResultWorld();
+
+      if(result.MPItag != MPI_TAG_NO_WORK) {
+         // Check result
+         checkResult(result);
+         // Print updated queue
+         printWork();
+      }
+
+      // Sending work to slave
+      sendWorkWorld(work,result.fromRank);
+      printWork();
+
+      // Getting new job
+      work = getWork();
+   }
+
+   // Work queue is finished so collecting results
+   for(int i=1; i<getNrank(); ++i) {
+      // Receive work from slaves
+      workResult_t result = receiveResultWorld();
+
+      if(result.MPItag != MPI_TAG_NO_WORK) {
+         // Check result
+         checkResult(result);
+         // Print updated queue
+         printWork();
+      }
+   }
+
+   // All work is done starting to stop each slave
+   stopSlaves();
+}
+
+void MPIdomaindecomp::sendWorkToAllWorld() {
+   for(int i=1; i<getNrank(); i++) {
+      // Get work from queue
+      std::shared_ptr<workModeling_t> work = getWork();
+      if(work != NULL) {
+         sendWorkWorld(work,i);
+      }
+      else {
+         sendNoWork(i);
+      }
+   }
+}
+
+void MPIdomaindecomp::sendWorkWorld(std::shared_ptr<workModeling_t> work, const int rank) {
+   //MPI_Status status;
+   // Changing status on work and sending to slave
+   work->status = WORK_RUNNING;
+   work->start = time(NULL);
+   work->MPItag = rank;
+   MPI_Send(work.get(),1,MPIwork,rank,0,MPI_COMM_WORLD);
+}
+
+workModeling_t MPIdomaindecomp::receiveWorkWorld() {
+   // Variables
+   workModeling_t work;
+   MPI_Status status;
+   // Receiving
+   MPI_Recv(&work,1,MPIwork,0,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+   // Updating struct
+   work.MPItag = status.MPI_TAG;
+
+   return work;
+}
+
+void MPIdomaindecomp::sendResultWorld(workModeling_t _work) {
+   workResult_t result;
+
+   result.id = _work.id;
+   result.status = _work.status;
+   result.fromRank = this->getRank();
+   result.MPItag = _work.MPItag;
+
+   MPI_Send(&result,1,MPIresult,0,0,MPI_COMM_WORLD);
+}
+
+workResult_t MPIdomaindecomp::receiveResultWorld() {
+   // Variables
+   workResult_t result;
+   MPI_Status status;
+   // Receiving 
+   MPI_Recv(&result,1,MPIresult,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+   // Updating struct
+   result.MPItag = status.MPI_TAG;
+
+   return result;
+}
+
+workResult_t MPIdomaindecomp::receiveResultWorld(const int rank) {
+   // Variables
+   workResult_t result;
+   MPI_Status status;
+   // Receiving 
+   MPI_Recv(&result,1,MPIresult,rank,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+   // Updating struct
+   result.MPItag = status.MPI_TAG;
+
+   return result;
+}
+
+
 }
