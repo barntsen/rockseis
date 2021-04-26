@@ -5294,6 +5294,9 @@ void InversionElastic3D<T>::runGrad() {
                rhograd->stackImage_parallel(Rhogradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
 
+            // Synchronize
+            mpi->barrier();
+
             // Reset all classes
             Uxdata3D.reset();
             Uxdata3Di.reset();
