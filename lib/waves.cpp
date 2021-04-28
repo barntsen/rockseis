@@ -5231,7 +5231,7 @@ void WavesViscoelastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
    for(iz=0; iz < nz; iz++){
       for(ix=0; ix < nx; ix++){
          C11 = L2M[I2D(ix,iz)]*Tp[I2D(ix,iz)];
-         if(iz == lpml && model->getFs()){
+         if((iz+iz0) == lpml && model->getFs()){
             // Free surface conditions
             C13 = 0.0;
          }else{
@@ -5287,7 +5287,7 @@ void WavesViscoelastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
    for(iz=0; iz < nz; iz++){
       for(ix=0; ix < nx; ix++){
          C11 = L2M[I2D(ix,iz)]*Tp[I2D(ix,iz)];
-         if(iz == lpml && model->getFs()){
+         if((iz+iz0) == lpml && model->getFs()){
             // Free surface conditions
             C13 = 0.0;
          }else{
@@ -6250,7 +6250,7 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
             C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
-            if(iz == lpml && model->getFs()){
+            if((iz+iz0) == lpml && model->getFs()){
                // Free surface conditions
                C13 = 0.0;
             }else{
@@ -6319,7 +6319,7 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
             C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
-            if(iz == lpml && model->getFs()){
+            if((iz+iz0) == lpml && model->getFs()){
                // Free surface conditions
                C13 = 0.0;
             }else{
@@ -6386,7 +6386,7 @@ void WavesViscoelastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
             C11 = L2M[I3D(ix,iy,iz)]*Tp[I3D(ix,iy,iz)];
-            if(iz == lpml && model->getFs()){
+            if((iz+iz0) == lpml && model->getFs()){
                // Free surface conditions
                C13 = 0.0;
             }else{

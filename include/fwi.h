@@ -375,5 +375,68 @@ private:
     bool dataweightzset;
 };
 
+/** The 2D Elastic Fwi class
+ *
+ */
+template<typename T>
+class FwiViscoelastic2D: public Fwi<T> {
+public:
+    FwiViscoelastic2D();					///< Constructor
+    FwiViscoelastic2D(std::shared_ptr<ModelViscoelastic2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataUx, std::shared_ptr<Data2D<T>> dataUz, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs fwi with full snapshoting using velocity
+    int run_optimal(); ///< Runs fwi with optimal checkpointing velocity
+    void setModel(std::shared_ptr<ModelViscoelastic2D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
+    void setDataUx(std::shared_ptr<Data2D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
+    void setDataUz(std::shared_ptr<Data2D<T>> _dataUz) { dataUz = _dataUz; dataUzset = true; }
+    void setDatamodUx(std::shared_ptr<Data2D<T>> _datamodUx) { datamodUx = _datamodUx; datamodUxset = true; }
+    void setDatamodUz(std::shared_ptr<Data2D<T>> _datamodUz) { datamodUz = _datamodUz; datamodUzset = true; }
+    void setDataresUx(std::shared_ptr<Data2D<T>> _dataresUx) { dataresUx = _dataresUx; dataresUxset = true; }
+    void setDataresUz(std::shared_ptr<Data2D<T>> _dataresUz) { dataresUz = _dataresUz; dataresUzset = true; }
+    void setWavgrad(std::shared_ptr<Data2D<T>> _wavgrad) { wavgrad = _wavgrad; wavgradset = true; }
+    void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
+    void setVsgrad(std::shared_ptr<Image2D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
+    void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
+    void setDataweightx(std::shared_ptr<Data2D<T>> _dataweightx) { dataweightx = _dataweightx; dataweightxset = true; }
+    void setDataweightz(std::shared_ptr<Data2D<T>> _dataweightz) { dataweightz = _dataweightz; dataweightzset = true; }
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
+    void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesViscoelastic2D<T>> waves_bw, std::shared_ptr<ModelViscoelastic2D<T>> model, int it);
+    void scaleGrad(std::shared_ptr<ModelViscoelastic2D<T>> model);
+    void computeMisfit();
+    void computeResiduals();
+    void computeResiduals2();
+
+    ~FwiViscoelastic2D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelViscoelastic2D<T>> model;
+    std::shared_ptr<Image2D<T>> vpgrad;
+    std::shared_ptr<Image2D<T>> vsgrad;
+    std::shared_ptr<Image2D<T>> rhograd;
+    std::shared_ptr<Data2D<T>> wavgrad;
+    std::shared_ptr<Data2D<T>> source;
+    std::shared_ptr<Data2D<T>> dataUx;
+    std::shared_ptr<Data2D<T>> dataUz;
+    std::shared_ptr<Data2D<T>> datamodUx;
+    std::shared_ptr<Data2D<T>> datamodUz;
+    std::shared_ptr<Data2D<T>> dataresUx;
+    std::shared_ptr<Data2D<T>> dataresUz;
+    std::shared_ptr<Data2D<T>> dataweightx;
+    std::shared_ptr<Data2D<T>> dataweightz;
+    bool dataweightxset;
+    bool dataweightzset;
+    bool modelset;
+    bool vpgradset;
+    bool vsgradset;
+    bool rhogradset;
+    bool wavgradset;
+    bool sourceset;
+    bool dataUxset, dataUzset;
+    bool datamodUxset, datamodUzset;
+    bool dataresUxset, dataresUzset;
+};
+
+
 }
 #endif //FWI_H

@@ -6219,6 +6219,1513 @@ FwiElastic3D<T>::~FwiElastic3D() {
    // Nothing here
 }
 
+// =============== VISCOELASTIC 2D FWI CLASS =============== //
+
+template<typename T>
+FwiViscoelastic2D<T>::FwiViscoelastic2D(){
+   sourceset = false;
+   dataUxset = false;
+   dataUzset = false;
+   modelset = false;
+   vpgradset = false;
+   vsgradset = false;
+   datamodUxset = false;
+   datamodUzset = false;
+   dataresUxset = false;
+   dataresUzset = false;
+   dataweightxset = false;
+   dataweightzset = false;
+}
+
+template<typename T>
+FwiViscoelastic2D<T>::FwiViscoelastic2D(std::shared_ptr<ModelViscoelastic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataUx, std::shared_ptr<Data2D<T>> _dataUz, int order, int snapinc):Fwi<T>(order, snapinc){
+   source = _source;
+   dataUx = _dataUx;
+   dataUz = _dataUz;
+   model = _model;
+   sourceset = true;
+   modelset = true;
+   dataUxset = true;
+   dataUzset = true;
+   vpgradset = false;
+   vsgradset = false;
+   rhogradset = false;
+   wavgradset = false;
+   datamodUxset = false;
+   datamodUzset = false;
+   dataresUxset = false;
+   dataresUzset = false;
+   dataweightxset = false;
+   dataweightzset = false;
+}
+
+template<typename T>
+T FwiViscoelastic2D<T>::getVpmax(){
+   T *Vp = model->getVp();
+   // Find maximum Vp
+   T Vpmax;
+   Vpmax=Vp[0];
+   size_t n=model->getNx()*model->getNz();
+   for(size_t i=1; i<n; i++){
+      if(Vp[i] > Vpmax){
+         Vpmax = Vp[i];
+      }
+   }
+   return Vpmax;
+}
+
+template<typename T>
+bool FwiViscoelastic2D<T>::checkStability(){
+   T Vpmax = this->getVpmax();
+   T dx = model->getDx();
+   T dz = model->getDz();
+   T dt = source->getDt();
+   T dt_stab;
+   dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+   if(dt < dt_stab){
+      return true;
+   }else{
+      rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+      return false;
+   }
+}
+
+
+template<typename T>
+void FwiViscoelastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesViscoelastic2D<T>> waves_bw, std::shared_ptr<ModelViscoelastic2D<T>> model, int it)
+{
+   if(!vpgradset && !vsgradset && !rhogradset && !wavgradset) rs_error("FwiViscoelastic2D<T>::crossCorr: No gradient set for computation.");
+   int ix, iz;
+   bool domdec = waves_bw->getDomdec();
+   int padr = waves_bw->getLpml();
+   T* wrx = waves_bw->getVx();
+   T* wrz = waves_bw->getVz();
+   T* rsxx = waves_bw->getSxx();
+   T* rszz = waves_bw->getSzz();
+   T* rsxz = waves_bw->getSxz();
+
+   T *vpgraddata = NULL; 
+   T *vsgraddata = NULL;
+   T *wavgraddata = NULL;
+   T *rhograddata = NULL;
+   T msxx=0, mszz=0, uderx=0, uderz=0;
+   T mrxz1=0, mrxz2=0, mrxz3=0, mrxz4=0; 
+   T msxz1=0, msxz2=0, msxz3=0, msxz4=0;
+   int nx;
+   int nz;
+   T dx;
+   T dz;
+
+   T* Rx = model->getRx();
+   T* Rz = model->getRz();
+   T *Mxz = model->getM();
+
+   T* Vp = model->getVp();
+   T* Vs = model->getVs();
+   T* Rho = model->getR();
+   T L,M,S1,S2,D,F;
+
+   if(vpgradset){
+      if(!vpgrad->getAllocated()){
+         vpgrad->allocateImage();
+      }
+      vpgraddata = vpgrad->getImagedata();
+   }
+   if(vsgradset){
+      if(!vsgrad->getAllocated()){
+         vsgrad->allocateImage();
+      }
+      vsgraddata = vsgrad->getImagedata();
+   }
+   if(rhogradset){
+      if(!rhograd->getAllocated()){
+         rhograd->allocateImage();
+      }
+      rhograddata = rhograd->getImagedata();
+   }
+
+   int nt=0;
+   int ntrace=0;
+   int i=0;
+   Point2D<int> *map=NULL;
+
+   if(wavgradset){
+      wavgraddata = wavgrad->getData();
+      nt = wavgrad->getNt();
+      ntrace = wavgrad->getNtrace();
+      map = (wavgrad->getGeom())->getSmap();
+   }
+
+   // Getting sizes
+   nx = waves_bw->getNx();
+   nz = waves_bw->getNz();
+   dx = waves_bw->getDx(); 
+   dz = waves_bw->getDz(); 
+   int nxs;
+   int nxr;
+   // Check for domain decomposition
+   if(domdec){
+      nxs = nx;
+      nxr = nx;
+      pads = 0;
+      padr = 0;
+   }else{
+      nxs = nx+2*pads;
+      nxr = nx+2*padr;
+   }
+
+   for (ix=1; ix<nx-1; ix++){
+      for (iz=1; iz<nz-1; iz++){
+         L = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+         M = Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)] + 1;
+         S1 = (L + 2*M)/(4*M*(L+M));
+         S2 = (-1*L)/(4*M*(L+M));
+         msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
+         mszz = (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads, iz+pads-1)])/dz;
+         D = S1*rsxx[kr2D(ix+padr, iz+padr)] + S2*rszz[kr2D(ix+padr, iz+padr)];
+         F = S2*rsxx[kr2D(ix+padr, iz+padr)] + S1*rszz[kr2D(ix+padr, iz+padr)];
+
+         if(vpgradset || vsgradset || rhogradset){
+            vpgraddata[ki2D(ix,iz)] -= (msxx + mszz) * (D + F);
+         }
+
+         if(vsgradset || rhogradset){
+            msxz1 = (wsx[ks2D(ix+pads-1, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads-1)])/dz + (wsz[ks2D(ix+pads, iz+pads-1)] - wsz[ks2D(ix+pads-1, iz+pads-1)])/dx;
+            msxz2 = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads, iz+pads-1)])/dz + (wsz[ks2D(ix+pads+1, iz+pads-1)] - wsz[ks2D(ix+pads, iz+pads-1)])/dx;  
+            msxz3 = (wsx[ks2D(ix+pads-1, iz+pads+1)] - wsx[ks2D(ix+pads-1, iz+pads)])/dz + (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads-1, iz+pads)])/dx; 
+            msxz4 = (wsx[ks2D(ix+pads, iz+pads+1)] - wsx[ks2D(ix+pads, iz+pads)])/dz + (wsz[ks2D(ix+pads+1, iz+pads)] - wsz[ks2D(ix+pads, iz+pads)])/dx; 
+
+            mrxz1 = rsxz[kr2D(ix+padr-1, iz+padr-1)]/(Mxz[kr2D(ix+padr-1, iz+padr-1)] + 1);
+            mrxz2 = rsxz[kr2D(ix+padr, iz+padr-1)]/(Mxz[kr2D(ix+padr, iz+padr-1)] + 1);
+            mrxz3 = rsxz[kr2D(ix+padr-1, iz+padr)]/(Mxz[kr2D(ix+padr-1, iz+padr)] + 1);
+            mrxz4 = rsxz[kr2D(ix+padr, iz+padr)]/(Mxz[kr2D(ix+padr, iz+padr)] + 1);
+            vsgraddata[ki2D(ix,iz)] -= (2.0*msxx*D + 2.0*mszz*F + 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4));
+         }
+         if(wavgradset){
+            switch(wavgrad->getField()){
+               case PRESSURE:
+                  for (i=0; i < ntrace; i++) 
+                  {
+                     if((map[i].x == ix) && (map[i].y == iz))
+                     {
+                        wavgraddata[kwav(it,i)] = 1.0*(D + F);
+                     }
+                  }
+                  break;
+               case VX:
+                  for (i=0; i < ntrace; i++) 
+                  {
+                     if((map[i].x == ix) && (map[i].y == iz))
+                     {
+                        wavgraddata[kwav(it,i)] = wrx[kr2D(ix+padr, iz+padr)];
+                     }
+                  }
+                  break;
+               case VZ:
+                  for (i=0; i < ntrace; i++) 
+                  {
+                     if((map[i].x == ix) && (map[i].y == iz))
+                     {
+                        wavgraddata[kwav(it,i)] = wrz[kr2D(ix+padr, iz+padr)];
+                     }
+                  }
+                  break;
+               default:
+                  break;
+            }
+         }
+
+         if(rhogradset){
+            uderx = 0.5*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxx[kr2D(ix+padr+1, iz+padr)] - rsxx[kr2D(ix+padr, iz+padr)])/dx;
+            uderx += 0.5*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxx[kr2D(ix+padr, iz+padr)] - rsxx[kr2D(ix+padr-1, iz+padr)])/dx;
+            uderx += 0.5*wsx[ks2D(ix+pads, iz+pads)]*Rx[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr, iz+padr-1)])/dz;
+            uderx += 0.5*wsx[ks2D(ix+pads-1, iz+pads)]*Rx[kr2D(ix+padr-1, iz+padr)]*(rsxz[kr2D(ix+padr-1, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dz;
+
+            uderz = 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rsxz[kr2D(ix+padr, iz+padr)] - rsxz[kr2D(ix+padr-1, iz+padr)])/dx;
+            uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rsxz[kr2D(ix+padr, iz+padr-1)] - rsxz[kr2D(ix+padr-1, iz+padr-1)])/dx;
+            uderz += 0.5*wsz[ks2D(ix+pads, iz+pads)]*Rz[kr2D(ix+padr, iz+padr)]*(rszz[kr2D(ix+padr, iz+padr+1)] - rszz[kr2D(ix+padr, iz+padr)])/dz;
+            uderz += 0.5*wsz[ks2D(ix+pads, iz+pads-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(rszz[kr2D(ix+padr, iz+padr)] - rszz[kr2D(ix+padr, iz+padr-1)])/dz;
+            rhograddata[ki2D(ix,iz)] -= (uderx + uderz);
+         }
+      }
+   }	
+}
+
+template<typename T>
+void FwiViscoelastic2D<T>::scaleGrad(std::shared_ptr<ModelViscoelastic2D<T>> model)
+{
+   int ix, iz;
+   T* Vp = model->getVp();
+   T* Vs = model->getVs();
+   T* Rho = model->getR();
+
+   T *vpgraddata = NULL; 
+   T *vsgraddata = NULL;
+   T *rhograddata = NULL;
+   T vpscale;
+   T vsscale;
+   T rhoscale1;
+   T rhoscale2;
+   int nx;
+   int nz;
+
+   if(vpgradset){
+      if(!vpgrad->getAllocated()){
+         vpgrad->allocateImage();
+      }
+      vpgraddata = vpgrad->getImagedata();
+   }
+   if(vsgradset){
+      if(!vsgrad->getAllocated()){
+         vsgrad->allocateImage();
+      }
+      vsgraddata = vsgrad->getImagedata();
+   }
+   if(rhogradset){
+      if(!rhograd->getAllocated()){
+         rhograd->allocateImage();
+      }
+      rhograddata = rhograd->getImagedata();
+   }
+
+
+   // Getting sizes
+   nx = model->getNx();
+   nz = model->getNz();
+
+   T lambda = 0.0;
+   T mu = 0.0;
+   T rho = 0.0;
+
+   for (ix=0; ix<nx; ix++){
+      for (iz=0; iz<nz; iz++){
+         vpscale = 2.0*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)];
+         vsscale = 2.0*Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)];
+         rhoscale1 = Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)] -2.0*Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)];
+         rhoscale2 = Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)];
+         lambda = vpgraddata[ki2D(ix,iz)];
+         if(vsgradset || rhogradset){
+            mu = vsgraddata[ki2D(ix,iz)];
+         }
+
+         if(vpgradset){
+            vpgraddata[ki2D(ix,iz)] = vpscale*lambda;
+         }
+
+         if(vsgradset){
+            vsgraddata[ki2D(ix,iz)] = vsscale*mu -2.0*vsscale*lambda; 
+         }
+
+         if(rhogradset){
+            rho = rhograddata[ki2D(ix,iz)];
+            rhograddata[ki2D(ix,iz)] = rhoscale1*lambda + rhoscale2*mu + rho;
+         }
+
+      }
+   }	
+}
+
+template<typename T>
+void FwiViscoelastic2D<T>::computeMisfit(){
+   size_t ntr = datamodUx->getNtrace();
+   if(dataUx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+   if(dataresUx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+   size_t nt = datamodUx->getNt();
+   if(dataUx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+   if(dataresUx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+   if(dataUz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+   if(dataresUz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+   if(dataUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+   if(dataresUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+   Point2D<int> *map;
+   map = (datamodUx->getGeom())->getGmap();
+
+   T* modx = datamodUx->getData();
+   T* recx = dataUx->getData();
+
+   T* modz = datamodUz->getData();
+   T* recz = dataUz->getData();
+   T resx = 0.0;
+   T resz = 0.0;
+   T *weix = NULL;
+   T *weiz = NULL;
+   if(dataweightxset)
+   {
+      weix = dataweightx->getData();
+   }
+
+   if(dataweightzset)
+   {
+      weiz = dataweightz->getData();
+   }
+
+   T *shaperx, *shaperz;
+   T *spikerx, *spikerz;
+   T *autocorrx, *autocorrz;
+   T *crosscorrx, *crosscorrz;
+   T *modweix, *modweiz;
+   T *recweix, *recweiz;
+   T xnorm,znorm; 
+   T H;
+   T stdev;
+
+   size_t itr, it;
+   T misfit = 0.0;
+   Index I(nt, ntr);
+   switch(this->getMisfit_type()){
+      case DIFFERENCE:
+         for(itr=0; itr<ntr; itr++){
+            if(map[itr].x >= 0 && map[itr].y >=0){
+               for(it=0; it<nt; it++){
+                  resx = modx[I(it, itr)] - recx[I(it, itr)];
+                  resz = modz[I(it, itr)] - recz[I(it, itr)];
+                  if(dataweightxset)
+                  {
+                     resx *= weix[I(it, itr)];
+                  }
+
+                  if(dataweightzset)
+                  {
+                     resz *= weiz[I(it, itr)];
+                  }
+                  misfit += 0.5*(resx*resx + resz*resz);
+               }
+            }
+         }
+         break;
+      case CORRELATION:
+         T xnorm1, xnorm2;
+         T znorm1, znorm2;
+         for(itr=0; itr<ntr; itr++){
+            if(map[itr].x >= 0 && map[itr].y >=0){
+               xnorm1 = 0.0;
+               xnorm2 = 0.0;
+
+               znorm1 = 0.0;
+               znorm2 = 0.0;
+               for(it=0; it<nt; it++){
+                  xnorm1 += modx[I(it, itr)]*modx[I(it, itr)];
+                  xnorm2 += recx[I(it, itr)]*recx[I(it, itr)];
+
+                  znorm1 += modz[I(it, itr)]*modz[I(it, itr)];
+                  znorm2 += recz[I(it, itr)]*recz[I(it, itr)];
+               }
+
+               xnorm1 = sqrt(xnorm1);
+               xnorm2 = sqrt(xnorm2);
+               if(xnorm1 ==0 ) xnorm1= 1.0;
+               if(xnorm2 ==0 ) xnorm2= 1.0;
+
+               znorm1 = sqrt(znorm1);
+               znorm2 = sqrt(znorm2);
+               if(znorm1 ==0 ) znorm1= 1.0;
+               if(znorm2 ==0 ) znorm2= 1.0;
+
+               for(it=0; it<nt; it++){
+                  resx=(-1.0)*(modx[I(it, itr)]*recx[I(it, itr)]/(xnorm1*xnorm2));
+                  resz=((-1.0)*(modz[I(it, itr)]*recz[I(it, itr)]/(znorm1*znorm2)));
+                  if(dataweightxset)
+                  {
+                     resx *= weix[I(it, itr)];
+                  }
+                  if(dataweightzset)
+                  {
+                     resz *= weiz[I(it, itr)];
+                  }
+                  misfit += (resx + resz);
+               }
+            }
+         }
+         break;
+      case ADAPTIVE_GAUSS:
+         stdev = STDEV*nt;
+         shaperx = (T *) calloc(nt, sizeof(T));
+         spikerx = (T *) calloc(nt, sizeof(T));
+         autocorrx = (T *) calloc(nt, sizeof(T));
+         crosscorrx = (T *) calloc(nt, sizeof(T));
+         shaperz = (T *) calloc(nt, sizeof(T));
+         spikerz = (T *) calloc(nt, sizeof(T));
+         autocorrz = (T *) calloc(nt, sizeof(T));
+         crosscorrz = (T *) calloc(nt, sizeof(T));
+         modweix = (T *) calloc(nt, sizeof(T));
+         recweix = (T *) calloc(nt, sizeof(T));
+         modweiz = (T *) calloc(nt, sizeof(T));
+         recweiz = (T *) calloc(nt, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            if(map[itr].x >= 0 && map[itr].y >=0){
+               for (it=0; it < nt; it++)
+               {
+                  if(dataweightxset){
+                     modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                     recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
+                  }else{
+                     modweix[it] = modx[I(it, itr)];
+                     recweix[it] = recx[I(it, itr)];
+                  }
+                  if(dataweightzset){
+                     modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                     recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                  }else{
+                     modweiz[it] = modz[I(it, itr)];
+                     recweiz[it] = recz[I(it, itr)];
+                  }
+               }
+               this->xcor(nt, 0, recweix, nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+               this->xcor(nt, 0, recweiz, nt, 0, recweiz, nt, 0, autocorrz);  /* for matrix */
+               this->xcor(nt, 0, recweix, nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+               this->xcor(nt, 0, recweiz, nt, 0, modweiz, nt, 0, crosscorrz); /* right hand side */
+               if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+               if (autocorrz[0] == 0.0)  autocorrz[0] = 1.0;
+               autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+               autocorrz[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+               this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+               this->stoep(nt, autocorrz, crosscorrz, shaperz, spikerz);
+
+               xnorm = 0.0; 
+               znorm = 0.0; 
+               for(it=0; it<nt; it++){
+                  xnorm += shaperx[it]*shaperx[it];
+                  znorm += shaperz[it]*shaperz[it];
+               }
+               if (xnorm == 0.0) xnorm = 1.0;
+               if (znorm == 0.0) znorm = 1.0;
+               for(it=0; it<nt; it++){
+                  H = this->gauss(it,stdev);
+                  resx = H*shaperx[it];
+                  resz = H*shaperz[it];
+                  misfit -= 0.5*(resx*resx/xnorm + resz*resz/znorm);
+               }
+            }
+         }
+         free(modweix);
+         free(modweiz);
+         free(recweix);
+         free(recweiz);
+         free(shaperx);
+         free(spikerx);
+         free(autocorrx);
+         free(crosscorrx);
+         free(shaperz);
+         free(spikerz);
+         free(autocorrz);
+         free(crosscorrz);
+         break;
+      case ADAPTIVE_LINEAR:
+         stdev = HMAX;
+         shaperx = (T *) calloc(nt, sizeof(T));
+         spikerx = (T *) calloc(nt, sizeof(T));
+         autocorrx = (T *) calloc(nt, sizeof(T));
+         crosscorrx = (T *) calloc(nt, sizeof(T));
+         shaperz = (T *) calloc(nt, sizeof(T));
+         spikerz = (T *) calloc(nt, sizeof(T));
+         autocorrz = (T *) calloc(nt, sizeof(T));
+         crosscorrz = (T *) calloc(nt, sizeof(T));
+         modweix = (T *) calloc(nt, sizeof(T));
+         recweix = (T *) calloc(nt, sizeof(T));
+         modweiz = (T *) calloc(nt, sizeof(T));
+         recweiz = (T *) calloc(nt, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            if(map[itr].x >= 0 && map[itr].y >=0){
+               for (it=0; it < nt; it++)
+               {
+                  if(dataweightxset){
+                     modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                     recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
+                  }else{
+                     modweix[it] = modx[I(it, itr)];
+                     recweix[it] = recx[I(it, itr)];
+                  }
+                  if(dataweightzset){
+                     modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                     recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                  }else{
+                     modweiz[it] = modz[I(it, itr)];
+                     recweiz[it] = recz[I(it, itr)];
+                  }
+               }
+               this->xcor(nt, 0, recweix, nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+               this->xcor(nt, 0, recweiz, nt, 0, recweiz, nt, 0, autocorrz);  /* for matrix */
+               this->xcor(nt, 0, recweix, nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+               this->xcor(nt, 0, recweiz, nt, 0, modweiz, nt, 0, crosscorrz); /* right hand side */
+               if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+               if (autocorrz[0] == 0.0)  autocorrz[0] = 1.0;
+               autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+               autocorrz[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+               this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+               this->stoep(nt, autocorrz, crosscorrz, shaperz, spikerz);
+
+               xnorm = 0.0; 
+               znorm = 0.0; 
+               for(it=0; it<nt; it++){
+                  xnorm += shaperx[it]*shaperx[it];
+                  znorm += shaperz[it]*shaperz[it];
+               }
+               if (xnorm == 0.0) xnorm = 1.0;
+               if (znorm == 0.0) znorm = 1.0;
+               for(it=0; it<nt; it++){
+                  H = this->linear(it,stdev);
+                  resx = H*shaperx[it];
+                  resz = H*shaperz[it];
+                  misfit += 0.5*(resx*resx/xnorm + resz*resz/znorm);
+               }
+            }
+         }
+         free(modweix);
+         free(modweiz);
+         free(recweix);
+         free(recweiz);
+         free(shaperx);
+         free(spikerx);
+         free(autocorrx);
+         free(crosscorrx);
+         free(shaperz);
+         free(spikerz);
+         free(autocorrz);
+         free(crosscorrz);
+         break;
+      case ADAPTIVE_SINGLE:
+         stdev = HMAX;
+         shaperx = (T *) calloc(nt, sizeof(T));
+         spikerx = (T *) calloc(nt, sizeof(T));
+         autocorrx = (T *) calloc(nt, sizeof(T));
+         crosscorrx = (T *) calloc(nt, sizeof(T));
+         modweix = (T *) calloc(2*nt, sizeof(T));
+         recweix = (T *) calloc(2*nt, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            if(map[itr].x >= 0 && map[itr].y >=0){
+               for (it=0; it < nt; it++)
+               {
+                  if(dataweightxset){
+                     modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                     recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
+                  }else{
+                     modweix[it] = modx[I(it, itr)];
+                     recweix[it] = recx[I(it, itr)];
+                  }
+                  if(dataweightzset){
+                     modweix[nt+it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                     recweix[nt+it] = recz[I(it, itr)]*weiz[I(it,itr)];
+                  }else{
+                     modweix[nt+it] = modz[I(it, itr)];
+                     recweix[nt+it] = recz[I(it, itr)];
+                  }
+               }
+               this->xcor(2*nt, 0, recweix, 2*nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+               this->xcor(2*nt, 0, recweix, 2*nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+               if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+               autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+               this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+
+               xnorm = 0.0; 
+               for(it=0; it<nt; it++){
+                  xnorm += shaperx[it]*shaperx[it];
+               }
+               if (xnorm == 0.0) xnorm = 1.0;
+               for(it=0; it<nt; it++){
+                  H = this->linear(it,stdev);
+                  resx = H*shaperx[it];
+                  misfit += 0.5*(resx*resx/xnorm);
+               }
+            }
+         }
+         free(modweix);
+         free(recweix);
+         free(shaperx);
+         free(spikerx);
+         free(autocorrx);
+         free(crosscorrx);
+         break;
+      default:
+         for(itr=0; itr<ntr; itr++){
+            if(map[itr].x >= 0 && map[itr].y >=0){
+               for(it=0; it<nt; it++){
+                  resx = modx[I(it, itr)] - recx[I(it, itr)];
+                  resz = modz[I(it, itr)] - recz[I(it, itr)];
+                  if(dataweightxset)
+                  {
+                     resx *= weix[I(it, itr)];
+                  }
+                  if(dataweightzset)
+                  {
+                     resz *= weiz[I(it, itr)];
+                  }
+                  misfit += 0.5*(resx*resx + resz*resz);
+               }
+            }
+         }
+         break;
+   }
+
+   // Set the final misfit value
+   this->setMisfit(misfit);
+}
+
+template<typename T>
+void FwiViscoelastic2D<T>::computeResiduals(){
+   size_t ntr = datamodUx->getNtrace();
+   if(dataUx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+   if(dataresUx->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+   size_t nt = datamodUx->getNt();
+   if(dataUx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+   if(dataresUx->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+   if(dataUz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+   if(dataresUz->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+   if(dataUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+   if(dataresUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+   T* modx = datamodUx->getData();
+   T* recx = dataUx->getData();
+   T* resx = dataresUx->getData();
+
+   T* modz = datamodUz->getData();
+   T* recz = dataUz->getData();
+   T* resz = dataresUz->getData();
+   T *weix = NULL;
+   T *weiz = NULL;
+   if(dataweightxset)
+   {
+      weix = dataweightx->getData();
+   }
+   if(dataweightzset)
+   {
+      weiz = dataweightz->getData();
+   }
+
+   T *shaperx, *shaperz;
+   T *spikerx, *spikerz;
+   T *autocorrx, *autocorrz;
+   T *crosscorrx, *crosscorrz;
+   T *modweix, *modweiz;
+   T *recweix, *recweiz;
+   T *fres;
+   T pclip; 
+   int pos;
+   T xnorm,znorm; 
+   T misfitx, misfitz;
+   T H;
+   T stdev;
+   size_t itr, it;
+   Index I(nt, ntr);
+   switch(this->getMisfit_type()){
+      case DIFFERENCE:
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
+               resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
+               if(dataweightxset)
+               {
+                  resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
+               }
+               if(dataweightzset)
+               {
+                  resz[I(it, itr)] *= weiz[I(it, itr)]*weiz[I(it, itr)];
+               }
+            }
+         }
+         break;
+      case CORRELATION:
+         T xnorm1, xnorm2, xnorm3;
+         T znorm1, znorm2, znorm3;
+         for(itr=0; itr<ntr; itr++){
+            xnorm1 = 0.0;
+            xnorm2 = 0.0;
+            xnorm3 = 0.0;
+
+            znorm1 = 0.0;
+            znorm2 = 0.0;
+            znorm3 = 0.0;
+            for(it=0; it<nt; it++){
+               xnorm1 += modx[I(it, itr)]*modx[I(it, itr)];
+               xnorm2 += recx[I(it, itr)]*recx[I(it, itr)];
+               xnorm3 += modx[I(it, itr)]*recx[I(it, itr)];
+
+               znorm1 += modz[I(it, itr)]*modz[I(it, itr)];
+               znorm2 += recz[I(it, itr)]*recz[I(it, itr)];
+               znorm3 += modz[I(it, itr)]*recz[I(it, itr)];
+            }
+
+            xnorm1 = sqrt(xnorm1);
+            xnorm2 = sqrt(xnorm2);
+            if(xnorm1 == 0 ) xnorm1= 1.0;
+            if(xnorm2 == 0 ) xnorm2= 1.0;
+            xnorm3 /= (xnorm1*xnorm2);
+
+            znorm1 = sqrt(znorm1);
+            znorm2 = sqrt(znorm2);
+
+            if(znorm1 == 0 ) znorm1= 1.0;
+            if(znorm2 == 0 ) znorm2= 1.0;
+            znorm3 /= (znorm1*znorm2);
+
+            for(it=0; it<nt; it++){
+               resx[I(it, itr)]=((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3));
+               resz[I(it, itr)]=((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3));
+               if(dataweightxset)
+               {
+                  resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
+               }
+               if(dataweightzset)
+               {
+                  resz[I(it, itr)] *= weiz[I(it, itr)]*weiz[I(it, itr)];
+               }
+            }
+         }
+         // Thresholding
+         fres = (T *) calloc(nt*ntr, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               fres[I(it, itr)] = ABS(resx[I(it, itr)]);
+            }
+         }
+         std::sort(fres, fres+nt*ntr); 
+         pos = (int) (PCLIP*nt*ntr/100);
+         pclip = fres[pos];
+
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               fres[I(it, itr)] = ABS(resz[I(it, itr)]);
+            }
+         }
+         std::sort(fres, fres+nt*ntr); 
+         if(fres[pos] > pclip) pclip = fres[pos];
+
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               if(ABS(resx[I(it, itr)]) >= pclip){
+                  resx[I(it, itr)] = 0.0;
+                  resz[I(it, itr)] = 0.0;
+               }
+            }
+         }
+
+         free(fres);
+         break;
+      case ADAPTIVE_GAUSS:
+         stdev = STDEV*nt;
+         shaperx = (T *) calloc(nt, sizeof(T));
+         spikerx = (T *) calloc(nt, sizeof(T));
+         autocorrx = (T *) calloc(nt, sizeof(T));
+         crosscorrx = (T *) calloc(nt, sizeof(T));
+         shaperz = (T *) calloc(nt, sizeof(T));
+         spikerz = (T *) calloc(nt, sizeof(T));
+         autocorrz = (T *) calloc(nt, sizeof(T));
+         crosscorrz = (T *) calloc(nt, sizeof(T));
+         modweix = (T *) calloc(nt, sizeof(T));
+         recweix = (T *) calloc(nt, sizeof(T));
+         modweiz = (T *) calloc(nt, sizeof(T));
+         recweiz = (T *) calloc(nt, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            for (it=0; it < nt; it++)
+            {
+               if(dataweightxset){
+                  modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                  recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
+               }else{
+                  modweix[it] = modx[I(it, itr)];
+                  recweix[it] = recx[I(it, itr)];
+               }
+               if(dataweightzset){
+                  modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                  recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+               }else{
+                  modweiz[it] = modz[I(it, itr)];
+                  recweiz[it] = recz[I(it, itr)];
+               }
+            }
+            this->xcor(nt, 0, recweix, nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+            this->xcor(nt, 0, recweiz, nt, 0, recweiz, nt, 0, autocorrz);  /* for matrix */
+            this->xcor(nt, 0, recweix, nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+            this->xcor(nt, 0, recweiz, nt, 0, modweiz, nt, 0, crosscorrz); /* right hand side */
+            if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+            if (autocorrz[0] == 0.0)  autocorrz[0] = 1.0;
+            autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+            autocorrz[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+            this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+            this->stoep(nt, autocorrz, crosscorrz, shaperz, spikerz);
+            xnorm = 0.0; 
+            znorm = 0.0; 
+            for(it=0; it<nt; it++){
+               xnorm += shaperx[it]*shaperx[it];
+               znorm += shaperz[it]*shaperz[it];
+            }
+            if (xnorm == 0.0) xnorm = 1.0;
+            if (znorm == 0.0) znorm = 1.0;
+            misfitx = 0.0;
+            misfitz = 0.0;
+            for(it=0; it<nt; it++){
+               H = this->gauss(it, stdev);
+               misfitx += 0.5*(H*shaperx[it])*(H*shaperx[it])/xnorm;
+               misfitz += 0.5*(H*shaperz[it])*(H*shaperz[it])/znorm;
+            }
+
+            for(it=0; it<nt; it++){
+               H = this->gauss(it, stdev);
+               resx[I(it, itr)] = -1.0*(H*H - 2.0*misfitx)*shaperx[it]/xnorm;
+               resz[I(it, itr)] = -1.0*(H*H - 2.0*misfitz)*shaperz[it]/znorm;
+            }
+            this->stoep(nt, autocorrx, &resx[I(0, itr)], shaperx, spikerx);
+            this->stoep(nt, autocorrz, &resz[I(0, itr)], shaperz, spikerz);
+            this->convolve(nt, 0, shaperx, nt, 0, recweix, nt, 0, &resx[I(0, itr)]);        
+            this->convolve(nt, 0, shaperz, nt, 0, recweiz, nt, 0, &resz[I(0, itr)]);        
+            if(dataweightxset){
+               for(it=0; it<nt; it++)
+               {
+                  resx[I(it, itr)] *= weix[I(it, itr)];
+               }
+            }
+
+            if(dataweightzset){
+               for(it=0; it<nt; it++)
+               {
+                  resz[I(it, itr)] *= weiz[I(it, itr)];
+               }
+            }
+         }
+
+         // Thresholding
+         fres = (T *) calloc(nt*ntr, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               fres[I(it, itr)] = ABS(resx[I(it, itr)]);
+            }
+         }
+         std::sort(fres, fres+nt*ntr); 
+         pos = (int) (PCLIP*nt*ntr/100);
+         pclip = fres[pos];
+
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               fres[I(it, itr)] = ABS(resz[I(it, itr)]);
+            }
+         }
+         std::sort(fres, fres+nt*ntr); 
+         if(fres[pos] > pclip) pclip = fres[pos];
+
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               if(ABS(resx[I(it, itr)]) >= pclip){
+                  resx[I(it, itr)] = 0.0;
+                  resz[I(it, itr)] = 0.0;
+               }
+            }
+         }
+
+         free(fres);
+         free(modweix);
+         free(modweiz);
+         free(recweix);
+         free(recweiz);
+         free(shaperx);
+         free(spikerx);
+         free(autocorrx);
+         free(crosscorrx);
+         free(shaperz);
+         free(spikerz);
+         free(autocorrz);
+         free(crosscorrz);
+         break;
+      case ADAPTIVE_LINEAR:
+         stdev = HMAX;
+         shaperx = (T *) calloc(nt, sizeof(T));
+         spikerx = (T *) calloc(nt, sizeof(T));
+         autocorrx = (T *) calloc(nt, sizeof(T));
+         crosscorrx = (T *) calloc(nt, sizeof(T));
+         shaperz = (T *) calloc(nt, sizeof(T));
+         spikerz = (T *) calloc(nt, sizeof(T));
+         autocorrz = (T *) calloc(nt, sizeof(T));
+         crosscorrz = (T *) calloc(nt, sizeof(T));
+         modweix = (T *) calloc(nt, sizeof(T));
+         recweix = (T *) calloc(nt, sizeof(T));
+         modweiz = (T *) calloc(nt, sizeof(T));
+         recweiz = (T *) calloc(nt, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            for (it=0; it < nt; it++)
+            {
+               if(dataweightxset){
+                  modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                  recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
+               }else{
+                  modweix[it] = modx[I(it, itr)];
+                  recweix[it] = recx[I(it, itr)];
+               }
+
+               if(dataweightzset){
+                  modweiz[it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                  recweiz[it] = recz[I(it, itr)]*weiz[I(it,itr)];
+               }else{
+                  modweiz[it] = modz[I(it, itr)];
+                  recweiz[it] = recz[I(it, itr)];
+               }
+            }
+            this->xcor(nt, 0, recweix, nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+            this->xcor(nt, 0, recweiz, nt, 0, recweiz, nt, 0, autocorrz);  /* for matrix */
+            this->xcor(nt, 0, recweix, nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+            this->xcor(nt, 0, recweiz, nt, 0, modweiz, nt, 0, crosscorrz); /* right hand side */
+            if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+            if (autocorrz[0] == 0.0)  autocorrz[0] = 1.0;
+            autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+            autocorrz[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+            this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+            this->stoep(nt, autocorrz, crosscorrz, shaperz, spikerz);
+            xnorm = 0.0; 
+            znorm = 0.0; 
+            for(it=0; it<nt; it++){
+               xnorm += shaperx[it]*shaperx[it];
+               znorm += shaperz[it]*shaperz[it];
+            }
+            if (xnorm == 0.0) xnorm = 1.0;
+            if (znorm == 0.0) znorm = 1.0;
+            misfitx = 0.0;
+            misfitz = 0.0;
+            for(it=0; it<nt; it++){
+               H = this->linear(it, stdev);
+               misfitx += 0.5*(H*shaperx[it])*(H*shaperx[it])/xnorm;
+               misfitz += 0.5*(H*shaperz[it])*(H*shaperz[it])/znorm;
+            }
+
+            for(it=0; it<nt; it++){
+               H = this->linear(it, stdev);
+               resx[I(it, itr)] = (H*H - 2.0*misfitx)*shaperx[it]/xnorm;
+               resz[I(it, itr)] = (H*H - 2.0*misfitz)*shaperz[it]/znorm;
+            }
+            this->stoep(nt, autocorrx, &resx[I(0, itr)], shaperx, spikerx);
+            this->stoep(nt, autocorrz, &resz[I(0, itr)], shaperz, spikerz);
+            this->convolve(nt, 0, shaperx, nt, 0, recweix, nt, 0, &resx[I(0, itr)]);        
+            this->convolve(nt, 0, shaperz, nt, 0, recweiz, nt, 0, &resz[I(0, itr)]);        
+            if(dataweightxset){
+               for(it=0; it<nt; it++)
+               {
+                  resx[I(it, itr)] *= weix[I(it, itr)];
+               }
+            }
+            if(dataweightzset){
+               for(it=0; it<nt; it++)
+               {
+                  resz[I(it, itr)] *= weiz[I(it, itr)];
+               }
+            }
+         }
+         // Thresholding
+         fres = (T *) calloc(nt*ntr, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               fres[I(it, itr)] = ABS(resx[I(it, itr)]);
+            }
+         }
+         std::sort(fres, fres+nt*ntr); 
+         pos = (int) (PCLIP*nt*ntr/100);
+         pclip = fres[pos];
+
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               fres[I(it, itr)] = ABS(resz[I(it, itr)]);
+            }
+         }
+         std::sort(fres, fres+nt*ntr); 
+         if(fres[pos] > pclip) pclip = fres[pos];
+
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               if(ABS(resx[I(it, itr)]) >= pclip){
+                  resx[I(it, itr)] = 0.0;
+                  resz[I(it, itr)] = 0.0;
+               }
+            }
+         }
+
+         free(fres);
+         free(modweix);
+         free(modweiz);
+         free(recweix);
+         free(recweiz);
+         free(shaperx);
+         free(spikerx);
+         free(autocorrx);
+         free(crosscorrx);
+         free(shaperz);
+         free(spikerz);
+         free(autocorrz);
+         free(crosscorrz);
+         break;
+      case ADAPTIVE_SINGLE:
+         stdev = HMAX;
+         shaperx = (T *) calloc(nt, sizeof(T));
+         spikerx = (T *) calloc(nt, sizeof(T));
+         autocorrx = (T *) calloc(nt, sizeof(T));
+         crosscorrx = (T *) calloc(nt, sizeof(T));
+         modweix = (T *) calloc(2*nt, sizeof(T));
+         recweix = (T *) calloc(2*nt, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            for (it=0; it < nt; it++)
+            {
+               if(dataweightxset){
+                  modweix[it] = modx[I(it, itr)]*weix[I(it,itr)];
+                  recweix[it] = recx[I(it, itr)]*weix[I(it,itr)];
+               }else{
+                  modweix[it] = modx[I(it, itr)];
+                  recweix[it] = recx[I(it, itr)];
+               }
+               if(dataweightzset){
+                  modweix[nt+it] = modz[I(it, itr)]*weiz[I(it,itr)];
+                  recweix[nt+it] = recz[I(it, itr)]*weiz[I(it,itr)];
+               }else{
+                  modweix[nt+it] = modz[I(it, itr)];
+                  recweix[nt+it] = recz[I(it, itr)];
+               }
+            }
+            this->xcor(2*nt, 0, recweix, 2*nt, 0, recweix, nt, 0, autocorrx);  /* for matrix */
+            this->xcor(2*nt, 0, recweix, 2*nt, 0, modweix, nt, 0, crosscorrx); /* right hand side */
+            if (autocorrx[0] == 0.0)  autocorrx[0] = 1.0;
+            autocorrx[0] *= (1.0 + PNOISE_ELASTIC);			/* whiten */
+            this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+            xnorm = 0.0; 
+            for(it=0; it<nt; it++){
+               xnorm += shaperx[it]*shaperx[it];
+            }
+            if (xnorm == 0.0) xnorm = 1.0;
+            misfitx = 0.0;
+            for(it=0; it<nt; it++){
+               H = this->linear(it, stdev);
+               misfitx += 0.5*(H*shaperx[it])*(H*shaperx[it])/xnorm;
+            }
+
+            for(it=0; it<nt; it++){
+               H = this->linear(it, stdev);
+               crosscorrx[it] = (H*H - 2.0*misfitx)*shaperx[it]/xnorm;
+            }
+            this->stoep(nt, autocorrx, crosscorrx, shaperx, spikerx);
+            this->convolve(nt, 0, shaperx, 2*nt, 0, recweix, 2*nt, 0, modweix);        
+            if(dataweightxset){
+               for(it=0; it<nt; it++)
+               {
+                  resx[I(it, itr)] = modweix[it]*weix[I(it, itr)];
+               }
+            }else{
+               for(it=0; it<nt; it++)
+               {
+                  resx[I(it, itr)] = modweix[it];
+               }
+            }
+            if(dataweightzset){
+               for(it=0; it<nt; it++)
+               {
+                  resz[I(it, itr)] = modweix[nt+it]*weiz[I(it, itr)];
+               }
+            }else{
+               for(it=0; it<nt; it++)
+               {
+                  resz[I(it, itr)] = modweix[nt+it];
+               }
+            }
+         }
+         free(modweix);
+         free(recweix);
+         free(shaperx);
+         free(spikerx);
+         free(autocorrx);
+         free(crosscorrx);
+         break;
+
+      default:
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
+               resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
+               if(dataweightxset)
+               {
+                  resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
+               }
+               if(dataweightzset)
+               {
+                  resz[I(it, itr)] *= weiz[I(it, itr)]*weiz[I(it, itr)];
+               }
+            }
+         }
+         break;
+   }
+}
+
+template<typename T>
+int FwiViscoelastic2D<T>::run(){
+   int result = FWI_ERR;
+   if(!vpgradset && !vsgradset && !wavgradset) {
+      rs_warning("FwiViscoelastic2D::run: No image set");
+      return result;
+   }
+   int nt;
+   T dt;
+   T ot;
+
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
+
+   // Create log file
+   this->createLog(this->getLogfile());
+
+   // Create the classes 
+   std::shared_ptr<WavesViscoelastic2D<T>> waves (new WavesViscoelastic2D<T>(model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
+
+   if(!this->checkStability()) rs_error("FwiViscoelastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+   (waves->getPml())->setSmax(SMAX);
+   (waves->getPml())->computeABC();
+
+   // Create snapshots
+   std::shared_ptr<Snapshot2D<T>> Uxsnap;
+   Uxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+   Uxsnap->openSnap(this->getSnapfile() + "-ux", 'w'); // Create a new snapshot file
+   Uxsnap->setData(waves->getVx(), 0); //Set Ux as snap field
+
+   std::shared_ptr<Snapshot2D<T>> Uzsnap;
+   Uzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+   Uzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
+   Uzsnap->setData(waves->getVz(), 0); //Set Uz as snap field
+
+   this->writeLog("Running 2D Viscoelastic full-waveform inversion gradient with full checkpointing.");
+   this->writeLog("Doing forward Loop.");
+   // Loop over forward time
+   for(int it=0; it < nt; it++)
+   {
+      //Writting out results to snapshot files
+      Uxsnap->setData(waves->getVx(), 0); //Set Ux as snap field
+      Uxsnap->writeSnap(it);
+
+      Uzsnap->setData(waves->getVz(), 0); //Set Uz as snap field
+      Uzsnap->writeSnap(it);
+
+
+      // Time stepping velocity
+      waves->forwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
+
+      // Time stepping stress
+      waves->forwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+         (model->getDomain())->shareEdges3D(waves->getMxx());
+         (model->getDomain())->shareEdges3D(waves->getMzz());
+         (model->getDomain())->shareEdges3D(waves->getMxz());
+      }
+
+      // Inserting force source 
+      waves->insertSource(model, source, SMAP, it);
+
+      // Recording data (Ux)
+      if(this->datamodUxset){
+         waves->recordData(model, this->datamodUx, GMAP, it);
+      }
+
+      // Recording data (Uz)
+      if(this->datamodUzset){
+         waves->recordData(model, this->datamodUz, GMAP, it);
+      }
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }//End of forward loop
+
+
+   //Close snapshot file
+   Uxsnap->closeSnap();
+   Uzsnap->closeSnap();
+
+   // Reset waves
+   waves.reset();
+   waves  = std::make_shared<WavesViscoelastic2D<T>>(model, nt, dt, ot);
+   (waves->getPml())->setSmax(SMAX);
+   (waves->getPml())->computeABC();
+
+   // Create image
+   if(this->vpgradset) vpgrad->allocateImage();
+   if(this->vsgradset) vsgrad->allocateImage();
+   if(this->rhogradset) rhograd->allocateImage();
+
+   Uxsnap->openSnap(this->getSnapfile() + "-ux", 'r');
+   Uxsnap->allocSnap(0);
+
+   Uzsnap->openSnap(this->getSnapfile() + "-uz", 'r');
+   Uzsnap->allocSnap(0);
+
+   // Compute misfit
+   computeMisfit();
+
+   // Compute Residuals
+   computeResiduals();
+
+   this->writeLog("\nDoing reverse-time Loop.");
+   // Loop over reverse time
+   for(int it=0; it < nt; it++)
+   {
+
+      // Time stepping 
+      waves->forwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
+
+      // Time stepping 
+      waves->forwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+         (model->getDomain())->shareEdges3D(waves->getMxx());
+         (model->getDomain())->shareEdges3D(waves->getMzz());
+         (model->getDomain())->shareEdges3D(waves->getMxz());
+      }
+
+      // Inserting residuals
+      waves->insertSource(model, dataresUx, GMAP, (nt - 1 - it));
+      waves->insertSource(model, dataresUz, GMAP, (nt - 1 - it));
+
+      //Read forward snapshot
+      Uxsnap->readSnap(nt - 1 - it);
+      Uzsnap->readSnap(nt - 1 - it);
+
+      // Do Crosscorrelation
+      crossCorr(Uxsnap->getData(0), Uzsnap->getData(0), 0, waves, model, (nt - 1 - it));
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }
+   this->writeLog("\nGradient computation completed.");
+
+   // Scale gradients
+   this->scaleGrad(model);
+
+   //Remove snapshot file
+   Uxsnap->removeSnap();
+   Uzsnap->removeSnap();
+
+   result=FWI_OK;
+   return result;
+}
+
+template<typename T>
+int FwiViscoelastic2D<T>::run_optimal(){
+   int result = FWI_ERR;
+   if(!vpgradset && !vsgradset && !wavgradset) {
+      rs_warning("FwiViscoelastic2D::run: No image set");
+      return result;
+   }
+   int nt;
+   T dt;
+   T ot;
+
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
+
+   this->createLog(this->getLogfile());
+
+   // Create the classes 
+   std::shared_ptr<WavesViscoelastic2D<T>> waves_fw (new WavesViscoelastic2D<T>(model, nt, dt, ot));
+   std::shared_ptr<WavesViscoelastic2D<T>> waves_bw (new WavesViscoelastic2D<T>(model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
+   std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
+   revolve_action whatodo;
+   int oldcapo,capo;
+   capo = 0;
+
+   // Set CFS PML parameters
+   (waves_fw->getPml())->setSmax(SMAX);
+   (waves_fw->getPml())->computeABC();
+   (waves_bw->getPml())->setSmax(SMAX);
+   (waves_bw->getPml())->computeABC();
+
+   // Create checkpoint file
+   optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
+
+   // Create image
+   if(this->vpgradset) vpgrad->allocateImage();
+   if(this->vsgradset) vsgrad->allocateImage();
+   if(this->rhogradset) rhograd->allocateImage();
+
+   this->writeLog("Running 2D Viscoelastic full-waveform inversion gradient with optimal checkpointing.");
+   this->writeLog("Doing forward Loop.");
+   bool reverse = false;
+   // Loop over forward time
+   do
+   {
+      oldcapo=optimal->getCapo();
+      whatodo = optimal->revolve();
+      capo = optimal->getCapo();
+      if (whatodo == advance)
+      {
+         for(int it=oldcapo; it < capo; it++)
+         {
+
+            // Time stepping velocity
+            waves_fw->forwardstepVelocity(model, der);
+            if((model->getDomain()->getStatus())){
+               (model->getDomain())->shareEdges3D(waves_fw->getVx());
+               (model->getDomain())->shareEdges3D(waves_fw->getVz());
+            }
+
+            // Time stepping stress
+            waves_fw->forwardstepStress(model, der);
+            if((model->getDomain()->getStatus())){
+               (model->getDomain())->shareEdges3D(waves_fw->getSxx());
+               (model->getDomain())->shareEdges3D(waves_fw->getSzz());
+               (model->getDomain())->shareEdges3D(waves_fw->getSxz());
+               (model->getDomain())->shareEdges3D(waves_fw->getMxx());
+               (model->getDomain())->shareEdges3D(waves_fw->getMzz());
+               (model->getDomain())->shareEdges3D(waves_fw->getMxz());
+            }
+
+            // Inserting source 
+            waves_fw->insertSource(model, source, SMAP, it);
+
+            // Recording data (Ux)
+            if(this->datamodUxset && !reverse){
+               waves_fw->recordData(model, this->datamodUx, GMAP, it);
+            }
+
+            // Recording data (Uz)
+            if(this->datamodUzset && !reverse){
+               waves_fw->recordData(model, this->datamodUz, GMAP, it);
+            }
+
+            if(!reverse){
+               // Output progress to logfile
+               this->writeProgress(it, nt-1, 20, 48);
+            }
+         }
+
+      }
+      if (whatodo == firsturn)
+      {
+
+         // Time stepping velocity
+         waves_fw->forwardstepVelocity(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_fw->getVx());
+            (model->getDomain())->shareEdges3D(waves_fw->getVz());
+         }
+
+         // Time stepping stess
+         waves_fw->forwardstepStress(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_fw->getSxx());
+            (model->getDomain())->shareEdges3D(waves_fw->getSzz());
+            (model->getDomain())->shareEdges3D(waves_fw->getSxz());
+            (model->getDomain())->shareEdges3D(waves_fw->getMxx());
+            (model->getDomain())->shareEdges3D(waves_fw->getMzz());
+            (model->getDomain())->shareEdges3D(waves_fw->getMxz());
+         }
+
+         // Inserting  source 
+         waves_fw->insertSource(model, source, SMAP, capo);
+
+         // Recording data (Ux)
+         if(this->datamodUxset){
+            waves_fw->recordData(model, this->datamodUx, GMAP, capo);
+         }
+
+         // Recording data (Uz)
+         if(this->datamodUzset){
+            waves_fw->recordData(model, this->datamodUz, GMAP, capo);
+         }
+
+         // Compute misfit
+         computeMisfit();
+
+         // Compute Residuals
+         computeResiduals();
+
+         // Inserting residuals
+         waves_bw->insertSource(model, dataresUx, GMAP, capo);
+         waves_bw->insertSource(model, dataresUz, GMAP, capo);
+
+         // Do Crosscorrelation 
+         T *wsx = waves_fw->getVx();
+         T *wsz = waves_fw->getVz();
+         crossCorr(wsx, wsz, waves_fw->getLpml(), waves_bw, model, capo);
+
+         // Output progress to logfile
+         this->writeProgress(capo, nt-1, 20, 48);
+
+         //Close checkpoint file for w and reopen for rw
+         optimal->closeCheck();
+         optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+         reverse = true;
+         // Output progress to logfile
+         this->writeLog("\nDoing reverse-time Loop.");
+         this->writeProgress(0, nt-1, 20, 48);
+      }
+      if (whatodo == youturn)
+      {
+
+         // Time stepping velocity
+         waves_bw->forwardstepVelocity(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_bw->getVx());
+            (model->getDomain())->shareEdges3D(waves_bw->getVz());
+         }
+         // Time stepping stress
+         waves_bw->forwardstepStress(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_bw->getSxx());
+            (model->getDomain())->shareEdges3D(waves_bw->getSzz());
+            (model->getDomain())->shareEdges3D(waves_bw->getSxz());
+            (model->getDomain())->shareEdges3D(waves_bw->getMxx());
+            (model->getDomain())->shareEdges3D(waves_bw->getMzz());
+            (model->getDomain())->shareEdges3D(waves_bw->getMxz());
+         }
+
+         // Inserting residuals
+         waves_bw->insertSource(model, dataresUx, GMAP, capo);
+         waves_bw->insertSource(model, dataresUz, GMAP, capo);
+
+         // Do Crosscorrelation
+         T *wsx = waves_fw->getVx();
+         T *wsz = waves_fw->getVz();
+         crossCorr(wsx, wsz, waves_fw->getLpml(), waves_bw, model, capo);
+
+         // Output progress to logfile
+         this->writeProgress(nt-1-capo, nt-1, 20, 48);
+      }
+      if (whatodo == takeshot)
+      {
+         optimal->writeCheck(waves_fw);
+      }
+      if (whatodo == restore)
+      {
+         optimal->readCheck(waves_fw);
+      }
+
+      if(whatodo == error){
+         std::cerr << "Error!" << std::endl;
+      }
+
+   } while((whatodo != terminate) && (whatodo != error));
+   this->writeLog("\nGradient computation completed.");
+
+   // Scale gradients
+   this->scaleGrad(model);
+
+   //Remove snapshot file
+   optimal->removeCheck();
+
+   result=FWI_OK;
+   return result;
+}
+
+template<typename T>
+FwiViscoelastic2D<T>::~FwiViscoelastic2D() {
+   // Nothing here
+}
+
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Fwi<float>;
 template class Fwi<double>;
@@ -6231,5 +7738,9 @@ template class FwiElastic2D<float>;
 template class FwiElastic2D<double>;
 template class FwiElastic3D<float>;
 template class FwiElastic3D<double>;
+
+
+template class FwiViscoelastic2D<float>;
+template class FwiViscoelastic2D<double>;
 
 }
