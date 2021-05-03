@@ -6304,6 +6304,10 @@ void FwiViscoelastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<Wa
    T* rszz = waves_bw->getSzz();
    T* rsxz = waves_bw->getSxz();
 
+   T* rrxx = waves_bw->getSxx();
+   T* rrzz = waves_bw->getSzz();
+   T* rrxz = waves_bw->getSxz();
+
    T *vpgraddata = NULL; 
    T *vsgraddata = NULL;
    T *wavgraddata = NULL;
@@ -6323,7 +6327,11 @@ void FwiViscoelastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<Wa
    T* Vp = model->getVp();
    T* Vs = model->getVs();
    T* Rho = model->getR();
-   T L,M,S1,S2,D,F;
+   T* Tp = model->getTp();
+   T* Ts = model->getTs();
+   T* Tsxz = model->getTs_xz();
+   T to = (2*PI*model->getF0());
+   T L,M,D,F;
 
    if(vpgradset){
       if(!vpgrad->getAllocated()){
@@ -6377,16 +6385,13 @@ void FwiViscoelastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<Wa
    for (ix=1; ix<nx-1; ix++){
       for (iz=1; iz<nz-1; iz++){
          L = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
-         M = Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)] + 1;
-         S1 = (L + 2*M)/(4*M*(L+M));
-         S2 = (-1*L)/(4*M*(L+M));
+         M = Rho[km2D(ix, iz)]*Vs[km2D(ix, iz)]*Vs[km2D(ix, iz)];
          msxx = (wsx[ks2D(ix+pads, iz+pads)] - wsx[ks2D(ix+pads-1, iz+pads)])/dx;
          mszz = (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads, iz+pads-1)])/dz;
-         D = S1*rsxx[kr2D(ix+padr, iz+padr)] + S2*rszz[kr2D(ix+padr, iz+padr)];
-         F = S2*rsxx[kr2D(ix+padr, iz+padr)] + S1*rszz[kr2D(ix+padr, iz+padr)];
 
          if(vpgradset || vsgradset || rhogradset){
-            vpgraddata[ki2D(ix,iz)] -= (msxx + mszz) * (D + F);
+            vpgraddata[ki2D(ix,iz)] -= Tp[km2D(ix, iz)]*(msxx + mszz) * (rsxx[kr2D(ix+padr, iz+padr)] + rszz[kr2D(ix+padr, iz+padr)]); 
+            vpgraddata[ki2D(ix,iz)] += to*(Tp[km2D(ix, iz)]-1)*(msxx + mszz) * (rrxx[kr2D(ix+padr, iz+padr)] + rrzz[kr2D(ix+padr, iz+padr)]); 
          }
 
          if(vsgradset || rhogradset){
@@ -6395,11 +6400,17 @@ void FwiViscoelastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<Wa
             msxz3 = (wsx[ks2D(ix+pads-1, iz+pads+1)] - wsx[ks2D(ix+pads-1, iz+pads)])/dz + (wsz[ks2D(ix+pads, iz+pads)] - wsz[ks2D(ix+pads-1, iz+pads)])/dx; 
             msxz4 = (wsx[ks2D(ix+pads, iz+pads+1)] - wsx[ks2D(ix+pads, iz+pads)])/dz + (wsz[ks2D(ix+pads+1, iz+pads)] - wsz[ks2D(ix+pads, iz+pads)])/dx; 
 
-            mrxz1 = rsxz[kr2D(ix+padr-1, iz+padr-1)]/(Mxz[kr2D(ix+padr-1, iz+padr-1)] + 1);
-            mrxz2 = rsxz[kr2D(ix+padr, iz+padr-1)]/(Mxz[kr2D(ix+padr, iz+padr-1)] + 1);
-            mrxz3 = rsxz[kr2D(ix+padr-1, iz+padr)]/(Mxz[kr2D(ix+padr-1, iz+padr)] + 1);
-            mrxz4 = rsxz[kr2D(ix+padr, iz+padr)]/(Mxz[kr2D(ix+padr, iz+padr)] + 1);
-            vsgraddata[ki2D(ix,iz)] -= (2.0*msxx*D + 2.0*mszz*F + 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4));
+            mrxz1 = rsxz[kr2D(ix+padr-1, iz+padr-1)]*Tsxz[km2D(ix-1, iz-1)];
+            mrxz2 = rsxz[kr2D(ix+padr, iz+padr-1)]*Tsxz[km2D(ix, iz-1)];
+            mrxz3 = rsxz[kr2D(ix+padr-1, iz+padr)]*Tsxz[km2D(ix-1, iz)];
+            mrxz4 = rsxz[kr2D(ix+padr, iz+padr)]*Tsxz[km2D(ix, iz)];
+            vsgraddata[ki2D(ix,iz)] += (2.0*Ts[km2D(ix, iz)])*(msxx*rszz[kr2D(ix+padr, iz+padr)] + mszz*rsxx[kr2D(ix+padr, iz+padr)]) - 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4);
+
+            mrxz1 = rrxz[kr2D(ix+padr-1, iz+padr-1)]*to*(Tsxz[km2D(ix-1, iz-1)]-1);
+            mrxz2 = rrxz[kr2D(ix+padr, iz+padr-1)]*to*(Tsxz[km2D(ix, iz-1)]-1);
+            mrxz3 = rrxz[kr2D(ix+padr-1, iz+padr)]*to*(Tsxz[km2D(ix-1, iz)]-1);
+            mrxz4 = rrxz[kr2D(ix+padr, iz+padr)]*to*(Tsxz[km2D(ix-1, iz)]-1);
+            vsgraddata[ki2D(ix,iz)] -= (2.0*to*(Ts[km2D(ix, iz)-1]))*(msxx*rrzz[kr2D(ix+padr, iz+padr)] - mszz*rrxx[kr2D(ix+padr, iz+padr)]) + 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4);
          }
          if(wavgradset){
             switch(wavgrad->getField()){
@@ -6408,7 +6419,7 @@ void FwiViscoelastic2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<Wa
                   {
                      if((map[i].x == ix) && (map[i].y == iz))
                      {
-                        wavgraddata[kwav(it,i)] = 1.0*(D + F);
+                        wavgraddata[kwav(it,i)] = 1.0*(rsxx[kr2D(ix+padr, iz+padr)] + rszz[kr2D(ix+padr, iz+padr)]);
                      }
                   }
                   break;
@@ -6513,7 +6524,7 @@ void FwiViscoelastic2D<T>::scaleGrad(std::shared_ptr<ModelViscoelastic2D<T>> mod
          }
 
          if(vsgradset){
-            vsgraddata[ki2D(ix,iz)] = vsscale*mu -2.0*vsscale*lambda; 
+            vsgraddata[ki2D(ix,iz)] = vsscale*mu;
          }
 
          if(rhogradset){
@@ -7467,14 +7478,14 @@ int FwiViscoelastic2D<T>::run(){
    {
 
       // Time stepping 
-      waves->forwardstepVelocity(model, der);
+      waves->backwardstepVelocity(model, der);
       if((model->getDomain()->getStatus())){
          (model->getDomain())->shareEdges3D(waves->getVx());
          (model->getDomain())->shareEdges3D(waves->getVz());
       }
 
       // Time stepping 
-      waves->forwardstepStress(model, der);
+      waves->backwardstepStress(model, der);
       if((model->getDomain()->getStatus())){
          (model->getDomain())->shareEdges3D(waves->getSxx());
          (model->getDomain())->shareEdges3D(waves->getSzz());
@@ -7667,13 +7678,13 @@ int FwiViscoelastic2D<T>::run_optimal(){
       {
 
          // Time stepping velocity
-         waves_bw->forwardstepVelocity(model, der);
+         waves_bw->backwardstepVelocity(model, der);
          if((model->getDomain()->getStatus())){
             (model->getDomain())->shareEdges3D(waves_bw->getVx());
             (model->getDomain())->shareEdges3D(waves_bw->getVz());
          }
          // Time stepping stress
-         waves_bw->forwardstepStress(model, der);
+         waves_bw->backwardstepStress(model, der);
          if((model->getDomain()->getStatus())){
             (model->getDomain())->shareEdges3D(waves_bw->getSxx());
             (model->getDomain())->shareEdges3D(waves_bw->getSzz());

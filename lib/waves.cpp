@@ -4941,6 +4941,7 @@ WavesViscoelastic2D<T>::WavesViscoelastic2D(const int _nx, const int _nz, const 
    Mxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
    Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
    Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   adjoint = false;
 }
 
 template<typename T>
@@ -4976,6 +4977,7 @@ WavesViscoelastic2D<T>::WavesViscoelastic2D(std::shared_ptr<rockseis::ModelVisco
    this->setOt(_ot);
    this->setLpml(_lpml);
    this->setDim(_dim);
+   adjoint = false;
 
    if((model->getDomain())->getStatus()){
       // Domain decomposition mode
@@ -5033,7 +5035,15 @@ WavesViscoelastic2D<T>::WavesViscoelastic2D(std::shared_ptr<rockseis::ModelVisco
    }
 }
 
-
+template<typename T>
+void WavesViscoelastic2D<T>::setAdjoint(){
+   if(this->getAdjoint()){
+      rs_error("WavesViscoelastic2D<T>::setAdjoint:Adjoint already set.");
+   }else{
+      wrk = (T *) calloc(this->getNx_pml()*this->getNz_pml(), sizeof(T));
+      adjoint = true;
+   }
+}
 
 template<typename T>
 void WavesViscoelastic2D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
@@ -5425,6 +5435,408 @@ void WavesViscoelastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVi
 }
 
 template<typename T>
+void WavesViscoelastic2D<T>::backwardstepVelocity(std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+   int i, ix0, ix, iz0, iz, nx, nz, lpml, nxo, nzo;
+   T dt;
+   lpml = model->getLpml();
+   nx = model->getNx() + 2*lpml;
+   nz = model->getNz() + 2*lpml;
+   dt = this->getDt();
+   T *L2M, *M, *M_xz, *Tp, *Ts, *Ts_xz, *Rx, *Rz, *df;
+   T to = dt*(2*PI*model->getF0());
+   M = model->getM();
+   L2M = model->getL2M();
+   M_xz = model->getM_xz();
+   Tp = model->getTp();
+   Ts = model->getTs();
+   Ts_xz = model->getTs_xz();
+   Rx = model->getRx();
+   Rz = model->getRz();
+   df = der->getDf();
+   T C11, C13, C44; 
+   T T11, T13, T44; 
+
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition 
+      nx = model->getNx();
+      nz = model->getNz();
+      ix0 = (model->getDomain())->getIx0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nzo = (model->getDomain())->getNz_orig();
+   }else{
+      nx = model->getNx() + 2*lpml;
+      nz = model->getNz() + 2*lpml;
+      ix0 = 0;
+      iz0 = 0;
+      nxo = nx;
+      nzo = nz;
+   }
+   if(!this->getAdjoint()) this->setAdjoint();
+
+   //// VX
+   // Prepare wrk array
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         C11 = L2M[I2D(ix,iz)]*Tp[I2D(ix,iz)];
+         if((iz+iz0) == lpml && model->getFs()){
+            // Free surface conditions
+            C13 = 0.0;
+         }else{
+            C13 = L2M[I2D(ix,iz)]*Tp[I2D(ix,iz)] - 2*M[I2D(ix,iz)]*Ts[I2D(ix,iz)];
+         }
+         T11 = (to/dt)*(L2M[I2D(ix,iz)]*(Tp[I2D(ix,iz)]-1));
+         if((iz+iz0) == lpml && model->getFs()){
+            // Free surface conditions
+            T13 = 0.0;
+         }else{
+            T13 = (to/dt)*(L2M[I2D(ix,iz)]*(Tp[I2D(ix,iz)]-1)-2*M[I2D(ix,iz)]*(Ts[I2D(ix,iz)]-1));
+         }
+         wrk[I2D(ix,iz)] = C11*Sxx[I2D(ix,iz)] + C13*Szz[I2D(ix,iz)] - T11*Mxx[I2D(ix,iz)] - T13*Mzz[I2D(ix,iz)];
+      }
+   }
+
+   // Derivate wrk forward with respect to x
+   der->ddx_fw(wrk);
+   // Compute Vx
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Vx[I2D(ix,iz)] += dt*Rx[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate left and right using staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Sxx_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix-ix0,iz)];
+               Vx[I2D(ix-ix0,iz)] -= dt*Rx[I2D(ix-ix0,iz)]*(Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)]);
+            }
+         }
+
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Sxx_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i-ix0,iz)];
+               Vx[I2D(i-ix0,iz)] -= dt*Rx[I2D(i-ix0,iz)]*(Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+
+   // Prepare wrk array
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         C44 = M_xz[I2D(ix,iz)]*Ts_xz[I2D(ix,iz)];
+         T44 = (to/dt)*M_xz[I2D(ix,iz)]*(Ts_xz[I2D(ix,iz)]-1);
+         wrk[I2D(ix,iz)] = C44*Sxz[I2D(ix,iz)] - T44*Mxz[I2D(ix,iz)];
+      }
+   }
+
+   // Derivate wrk backward with respect to z
+   der->ddz_bw(wrk);
+   // Compute Vx
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Vx[I2D(ix,iz)] += dt*Rx[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate bottom and top using non-staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Sxzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
+               Vx[I2D(ix,iz-iz0)] -= dt*Rx[I2D(ix,iz-iz0)]*(Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Sxzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
+               Vx[I2D(ix,i-iz0)] -= dt*Rx[I2D(ix,i-iz0)]*(Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+
+
+   //// VZ
+   // Prepare wrk array
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         C44 = M_xz[I2D(ix,iz)]*Ts_xz[I2D(ix,iz)];
+         T44 = (to/dt)*M_xz[I2D(ix,iz)]*(Ts_xz[I2D(ix,iz)]-1);
+         wrk[I2D(ix,iz)] = C44*Sxz[I2D(ix,iz)] - T44*Mxz[I2D(ix,iz)];
+      }
+   }
+
+   // Derivate Sxz backward with respect to x
+   der->ddx_bw(wrk);
+   // Compute Vz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Vz[I2D(ix,iz)] += dt*Rz[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate left and right using non-staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Sxzx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
+               Vz[I2D(ix-ix0,iz)] -= dt*Rz[I2D(ix-ix0,iz)]*(Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Sxzx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
+               Vz[I2D(i-ix0,iz)] -= dt*Rz[I2D(i-ix0,iz)]*(Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+
+   // Prepare wrk array
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         C11 = L2M[I2D(ix,iz)]*Tp[I2D(ix,iz)];
+         if((iz+iz0) == lpml && model->getFs()){
+            // Free surface conditions
+            C13 = 0.0;
+         }else{
+            C13 = L2M[I2D(ix,iz)]*Tp[I2D(ix,iz)] - 2*M[I2D(ix,iz)]*Ts[I2D(ix,iz)];
+         }
+         T11 = (to/dt)*(L2M[I2D(ix,iz)]*(Tp[I2D(ix,iz)]-1));
+         if((iz+iz0) == lpml && model->getFs()){
+            // Free surface conditions
+            T13 = 0.0;
+         }else{
+            T13 = (to/dt)*(L2M[I2D(ix,iz)]*(Tp[I2D(ix,iz)]-1)-2*M[I2D(ix,iz)]*(Ts[I2D(ix,iz)]-1));
+         }
+         wrk[I2D(ix,iz)] = C13*Sxx[I2D(ix,iz)] + C11*Szz[I2D(ix,iz)] - T13*Mxx[I2D(ix,iz)] - T11*Mzz[I2D(ix,iz)];
+      }
+   }
+
+   // Derivate wrk forward with respect to z
+   der->ddz_fw(wrk);
+   // Compute Vz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Vz[I2D(ix,iz)] += dt*Rz[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate bottom and top using staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Szz_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->Szz_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz-iz0)];
+               Vz[I2D(ix,iz-iz0)] -= dt*Rz[I2D(ix,iz-iz0)]*(Pml->Szz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Szz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i-iz0)];
+               Vz[I2D(ix,i-iz0)] -= dt*Rz[I2D(ix,i-iz0)]*(Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+}
+
+template<typename T>
+void WavesViscoelastic2D<T>::backwardstepStress(std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+   int i, ix0, ix, iz0, iz, nx, nz, lpml, nxo, nzo;
+   lpml = model->getLpml();
+   nx = model->getNx() + 2*lpml;
+   nz = model->getNz() + 2*lpml;
+   T *df;
+   T dt = this->getDt();
+   T to = dt*(2*PI*model->getF0());
+   df = der->getDf();
+
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition 
+      nx = model->getNx();
+      nz = model->getNz();
+      ix0 = (model->getDomain())->getIx0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nzo = (model->getDomain())->getNz_orig();
+   }else{
+      nx = model->getNx() + 2*lpml;
+      nz = model->getNz() + 2*lpml;
+      ix0 = 0;
+      iz0 = 0;
+      nxo = nx;
+      nzo = nz;
+   }
+   if(!this->getAdjoint()) this->setAdjoint();
+
+   // Derivate Vx backward with respect to x
+   der->ddx_bw(Vx);
+   // Compute Sxx and Szz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxx[I2D(ix,iz)] += dt*df[I2D(ix,iz)];
+      }
+   }
+
+
+   // Attenuate left and right using non-staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Vxx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
+
+               Sxx[I2D(ix-ix0,iz)] -= dt*(Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Vxx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
+
+               Sxx[I2D(i-ix0,iz)] -= dt*(Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+
+   // Derivate Vz backward with respect to z
+   der->ddz_bw(Vz);
+   // Compute Sxx and Szz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Szz[I2D(ix,iz)] += dt*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate top and bottom using non-staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Vzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
+
+               Szz[I2D(ix,iz-iz0)] -= dt*(Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Vzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
+               Szz[I2D(ix,i-iz0)] -= dt*(Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+
+   // Free surface conditions
+   if(model->getFs()){
+      iz = lpml;
+      if(iz >= iz0 && iz < (iz0 + nz)){
+         for(ix=0; ix < nx; ix++){
+            Szz[I2D(ix,iz-iz0)] = 0.0;
+         }
+      }
+   }
+
+   // Derivate Vz forward with respect to x
+   der->ddx_fw(Vz);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxz[I2D(ix,iz)] += dt*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate left and right using staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Vzx_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->Vzx_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix-ix0,iz)];
+               Sxz[I2D(ix-ix0,iz)] -= dt*(Pml->Vzx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)]);
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Vzx_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->Vzx_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i-ix0,iz)];
+               Sxz[I2D(i-ix0,iz)] -= dt*(Pml->Vzx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+
+   // Derivate Vx forward with respect to z
+   der->ddz_fw(Vx);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxz[I2D(ix,iz)] += dt*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate top and bottom using staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Vxz_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->Vxz_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz-iz0)];
+               Sxz[I2D(ix,iz-iz0)] -= dt*(Pml->Vxz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Vxz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->Vxz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i-iz0)];
+               Sxz[I2D(ix,i-iz0)] -= dt*(Pml->Vxz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+
+   // Memory variable update
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Mxx[I2D(ix,iz)] = ( (1-0.5*to)*Mxx[I2D(ix,iz)] + dt*Sxx[I2D(ix,iz)]) / (1 + 0.5*to);
+         Mzz[I2D(ix,iz)] = ( (1-0.5*to)*Mzz[I2D(ix,iz)] + dt*Szz[I2D(ix,iz)]) / (1 + 0.5*to);
+         Mxz[I2D(ix,iz)] = ( (1-0.5*to)*Mxz[I2D(ix,iz)] + dt*Sxz[I2D(ix,iz)]) / (1 + 0.5*to);
+      }
+   }
+}
+
+
+template<typename T>
 void WavesViscoelastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
    Point2D<int> *map;
    Point2D<T> *shift;
@@ -5638,6 +6050,9 @@ WavesViscoelastic2D<T>::~WavesViscoelastic2D() {
    free(Mxz);
    free(Vx);
    free(Vz);
+   if(this->getAdjoint()) {
+      free(wrk);
+   }
 }
 
 // =============== 3D VISCOELASTIC WAVES CLASS =============== //
