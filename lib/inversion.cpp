@@ -673,7 +673,7 @@ void InversionAcoustic2D<T>::runBsproj() {
    free(rhoproj);
 }
 
-   template<typename T>
+template<typename T>
 int InversionAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile)
 {
    std::shared_ptr<rockseis::ModelAcoustic2D<T>> model_in (new rockseis::ModelAcoustic2D<T>(vpfile, rhofile, 1 ,0));
@@ -717,7 +717,7 @@ int InversionAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::strin
    return Npar;
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::saveResults(int iter)
 {
    std::string name;
@@ -746,7 +746,7 @@ void InversionAcoustic2D<T>::saveResults(int iter)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::saveLinesearch(double *x)
 {
    // Models
@@ -865,7 +865,7 @@ void InversionAcoustic2D<T>::saveLinesearch(double *x)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::saveHessian(double *x)
 {
    // Models
@@ -981,7 +981,7 @@ void InversionAcoustic2D<T>::saveHessian(double *x)
 }
 
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::readMisfit(double *f)
 {
    // Data misfit
@@ -1007,7 +1007,7 @@ void InversionAcoustic2D<T>::readMisfit(double *f)
    Fmisfit->close();
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::readGrad(double *g)
 {
    int i,j;
@@ -1110,7 +1110,7 @@ void InversionAcoustic2D<T>::readGrad(double *g)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::combineGradients()
 {
    // Gradients
@@ -1142,7 +1142,7 @@ void InversionAcoustic2D<T>::combineGradients()
    grad->writeModel();
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::applySrcilum()
 {
    if(this->getSrcilum()){
@@ -1182,7 +1182,7 @@ void InversionAcoustic2D<T>::applySrcilum()
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::applyMute()
 {
    if(!Modmutefile.empty()){
@@ -1237,7 +1237,7 @@ void InversionAcoustic2D<T>::applyMute()
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::computeTikhonovRegularisation(double *x)
 {
    // Models
@@ -1344,7 +1344,7 @@ void InversionAcoustic2D<T>::computeTikhonovRegularisation(double *x)
 }
 
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic2D<T>::computeRegularisation(double *x)
 {
    // Models
@@ -2022,7 +2022,7 @@ void InversionAcoustic3D<T>::runBsproj() {
    free(rhoproj);
 }
 
-   template<typename T>
+template<typename T>
 int InversionAcoustic3D<T>::setInitial(double *x, std::string vpfile, std::string rhofile, std::string sourcefile)
 {
    std::shared_ptr<rockseis::ModelAcoustic3D<T>> model_in (new rockseis::ModelAcoustic3D<T>(vpfile, rhofile, 1 ,0));
@@ -2072,7 +2072,7 @@ int InversionAcoustic3D<T>::setInitial(double *x, std::string vpfile, std::strin
    return Npar;
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic3D<T>::saveResults(int iter)
 {
    std::string name;
@@ -2101,7 +2101,7 @@ void InversionAcoustic3D<T>::saveResults(int iter)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic3D<T>::saveLinesearch(double *x)
 {
    // Models
@@ -2249,7 +2249,7 @@ void InversionAcoustic3D<T>::saveLinesearch(double *x)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic3D<T>::readMisfit(double *f)
 {
    // Data misfit
@@ -2275,7 +2275,7 @@ void InversionAcoustic3D<T>::readMisfit(double *f)
    Fmisfit->close();
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic3D<T>::readGrad(double *g)
 {
    int i,j;
@@ -2375,7 +2375,7 @@ void InversionAcoustic3D<T>::readGrad(double *g)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic3D<T>::combineGradients()
 {
    // Gradients
@@ -2451,7 +2451,7 @@ void InversionAcoustic3D<T>::combineGradients()
 //    }
 //}
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic3D<T>::applyMute()
 {
    if(!Modmutefile.empty()){
@@ -2484,7 +2484,7 @@ void InversionAcoustic3D<T>::applyMute()
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionAcoustic3D<T>::computeRegularisation(double *x)
 {
    // Models
@@ -3529,7 +3529,7 @@ void InversionElastic2D<T>::runBsproj() {
    free(global_stack);
 }
 
-   template<typename T>
+template<typename T>
 int InversionElastic2D<T>::setInitial(double *x, std::string vpfile, std::string vsfile, std::string rhofile, std::string sourcefile)
 {
    std::shared_ptr<rockseis::ModelElastic2D<T>> model_in (new rockseis::ModelElastic2D<T>(vpfile, vsfile, rhofile, 1 ,0));
@@ -3583,7 +3583,7 @@ int InversionElastic2D<T>::setInitial(double *x, std::string vpfile, std::string
    return Npar;
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic2D<T>::saveResults(int iter)
 {
    std::string name;
@@ -3617,7 +3617,7 @@ void InversionElastic2D<T>::saveResults(int iter)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic2D<T>::saveLinesearch(double *x)
 {
    // Models
@@ -3829,7 +3829,7 @@ void InversionElastic2D<T>::saveLinesearch(double *x)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic2D<T>::saveHessian(double *x)
 {
    // Models
@@ -4042,7 +4042,7 @@ void InversionElastic2D<T>::saveHessian(double *x)
 }
 
 
-   template<typename T>
+template<typename T>
 void InversionElastic2D<T>::readMisfit(double *f)
 {
    // Data misfit
@@ -4073,7 +4073,7 @@ void InversionElastic2D<T>::readMisfit(double *f)
    Fmisfit->close();
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic2D<T>::readGrad(double *g)
 {
    int i,j;
@@ -4201,7 +4201,7 @@ void InversionElastic2D<T>::readGrad(double *g)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic2D<T>::combineGradients()
 {
    // Gradients
@@ -4244,7 +4244,7 @@ void InversionElastic2D<T>::combineGradients()
 }
 
 
-   template<typename T>
+template<typename T>
 void InversionElastic2D<T>::applyMute()
 {
    if(!Modmutefile.empty()){
@@ -4304,7 +4304,7 @@ void InversionElastic2D<T>::applyMute()
 
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic2D<T>::computeRegularisation(double *x)
 {
    // Models
@@ -5519,7 +5519,7 @@ void InversionElastic3D<T>::runBsproj() {
    free(global_stack);
 }
 
-   template<typename T>
+template<typename T>
 int InversionElastic3D<T>::setInitial(double *x, std::string vpfile, std::string vsfile, std::string rhofile, std::string sourcefile)
 {
    std::shared_ptr<rockseis::ModelElastic3D<T>> model_in (new rockseis::ModelElastic3D<T>(vpfile, vsfile, rhofile, 1 ,0));
@@ -5573,7 +5573,7 @@ int InversionElastic3D<T>::setInitial(double *x, std::string vpfile, std::string
    return Npar;
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic3D<T>::saveResults(int iter)
 {
    std::string name;
@@ -5607,7 +5607,7 @@ void InversionElastic3D<T>::saveResults(int iter)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic3D<T>::saveLinesearch(double *x)
 {
    // Models
@@ -5793,7 +5793,7 @@ void InversionElastic3D<T>::saveLinesearch(double *x)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic3D<T>::readMisfit(double *f)
 {
    // Data misfit
@@ -5824,7 +5824,7 @@ void InversionElastic3D<T>::readMisfit(double *f)
    Fmisfit->close();
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic3D<T>::readGrad(double *g)
 {
    int i,j;
@@ -5946,7 +5946,7 @@ void InversionElastic3D<T>::readGrad(double *g)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic3D<T>::combineGradients()
 {
    // Gradients
@@ -5989,7 +5989,7 @@ void InversionElastic3D<T>::combineGradients()
 }
 
 
-   template<typename T>
+template<typename T>
 void InversionElastic3D<T>::applyMute()
 {
    if(!Modmutefile.empty()){
@@ -6029,7 +6029,7 @@ void InversionElastic3D<T>::applyMute()
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionElastic3D<T>::computeRegularisation(double *x)
 {
    // Models
@@ -6413,13 +6413,19 @@ InversionViscoelastic2D<T>::InversionViscoelastic2D() {
    reg_alpha[0]=0.0;
    reg_alpha[1]=0.0;
    reg_alpha[2]=0.0;
+   reg_alpha[3]=0.0;
+   reg_alpha[4]=0.0;
    reg_eps[0]=1e-3;
    reg_eps[1]=1e-3;
    reg_eps[2]=1e-3;
+   reg_eps[3]=1e-3;
+   reg_eps[4]=1e-3;
    f0 = 15;
 
    update_vp = true;
    update_vs = true;
+   update_qp = false;
+   update_qs = false;
    update_rho = false;
    update_source = false;
 }
@@ -6437,13 +6443,19 @@ InversionViscoelastic2D<T>::InversionViscoelastic2D(MPIdomaindecomp *mpi): Inver
    reg_alpha[0]=0.0;
    reg_alpha[1]=0.0;
    reg_alpha[2]=0.0;
+   reg_alpha[3]=0.0;
+   reg_alpha[4]=0.0;
    reg_eps[0]=1e-3;
    reg_eps[1]=1e-3;
    reg_eps[2]=1e-3;
+   reg_eps[3]=1e-3;
+   reg_eps[4]=1e-3;
    f0 = 15;
 
    update_vp = true;
    update_vs = true;
+   update_qp = false;
+   update_qs = false;
    update_rho = false;
    update_source = false;
 }
@@ -6474,6 +6486,8 @@ void InversionViscoelastic2D<T>::runGrad() {
    std::shared_ptr<rockseis::Data2D<T>> zweight2Di;
    std::shared_ptr<rockseis::Image2D<T>> vpgrad;
    std::shared_ptr<rockseis::Image2D<T>> vsgrad;
+   std::shared_ptr<rockseis::Image2D<T>> qpgrad;
+   std::shared_ptr<rockseis::Image2D<T>> qsgrad;
    std::shared_ptr<rockseis::Image2D<T>> rhograd;
    std::shared_ptr<rockseis::Data2D<T>> wavgrad;
    std::shared_ptr<rockseis::ModelViscoelastic2D<T>> lmodel;
@@ -6553,6 +6567,12 @@ void InversionViscoelastic2D<T>::runGrad() {
       vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile, gmodel, 1, 1);
       vsgrad->createEmpty();
 
+      qpgrad = std::make_shared<rockseis::Image2D<T>>(Qpgradfile, gmodel, 1, 1);
+      qpgrad->createEmpty();
+
+      qsgrad = std::make_shared<rockseis::Image2D<T>>(Qsgradfile, gmodel, 1, 1);
+      qsgrad->createEmpty();
+
       rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile, gmodel, 1, 1);
       rhograd->createEmpty();
 
@@ -6564,6 +6584,14 @@ void InversionViscoelastic2D<T>::runGrad() {
          if(update_vs){
             vsgrad->stackImage(Vsgradfile + "-" + std::to_string(i));
             remove_file(Vsgradfile + "-" + std::to_string(i));
+         }
+         if(update_qp){
+            qpgrad->stackImage(Qpgradfile + "-" + std::to_string(i));
+            remove_file(Qpgradfile + "-" + std::to_string(i));
+         }
+         if(update_qs){
+            qsgrad->stackImage(Qsgradfile + "-" + std::to_string(i));
+            remove_file(Qsgradfile + "-" + std::to_string(i));
          }
          if(update_rho){
             rhograd->stackImage(Rhogradfile + "-" + std::to_string(i));
@@ -6653,6 +6681,16 @@ void InversionViscoelastic2D<T>::runGrad() {
                   vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
                   vsgrad->createEmpty();
                   vsgrad.reset();
+               }
+               if(update_qp){
+                  qpgrad = std::make_shared<rockseis::Image2D<T>>(Qpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                  qpgrad->createEmpty();
+                  qpgrad.reset();
+               }
+               if(update_qs){
+                  qsgrad = std::make_shared<rockseis::Image2D<T>>(Qsgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                  qsgrad->createEmpty();
+                  qsgrad.reset();
                }
                if(update_rho){
                   rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
@@ -6810,6 +6848,14 @@ void InversionViscoelastic2D<T>::runGrad() {
                vsgrad = std::make_shared<rockseis::Image2D<T>>(Vsgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
                fwi->setVsgrad(vsgrad);
             }
+            if(update_qp){
+               qpgrad = std::make_shared<rockseis::Image2D<T>>(Qpgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+               fwi->setQpgrad(qpgrad);
+            }
+            if(update_qs){
+               qsgrad = std::make_shared<rockseis::Image2D<T>>(Qsgradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
+               fwi->setQsgrad(qsgrad);
+            }
             if(update_rho){
                rhograd = std::make_shared<rockseis::Image2D<T>>(Rhogradfile + "-" + std::to_string(work.id), lmodel, 1, 1);
                fwi->setRhograd(rhograd);
@@ -6958,6 +7004,12 @@ void InversionViscoelastic2D<T>::runGrad() {
             if(update_vs){
                vsgrad->stackImage_parallel(Vsgradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
+            if(update_qp){
+               qpgrad->stackImage_parallel(Qpgradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
+            }
+            if(update_qs){
+               qsgrad->stackImage_parallel(Qsgradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
+            }
             if(update_rho){
                rhograd->stackImage_parallel(Rhogradfile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
@@ -6981,6 +7033,8 @@ void InversionViscoelastic2D<T>::runGrad() {
             lmodel.reset();
             vpgrad.reset();
             vsgrad.reset();
+            qpgrad.reset();
+            qsgrad.reset();
             rhograd.reset();
             wavgrad.reset();
             fwi.reset();
@@ -6998,6 +7052,8 @@ template<typename T>
 void InversionViscoelastic2D<T>::runBsproj() {
    MPIdomaindecomp *mpi = this->getMpi();
    T vpsum = 0.0; // Sum over splines
+   T qpsum = 0.0; // Sum over splines
+   T qssum = 0.0; // Sum over splines
    T vssum = 0.0; // Sum over splines
    T rhosum = 0.0; // Sum over splines
    float *global_stack;
@@ -7006,34 +7062,42 @@ void InversionViscoelastic2D<T>::runBsproj() {
 
    std::string vpgradfile;
    std::string vsgradfile;
+   std::string qpgradfile;
+   std::string qsgradfile;
    std::string rhogradfile;
 
    if(Modmutefile.empty()){
       vpgradfile = VPGRADCOMBFILE;
       vsgradfile = VSGRADCOMBFILE;
+      qpgradfile = QPGRADCOMBFILE;
+      qsgradfile = QSGRADCOMBFILE;
       rhogradfile = RHOGRADCOMBFILE;
    }else{
       vpgradfile = VPGRADMUTEFILE;
       vsgradfile = VSGRADMUTEFILE;
+      qpgradfile = QPGRADMUTEFILE;
+      qsgradfile = QSGRADMUTEFILE;
       rhogradfile = RHOGRADMUTEFILE;
    }
 
    // Get gradients
-   std::shared_ptr<rockseis::ModelElastic2D<T>> grad (new rockseis::ModelElastic2D<T>(vpgradfile, vsgradfile, rhogradfile, this->getLpml() ,this->getFs()));
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> grad (new rockseis::ModelViscoelastic2D<T>(vpgradfile, vsgradfile, rhogradfile, qpgradfile, qsgradfile, this->getLpml(), this->getF0(), this->getFs()));
 
    //Read gradients
    grad->readModel();
 
-   T *vpgrad, *vsgrad, *rhograd;
+   T *vpgrad, *vsgrad, *qpgrad, *qsgrad, *rhograd;
    vpgrad = grad->getVp();
    vsgrad = grad->getVs();
+   qpgrad = grad->getQp();
+   qsgrad = grad->getQs();
    rhograd = grad->getR();
 
    /* Initializing spline */
    std::shared_ptr<rockseis::Bspl2D<T>> spline (new rockseis::Bspl2D<T>(grad->getNx(), grad->getNz(), grad->getDx(), grad->getDz(), this->getDtx(), this->getDtz(), 3, 3));
    int nc = spline->getNc();
 
-   float *vpproj, *vsproj, *rhoproj;
+   float *vpproj, *vsproj, *qpproj, *qsproj, *rhoproj;
    /* Allocating projection arrays */
    vpproj= (float *) calloc(nc, sizeof(float));
    if(vpproj==NULL){
@@ -7042,6 +7106,14 @@ void InversionViscoelastic2D<T>::runBsproj() {
    vsproj= (float *) calloc(nc, sizeof(float));
    if(vsproj==NULL){
       rs_error("InversionViscoelastic2D<T>::runBsproj(): Not enough memory to allocate projection array (vsproj)");
+   }
+   qpproj= (float *) calloc(nc, sizeof(float));
+   if(qpproj==NULL){
+      rs_error("InversionViscoelastic2D<T>::runBsproj(): Not enough memory to allocate projection array (qpproj)");
+   }
+   qsproj= (float *) calloc(nc, sizeof(float));
+   if(qsproj==NULL){
+      rs_error("InversionViscoelastic2D<T>::runBsproj(): Not enough memory to allocate projection array (qsproj)");
    }
    rhoproj= (float *) calloc(nc, sizeof(float));
    if(rhoproj==NULL){
@@ -7103,6 +7175,37 @@ void InversionViscoelastic2D<T>::runBsproj() {
          }
       }
 
+      if(update_qp){
+         /* Starting reduce operation */
+         MPI_Reduce(qpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
+         /* Output spline */
+         Fout->output(QPPROJGRADFILE);
+         Fout->setN(1,nc);
+         Fout->setD(1,1.0);
+         Fout->setData_format(sizeof(float));
+         Fout->write(global_stack, nc, 0);
+         Fout->close();
+
+         for(long int i=0; i< nc; i++){
+            global_stack[i] = 0.0;
+         }
+      }
+      if(update_qs){
+         /* Starting reduce operation */
+         MPI_Reduce(qsproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
+         /* Output spline */
+         Fout->output(QSPROJGRADFILE);
+         Fout->setN(1,nc);
+         Fout->setD(1,1.0);
+         Fout->setData_format(sizeof(float));
+         Fout->write(global_stack, nc, 0);
+         Fout->close();
+
+         for(long int i=0; i< nc; i++){
+            global_stack[i] = 0.0;
+         }
+      }
+
       if(update_rho){
          /* Starting reduce operation */
          MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
@@ -7137,6 +7240,8 @@ void InversionViscoelastic2D<T>::runBsproj() {
             wrk = spline->getMod();
             vpsum = 0.0;
             vssum = 0.0;
+            qpsum = 0.0;
+            qssum = 0.0;
             rhosum = 0.0;
             for(long int i=0; i<grad->getNx()*grad->getNz(); i++){
                if(update_vp){
@@ -7145,12 +7250,20 @@ void InversionViscoelastic2D<T>::runBsproj() {
                if(update_vs){
                   vssum += wrk[i]*vsgrad[i];
                }
+               if(update_qp){
+                  qpsum += wrk[i]*qpgrad[i];
+               }
+               if(update_qs){
+                  qssum += wrk[i]*qsgrad[i];
+               }
                if(update_rho){
                   rhosum += wrk[i]*rhograd[i];
                }
             }
             vpproj[work.id]=vpsum;
             vsproj[work.id]=vssum;
+            qpproj[work.id]=qpsum;
+            qsproj[work.id]=qssum;
             rhoproj[work.id]=rhosum;
             c[work.id]=0.0; // Reset coefficient to 0
          }
@@ -7172,6 +7285,12 @@ void InversionViscoelastic2D<T>::runBsproj() {
       if(update_vs){
          MPI_Reduce(vsproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
       }
+      if(update_qp){
+         MPI_Reduce(qpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
+      }
+      if(update_qs){
+         MPI_Reduce(qsproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
+      }
       if(update_rho){
          MPI_Reduce(rhoproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
       }
@@ -7179,25 +7298,31 @@ void InversionViscoelastic2D<T>::runBsproj() {
    // Free allocated variables
    free(vpproj);
    free(vsproj);
+   free(qpproj);
+   free(qsproj);
    free(rhoproj);
    free(global_stack);
 }
 
-   template<typename T>
-int InversionViscoelastic2D<T>::setInitial(double *x, std::string vpfile, std::string vsfile, std::string rhofile, std::string sourcefile)
+template<typename T>
+int InversionViscoelastic2D<T>::setInitial(double *x, std::string vpfile, std::string vsfile, std::string qpfile, std::string qsfile, std::string rhofile, std::string sourcefile)
 {
-   std::shared_ptr<rockseis::ModelElastic2D<T>> model_in (new rockseis::ModelElastic2D<T>(vpfile, vsfile, rhofile, 1 ,0));
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model_in (new rockseis::ModelViscoelastic2D<T>(vpfile, vsfile, rhofile, qpfile, qsfile, 15.0, 1 ,0));
    std::shared_ptr<rockseis::Data2D<T>> source_in (new rockseis::Data2D<T>(sourcefile));
    std::shared_ptr<rockseis::Bspl2D<T>> spline;
    model_in->readModel();  
    // Write initial model files
    model_in->setVpfile(VP0FILE);
    model_in->setVsfile(VS0FILE);
+   model_in->setQpfile(QP0FILE);
+   model_in->setQsfile(QS0FILE);
    model_in->setRfile(RHO0FILE);
    model_in->writeModel();
    // Write linesearch model files
    model_in->setVpfile(VPLSFILE);
    model_in->setVsfile(VSLSFILE);
+   model_in->setQpfile(QPLSFILE);
+   model_in->setQsfile(QSLSFILE);
    model_in->setRfile(RHOLSFILE);
    model_in->writeModel();
    // Write source initial model
@@ -7216,6 +7341,8 @@ int InversionViscoelastic2D<T>::setInitial(double *x, std::string vpfile, std::s
          Npar = 0;
          if(update_vp) Npar += N;
          if(update_vs) Npar += N;
+         if(update_qp) Npar += N;
+         if(update_qs) Npar += N;
          if(update_rho) Npar += N;
          if(update_source) Npar += Ns;
          break;
@@ -7226,6 +7353,8 @@ int InversionViscoelastic2D<T>::setInitial(double *x, std::string vpfile, std::s
          Npar = 0;
          if(update_vp) Npar += N;
          if(update_vs) Npar += N;
+         if(update_qp) Npar += N;
+         if(update_qs) Npar += N;
          if(update_rho) Npar += N;
          if(update_source) Npar += Ns;
          break;
@@ -7237,14 +7366,14 @@ int InversionViscoelastic2D<T>::setInitial(double *x, std::string vpfile, std::s
    return Npar;
 }
 
-   template<typename T>
+template<typename T>
 void InversionViscoelastic2D<T>::saveResults(int iter)
 {
    std::string name;
    std::string dir;
    dir = RESULTDIR;
    // Write out new models
-   std::shared_ptr<rockseis::ModelElastic2D<T>> lsmodel (new rockseis::ModelElastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, 1 ,0));
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> lsmodel (new rockseis::ModelViscoelastic2D<T>(VPLSFILE, VSLSFILE,  RHOLSFILE, QPLSFILE, QSLSFILE, 1, 15.0, 0));
    std::shared_ptr<rockseis::Data2D<T>> sourcels (new rockseis::Data2D<T>(SOURCELSFILE));
    lsmodel->readModel();
    sourcels->read();
@@ -7257,6 +7386,16 @@ void InversionViscoelastic2D<T>::saveResults(int iter)
       name = dir + "/" + VS_UP + "-" + std::to_string(iter);
       lsmodel->setVsfile(name);
       lsmodel->writeVs();
+   }
+   if(update_qp){
+      name = dir + "/" + QP_UP + "-" + std::to_string(iter);
+      lsmodel->setQpfile(name);
+      lsmodel->writeQp();
+   }
+   if(update_qs){
+      name = dir + "/" + QS_UP + "-" + std::to_string(iter);
+      lsmodel->setQsfile(name);
+      lsmodel->writeQs();
    }
    if(update_rho){
       name = dir + "/" + RHO_UP + "-" + std::to_string(iter);
@@ -7271,13 +7410,13 @@ void InversionViscoelastic2D<T>::saveResults(int iter)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionViscoelastic2D<T>::saveLinesearch(double *x)
 {
    // Models
-   std::shared_ptr<rockseis::ModelElastic2D<T>> model0 (new rockseis::ModelElastic2D<T>(VP0FILE, VS0FILE, RHO0FILE, 1 ,0));
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model0 (new rockseis::ModelViscoelastic2D<T>(VP0FILE, VS0FILE, RHO0FILE, QP0FILE, QS0FILE, 1, 15.0, 0));
    std::shared_ptr<rockseis::Data2D<T>> source0 (new rockseis::Data2D<T>(SOURCE0FILE));
-   std::shared_ptr<rockseis::ModelElastic2D<T>> lsmodel (new rockseis::ModelElastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, 1 ,0));
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> lsmodel (new rockseis::ModelViscoelastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, QPLSFILE, QSLSFILE, 1, 15.0, 0));
    std::shared_ptr<rockseis::Data2D<T>> lssource (new rockseis::Data2D<T>(SOURCELSFILE));
    std::shared_ptr<rockseis::Bspl2D<T>> spline;
    std::shared_ptr<rockseis::ModelElastic2D<T>> mute;
@@ -7287,17 +7426,23 @@ void InversionViscoelastic2D<T>::saveLinesearch(double *x)
    lsmodel->readModel();
    source0->read();
    lssource->read();
-   T *vp0, *vs0, *rho0, *wav0, *vpls, *vsls, *rhols, *wavls;
+   T *vp0, *vs0, *qp0, *qs0, *rho0, *wav0, *vpls, *vsls, *qpls, *qsls, *rhols, *wavls;
    T *c, *mod;
    T *vpmutedata;
    T *vsmutedata;
+   T *qpmutedata;
+   T *qsmutedata;
    T *rhomutedata;
    vp0 = model0->getVp(); 
    vs0 = model0->getVs(); 
+   qp0 = model0->getQp(); 
+   qs0 = model0->getQs(); 
    rho0 = model0->getR(); 
    wav0 = source0->getData();
    vpls = lsmodel->getVp(); 
    vsls = lsmodel->getVs(); 
+   qpls = lsmodel->getQp(); 
+   qsls = lsmodel->getQs(); 
    rhols = lsmodel->getR(); 
    wavls = lssource->getData();
    int i;
@@ -7320,16 +7465,22 @@ void InversionViscoelastic2D<T>::saveLinesearch(double *x)
       mute->readModel();
       vpmutedata = mute->getVp();
       vsmutedata = mute->getVs();
+      qpmutedata = mute->getVp();
+      qsmutedata = mute->getVs();
       rhomutedata = mute->getR();
       N = (lsmodel->getGeom())->getNtot();
    }else{
       N = (lsmodel->getGeom())->getNtot();
       vpmutedata = (T *) calloc(N, sizeof(T)); 
       vsmutedata = (T *) calloc(N, sizeof(T)); 
+      qpmutedata = (T *) calloc(N, sizeof(T)); 
+      qsmutedata = (T *) calloc(N, sizeof(T)); 
       rhomutedata = (T *) calloc(N, sizeof(T)); 
       for(i=0; i < N; i++){
          vpmutedata[i] = 1.0;
          vsmutedata[i] = 1.0;
+         qpmutedata[i] = 1.0;
+         qsmutedata[i] = 1.0;
          rhomutedata[i] = 1.0;
       }
    }
@@ -7360,6 +7511,30 @@ void InversionViscoelastic2D<T>::saveLinesearch(double *x)
             for(i=0; i< N; i++)
             {
                vsls[i] = vs0[i];
+            }
+         }
+         if(update_qp){
+            for(i=0; i< N; i++)
+            {
+               qpls[i] = qp0[i] + x[Npar+i]*qpmutedata[i]*kqp;
+            }
+            Npar += N;
+         }else{
+            for(i=0; i< N; i++)
+            {
+               qpls[i] = qp0[i];
+            }
+         }
+         if(update_qs){
+            for(i=0; i< N; i++)
+            {
+               qsls[i] = qs0[i] + x[Npar+i]*qsmutedata[i]*kqs;
+            }
+            Npar += N;
+         }else{
+            for(i=0; i< N; i++)
+            {
+               qsls[i] = qs0[i];
             }
          }
          if(update_rho){
@@ -7427,6 +7602,43 @@ void InversionViscoelastic2D<T>::saveLinesearch(double *x)
                vsls[i] = vs0[i];
             }
          }
+         if(update_qp){
+            for(i=0; i< N; i++)
+            {
+               c[i] = x[Npar+i];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+            for(i=0; i< Nmod; i++)
+            {
+               qpls[i] = qp0[i] + mod[i]*qpmutedata[i]*kqp;
+            }
+            Npar += N;
+         }else{
+            for(i=0; i< Nmod; i++)
+            {
+               qpls[i] = qp0[i];
+            }
+         }
+         if(update_qs){
+            for(i=0; i< N; i++)
+            {
+               c[i] = x[Npar+i];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+
+            for(i=0; i< Nmod; i++)
+            {
+               qsls[i] = qs0[i] + mod[i]*qsmutedata[i]*kqs;
+            }
+            Npar += N;
+         }else{
+            for(i=0; i< Nmod; i++)
+            {
+               qsls[i] = qs0[i];
+            }
+         }
          if(update_rho){
             for(i=0; i< N; i++)
             {
@@ -7479,15 +7691,17 @@ void InversionViscoelastic2D<T>::saveLinesearch(double *x)
    if(Modmutefile.empty()){
       free(vpmutedata);
       free(vsmutedata);
+      free(qpmutedata);
+      free(qsmutedata);
       free(rhomutedata);
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionViscoelastic2D<T>::saveHessian(double *x)
 {
    // Models
-   std::shared_ptr<rockseis::ModelElastic2D<T>> lsmodel (new rockseis::ModelElastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, 1 ,0));
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> lsmodel (new rockseis::ModelViscoelastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, QPLSFILE, QSLSFILE, 1, 15.0, 0));
    std::shared_ptr<rockseis::Data2D<T>> lssource (new rockseis::Data2D<T>(SOURCELSFILE));
    std::shared_ptr<rockseis::Bspl2D<T>> spline;
    std::shared_ptr<rockseis::ModelElastic2D<T>> mute;
@@ -7496,13 +7710,17 @@ void InversionViscoelastic2D<T>::saveHessian(double *x)
    // Write linesearch model
    lsmodel->readModel();
    lssource->read();
-   T *vpls, *vsls, *rhols, *wavls;
+   T *vpls, *vsls, *qpls, *qsls, *rhols, *wavls;
    T *c, *mod;
    T *vpmutedata;
    T *vsmutedata;
+   T *qpmutedata;
+   T *qsmutedata;
    T *rhomutedata;
    vpls = lsmodel->getVp(); 
    vsls = lsmodel->getVs(); 
+   qpls = lsmodel->getQp(); 
+   qsls = lsmodel->getQs(); 
    rhols = lsmodel->getR(); 
    wavls = lssource->getData();
    int i;
@@ -7512,6 +7730,8 @@ void InversionViscoelastic2D<T>::saveHessian(double *x)
    // Set output files for the Hessian models
    lsmodel->setVpfile(VPHESSFILE);
    lsmodel->setVsfile(VSHESSFILE);
+   lsmodel->setQpfile(QPHESSFILE);
+   lsmodel->setQsfile(QSHESSFILE);
    lsmodel->setRfile(RHOHESSFILE);
    lssource->setFile(SOURCEHESSFILE);
 
@@ -7532,16 +7752,22 @@ void InversionViscoelastic2D<T>::saveHessian(double *x)
       mute->readModel();
       vpmutedata = mute->getVp();
       vsmutedata = mute->getVs();
+      qpmutedata = mute->getVp();
+      qsmutedata = mute->getVs();
       rhomutedata = mute->getR();
       N = (lsmodel->getGeom())->getNtot();
    }else{
       N = (lsmodel->getGeom())->getNtot();
       vpmutedata = (T *) calloc(N, sizeof(T)); 
       vsmutedata = (T *) calloc(N, sizeof(T)); 
+      qpmutedata = (T *) calloc(N, sizeof(T)); 
+      qsmutedata = (T *) calloc(N, sizeof(T)); 
       rhomutedata = (T *) calloc(N, sizeof(T)); 
       for(i=0; i < N; i++){
          vpmutedata[i] = 1.0;
          vsmutedata[i] = 1.0;
+         qpmutedata[i] = 1.0;
+         qsmutedata[i] = 1.0;
          rhomutedata[i] = 1.0;
       }
    }
@@ -7574,6 +7800,30 @@ void InversionViscoelastic2D<T>::saveHessian(double *x)
                vsls[i] = 0.0;
             }
          }
+         if(update_qp){
+            for(i=0; i< N; i++)
+            {
+               qpls[i] = x[Npar+i]*qpmutedata[i]*kqp*kqp;
+            }
+            Npar += N;
+         }else{
+            for(i=0; i< N; i++)
+            {
+               qpls[i] = 0.0;
+            }
+         }
+         if(update_qs){
+            for(i=0; i< N; i++)
+            {
+               qsls[i] = x[Npar+i]*qsmutedata[i]*kqs*kqs;
+            }
+            Npar += N;
+         }else{
+            for(i=0; i< N; i++)
+            {
+               qsls[i] = 0.0;
+            }
+         }
          if(update_rho){
             for(i=0; i< N; i++)
             {
@@ -7584,14 +7834,6 @@ void InversionViscoelastic2D<T>::saveHessian(double *x)
             for(i=0; i< N; i++)
             {
                rhols[i] = 0.0;
-            }
-         }
-         /*Ensure vp/vs boundary */
-         for(i=0; i< N; i++)
-         {
-            if(vpls[i] < 1.2*vsls[i])
-            {
-               vsls[i] = vpls[i]/1.2;
             }
          }
          lsmodel->writeModel();
@@ -7639,6 +7881,43 @@ void InversionViscoelastic2D<T>::saveHessian(double *x)
                vsls[i] = 0.0;
             }
          }
+         if(update_qp){
+            for(i=0; i< N; i++)
+            {
+               c[i] = x[Npar+i];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+            for(i=0; i< Nmod; i++)
+            {
+               qpls[i] = mod[i]*qpmutedata[i]*kqp*kqp;
+            }
+            Npar += N;
+         }else{
+            for(i=0; i< Nmod; i++)
+            {
+               qpls[i] = 0.0;
+            }
+         }
+         if(update_qs){
+            for(i=0; i< N; i++)
+            {
+               c[i] = x[Npar+i];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+
+            for(i=0; i< Nmod; i++)
+            {
+               qsls[i] = mod[i]*qsmutedata[i]*kqs*kqs;
+            }
+            Npar += N;
+         }else{
+            for(i=0; i< Nmod; i++)
+            {
+               qsls[i] = 0.0;
+            }
+         }
          if(update_rho){
             for(i=0; i< N; i++)
             {
@@ -7659,15 +7938,6 @@ void InversionViscoelastic2D<T>::saveHessian(double *x)
             }
 
          }
-
-         /*Ensure vp/vs boundary */
-         for(i=0; i< Nmod; i++){
-            if(vpls[i] < 1.2*vsls[i])
-            {
-               vsls[i] = vpls[i]/1.2;
-            }
-         }
-
          lsmodel->writeModel();
          break;
       default:
@@ -7691,12 +7961,14 @@ void InversionViscoelastic2D<T>::saveHessian(double *x)
    if(Modmutefile.empty()){
       free(vpmutedata);
       free(vsmutedata);
+      free(qpmutedata);
+      free(qsmutedata);
       free(rhomutedata);
    }
 }
 
 
-   template<typename T>
+template<typename T>
 void InversionViscoelastic2D<T>::readMisfit(double *f)
 {
    // Data misfit
@@ -7721,30 +7993,46 @@ void InversionViscoelastic2D<T>::readMisfit(double *f)
    *f += reg_alpha[1]*val;
    Fmisfit->close();
 
-   Fmisfit->input(RHOREGMISFITFILE);
+   Fmisfit->input(QPREGMISFITFILE);
    Fmisfit->read(&val, 1, 0); 
    *f += reg_alpha[2]*val;
    Fmisfit->close();
+
+   Fmisfit->input(QSREGMISFITFILE);
+   Fmisfit->read(&val, 1, 0); 
+   *f += reg_alpha[3]*val;
+   Fmisfit->close();
+
+   Fmisfit->input(RHOREGMISFITFILE);
+   Fmisfit->read(&val, 1, 0); 
+   *f += reg_alpha[4]*val;
+   Fmisfit->close();
 }
 
-   template<typename T>
+template<typename T>
 void InversionViscoelastic2D<T>::readGrad(double *g)
 {
    int i,j;
    int N,Ns,Nsrc,Npar=0;
    float *g_in;
-   T *gvp, *gvs, *grho, *gwav;
+   T *gvp, *gvs, *gqp, *gqs, *grho, *gwav;
    std::string vpgradfile;
    std::string vsgradfile;
+   std::string qpgradfile;
+   std::string qsgradfile;
    std::string rhogradfile;
    std::string srcgradfile;
    if(Modmutefile.empty()){
       vpgradfile = VPGRADFILE;
       vsgradfile = VSGRADFILE;
+      qpgradfile = QPGRADFILE;
+      qsgradfile = QSGRADFILE;
       rhogradfile = RHOGRADFILE;
    }else{
       vpgradfile = VPGRADMUTEFILE;
       vsgradfile = VSGRADMUTEFILE;
+      qpgradfile = QPGRADMUTEFILE;
+      qsgradfile = QSGRADMUTEFILE;
       rhogradfile = RHOGRADMUTEFILE;
    }
 
@@ -7754,7 +8042,7 @@ void InversionViscoelastic2D<T>::readGrad(double *g)
       srcgradfile = SOURCEGRADMUTEFILE;
    }
 
-   std::shared_ptr<rockseis::ModelElastic2D<T>> modelgrad (new rockseis::ModelElastic2D<T>(vpgradfile, vsgradfile, rhogradfile, 1 ,0));
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> modelgrad (new rockseis::ModelViscoelastic2D<T>(vpgradfile, vsgradfile, rhogradfile, qpgradfile, qsgradfile, 1, 15.0, 0));
    std::shared_ptr<rockseis::Data2D<T>> sourcegrad (new rockseis::Data2D<T>(srcgradfile));
    std::shared_ptr<rockseis::Bspl2D<T>> spline;
    std::shared_ptr<rockseis::File> Fgrad;
@@ -7765,6 +8053,8 @@ void InversionViscoelastic2D<T>::readGrad(double *g)
          Npar = 0;
          gvp = modelgrad->getVp(); 
          gvs = modelgrad->getVs(); 
+         gqp = modelgrad->getQp(); 
+         gqs = modelgrad->getQs(); 
          grho = modelgrad->getR(); 
          if(update_vp){
             for(i=0; i < N; i++)
@@ -7777,6 +8067,20 @@ void InversionViscoelastic2D<T>::readGrad(double *g)
             for(i=0; i < N; i++)
             {
                g[Npar+i] = gvs[i]*kvs;
+            }
+            Npar += N;
+         }
+         if(update_qp){
+            for(i=0; i < N; i++)
+            {
+               g[Npar+i] = gqp[i]*kqp;
+            }
+            Npar += N;
+         }
+         if(update_qs){
+            for(i=0; i < N; i++)
+            {
+               g[Npar+i] = gqs[i]*kqs;
             }
             Npar += N;
          }
@@ -7813,6 +8117,26 @@ void InversionViscoelastic2D<T>::readGrad(double *g)
             for(i=0; i< N; i++)
             {
                g[Npar+i] = g_in[i]*kvs;
+            }
+            Npar += N;
+         }
+         if(update_qp){
+            Fgrad->input(QPPROJGRADFILE);
+            Fgrad->read(&g_in[0], N, 0);
+            Fgrad->close();
+            for(i=0; i< N; i++)
+            {
+               g[Npar+i] = g_in[i]*kqp;
+            }
+            Npar += N;
+         }
+         if(update_qs){
+            Fgrad->input(QSPROJGRADFILE);
+            Fgrad->read(&g_in[0], N, 0);
+            Fgrad->close();
+            for(i=0; i< N; i++)
+            {
+               g[Npar+i] = g_in[i]*kqs;
             }
             Npar += N;
          }
@@ -7855,24 +8179,29 @@ void InversionViscoelastic2D<T>::readGrad(double *g)
    }
 }
 
-   template<typename T>
+template<typename T>
 void InversionViscoelastic2D<T>::combineGradients()
 {
    // Gradients
-   std::shared_ptr<rockseis::ModelElastic2D<T>> grad;
-   std::shared_ptr<rockseis::ModelElastic2D<T>> reggrad;
-   grad = std::make_shared<rockseis::ModelElastic2D<T>>(VPGRADFILE, VSGRADFILE, RHOGRADFILE, 1 ,0);
-   reggrad = std::make_shared<rockseis::ModelElastic2D<T>>(VPREGGRADFILE, VSREGGRADFILE, RHOREGGRADFILE, 1 ,0);
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> grad;
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> reggrad;
+   grad = std::make_shared<rockseis::ModelViscoelastic2D<T>>(VPGRADFILE, VSGRADFILE, RHOGRADFILE, QPGRADFILE, QSGRADFILE, 1 ,15.0, 0);
+   reggrad = std::make_shared<rockseis::ModelViscoelastic2D<T>>(VPREGGRADFILE, VSREGGRADFILE, RHOREGGRADFILE, QPREGGRADFILE, QSREGGRADFILE, 1 ,15.0, 0);
 
    // Read gradients
    grad->readModel();
    reggrad->readModel();
    T *vp, *vs, *rho, *regvp, *regvs, *regrho;
+   T *qp, *qs, *regqp, *regqs;
    vp = grad->getVp(); 
    vs = grad->getVs(); 
+   qp = grad->getQp(); 
+   qs = grad->getQs(); 
    rho = grad->getR(); 
    regvp = reggrad->getVp(); 
    regvs = reggrad->getVs(); 
+   regqp = reggrad->getQp(); 
+   regqs = reggrad->getQs(); 
    regrho = reggrad->getR(); 
    int i;
    int N;
@@ -7887,24 +8216,32 @@ void InversionViscoelastic2D<T>::combineGradients()
       if(update_vs){
          vs[i] = vs[i] + reg_alpha[1]*regvs[i];
       }
+      if(update_qp){
+         qp[i] = qp[i] + reg_alpha[2]*regqp[i];
+      }
+      if(update_qs){
+         qs[i] = qs[i] + reg_alpha[3]*regqs[i];
+      }
       if(update_rho){
-         rho[i] = rho[i] + reg_alpha[2]*regrho[i];
+         rho[i] = rho[i] + reg_alpha[4]*regrho[i];
       }
    }
    grad->setVpfile(VPGRADCOMBFILE);
    grad->setVsfile(VSGRADCOMBFILE);
+   grad->setQpfile(QPGRADCOMBFILE);
+   grad->setQsfile(QSGRADCOMBFILE);
    grad->setRfile(RHOGRADCOMBFILE);
    grad->writeModel();
 }
 
 
-   template<typename T>
+template<typename T>
 void InversionViscoelastic2D<T>::applyMute()
 {
    if(!Modmutefile.empty()){
       // Models
-      std::shared_ptr<rockseis::ModelElastic2D<T>> model;
-      model = std::make_shared<rockseis::ModelElastic2D<T>>(VPGRADCOMBFILE, VSGRADCOMBFILE, RHOGRADCOMBFILE, 1 ,0);
+      std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model;
+      model = std::make_shared<rockseis::ModelViscoelastic2D<T>>(VPGRADCOMBFILE, VSGRADCOMBFILE, RHOGRADCOMBFILE, QPGRADCOMBFILE, QSGRADCOMBFILE, 1 , 15.0, 0);
       // Mute
       std::shared_ptr<rockseis::ModelElastic2D<T>> mute (new rockseis::ModelElastic2D<T>(Modmutefile, Modmutefile, Modmutefile, 1 ,0));
 
@@ -7912,11 +8249,16 @@ void InversionViscoelastic2D<T>::applyMute()
       model->readModel();
       mute->readModel();
       T *vp, *vs, *rho, *vpmute, *vsmute, *rhomute;
+      T *qp, *qs, *qpmute, *qsmute;
       vp = model->getVp(); 
       vs = model->getVs(); 
+      qp = model->getQp(); 
+      qs = model->getQs(); 
       rho = model->getR(); 
       vpmute = mute->getVp(); 
       vsmute = mute->getVs(); 
+      qpmute = mute->getVp(); 
+      qsmute = mute->getVs(); 
       rhomute = mute->getR(); 
       int i;
       int N;
@@ -7926,10 +8268,14 @@ void InversionViscoelastic2D<T>::applyMute()
       {
          vp[i] = vp[i]*vpmute[i];
          vs[i] = vs[i]*vsmute[i];
+         qp[i] = qp[i]*qpmute[i];
+         qs[i] = qs[i]*qsmute[i];
          rho[i] = rho[i]*rhomute[i];
       }
       model->setVpfile(VPGRADMUTEFILE);
       model->setVsfile(VSGRADMUTEFILE);
+      model->setQpfile(QPGRADMUTEFILE);
+      model->setQsfile(QSGRADMUTEFILE);
       model->setRfile(RHOGRADMUTEFILE);
       model->writeModel();
    }
@@ -7958,11 +8304,11 @@ void InversionViscoelastic2D<T>::applyMute()
 
 }
 
-   template<typename T>
+template<typename T>
 void InversionViscoelastic2D<T>::computeRegularisation(double *x)
 {
    // Models
-   std::shared_ptr<rockseis::ModelElastic2D<T>> model (new rockseis::ModelElastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, 1 ,0));
+   std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model (new rockseis::ModelViscoelastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, QPLSFILE, QSLSFILE, 1, 15.0, 0));
    std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
    std::shared_ptr<rockseis::Bspl2D<double>> spline;
 
@@ -7970,8 +8316,11 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
    model->readModel();
    double *dvpdx, *dvpdz;
    double *dvsdx, *dvsdz;
+   double *dqpdx, *dqpdz;
+   double *dqsdx, *dqsdz;
    double *drhodx, *drhodz;
    T *vpgrad, *vsgrad, *rhograd;
+   T *qpgrad, *qsgrad;
    double *gwrk;
    double *c, *mod;
    double *df = der->getDf();
@@ -7983,15 +8332,23 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
    dvpdz = (double *) calloc(Nmod, sizeof(double));
    dvsdx = (double *) calloc(Nmod, sizeof(double));
    dvsdz = (double *) calloc(Nmod, sizeof(double));
+   dqpdx = (double *) calloc(Nmod, sizeof(double));
+   dqpdz = (double *) calloc(Nmod, sizeof(double));
+   dqsdx = (double *) calloc(Nmod, sizeof(double));
+   dqsdz = (double *) calloc(Nmod, sizeof(double));
    drhodx = (double *) calloc(Nmod, sizeof(double));
    drhodz = (double *) calloc(Nmod, sizeof(double));
    gwrk = (double *) calloc(Nmod, sizeof(double));
    model->readModel();
    model->setVpfile(VPREGGRADFILE);
    model->setVsfile(VSREGGRADFILE);
+   model->setQpfile(QPREGGRADFILE);
+   model->setQsfile(QSREGGRADFILE);
    model->setRfile(RHOREGGRADFILE);
    vpgrad = model->getVp();
    vsgrad = model->getVs();
+   qpgrad = model->getQp();
+   qsgrad = model->getQs();
    rhograd = model->getR();
    switch (this->getParamtype()){
       case PAR_GRID:
@@ -8020,6 +8377,32 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
             for(i=0; i< N; i++)
             {
                dvsdz[i] = df[i]*kvs;
+            }
+            Npar +=N;
+         }
+         if(update_qp){
+            der->ddx_fw(&x[Npar]);
+            for(i=0; i< N; i++)
+            {
+               dqpdx[i] = df[i]*kqp;
+            }
+            der->ddz_fw(x);
+            for(i=0; i< N; i++)
+            {
+               dqpdz[i] = df[i]*kqp;
+            }
+            Npar +=N;
+         }
+         if(update_qs){
+            der->ddx_fw(&x[Npar]);
+            for(i=0; i< N; i++)
+            {
+               dqsdx[i] = df[i]*kqs;
+            }
+            der->ddz_fw(x);
+            for(i=0; i< N; i++)
+            {
+               dqsdz[i] = df[i]*kqs;
             }
             Npar +=N;
          }
@@ -8078,6 +8461,44 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
             for(i=0; i< Nmod; i++)
             {
                dvsdz[i] = df[i]*kvs;
+            }
+            Npar += N;
+         }
+         if(update_qp){
+            for(i=0; i< N; i++)
+            {
+               c[i] = x[Npar+i];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+            der->ddx_fw(mod);
+            for(i=0; i< Nmod; i++)
+            {
+               dqpdx[i] = df[i]*kqp;
+            }
+            der->ddz_fw(mod);
+            for(i=0; i< Nmod; i++)
+            {
+               dqpdz[i] = df[i]*kqp;
+            }
+            Npar += N;
+         }
+         if(update_qs){
+            for(i=0; i< N; i++)
+            {
+               c[i] = x[Npar+i];
+            }
+            spline->bisp();
+            mod = spline->getMod();
+            der->ddx_fw(mod);
+            for(i=0; i< Nmod; i++)
+            {
+               dqsdx[i] = df[i]*kqs;
+            }
+            der->ddz_fw(mod);
+            for(i=0; i< Nmod; i++)
+            {
+               dqsdz[i] = df[i]*kqs;
             }
             Npar += N;
          }
@@ -8179,6 +8600,77 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
       vsgrad[i] -= df[i];
    }
 
+   // Computing misfit
+   T fqp = 0.0;
+   for(i=0; i< Nmod; i++)
+   {
+      M = dqpdx[i]*dqpdx[i] + dqpdz[i]*dqpdz[i];
+      M = sqrt(M);
+      fqp += M;
+   }
+
+   // Computing gradient
+   for(i=0; i< Nmod; i++)
+   {
+      M = dqpdx[i]*dqpdx[i] + dqpdz[i]*dqpdz[i] + reg_eps[2]*reg_eps[2];
+      M = sqrt(M);
+      gwrk[i] = dqpdx[i]/M;
+   }
+   der->ddx_bw(gwrk);
+
+   for(i=0; i< Nmod; i++)
+   {
+      qpgrad[i] = -1.0*df[i];
+   }
+
+   for(i=0; i< Nmod; i++)
+   {
+      M = dqpdx[i]*dqpdx[i] + dqpdz[i]*dqpdz[i] + reg_eps[2]*reg_eps[2];
+      M = sqrt(M);
+      gwrk[i] = dqpdz[i]/M;
+   }
+   der->ddz_bw(gwrk);
+
+   for(i=0; i< Nmod; i++)
+   {
+      qpgrad[i] -= df[i];
+   }
+
+   // Computing misfit
+   T fqs = 0.0;
+   for(i=0; i< Nmod; i++)
+   {
+      M = dqsdx[i]*dqsdx[i] + dqsdz[i]*dqsdz[i];
+      M = sqrt(M);
+      fqs += M;
+   }
+
+   // Computing gradient
+   for(i=0; i< Nmod; i++)
+   {
+      M = dqsdx[i]*dqsdx[i] + dqsdz[i]*dqsdz[i] + reg_eps[3]*reg_eps[3];
+      M = sqrt(M);
+      gwrk[i] = dqsdx[i]/M;
+   }
+   der->ddx_bw(gwrk);
+
+   for(i=0; i< Nmod; i++)
+   {
+      qsgrad[i] = -1.0*df[i];
+   }
+
+   for(i=0; i< Nmod; i++)
+   {
+      M = dqsdx[i]*dqsdx[i] + dqsdz[i]*dqsdz[i] + reg_eps[3]*reg_eps[3];
+      M = sqrt(M);
+      gwrk[i] = dqsdz[i]/M;
+   }
+   der->ddz_bw(gwrk);
+
+   for(i=0; i< Nmod; i++)
+   {
+      qsgrad[i] -= df[i];
+   }
 
    // Computing misfit
    T frho = 0.0;
@@ -8192,7 +8684,7 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
    // Computing gradient
    for(i=0; i< Nmod; i++)
    {
-      M = drhodx[i]*drhodx[i] + drhodz[i]*drhodz[i] + reg_eps[2]*reg_eps[2];
+      M = drhodx[i]*drhodx[i] + drhodz[i]*drhodz[i] + reg_eps[4]*reg_eps[4];
       M = sqrt(M);
       gwrk[i] = drhodx[i]/M;
    }
@@ -8205,7 +8697,7 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
 
    for(i=0; i< Nmod; i++)
    {
-      M = drhodx[i]*drhodx[i] + drhodz[i]*drhodz[i] + reg_eps[2]*reg_eps[2];
+      M = drhodx[i]*drhodx[i] + drhodz[i]*drhodz[i] + reg_eps[4]*reg_eps[4];
       M = sqrt(M);
       gwrk[i] = drhodz[i]/M;
    }
@@ -8232,6 +8724,20 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
    Fmisfit->write(&fvs,1,0);
    Fmisfit->close();
 
+   Fmisfit->output(QPREGMISFITFILE);
+   Fmisfit->setN(1,1);
+   Fmisfit->setD(1,1.0);
+   Fmisfit->setData_format(sizeof(T));
+   Fmisfit->write(&fqp,1,0);
+   Fmisfit->close();
+
+   Fmisfit->output(QSREGMISFITFILE);
+   Fmisfit->setN(1,1);
+   Fmisfit->setD(1,1.0);
+   Fmisfit->setData_format(sizeof(T));
+   Fmisfit->write(&fqs,1,0);
+   Fmisfit->close();
+
    Fmisfit->output(RHOREGMISFITFILE);
    Fmisfit->setN(1,1);
    Fmisfit->setD(1,1.0);
@@ -8247,6 +8753,10 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
    free(dvpdz);
    free(dvsdx);
    free(dvsdz);
+   free(dqpdx);
+   free(dqpdz);
+   free(dqsdx);
+   free(dqsdz);
    free(drhodx);
    free(drhodz);
    free(gwrk);

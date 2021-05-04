@@ -396,12 +396,15 @@ public:
     void setWavgrad(std::shared_ptr<Data2D<T>> _wavgrad) { wavgrad = _wavgrad; wavgradset = true; }
     void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setVsgrad(std::shared_ptr<Image2D<T>> _vsgrad) { vsgrad = _vsgrad; vsgradset = true; }
+    void setQpgrad(std::shared_ptr<Image2D<T>> _qpgrad) { qpgrad = _qpgrad; qpgradset = true; }
+    void setQsgrad(std::shared_ptr<Image2D<T>> _qsgrad) { qsgrad = _qsgrad; qsgradset = true; }
     void setRhograd(std::shared_ptr<Image2D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
     void setDataweightx(std::shared_ptr<Data2D<T>> _dataweightx) { dataweightx = _dataweightx; dataweightxset = true; }
     void setDataweightz(std::shared_ptr<Data2D<T>> _dataweightz) { dataweightz = _dataweightz; dataweightzset = true; }
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesViscoelastic2D<T>> waves_bw, std::shared_ptr<ModelViscoelastic2D<T>> model, int it);
+    void crossCorr(std::shared_ptr<WavesViscoelastic2D<T>> waves_fw, std::shared_ptr<WavesViscoelastic2D<T>> waves_bw, std::shared_ptr<ModelViscoelastic2D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelViscoelastic2D<T>> model);
     void computeMisfit();
     void computeResiduals();
@@ -414,6 +417,8 @@ private:
     std::shared_ptr<Image2D<T>> vpgrad;
     std::shared_ptr<Image2D<T>> vsgrad;
     std::shared_ptr<Image2D<T>> rhograd;
+    std::shared_ptr<Image2D<T>> qpgrad;
+    std::shared_ptr<Image2D<T>> qsgrad;
     std::shared_ptr<Data2D<T>> wavgrad;
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> dataUx;
@@ -429,6 +434,8 @@ private:
     bool modelset;
     bool vpgradset;
     bool vsgradset;
+    bool qpgradset;
+    bool qsgradset;
     bool rhogradset;
     bool wavgradset;
     bool sourceset;

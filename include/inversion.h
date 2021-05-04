@@ -39,24 +39,39 @@
 #define RHOLSFILE "rho_ls.rss"
 #define SOURCELSFILE "source_ls.rss"
 
+#define QPLSFILE "qp_ls.rss"
+#define QSLSFILE "qs_ls.rss"
+
 #define VPHESSFILE "vp_hess.rss"
 #define VSHESSFILE "vs_hess.rss"
 #define RHOHESSFILE "rho_hess.rss"
 #define SOURCEHESSFILE "source_hess.rss"
+
+#define QPHESSFILE "qp_hess.rss"
+#define QSHESSFILE "qs_hess.rss"
 
 #define VP0FILE "vp_0.rss"
 #define VS0FILE "vs_0.rss"
 #define RHO0FILE "rho_0.rss"
 #define SOURCE0FILE "source_0.rss"
 
+#define QP0FILE "qp_0.rss"
+#define QS0FILE "qs_0.rss"
+
 #define VPGRADFILE "vp_grad.rss"
 #define VSGRADFILE "vs_grad.rss"
 #define RHOGRADFILE "rho_grad.rss"
 #define SOURCEGRADFILE "source_grad.rss"
 
+#define QPGRADFILE "qp_grad.rss"
+#define QSGRADFILE "qs_grad.rss"
+
 #define VPREGGRADFILE "vp_reg_grad.rss"
 #define VSREGGRADFILE "vs_reg_grad.rss"
 #define RHOREGGRADFILE "rho_reg_grad.rss"
+
+#define QPREGGRADFILE "qp_reg_grad.rss"
+#define QSREGGRADFILE "qs_reg_grad.rss"
 
 #define SRCILUMFILE "src_ilum.rss"
 
@@ -64,19 +79,31 @@
 #define VSGRADCOMBFILE "vs_grad_comb.rss"
 #define RHOGRADCOMBFILE "rho_grad_comb.rss"
 
+#define QPGRADCOMBFILE "qp_grad_comb.rss"
+#define QSGRADCOMBFILE "qs_grad_comb.rss"
+
 #define VPGRADMUTEFILE "vp_grad_muted.rss"
 #define VSGRADMUTEFILE "vs_grad_muted.rss"
 #define RHOGRADMUTEFILE "rho_grad_muted.rss"
 #define SOURCEGRADMUTEFILE "source_grad_muted.rss"
 
+#define QPGRADMUTEFILE "qp_grad_muted.rss"
+#define QSGRADMUTEFILE "qs_grad_muted.rss"
+
 #define VPPROJGRADFILE "vp_proj_grad.rss"
 #define VSPROJGRADFILE "vs_proj_grad.rss"
 #define RHOPROJGRADFILE "rho_proj_grad.rss"
+
+#define QPPROJGRADFILE "qp_proj_grad.rss"
+#define QSPROJGRADFILE "qs_proj_grad.rss"
 
 #define MISFITFILE "misfit.rss"
 #define VPREGMISFITFILE "vpreg_misfit.rss"
 #define VSREGMISFITFILE "vsreg_misfit.rss"
 #define RHOREGMISFITFILE "rhoreg_misfit.rss"
+
+#define QPREGMISFITFILE "qpreg_misfit.rss"
+#define QSREGMISFITFILE "qsreg_misfit.rss"
 
 #define PMODFILE "pmod.rss"
 #define PRESFILE "pres.rss"
@@ -94,6 +121,9 @@
 #define VS_UP "vs_up.rss"
 #define RHO_UP "rho_up.rss"
 #define SOURCE_UP "source_up.rss"
+
+#define QP_UP "qp_up.rss"
+#define QS_UP "qs_up.rss"
 
 #define RESULTDIR "Results"
 
@@ -920,6 +950,12 @@ class InversionViscoelastic2D: public Inversion<T> {
       void setVsgradfile(std::string file) { Vsgradfile = file; }
       std::string getVsgradfile() { return Vsgradfile; }
 
+      void setQpgradfile(std::string file) { Qpgradfile = file; }
+      std::string getQpgradfile() { return Qpgradfile; }
+
+      void setQsgradfile(std::string file) { Qsgradfile = file; }
+      std::string getQsgradfile() { return Qsgradfile; }
+
       void setRhogradfile(std::string file) { Rhogradfile = file; }
       std::string getRhogradfile() { return Rhogradfile; }
 
@@ -965,6 +1001,12 @@ class InversionViscoelastic2D: public Inversion<T> {
       void setKvs(T val) { kvs = val; }
       T getKvs() { return kvs; }
 
+      void setKqp(T val) { kqp = val; }
+      T getKqp() { return kqp; }
+
+      void setKqs(T val) { kqs = val; }
+      T getKqs() { return kqs; }
+
       void setKrho(T val) { krho = val; }
       T getKrho() { return krho; }
 
@@ -977,8 +1019,14 @@ class InversionViscoelastic2D: public Inversion<T> {
       void setVsregalpha(T val) { reg_alpha[1] = val; }
       T getVsregalpha() { return reg_alpha[1]; }
 
-      void setRhoregalpha(T val) { reg_alpha[2] = val; }
-      T getRhoregalpha() { return reg_alpha[2]; }
+      void setQpregalpha(T val) { reg_alpha[2] = val; }
+      T getQpregalpha() { return reg_alpha[2]; }
+
+      void setQsregalpha(T val) { reg_alpha[3] = val; }
+      T getQsregalpha() { return reg_alpha[3]; }
+
+      void setRhoregalpha(T val) { reg_alpha[4] = val; }
+      T getRhoregalpha() { return reg_alpha[4]; }
 
       void setVpregeps(T val) { reg_eps[0] = val; }
       T getVpregeps() { return reg_eps[0]; }
@@ -986,8 +1034,14 @@ class InversionViscoelastic2D: public Inversion<T> {
       void setVsregeps(T val) { reg_eps[1] = val; }
       T getVsregeps() { return reg_eps[1]; }
 
-      void setRhoregeps(T val) { reg_eps[2] = val; }
-      T getRhoregeps() { return reg_eps[2]; }
+      void setQpregeps(T val) { reg_eps[2] = val; }
+      T getQpregeps() { return reg_eps[2]; }
+
+      void setQsregeps(T val) { reg_eps[3] = val; }
+      T getQsregeps() { return reg_eps[3]; }
+
+      void setRhoregeps(T val) { reg_eps[4] = val; }
+      T getRhoregeps() { return reg_eps[4]; }
 
       void setF0(T val) { f0 = val; }
       T getF0() { return f0; }
@@ -1011,7 +1065,7 @@ class InversionViscoelastic2D: public Inversion<T> {
       void combineGradients();
 
       // Set initial
-      int setInitial(double *x, std::string vpfile, std::string vsfile, std::string rhofile, std::string sourcefile);
+      int setInitial(double *x, std::string vpfile, std::string vsfile, std::string qpfile, std::string qsfile, std::string rhofile, std::string sourcefile);
 
       // Save line search models
       void saveLinesearch(double *x);
@@ -1028,15 +1082,19 @@ class InversionViscoelastic2D: public Inversion<T> {
       // Read misfit
       void readMisfit(double *f);
 
-      void setUpdates(bool vp, bool vs, bool rho, bool source) { update_vp = vp; update_vs= vs; update_rho = rho; update_source = source; }
+      void setUpdates(bool vp, bool vs, bool qp, bool qs, bool rho, bool source) { update_vp = vp; update_vs= vs; update_qp = qp; update_qs= qs; update_rho = rho; update_source = source; }
       void setUpdate_vp(bool vp) { update_vp = vp;}
       void setUpdate_vs(bool vs) { update_vs = vs;}
+      void setUpdate_qp(bool qp) { update_qp = qp;}
+      void setUpdate_qs(bool qs) { update_qs = qs;}
       void setUpdate_rho(bool rho) { update_rho = rho;}
       void setUpdate_source(bool source) { update_source = source;}
 
    private:
       bool update_vp;
       bool update_vs;
+      bool update_qp;
+      bool update_qs;
       bool update_rho;
       bool update_source;
       bool srcilum;
@@ -1051,6 +1109,8 @@ class InversionViscoelastic2D: public Inversion<T> {
       std::string Qsfile;
       std::string Vpgradfile;
       std::string Vsgradfile;
+      std::string Qpgradfile;
+      std::string Qsgradfile;
       std::string Rhogradfile;
       std::string Wavgradfile;
       std::string Dataweightxfile;
@@ -1067,9 +1127,9 @@ class InversionViscoelastic2D: public Inversion<T> {
       std::string Srcmutefile;
       std::string Srcilumfile;
       T apertx;
-      T kvp, kvs, krho, ksource;
-      T reg_eps[3];
-      T reg_alpha[3];
+      T kvp, kvs, kqp, kqs, krho, ksource;
+      T reg_eps[5];
+      T reg_alpha[5];
       T f0;
       int sourcetype;
 };

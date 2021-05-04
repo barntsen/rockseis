@@ -184,6 +184,8 @@ int main(int argc, char** argv) {
          PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
          PRINT_DOC(update_vp = "true"; # Update vp);
          PRINT_DOC(update_vs = "true"; # Update vs);
+         PRINT_DOC(update_qp = "true"; # Update qp);
+         PRINT_DOC(update_qs = "true"; # Update qs);
          PRINT_DOC(update_rho = "true"; # Update rho);
          PRINT_DOC(update_source = "false"; # Update source);
          PRINT_DOC(reciprocity = "false"; # Use receiver gathers instead of source gathers);
@@ -191,6 +193,8 @@ int main(int argc, char** argv) {
          PRINT_DOC(# Diagonal scaling parameters);
          PRINT_DOC(kvp = "100.0";);
          PRINT_DOC(kvs = "100.0";);
+         PRINT_DOC(kqp = "10.0";);
+         PRINT_DOC(kqs = "10.0";);
          PRINT_DOC(krho = "100.0";);
          PRINT_DOC(ksource = "1.0";);
          PRINT_DOC();
@@ -202,6 +206,8 @@ int main(int argc, char** argv) {
          PRINT_DOC(#Regularisation);
          PRINT_DOC(vpregalpha = "1.0e-5";);
          PRINT_DOC(vsregalpha = "1.0e-5";);
+         PRINT_DOC(qpregalpha = "1.0e-5";);
+         PRINT_DOC(qsregalpha = "1.0e-5";);
          PRINT_DOC(rhoregalpha = "1.0e-5";);
          PRINT_DOC();
          PRINT_DOC(# Uncertainty);
@@ -245,10 +251,12 @@ int main(int argc, char** argv) {
    float dtx=-1;
    float dtz=-1;
    float kvp, kvs, krho, ksource;
+   float kqp, kqs;
    float vpregalpha, vsregalpha, rhoregalpha;
+   float qpregalpha, qsregalpha;
    float f0;
    int max_linesearch, max_iterations;
-   bool update_vp, update_vs, update_rho, update_source;
+   bool update_vp, update_vs, update_qp, update_qs, update_rho, update_source;
    int ndomain0;
    int ndomain1;
    int linesearch;
@@ -259,10 +267,6 @@ int main(int argc, char** argv) {
    std::string Qpfile;
    std::string Qsfile;
    std::string Rhofile;
-   std::string Vpgradfile;
-   std::string Vsgradfile;
-   std::string Rhogradfile;
-   std::string Wavgradfile;
    std::string Dataweightxfile;
    std::string Dataweightzfile;
    std::string Misfitfile;
@@ -299,6 +303,8 @@ int main(int argc, char** argv) {
    if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
    if(Inpar->getPar("kvp", &kvp) == INPARSE_ERR) status = true;
    if(Inpar->getPar("kvs", &kvs) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("kqp", &kqp) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("kqs", &kqs) == INPARSE_ERR) status = true;
    if(Inpar->getPar("krho", &krho) == INPARSE_ERR) status = true;
    if(Inpar->getPar("f0", &f0) == INPARSE_ERR) status = true;
    if(Inpar->getPar("ksource", &ksource) == INPARSE_ERR) status = true;
@@ -350,12 +356,16 @@ int main(int argc, char** argv) {
 
    if(Inpar->getPar("vpregalpha", &vpregalpha) == INPARSE_ERR) status = true;
    if(Inpar->getPar("vsregalpha", &vsregalpha) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("qpregalpha", &qpregalpha) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("qsregalpha", &qsregalpha) == INPARSE_ERR) status = true;
    if(Inpar->getPar("rhoregalpha", &rhoregalpha) == INPARSE_ERR) status = true;
    if(Inpar->getPar("max_linesearch", &max_linesearch) == INPARSE_ERR) status = true;
    if(Inpar->getPar("max_iterations", &max_iterations) == INPARSE_ERR) status = true;
 
    if(Inpar->getPar("update_vp", &update_vp) == INPARSE_ERR) status = true;
    if(Inpar->getPar("update_vs", &update_vs) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("update_qp", &update_qp) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("update_qs", &update_qs) == INPARSE_ERR) status = true;
    if(Inpar->getPar("update_rho", &update_rho) == INPARSE_ERR) status = true;
    if(Inpar->getPar("update_source", &update_source) == INPARSE_ERR) status = true;
 
@@ -370,6 +380,8 @@ int main(int argc, char** argv) {
    // Set scaling according to updates
    if(!update_vp) kvp = 0.0;
    if(!update_vs) kvs = 0.0;
+   if(!update_qp) kqp = 0.0;
+   if(!update_qs) kqs = 0.0;
    if(!update_rho) krho = 0.0;
    if(!update_source) ksource = 0.0;
 
@@ -398,9 +410,8 @@ int main(int argc, char** argv) {
    }
    inv->setVpfile(VPLSFILE);
    inv->setVsfile(VSLSFILE);
-   inv->setQpfile(Qpfile);
-   inv->setQsfile(Qsfile);
-   inv->setF0(f0);
+   inv->setQpfile(QPLSFILE);
+   inv->setQsfile(QSLSFILE);
    inv->setRhofile(RHOLSFILE);
    inv->setWaveletfile(SOURCELSFILE);
    inv->setMisfitfile(MISFITFILE);
@@ -414,13 +425,18 @@ int main(int argc, char** argv) {
    inv->setNsnaps(nsnaps);
    inv->setIncore(incore);
    inv->setMisfit_type(fwimisfit);
+   inv->setF0(f0);
 
    inv->setVpgradfile(VPGRADFILE);
    inv->setVsgradfile(VSGRADFILE);
+   inv->setQpgradfile(QPGRADFILE);
+   inv->setQsgradfile(QSGRADFILE);
    inv->setRhogradfile(RHOGRADFILE);
    inv->setWavgradfile(SOURCEGRADFILE);
    inv->setKvp(kvp);
    inv->setKvs(kvs);
+   inv->setKqp(kqp);
+   inv->setKqs(kqs);
    inv->setKrho(krho);
    inv->setKsource(ksource);
    inv->setParamtype(paramtype);
@@ -430,9 +446,11 @@ int main(int argc, char** argv) {
 
    inv->setVpregalpha(vpregalpha);
    inv->setVsregalpha(vsregalpha);
+   inv->setQpregalpha(qpregalpha);
+   inv->setQsregalpha(qsregalpha);
    inv->setRhoregalpha(rhoregalpha);
 
-   inv->setUpdates(update_vp, update_vs, update_rho, update_source);
+   inv->setUpdates(update_vp, update_vs, update_qp, update_qs, update_rho, update_source);
    inv->setNdomain(0, ndomain0);
    inv->setNdomain(1, ndomain1);
 
@@ -454,7 +472,7 @@ int main(int argc, char** argv) {
       // L-BFGS configuration
       double *x = nullptr; 
       int N;
-      N = inv->setInitial(x, Vpfile, Vsfile, Rhofile, Waveletfile);
+      N = inv->setInitial(x, Vpfile, Vsfile, Qpfile, Qsfile, Rhofile, Waveletfile);
       x = (double *) calloc(N, sizeof(double));
       std::shared_ptr<rockseis::Opt> opt (new rockseis::Opt(N));
       opt->opt_set_initial_guess(x);
