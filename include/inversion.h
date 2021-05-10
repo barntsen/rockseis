@@ -519,11 +519,17 @@ class InversionElastic2D: public Inversion<T> {
       InversionElastic2D(MPIdomaindecomp *_mpi); ///<Constructor
       ~InversionElastic2D(); ///<Destructor
 
+      void setDataweightp(bool val) { dataweightp = val; }
+      bool getDataweightp() { return dataweightp; }
+
       void setDataweightx(bool val) { dataweightx = val; }
       bool getDataweightx() { return dataweightx; }
 
       void setDataweightz(bool val) { dataweightz = val; }
       bool getDataweightz() { return dataweightz; }
+
+      void setDataweightpfile(std::string file) { Dataweightpfile = file; }
+      std::string getDataweightpfile() { return Dataweightpfile; }
 
       void setDataweightxfile(std::string file) { Dataweightxfile = file; }
       std::string getDataweightxfile() { return Dataweightxfile; }
@@ -560,6 +566,15 @@ class InversionElastic2D: public Inversion<T> {
 
       void setMisfitfile(std::string file) { Misfitfile = file; }
       std::string getMisfitfile() { return Misfitfile; }
+
+      void setPrecordfile(std::string file) { Precordfile = file; }
+      std::string getPrecordfile() { return Precordfile; }
+
+      void setPmodelledfile(std::string file) { Pmodelledfile = file; }
+      std::string getPmodelledfile() { return Pmodelledfile; }
+
+      void setPresidualfile(std::string file) { Presidualfile = file; }
+      std::string getPresidualfile() { return Presidualfile; }
 
       void setUxrecordfile(std::string file) { Uxrecordfile = file; }
       std::string getUxrecordfile() { return Uxrecordfile; }
@@ -670,6 +685,7 @@ class InversionElastic2D: public Inversion<T> {
       bool update_source;
       bool srcilum;
       bool recilum;
+      bool dataweightp;
       bool dataweightx;
       bool dataweightz;
       std::string Waveletfile;
@@ -680,9 +696,13 @@ class InversionElastic2D: public Inversion<T> {
       std::string Vsgradfile;
       std::string Rhogradfile;
       std::string Wavgradfile;
+      std::string Dataweightpfile;
       std::string Dataweightxfile;
       std::string Dataweightzfile;
       std::string Misfitfile;
+      std::string Precordfile;
+      std::string Pmodelledfile;
+      std::string Presidualfile;
       std::string Uxrecordfile;
       std::string Uxmodelledfile;
       std::string Uxresidualfile;
@@ -911,11 +931,17 @@ class InversionViscoelastic2D: public Inversion<T> {
       InversionViscoelastic2D(MPIdomaindecomp *_mpi); ///<Constructor
       ~InversionViscoelastic2D(); ///<Destructor
 
+      void setDataweightp(bool val) { dataweightp = val; }
+      bool getDataweightp() { return dataweightp; }
+
       void setDataweightx(bool val) { dataweightx = val; }
       bool getDataweightx() { return dataweightx; }
 
       void setDataweightz(bool val) { dataweightz = val; }
       bool getDataweightz() { return dataweightz; }
+
+      void setDataweightpfile(std::string file) { Dataweightpfile = file; }
+      std::string getDataweightpfile() { return Dataweightpfile; }
 
       void setDataweightxfile(std::string file) { Dataweightxfile = file; }
       std::string getDataweightxfile() { return Dataweightxfile; }
@@ -964,6 +990,15 @@ class InversionViscoelastic2D: public Inversion<T> {
 
       void setMisfitfile(std::string file) { Misfitfile = file; }
       std::string getMisfitfile() { return Misfitfile; }
+
+      void setPrecordfile(std::string file) { Precordfile = file; }
+      std::string getPrecordfile() { return Precordfile; }
+
+      void setPmodelledfile(std::string file) { Pmodelledfile = file; }
+      std::string getPmodelledfile() { return Pmodelledfile; }
+
+      void setPresidualfile(std::string file) { Presidualfile = file; }
+      std::string getPresidualfile() { return Presidualfile; }
 
       void setUxrecordfile(std::string file) { Uxrecordfile = file; }
       std::string getUxrecordfile() { return Uxrecordfile; }
@@ -1099,6 +1134,7 @@ class InversionViscoelastic2D: public Inversion<T> {
       bool update_source;
       bool srcilum;
       bool recilum;
+      bool dataweightp;
       bool dataweightx;
       bool dataweightz;
       std::string Waveletfile;
@@ -1113,9 +1149,13 @@ class InversionViscoelastic2D: public Inversion<T> {
       std::string Qsgradfile;
       std::string Rhogradfile;
       std::string Wavgradfile;
+      std::string Dataweightpfile;
       std::string Dataweightxfile;
       std::string Dataweightzfile;
       std::string Misfitfile;
+      std::string Pmodelledfile;
+      std::string Presidualfile;
+      std::string Precordfile;
       std::string Uxrecordfile;
       std::string Uxmodelledfile;
       std::string Uxresidualfile;
@@ -1133,8 +1173,6 @@ class InversionViscoelastic2D: public Inversion<T> {
       T f0;
       int sourcetype;
 };
-
-
 
 }
 #endif //INVERSION_H

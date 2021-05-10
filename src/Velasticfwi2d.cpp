@@ -170,8 +170,10 @@ int main(int argc, char** argv) {
          PRINT_DOC();
          PRINT_DOC(#Fwi parameters);
          PRINT_DOC(misfit_type = "0";  # 0- Difference; 1- Correlation; 2- Adaptive with Gaussian; 3- Adaptive with linear);
+         PRINT_DOC(dataweightp = "false";);
          PRINT_DOC(dataweightx = "false";);
          PRINT_DOC(dataweightz = "false";);
+         PRINT_DOC(Dataweightpfile = "pweights.rss";);
          PRINT_DOC(Dataweightxfile = "xweights.rss";);
          PRINT_DOC(Dataweightzfile = "zweights.rss";);
          PRINT_DOC(modmute = "false";  # Mute model gradient and updates);
@@ -212,7 +214,7 @@ int main(int argc, char** argv) {
          PRINT_DOC();
          PRINT_DOC(# Uncertainty);
          PRINT_DOC(outputhess = "false"; # Output diagonal of L-BFGS inverse Hessian at last iteration ;)
-            PRINT_DOC();
+         PRINT_DOC();
          PRINT_DOC(# Files);
          PRINT_DOC(Vp = "Vp2d.rss";);
          PRINT_DOC(Vs = "Vs2d.rss";);
@@ -220,6 +222,7 @@ int main(int argc, char** argv) {
          PRINT_DOC(        Qp = "Qp2d.rss";);
          PRINT_DOC(        Qs = "Qs2d.rss";);
          PRINT_DOC(Wavelet = "Wav2d.rss";);
+         PRINT_DOC(Precordfile = "Pshot.rss";);
          PRINT_DOC(Uxrecordfile = "Vxshot.rss";);
          PRINT_DOC(Uzrecordfile = "Vzshot.rss";);
          PRINT_DOC(Snapfile = "Local/Snap.rss";);
@@ -234,6 +237,7 @@ int main(int argc, char** argv) {
    int lpml;
    bool fs;
    bool incore = false;
+   bool dataweightp;
    bool dataweightx;
    bool dataweightz;
    bool reciprocity;
@@ -267,10 +271,12 @@ int main(int argc, char** argv) {
    std::string Qpfile;
    std::string Qsfile;
    std::string Rhofile;
+   std::string Dataweightpfile;
    std::string Dataweightxfile;
    std::string Dataweightzfile;
    std::string Misfitfile;
    std::string Snapfile;
+   std::string Precordfile;
    std::string Uxrecordfile;
    std::string Uxmodelledfile;
    std::string Uxresidualfile;
@@ -316,6 +322,7 @@ int main(int argc, char** argv) {
       if(Inpar->getPar("dtx", &dtx) == INPARSE_ERR) status = true;
       if(Inpar->getPar("dtz", &dtz) == INPARSE_ERR) status = true;
    }
+   if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Uxrecordfile", &Uxrecordfile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Uzrecordfile", &Uzrecordfile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Snapfile", &Snapfile) == INPARSE_ERR) status = true;
@@ -333,6 +340,11 @@ int main(int argc, char** argv) {
    }
    if(Inpar->getPar("misfit_type", &misfit_type) == INPARSE_ERR) status = true;
    rockseis::rs_fwimisfit fwimisfit = static_cast<rockseis::rs_fwimisfit>(misfit_type);
+
+   if(Inpar->getPar("dataweightp", &dataweightp) == INPARSE_ERR) status = true;
+   if(dataweightp){
+      if(Inpar->getPar("Dataweightpfile", &Dataweightpfile) == INPARSE_ERR) status = true;
+   }
 
    if(Inpar->getPar("dataweightx", &dataweightx) == INPARSE_ERR) status = true;
    if(dataweightx){
@@ -394,8 +406,13 @@ int main(int argc, char** argv) {
    inv->setFs(fs);
    inv->setSnapinc(snapinc);
 
+   inv->setPrecordfile(Precordfile);
    inv->setUxrecordfile(Uxrecordfile);
    inv->setUzrecordfile(Uzrecordfile);
+
+   inv->setDataweightp(dataweightp);
+   inv->setDataweightpfile(Dataweightpfile);
+
    inv->setDataweightx(dataweightx);
    inv->setDataweightxfile(Dataweightxfile);
 
@@ -415,6 +432,8 @@ int main(int argc, char** argv) {
    inv->setRhofile(RHOLSFILE);
    inv->setWaveletfile(SOURCELSFILE);
    inv->setMisfitfile(MISFITFILE);
+   inv->setPmodelledfile(PMODFILE);
+   inv->setPresidualfile(PRESFILE);
    inv->setUxmodelledfile(UXMODFILE);
    inv->setUxresidualfile(UXRESFILE);
    inv->setUzmodelledfile(UZMODFILE);

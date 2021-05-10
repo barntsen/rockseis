@@ -446,16 +446,23 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather()
                 Fdata->read(&gcoords[j].x, 1);
                 Fdata->read(&gcoords[j].y, 1);
             }else{
-                Fdata->read(&gcoords[j].x, 1);
-                Fdata->read(&gcoords[j].y, 1);
-                Fdata->read(&scoords[j].x, 1);
-                Fdata->read(&scoords[j].y, 1);
+               Fdata->read(&gcoords[j].x, 1);
+               Fdata->read(&gcoords[j].y, 1);
+               Fdata->read(&scoords[j].x, 1);
+               Fdata->read(&scoords[j].y, 1);
             }
             Fdata->read(&data[j*n1], n1);
+        }
+        // Set reciprocity flag
+        if(!this->getReciprocity()){
+           gather->setReciprocity(false);
+        }else{
+           gather->setReciprocity(true);
         }
 
         // Flag shot as running
         this->keymap[i].status = RUNNING;
+
         return gather;
     }else{
         // No shot available
@@ -512,6 +519,12 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather(size_t number)
             Fdata->read(&scoords[j].y, 1);
         }
         Fdata->read(&data[j*n1], n1);
+    }
+    // Set reciprocity flag
+    if(!this->getReciprocity()){
+       gather->setReciprocity(false);
+    }else{
+       gather->setReciprocity(true);
     }
     // Flag shot as running
     this->keymap[number].status = RUNNING;
@@ -775,6 +788,12 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather()
         }
         // Flag shot as running
         this->keymap[i].status = RUNNING;
+        // Set reciprocity flag
+        if(!this->getReciprocity()){
+           gather->setReciprocity(false);
+        }else{
+           gather->setReciprocity(true);
+        }
         return gather;
     }else{
         // No shot available
@@ -836,6 +855,12 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather(size_t number)
     }
     // Flag shot as running
     this->keymap[number].status = RUNNING;
+    // Set reciprocity flag
+    if(!this->getReciprocity()){
+       gather->setReciprocity(false);
+    }else{
+       gather->setReciprocity(true);
+    }
     return gather;
 }
 

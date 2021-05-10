@@ -9,6 +9,7 @@ Data<T>::Data(const std::string file)
     field = PRESSURE;
     Fdata = std::make_shared<File>(); 
     allocated = false;
+    reciprocity = false;
 }
 
 template<typename T>
@@ -21,6 +22,7 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt)
     field = PRESSURE;
     Fdata = std::make_shared<File>(); 
     allocated = false;
+    reciprocity = false;
 }
 
 template<typename T>
@@ -33,6 +35,7 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt, const T _ot)
     field = PRESSURE;
     Fdata = std::make_shared<File>(); 
     allocated = false;
+    reciprocity = false;
 }
 
 template<typename T>

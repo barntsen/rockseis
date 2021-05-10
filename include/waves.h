@@ -80,7 +80,6 @@ private:
     std::shared_ptr<Domain<T>> domain; // Domain pointer 
     int lpml; // PML boundary size
     bool domdec; // Domain decomposition flag
-
 };
 
 /** The 1D Acoustic WAVES class

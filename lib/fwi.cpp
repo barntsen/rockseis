@@ -2198,37 +2198,49 @@ FwiAcoustic3D<T>::~FwiAcoustic3D() {
 template<typename T>
 FwiElastic2D<T>::FwiElastic2D(){
    sourceset = false;
-   dataUxset = false;
-   dataUzset = false;
    modelset = false;
    vpgradset = false;
    vsgradset = false;
+   dataPset = false;
+   datamodPset = false;
+   dataresPset = false;
+   dataweightpset = false;
+
+   dataUxset = false;
    datamodUxset = false;
-   datamodUzset = false;
    dataresUxset = false;
-   dataresUzset = false;
    dataweightxset = false;
+
+   dataUzset = false;
+   datamodUzset = false;
+   dataresUzset = false;
    dataweightzset = false;
+
 }
 
 template<typename T>
-FwiElastic2D<T>::FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataUx, std::shared_ptr<Data2D<T>> _dataUz, int order, int snapinc):Fwi<T>(order, snapinc){
+FwiElastic2D<T>::FwiElastic2D(std::shared_ptr<ModelElastic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataP, std::shared_ptr<Data2D<T>> _dataUx, std::shared_ptr<Data2D<T>> _dataUz, int order, int snapinc):Fwi<T>(order, snapinc){
    source = _source;
+   dataP = _dataP;
    dataUx = _dataUx;
    dataUz = _dataUz;
    model = _model;
    sourceset = true;
    modelset = true;
+   dataPset = true;
    dataUxset = true;
    dataUzset = true;
    vpgradset = false;
    vsgradset = false;
    rhogradset = false;
    wavgradset = false;
+   datamodPset = false;
    datamodUxset = false;
    datamodUzset = false;
+   dataresPset = false;
    dataresUxset = false;
    dataresUzset = false;
+   dataweightpset = false;
    dataweightxset = false;
    dataweightzset = false;
 }
@@ -2693,18 +2705,32 @@ void FwiElastic2D<T>::computeMisfit(){
    if(dataUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
    if(dataresUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
+   if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+   if(dataresP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+   if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+   if(dataresP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
    Point2D<int> *map;
    map = (datamodUx->getGeom())->getGmap();
+   
+   T* modp = datamodP->getData();
+   T* recp = dataP->getData();
 
    T* modx = datamodUx->getData();
    T* recx = dataUx->getData();
 
    T* modz = datamodUz->getData();
    T* recz = dataUz->getData();
+   T resp = 0.0;
    T resx = 0.0;
    T resz = 0.0;
+   T *weip = NULL;
    T *weix = NULL;
    T *weiz = NULL;
+   if(dataweightpset)
+   {
+      weip = dataweightp->getData();
+   }
    if(dataweightxset)
    {
       weix = dataweightx->getData();
@@ -2733,39 +2759,55 @@ void FwiElastic2D<T>::computeMisfit(){
          for(itr=0; itr<ntr; itr++){
             if(map[itr].x >= 0 && map[itr].y >=0){
                for(it=0; it<nt; it++){
+                  resp = modp[I(it, itr)] - recp[I(it, itr)];
                   resx = modx[I(it, itr)] - recx[I(it, itr)];
                   resz = modz[I(it, itr)] - recz[I(it, itr)];
+                  if(dataweightpset)
+                  {
+                     resp *= weip[I(it, itr)];
+                  }
                   if(dataweightxset)
                   {
                      resx *= weix[I(it, itr)];
                   }
-
                   if(dataweightzset)
                   {
                      resz *= weiz[I(it, itr)];
                   }
-                  misfit += 0.5*(resx*resx + resz*resz);
+                  misfit += 0.5*(resp*resp + resx*resx + resz*resz);
                }
             }
          }
          break;
       case CORRELATION:
+         T pnorm1, pnorm2;
          T xnorm1, xnorm2;
          T znorm1, znorm2;
          for(itr=0; itr<ntr; itr++){
             if(map[itr].x >= 0 && map[itr].y >=0){
+               pnorm1 = 0.0;
+               pnorm2 = 0.0;
+
                xnorm1 = 0.0;
                xnorm2 = 0.0;
 
                znorm1 = 0.0;
                znorm2 = 0.0;
                for(it=0; it<nt; it++){
+                  pnorm1 += modp[I(it, itr)]*modp[I(it, itr)];
+                  pnorm2 += recp[I(it, itr)]*recp[I(it, itr)];
+
                   xnorm1 += modx[I(it, itr)]*modx[I(it, itr)];
                   xnorm2 += recx[I(it, itr)]*recx[I(it, itr)];
 
                   znorm1 += modz[I(it, itr)]*modz[I(it, itr)];
                   znorm2 += recz[I(it, itr)]*recz[I(it, itr)];
                }
+
+               pnorm1 = sqrt(pnorm1);
+               pnorm2 = sqrt(pnorm2);
+               if(pnorm1 ==0 ) pnorm1= 1.0;
+               if(pnorm2 ==0 ) pnorm2= 1.0;
 
                xnorm1 = sqrt(xnorm1);
                xnorm2 = sqrt(xnorm2);
@@ -2778,8 +2820,13 @@ void FwiElastic2D<T>::computeMisfit(){
                if(znorm2 ==0 ) znorm2= 1.0;
 
                for(it=0; it<nt; it++){
+                  resp=(-1.0)*(modp[I(it, itr)]*recp[I(it, itr)]/(pnorm1*pnorm2));
                   resx=(-1.0)*(modx[I(it, itr)]*recx[I(it, itr)]/(xnorm1*xnorm2));
                   resz=((-1.0)*(modz[I(it, itr)]*recz[I(it, itr)]/(znorm1*znorm2)));
+                  if(dataweightpset)
+                  {
+                     resp *= weip[I(it, itr)];
+                  }
                   if(dataweightxset)
                   {
                      resx *= weix[I(it, itr)];
@@ -2788,7 +2835,7 @@ void FwiElastic2D<T>::computeMisfit(){
                   {
                      resz *= weiz[I(it, itr)];
                   }
-                  misfit += (resx + resz);
+                  misfit += (resp + resx + resz);
                }
             }
          }
@@ -3030,6 +3077,15 @@ void FwiElastic2D<T>::computeResiduals(){
    if(dataUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
    if(dataresUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
+   if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+   if(dataresP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+   if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+   if(dataresP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+   T* modp = datamodP->getData();
+   T* recp = dataP->getData();
+   T* resp = dataresP->getData();
+
    T* modx = datamodUx->getData();
    T* recx = dataUx->getData();
    T* resx = dataresUx->getData();
@@ -3037,8 +3093,13 @@ void FwiElastic2D<T>::computeResiduals(){
    T* modz = datamodUz->getData();
    T* recz = dataUz->getData();
    T* resz = dataresUz->getData();
+   T *weip = NULL;
    T *weix = NULL;
    T *weiz = NULL;
+   if(dataweightpset)
+   {
+      weip = dataweightp->getData();
+   }
    if(dataweightxset)
    {
       weix = dataweightx->getData();
@@ -3067,8 +3128,13 @@ void FwiElastic2D<T>::computeResiduals(){
       case DIFFERENCE:
          for(itr=0; itr<ntr; itr++){
             for(it=0; it<nt; it++){
+               resp[I(it, itr)] = modp[I(it, itr)] - recp[I(it, itr)];
                resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
                resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
+               if(dataweightpset)
+               {
+                  resp[I(it, itr)] *= weip[I(it, itr)]*weip[I(it, itr)];
+               }
                if(dataweightxset)
                {
                   resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
@@ -3081,9 +3147,14 @@ void FwiElastic2D<T>::computeResiduals(){
          }
          break;
       case CORRELATION:
+         T pnorm1, pnorm2, pnorm3;
          T xnorm1, xnorm2, xnorm3;
          T znorm1, znorm2, znorm3;
          for(itr=0; itr<ntr; itr++){
+            pnorm1 = 0.0;
+            pnorm2 = 0.0;
+            pnorm3 = 0.0;
+
             xnorm1 = 0.0;
             xnorm2 = 0.0;
             xnorm3 = 0.0;
@@ -3092,6 +3163,10 @@ void FwiElastic2D<T>::computeResiduals(){
             znorm2 = 0.0;
             znorm3 = 0.0;
             for(it=0; it<nt; it++){
+               pnorm1 += modp[I(it, itr)]*modp[I(it, itr)];
+               pnorm2 += recp[I(it, itr)]*recp[I(it, itr)];
+               pnorm3 += modp[I(it, itr)]*recp[I(it, itr)];
+
                xnorm1 += modx[I(it, itr)]*modx[I(it, itr)];
                xnorm2 += recx[I(it, itr)]*recx[I(it, itr)];
                xnorm3 += modx[I(it, itr)]*recx[I(it, itr)];
@@ -3100,6 +3175,12 @@ void FwiElastic2D<T>::computeResiduals(){
                znorm2 += recz[I(it, itr)]*recz[I(it, itr)];
                znorm3 += modz[I(it, itr)]*recz[I(it, itr)];
             }
+
+            pnorm1 = sqrt(pnorm1);
+            pnorm2 = sqrt(pnorm2);
+            if(pnorm1 == 0 ) pnorm1= 1.0;
+            if(pnorm2 == 0 ) pnorm2= 1.0;
+            pnorm3 /= (pnorm1*pnorm2);
 
             xnorm1 = sqrt(xnorm1);
             xnorm2 = sqrt(xnorm2);
@@ -3115,8 +3196,13 @@ void FwiElastic2D<T>::computeResiduals(){
             znorm3 /= (znorm1*znorm2);
 
             for(it=0; it<nt; it++){
+               resp[I(it, itr)]=((-1.0)*((recp[I(it, itr)]/(pnorm1*pnorm2)) - (modp[I(it, itr)]/(pnorm1*pnorm1))*pnorm3));
                resx[I(it, itr)]=((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3));
                resz[I(it, itr)]=((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3));
+               if(dataweightpset)
+               {
+                  resp[I(it, itr)] *= weip[I(it, itr)]*weip[I(it, itr)];
+               }
                if(dataweightxset)
                {
                   resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
@@ -3570,6 +3656,11 @@ int FwiElastic2D<T>::run(){
       // Inserting force source 
       waves->insertSource(model, source, SMAP, it);
 
+      // Recording data (P)
+      if(this->datamodPset){
+         waves->recordData(model, this->datamodP, GMAP, it);
+      }
+
       // Recording data (Ux)
       if(this->datamodUxset){
          waves->recordData(model, this->datamodUx, GMAP, it);
@@ -3633,6 +3724,7 @@ int FwiElastic2D<T>::run(){
       }
 
       // Inserting residuals
+      waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
       waves->insertSource(model, dataresUx, GMAP, (nt - 1 - it));
       waves->insertSource(model, dataresUz, GMAP, (nt - 1 - it));
 
@@ -3731,6 +3823,11 @@ int FwiElastic2D<T>::run_optimal(){
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, it);
 
+            // Recording data (P)
+            if(this->datamodPset && !reverse){
+               waves_fw->recordData(model, this->datamodP, GMAP, it);
+            }
+
             // Recording data (Ux)
             if(this->datamodUxset && !reverse){
                waves_fw->recordData(model, this->datamodUx, GMAP, it);
@@ -3769,6 +3866,11 @@ int FwiElastic2D<T>::run_optimal(){
          // Inserting  source 
          waves_fw->insertSource(model, source, SMAP, capo);
 
+         // Recording data (P)
+         if(this->datamodPset){
+            waves_fw->recordData(model, this->datamodP, GMAP, capo);
+         }
+
          // Recording data (Ux)
          if(this->datamodUxset){
             waves_fw->recordData(model, this->datamodUx, GMAP, capo);
@@ -3786,6 +3888,7 @@ int FwiElastic2D<T>::run_optimal(){
          computeResiduals();
 
          // Inserting residuals
+         waves_bw->insertSource(model, dataresP, GMAP, capo);
          waves_bw->insertSource(model, dataresUx, GMAP, capo);
          waves_bw->insertSource(model, dataresUz, GMAP, capo);
 
@@ -3823,6 +3926,7 @@ int FwiElastic2D<T>::run_optimal(){
          }
 
          // Inserting residuals
+         waves_bw->insertSource(model, dataresP, GMAP, capo);
          waves_bw->insertSource(model, dataresUx, GMAP, capo);
          waves_bw->insertSource(model, dataresUz, GMAP, capo);
 
@@ -6268,11 +6372,17 @@ FwiViscoelastic2D<T>::FwiViscoelastic2D(){
    dataresUzset = false;
    dataweightxset = false;
    dataweightzset = false;
+
+   dataPset = false;
+   datamodPset = false;
+   dataresPset = false;
+   dataweightpset = false;
 }
 
 template<typename T>
-FwiViscoelastic2D<T>::FwiViscoelastic2D(std::shared_ptr<ModelViscoelastic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataUx, std::shared_ptr<Data2D<T>> _dataUz, int order, int snapinc):Fwi<T>(order, snapinc){
+FwiViscoelastic2D<T>::FwiViscoelastic2D(std::shared_ptr<ModelViscoelastic2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataP, std::shared_ptr<Data2D<T>> _dataUx, std::shared_ptr<Data2D<T>> _dataUz, int order, int snapinc):Fwi<T>(order, snapinc){
    source = _source;
+   dataP = _dataP;
    dataUx = _dataUx;
    dataUz = _dataUz;
    model = _model;
@@ -6292,6 +6402,11 @@ FwiViscoelastic2D<T>::FwiViscoelastic2D(std::shared_ptr<ModelViscoelastic2D<T>> 
    dataresUzset = false;
    dataweightxset = false;
    dataweightzset = false;
+
+   dataPset = false;
+   datamodPset = false;
+   dataresPset = false;
+   dataweightpset = false;
 }
 
 template<typename T>
@@ -6918,18 +7033,33 @@ void FwiViscoelastic2D<T>::computeMisfit(){
    if(dataUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
    if(dataresUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
+
+   if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+   if(dataresP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+   if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+   if(dataresP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
    Point2D<int> *map;
    map = (datamodUx->getGeom())->getGmap();
+   
+   T* modp = datamodP->getData();
+   T* recp = dataP->getData();
 
    T* modx = datamodUx->getData();
    T* recx = dataUx->getData();
 
    T* modz = datamodUz->getData();
    T* recz = dataUz->getData();
+   T resp = 0.0;
    T resx = 0.0;
    T resz = 0.0;
+   T *weip = NULL;
    T *weix = NULL;
    T *weiz = NULL;
+   if(dataweightpset)
+   {
+      weip = dataweightp->getData();
+   }
    if(dataweightxset)
    {
       weix = dataweightx->getData();
@@ -6958,39 +7088,55 @@ void FwiViscoelastic2D<T>::computeMisfit(){
          for(itr=0; itr<ntr; itr++){
             if(map[itr].x >= 0 && map[itr].y >=0){
                for(it=0; it<nt; it++){
+                  resp = modp[I(it, itr)] - recp[I(it, itr)];
                   resx = modx[I(it, itr)] - recx[I(it, itr)];
                   resz = modz[I(it, itr)] - recz[I(it, itr)];
+                  if(dataweightpset)
+                  {
+                     resp *= weip[I(it, itr)];
+                  }
                   if(dataweightxset)
                   {
                      resx *= weix[I(it, itr)];
                   }
-
                   if(dataweightzset)
                   {
                      resz *= weiz[I(it, itr)];
                   }
-                  misfit += 0.5*(resx*resx + resz*resz);
+                  misfit += 0.5*(resp*resp + resx*resx + resz*resz);
                }
             }
          }
          break;
       case CORRELATION:
+         T pnorm1, pnorm2;
          T xnorm1, xnorm2;
          T znorm1, znorm2;
          for(itr=0; itr<ntr; itr++){
             if(map[itr].x >= 0 && map[itr].y >=0){
+               pnorm1 = 0.0;
+               pnorm2 = 0.0;
+
                xnorm1 = 0.0;
                xnorm2 = 0.0;
 
                znorm1 = 0.0;
                znorm2 = 0.0;
                for(it=0; it<nt; it++){
+                  pnorm1 += modp[I(it, itr)]*modp[I(it, itr)];
+                  pnorm2 += recp[I(it, itr)]*recp[I(it, itr)];
+
                   xnorm1 += modx[I(it, itr)]*modx[I(it, itr)];
                   xnorm2 += recx[I(it, itr)]*recx[I(it, itr)];
 
                   znorm1 += modz[I(it, itr)]*modz[I(it, itr)];
                   znorm2 += recz[I(it, itr)]*recz[I(it, itr)];
                }
+
+               pnorm1 = sqrt(pnorm1);
+               pnorm2 = sqrt(pnorm2);
+               if(pnorm1 ==0 ) pnorm1= 1.0;
+               if(pnorm2 ==0 ) pnorm2= 1.0;
 
                xnorm1 = sqrt(xnorm1);
                xnorm2 = sqrt(xnorm2);
@@ -7003,8 +7149,13 @@ void FwiViscoelastic2D<T>::computeMisfit(){
                if(znorm2 ==0 ) znorm2= 1.0;
 
                for(it=0; it<nt; it++){
+                  resp=(-1.0)*(modp[I(it, itr)]*recp[I(it, itr)]/(pnorm1*pnorm2));
                   resx=(-1.0)*(modx[I(it, itr)]*recx[I(it, itr)]/(xnorm1*xnorm2));
                   resz=((-1.0)*(modz[I(it, itr)]*recz[I(it, itr)]/(znorm1*znorm2)));
+                  if(dataweightpset)
+                  {
+                     resp *= weip[I(it, itr)];
+                  }
                   if(dataweightxset)
                   {
                      resx *= weix[I(it, itr)];
@@ -7013,7 +7164,7 @@ void FwiViscoelastic2D<T>::computeMisfit(){
                   {
                      resz *= weiz[I(it, itr)];
                   }
-                  misfit += (resx + resz);
+                  misfit += (resp + resx + resz);
                }
             }
          }
@@ -7255,6 +7406,15 @@ void FwiViscoelastic2D<T>::computeResiduals(){
    if(dataUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
    if(dataresUz->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
 
+   if(dataP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and recorded data.");
+   if(dataresP->getNtrace() != ntr) rs_error("Mismatch between number of traces in the modelled and residual data.");
+   if(dataP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and recorded data.");
+   if(dataresP->getNt() != nt) rs_error("Mismatch between number of time samples in the modelled and residual data.");
+
+   T* modp = datamodP->getData();
+   T* recp = dataP->getData();
+   T* resp = dataresP->getData();
+
    T* modx = datamodUx->getData();
    T* recx = dataUx->getData();
    T* resx = dataresUx->getData();
@@ -7262,8 +7422,13 @@ void FwiViscoelastic2D<T>::computeResiduals(){
    T* modz = datamodUz->getData();
    T* recz = dataUz->getData();
    T* resz = dataresUz->getData();
+   T *weip = NULL;
    T *weix = NULL;
    T *weiz = NULL;
+   if(dataweightpset)
+   {
+      weip = dataweightp->getData();
+   }
    if(dataweightxset)
    {
       weix = dataweightx->getData();
@@ -7292,8 +7457,13 @@ void FwiViscoelastic2D<T>::computeResiduals(){
       case DIFFERENCE:
          for(itr=0; itr<ntr; itr++){
             for(it=0; it<nt; it++){
+               resp[I(it, itr)] = modp[I(it, itr)] - recp[I(it, itr)];
                resx[I(it, itr)] = modx[I(it, itr)] - recx[I(it, itr)];
                resz[I(it, itr)] = modz[I(it, itr)] - recz[I(it, itr)];
+               if(dataweightpset)
+               {
+                  resp[I(it, itr)] *= weip[I(it, itr)]*weip[I(it, itr)];
+               }
                if(dataweightxset)
                {
                   resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
@@ -7306,9 +7476,14 @@ void FwiViscoelastic2D<T>::computeResiduals(){
          }
          break;
       case CORRELATION:
+         T pnorm1, pnorm2, pnorm3;
          T xnorm1, xnorm2, xnorm3;
          T znorm1, znorm2, znorm3;
          for(itr=0; itr<ntr; itr++){
+            pnorm1 = 0.0;
+            pnorm2 = 0.0;
+            pnorm3 = 0.0;
+
             xnorm1 = 0.0;
             xnorm2 = 0.0;
             xnorm3 = 0.0;
@@ -7317,6 +7492,10 @@ void FwiViscoelastic2D<T>::computeResiduals(){
             znorm2 = 0.0;
             znorm3 = 0.0;
             for(it=0; it<nt; it++){
+               pnorm1 += modp[I(it, itr)]*modp[I(it, itr)];
+               pnorm2 += recp[I(it, itr)]*recp[I(it, itr)];
+               pnorm3 += modp[I(it, itr)]*recp[I(it, itr)];
+
                xnorm1 += modx[I(it, itr)]*modx[I(it, itr)];
                xnorm2 += recx[I(it, itr)]*recx[I(it, itr)];
                xnorm3 += modx[I(it, itr)]*recx[I(it, itr)];
@@ -7325,6 +7504,12 @@ void FwiViscoelastic2D<T>::computeResiduals(){
                znorm2 += recz[I(it, itr)]*recz[I(it, itr)];
                znorm3 += modz[I(it, itr)]*recz[I(it, itr)];
             }
+
+            pnorm1 = sqrt(pnorm1);
+            pnorm2 = sqrt(pnorm2);
+            if(pnorm1 == 0 ) pnorm1= 1.0;
+            if(pnorm2 == 0 ) pnorm2= 1.0;
+            pnorm3 /= (pnorm1*pnorm2);
 
             xnorm1 = sqrt(xnorm1);
             xnorm2 = sqrt(xnorm2);
@@ -7340,8 +7525,13 @@ void FwiViscoelastic2D<T>::computeResiduals(){
             znorm3 /= (znorm1*znorm2);
 
             for(it=0; it<nt; it++){
+               resp[I(it, itr)]=((-1.0)*((recp[I(it, itr)]/(pnorm1*pnorm2)) - (modp[I(it, itr)]/(pnorm1*pnorm1))*pnorm3));
                resx[I(it, itr)]=((-1.0)*((recx[I(it, itr)]/(xnorm1*xnorm2)) - (modx[I(it, itr)]/(xnorm1*xnorm1))*xnorm3));
                resz[I(it, itr)]=((-1.0)*((recz[I(it, itr)]/(znorm1*znorm2)) - (modz[I(it, itr)]/(znorm1*znorm1))*znorm3));
+               if(dataweightpset)
+               {
+                  resp[I(it, itr)] *= weip[I(it, itr)]*weip[I(it, itr)];
+               }
                if(dataweightxset)
                {
                   resx[I(it, itr)] *= weix[I(it, itr)]*weix[I(it, itr)];
@@ -7798,6 +7988,11 @@ int FwiViscoelastic2D<T>::run(){
       // Inserting force source 
       waves->insertSource(model, source, SMAP, it);
 
+      // Recording data (P)
+      if(this->datamodPset){
+         waves->recordData(model, this->datamodP, GMAP, it);
+      }
+
       // Recording data (Ux)
       if(this->datamodUxset){
          waves->recordData(model, this->datamodUx, GMAP, it);
@@ -7864,6 +8059,7 @@ int FwiViscoelastic2D<T>::run(){
       }
 
       // Inserting residuals
+      waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
       waves->insertSource(model, dataresUx, GMAP, (nt - 1 - it));
       waves->insertSource(model, dataresUz, GMAP, (nt - 1 - it));
 
@@ -7965,6 +8161,11 @@ int FwiViscoelastic2D<T>::run_optimal(){
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, it);
 
+            // Recording data (P)
+            if(this->datamodPset && !reverse){
+               waves_fw->recordData(model, this->datamodP, GMAP, it);
+            }
+
             // Recording data (Ux)
             if(this->datamodUxset && !reverse){
                waves_fw->recordData(model, this->datamodUx, GMAP, it);
@@ -8006,6 +8207,11 @@ int FwiViscoelastic2D<T>::run_optimal(){
          // Inserting  source 
          waves_fw->insertSource(model, source, SMAP, capo);
 
+         // Recording data (P)
+         if(this->datamodPset && !reverse){
+            waves_fw->recordData(model, this->datamodP, GMAP, capo);
+         }
+
          // Recording data (Ux)
          if(this->datamodUxset){
             waves_fw->recordData(model, this->datamodUx, GMAP, capo);
@@ -8023,6 +8229,7 @@ int FwiViscoelastic2D<T>::run_optimal(){
          computeResiduals();
 
          // Inserting residuals
+         waves_bw->insertSource(model, dataresP, GMAP, capo);
          waves_bw->insertSource(model, dataresUx, GMAP, capo);
          waves_bw->insertSource(model, dataresUz, GMAP, capo);
 
@@ -8061,6 +8268,7 @@ int FwiViscoelastic2D<T>::run_optimal(){
          }
 
          // Inserting residuals
+         waves_bw->insertSource(model, dataresP, GMAP, capo);
          waves_bw->insertSource(model, dataresUx, GMAP, capo);
          waves_bw->insertSource(model, dataresUz, GMAP, capo);
 

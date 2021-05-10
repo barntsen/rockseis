@@ -2108,9 +2108,12 @@ void WavesElastic2D<T>::recordData(std::shared_ptr<rockseis::ModelElastic2D<T>> 
          { 
             if(map[i].x >= 0 && map[i].y >= 0)
             {
-
-               // Factor to make reciprocity work
-               factor = R[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)] - R[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)];
+               if(data->getReciprocity()){
+                  // Factor to make reciprocity work
+                  factor = R[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)] - R[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)];
+               }else{
+                  factor = 1.0;
+               }
 
                xtri[0] = 1 - shift[i].x;
                xtri[1] = shift[i].x;
@@ -5936,7 +5939,7 @@ void WavesViscoelastic2D<T>::recordData(std::shared_ptr<rockseis::ModelViscoelas
    T *dataarray; 
    T *Fielddata1 = NULL;
    T *Fielddata2 = NULL;
-   T *Vp, *Vs, *R;
+   T *Vp, *Vs, *R, *Tp, *Ts;
    T factor;
    int ntrace = data->getNtrace();
    int nt = data->getNt();
@@ -5969,16 +5972,21 @@ void WavesViscoelastic2D<T>::recordData(std::shared_ptr<rockseis::ModelViscoelas
          Fielddata1 = this->getSxx();
          Fielddata2 = this->getSzz();
          Vp = model->getVp();
+         Tp = model->getTp();
          Vs = model->getVs();
+         Ts = model->getTs();
          R = model->getR();
          for (i=0; i < ntrace; i++) 
          { 
             if(map[i].x >= 0 && map[i].y >= 0)
             {
 
-               // Factor to make reciprocity work
-               factor = R[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)] - R[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)];
-
+               if(data->getReciprocity()){
+                  // Factor to make reciprocity work
+                  factor = R[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)]*Vp[Im(map[i].x, map[i].y)]*Tp[Im(map[i].x, map[i].y)] - R[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)]*Vs[Im(map[i].x, map[i].y)]*Ts[Im(map[i].x, map[i].y)];
+               }else{
+                  factor = 1.0;
+               }
                xtri[0] = 1 - shift[i].x;
                xtri[1] = shift[i].x;
 

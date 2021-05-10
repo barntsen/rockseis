@@ -2802,10 +2802,16 @@ InversionElastic2D<T>::~InversionElastic2D() {
 template<typename T>
 void InversionElastic2D<T>::runGrad() {
    MPIdomaindecomp *mpi = this->getMpi();
+   std::shared_ptr<rockseis::Data2D<T>> Pdata2D;
+   std::shared_ptr<rockseis::Data2D<T>> Pdata2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uxdata2D;
    std::shared_ptr<rockseis::Data2D<T>> Uxdata2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uzdata2D;
    std::shared_ptr<rockseis::Data2D<T>> Uzdata2Di;
+   std::shared_ptr<rockseis::Data2D<T>> Pdatamod2D;
+   std::shared_ptr<rockseis::Data2D<T>> Pdatamod2Di;
+   std::shared_ptr<rockseis::Data2D<T>> Pdatares2D;
+   std::shared_ptr<rockseis::Data2D<T>> Pdatares2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uxdatamod2D;
    std::shared_ptr<rockseis::Data2D<T>> Uxdatamod2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uxdatares2D;
@@ -2814,6 +2820,8 @@ void InversionElastic2D<T>::runGrad() {
    std::shared_ptr<rockseis::Data2D<T>> Uzdatamod2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uzdatares2D;
    std::shared_ptr<rockseis::Data2D<T>> Uzdatares2Di;
+   std::shared_ptr<rockseis::Data2D<T>> pweight2D;
+   std::shared_ptr<rockseis::Data2D<T>> pweight2Di;
    std::shared_ptr<rockseis::Data2D<T>> xweight2D;
    std::shared_ptr<rockseis::Data2D<T>> xweight2Di;
    std::shared_ptr<rockseis::Data2D<T>> zweight2D;
@@ -2868,6 +2876,13 @@ void InversionElastic2D<T>::runGrad() {
       std::shared_ptr<rockseis::Data2D<T>> Uxdata2D (new rockseis::Data2D<T>(Uxrecordfile));
 
       // Create a data class for the recorded data
+      Pdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+      Pdatamod2D->setFile(Pmodelledfile);
+      Pdatamod2D->createEmpty(Uxdata2D->getNtrace());
+      Pdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+      Pdatares2D->setFile(Presidualfile);
+      Pdatares2D->createEmpty(Uxdata2D->getNtrace());
+
       Uxdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
       Uxdatamod2D->setFile(Uxmodelledfile);
       Uxdatamod2D->createEmpty(Uxdata2D->getNtrace());
@@ -2946,6 +2961,7 @@ void InversionElastic2D<T>::runGrad() {
             }else{
                gatherid = work.id/2;
             }
+            bool applyweightp = this->getDataweightp();
             bool applyweightx = this->getDataweightx();
             bool applyweightz = this->getDataweightz();
 
@@ -2957,8 +2973,15 @@ void InversionElastic2D<T>::runGrad() {
             Sort->setDatafile(Uzrecordfile);
             Uzdata2D = Sort->get2DGather(gatherid);
 
+            Sort->setDatafile(Precordfile);
+            Pdata2D = Sort->get2DGather(gatherid);
+
             // Get the weight
             if(!Sort->getReciprocity()){
+               if(applyweightp){
+                  Sort->setDatafile(Dataweightpfile);
+                  pweight2D = Sort->get2DGather(gatherid);
+               }
                if(applyweightx){
                   Sort->setDatafile(Dataweightxfile);
                   xweight2D = Sort->get2DGather(gatherid);
@@ -3046,6 +3069,9 @@ void InversionElastic2D<T>::runGrad() {
             source->makeMap(lmodel->getGeom(), SMAP);
 
             // Interpolate shot
+            Pdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+            interp->interp(Pdata2D, Pdata2Di);
+
             Uxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             interp->interp(Uxdata2D, Uxdata2Di);
 
@@ -3053,6 +3079,7 @@ void InversionElastic2D<T>::runGrad() {
             interp->interp(Uzdata2D, Uzdata2Di);
 
             if(!Sort->getReciprocity()){
+               Pdata2Di->setField(PRESSURE);
                Uxdata2Di->setField(VX);
                Uzdata2Di->setField(VZ);
             }else{
@@ -3074,13 +3101,19 @@ void InversionElastic2D<T>::runGrad() {
                      break;
                }
             }
+            Pdata2Di->makeMap(lmodel->getGeom(), GMAP);
             Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
             Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
 
             // Create fwi object
-            fwi = std::make_shared<rockseis::FwiElastic2D<T>>(lmodel, source, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
+            fwi = std::make_shared<rockseis::FwiElastic2D<T>>(lmodel, source, Pdata2Di, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
 
             // Create modelled and residual data objects 
+            Pdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+            Pdatamod2D->copyCoords(Pdata2D);
+            Pdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+            Pdatares2D->copyCoords(Pdata2D);
+
             Uxdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             Uxdatamod2D->copyCoords(Uxdata2D);
             Uxdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
@@ -3092,6 +3125,8 @@ void InversionElastic2D<T>::runGrad() {
             Uzdatares2D->copyCoords(Uzdata2D);
 
             if(!Sort->getReciprocity()){
+               Pdatamod2D->setField(PRESSURE);
+               Pdatares2D->setField(PRESSURE);
                Uxdatamod2D->setField(VX);
                Uxdatares2D->setField(VX);
                Uzdatamod2D->setField(VZ);
@@ -3122,17 +3157,27 @@ void InversionElastic2D<T>::runGrad() {
                }
             }
 
+            Pdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+            Pdatares2D->makeMap(lmodel->getGeom(), GMAP);
             Uxdatamod2D->makeMap(lmodel->getGeom(), GMAP);
             Uxdatares2D->makeMap(lmodel->getGeom(), GMAP);
             Uzdatamod2D->makeMap(lmodel->getGeom(), GMAP);
             Uzdatares2D->makeMap(lmodel->getGeom(), GMAP);
 
+            fwi->setDatamodP(Pdatamod2D);
+            fwi->setDataresP(Pdatares2D);
             fwi->setDatamodUx(Uxdatamod2D);
             fwi->setDataresUx(Uxdatares2D);
             fwi->setDatamodUz(Uzdatamod2D);
             fwi->setDataresUz(Uzdatares2D);
 
             // Interpolate weight
+            if(applyweightp){
+               pweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+               interp->interp(pweight2D, pweight2Di);
+               pweight2Di->makeMap(lmodel->getGeom(), GMAP);
+               fwi->setDataweightp(pweight2Di);
+            }
             if(applyweightx){
                xweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                interp->interp(xweight2D, xweight2Di);
@@ -3218,6 +3263,17 @@ void InversionElastic2D<T>::runGrad() {
 
             // Output modelled and residual data
             if(!Sort->getReciprocity()){
+               Pdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Pdata2D->getNt(), Pdata2D->getDt(), Pdata2D->getOt());
+               Pdatamod2Di->setFile(Pmodelledfile);
+               interp->interp(Pdatamod2D, Pdatamod2Di);
+               Pdatamod2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Sort->put2DGather(Pdatamod2Di, gatherid, (Pdatamod2Di->getGeom())->getGmap());
+               Pdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Pdata2D->getNt(), Pdata2D->getDt(), Pdata2D->getOt());
+               Pdatares2Di->setFile(Presidualfile);
+               interp->interp(Pdatares2D, Pdatares2Di);
+               Pdatares2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Sort->put2DGather(Pdatares2Di, gatherid, (Pdatares2Di->getGeom())->getGmap());
+
                Uxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                Uxdatamod2Di->setFile(Uxmodelledfile);
                interp->interp(Uxdatamod2D, Uxdatamod2Di);
@@ -3275,6 +3331,8 @@ void InversionElastic2D<T>::runGrad() {
             }
 
             // Recompute and Output misfit
+            Pdata2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+            Pdatamod2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
             Uxdata2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
             Uxdatamod2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
             Uzdata2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
@@ -3312,6 +3370,12 @@ void InversionElastic2D<T>::runGrad() {
             mpi->barrier();
 
             // Reset all classes
+            Pdata2D.reset();
+            Pdata2Di.reset();
+            Pdatamod2D.reset();
+            Pdatamod2Di.reset();
+            Pdatares2D.reset();
+            Pdatares2Di.reset();
             Uxdata2D.reset();
             Uxdata2Di.reset();
             Uxdatamod2D.reset();
@@ -6468,10 +6532,16 @@ InversionViscoelastic2D<T>::~InversionViscoelastic2D() {
 template<typename T>
 void InversionViscoelastic2D<T>::runGrad() {
    MPIdomaindecomp *mpi = this->getMpi();
+   std::shared_ptr<rockseis::Data2D<T>> Pdata2D;
+   std::shared_ptr<rockseis::Data2D<T>> Pdata2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uxdata2D;
    std::shared_ptr<rockseis::Data2D<T>> Uxdata2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uzdata2D;
    std::shared_ptr<rockseis::Data2D<T>> Uzdata2Di;
+   std::shared_ptr<rockseis::Data2D<T>> Pdatamod2D;
+   std::shared_ptr<rockseis::Data2D<T>> Pdatamod2Di;
+   std::shared_ptr<rockseis::Data2D<T>> Pdatares2D;
+   std::shared_ptr<rockseis::Data2D<T>> Pdatares2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uxdatamod2D;
    std::shared_ptr<rockseis::Data2D<T>> Uxdatamod2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uxdatares2D;
@@ -6480,6 +6550,8 @@ void InversionViscoelastic2D<T>::runGrad() {
    std::shared_ptr<rockseis::Data2D<T>> Uzdatamod2Di;
    std::shared_ptr<rockseis::Data2D<T>> Uzdatares2D;
    std::shared_ptr<rockseis::Data2D<T>> Uzdatares2Di;
+   std::shared_ptr<rockseis::Data2D<T>> pweight2D;
+   std::shared_ptr<rockseis::Data2D<T>> pweight2Di;
    std::shared_ptr<rockseis::Data2D<T>> xweight2D;
    std::shared_ptr<rockseis::Data2D<T>> xweight2Di;
    std::shared_ptr<rockseis::Data2D<T>> zweight2D;
@@ -6536,6 +6608,13 @@ void InversionViscoelastic2D<T>::runGrad() {
       std::shared_ptr<rockseis::Data2D<T>> Uxdata2D (new rockseis::Data2D<T>(Uxrecordfile));
 
       // Create a data class for the recorded data
+      Pdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+      Pdatamod2D->setFile(Pmodelledfile);
+      Pdatamod2D->createEmpty(Uxdata2D->getNtrace());
+      Pdatares2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
+      Pdatares2D->setFile(Presidualfile);
+      Pdatares2D->createEmpty(Uxdata2D->getNtrace());
+
       Uxdatamod2D = std::make_shared<rockseis::Data2D<T>>(1, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
       Uxdatamod2D->setFile(Uxmodelledfile);
       Uxdatamod2D->createEmpty(Uxdata2D->getNtrace());
@@ -6628,6 +6707,7 @@ void InversionViscoelastic2D<T>::runGrad() {
             }else{
                gatherid = work.id/2;
             }
+            bool applyweightp = this->getDataweightp();
             bool applyweightx = this->getDataweightx();
             bool applyweightz = this->getDataweightz();
 
@@ -6639,8 +6719,15 @@ void InversionViscoelastic2D<T>::runGrad() {
             Sort->setDatafile(Uzrecordfile);
             Uzdata2D = Sort->get2DGather(gatherid);
 
+            Sort->setDatafile(Precordfile);
+            Pdata2D = Sort->get2DGather(gatherid);
+
             // Get the weight
             if(!Sort->getReciprocity()){
+               if(applyweightp){
+                  Sort->setDatafile(Dataweightpfile);
+                  pweight2D = Sort->get2DGather(gatherid);
+               }
                if(applyweightx){
                   Sort->setDatafile(Dataweightxfile);
                   xweight2D = Sort->get2DGather(gatherid);
@@ -6738,6 +6825,9 @@ void InversionViscoelastic2D<T>::runGrad() {
             source->makeMap(lmodel->getGeom(), SMAP);
 
             // Interpolate shot
+            Pdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+            interp->interp(Pdata2D, Pdata2Di);
+
             Uxdata2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             interp->interp(Uxdata2D, Uxdata2Di);
 
@@ -6745,6 +6835,7 @@ void InversionViscoelastic2D<T>::runGrad() {
             interp->interp(Uzdata2D, Uzdata2Di);
 
             if(!Sort->getReciprocity()){
+               Pdata2Di->setField(PRESSURE);
                Uxdata2Di->setField(VX);
                Uzdata2Di->setField(VZ);
             }else{
@@ -6766,13 +6857,19 @@ void InversionViscoelastic2D<T>::runGrad() {
                      break;
                }
             }
+            Pdata2Di->makeMap(lmodel->getGeom(), GMAP);
             Uxdata2Di->makeMap(lmodel->getGeom(), GMAP);
             Uzdata2Di->makeMap(lmodel->getGeom(), GMAP);
 
             // Create fwi object
-            fwi = std::make_shared<rockseis::FwiViscoelastic2D<T>>(lmodel, source, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
+            fwi = std::make_shared<rockseis::FwiViscoelastic2D<T>>(lmodel, source, Pdata2Di, Uxdata2Di, Uzdata2Di, this->getOrder(), this->getSnapinc());
 
             // Create modelled and residual data objects 
+            Pdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+            Pdatamod2D->copyCoords(Pdata2D);
+            Pdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+            Pdatares2D->copyCoords(Pdata2D);
+
             Uxdatamod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             Uxdatamod2D->copyCoords(Uxdata2D);
             Uxdatares2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
@@ -6784,6 +6881,8 @@ void InversionViscoelastic2D<T>::runGrad() {
             Uzdatares2D->copyCoords(Uzdata2D);
 
             if(!Sort->getReciprocity()){
+               Pdatamod2D->setField(PRESSURE);
+               Pdatares2D->setField(PRESSURE);
                Uxdatamod2D->setField(VX);
                Uxdatares2D->setField(VX);
                Uzdatamod2D->setField(VZ);
@@ -6814,17 +6913,27 @@ void InversionViscoelastic2D<T>::runGrad() {
                }
             }
 
+            Pdatamod2D->makeMap(lmodel->getGeom(), GMAP);
+            Pdatares2D->makeMap(lmodel->getGeom(), GMAP);
             Uxdatamod2D->makeMap(lmodel->getGeom(), GMAP);
             Uxdatares2D->makeMap(lmodel->getGeom(), GMAP);
             Uzdatamod2D->makeMap(lmodel->getGeom(), GMAP);
             Uzdatares2D->makeMap(lmodel->getGeom(), GMAP);
 
+            fwi->setDatamodP(Pdatamod2D);
+            fwi->setDataresP(Pdatares2D);
             fwi->setDatamodUx(Uxdatamod2D);
             fwi->setDataresUx(Uxdatares2D);
             fwi->setDatamodUz(Uzdatamod2D);
             fwi->setDataresUz(Uzdatares2D);
 
             // Interpolate weight
+            if(applyweightp){
+               pweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
+               interp->interp(pweight2D, pweight2Di);
+               pweight2Di->makeMap(lmodel->getGeom(), GMAP);
+               fwi->setDataweightp(pweight2Di);
+            }
             if(applyweightx){
                xweight2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                interp->interp(xweight2D, xweight2Di);
@@ -6918,6 +7027,17 @@ void InversionViscoelastic2D<T>::runGrad() {
 
             // Output modelled and residual data
             if(!Sort->getReciprocity()){
+               Pdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Pdata2D->getNt(), Pdata2D->getDt(), Pdata2D->getOt());
+               Pdatamod2Di->setFile(Pmodelledfile);
+               interp->interp(Pdatamod2D, Pdatamod2Di);
+               Pdatamod2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Sort->put2DGather(Pdatamod2Di, gatherid, (Pdatamod2Di->getGeom())->getGmap());
+
+               Pdatares2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Pdata2D->getNt(), Pdata2D->getDt(), Pdata2D->getOt());
+               Pdatares2Di->setFile(Presidualfile);
+               interp->interp(Pdatares2D, Pdatares2Di);
+               Pdatares2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Sort->put2DGather(Pdatares2Di, gatherid, (Pdatares2Di->getGeom())->getGmap());
                Uxdatamod2Di = std::make_shared<rockseis::Data2D<T>>(ntr, Uxdata2D->getNt(), Uxdata2D->getDt(), Uxdata2D->getOt());
                Uxdatamod2Di->setFile(Uxmodelledfile);
                interp->interp(Uxdatamod2D, Uxdatamod2Di);
@@ -6975,6 +7095,8 @@ void InversionViscoelastic2D<T>::runGrad() {
             }
 
             // Recompute and Output misfit
+            Pdata2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+            Pdatamod2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
             Uxdata2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
             Uxdatamod2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
             Uzdata2Di->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
@@ -7018,6 +7140,12 @@ void InversionViscoelastic2D<T>::runGrad() {
             mpi->barrier();
 
             // Reset all classes
+            Pdata2D.reset();
+            Pdata2Di.reset();
+            Pdatamod2D.reset();
+            Pdatamod2Di.reset();
+            Pdatares2D.reset();
+            Pdatares2Di.reset();
             Uxdata2D.reset();
             Uxdata2Di.reset();
             Uxdatamod2D.reset();

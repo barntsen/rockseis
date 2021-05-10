@@ -35,8 +35,7 @@ public:
     bool getAlloc() { return allocated; }	///< Get status if data is allocated
     std::string getFile() { return datafile; } ///< Get filename
     rs_field getField() { return field; } ///< Get data type
-    bool open(std::string flag); ///< Open file. Flags can be "i", "o" or "a".
-    T gauss(int n, int m); ///<Fourier transform of Gaussian
+    bool getReciprocity() { return reciprocity; } ///< Get reciprocity flag
     void close();  ///< Close file
 
     // Set functions
@@ -49,6 +48,7 @@ public:
     void setField(rs_field _field) { field = _field; } ///< Set data type 
     void setRecinc(const int inc) { recinc = inc; }	///< Set Nx
     void setAlloc(bool val) {allocated = val; }	///< Set status if data is allocated
+    void setReciprocity(bool val) { reciprocity = val; } ///< Set reciprocity flag
 
     // Filter
     void Filter1D(T f0, T f1, T f2, T f3, T df, unsigned long nf, T* W, T *cdata);
@@ -59,6 +59,10 @@ public:
     // S-transform
     void St1D(std::shared_ptr<rockseis::Fft<T>> fft1d, std::shared_ptr<rockseis::Fft<T>> ifft1d, T *data, int lo, int hi, T *result);
     void iSt1D(T *data, int lo, int hi, T *result);
+
+    // File functions
+    bool open(std::string flag); ///< Open file. Flags can be "i", "o" or "a".
+    T gauss(int n, int m); ///<Fourier transform of Gaussian
 
 private:
     std::string datafile;
@@ -71,6 +75,7 @@ private:
     std::shared_ptr<File> Fdata;
     int recinc;
     bool allocated;
+    bool reciprocity;
 };
 
 // =============== 2D DATA CLASS =============== //
