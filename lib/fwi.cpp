@@ -3,7 +3,6 @@
 
 namespace rockseis {
 
-    // Elastic: Derivate V Source gradients inside scaleGrad
 // =============== ABSTRACT FWI CLASS =============== //
 template<typename T>
 Fwi<T>::Fwi() {
@@ -2835,6 +2834,9 @@ void FwiElastic2D<T>::computeMisfit(){
                   {
                      resz *= weiz[I(it, itr)];
                   }
+                  if(std::isnan(resp) || std::isinf(resp)) resp = 0.0;
+                  if(std::isnan(resx) || std::isinf(resx)) resx = 0.0;
+                  if(std::isnan(resz) || std::isinf(resz)) resz = 0.0;
                   misfit += (resp + resx + resz);
                }
             }
@@ -3213,7 +3215,7 @@ void FwiElastic2D<T>::computeResiduals(){
                }
             }
          }
-         // Thresholding
+         // Thresholding X and Z components
          fres = (T *) calloc(nt*ntr, sizeof(T));
          for(itr=0; itr<ntr; itr++){
             for(it=0; it<nt; it++){
@@ -3238,6 +3240,28 @@ void FwiElastic2D<T>::computeResiduals(){
                   resx[I(it, itr)] = 0.0;
                   resz[I(it, itr)] = 0.0;
                }
+               if(std::isnan(resx[I(it, itr)]) || std::isinf(resx[I(it, itr)])) resx[I(it, itr)] = 0.0;
+               if(std::isnan(resz[I(it, itr)]) || std::isinf(resz[I(it, itr)])) resz[I(it, itr)] = 0.0;
+            }
+         }
+
+         // Thresholding P component
+         fres = (T *) calloc(nt*ntr, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               fres[I(it, itr)] = ABS(resp[I(it, itr)]);
+            }
+         }
+         std::sort(fres, fres+nt*ntr); 
+         pos = (int) (PCLIP*nt*ntr/100);
+         pclip = fres[pos];
+
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               if(ABS(resp[I(it, itr)]) >= pclip){
+                  resp[I(it, itr)] = 0.0;
+               }
+               if(std::isnan(resp[I(it, itr)]) || std::isinf(resp[I(it, itr)])) resp[I(it, itr)] = 0.0;
             }
          }
 
@@ -7164,6 +7188,10 @@ void FwiViscoelastic2D<T>::computeMisfit(){
                   {
                      resz *= weiz[I(it, itr)];
                   }
+
+                  if(std::isnan(resp) || std::isinf(resp)) resp = 0.0;
+                  if(std::isnan(resx) || std::isinf(resx)) resx = 0.0;
+                  if(std::isnan(resz) || std::isinf(resz)) resz = 0.0;
                   misfit += (resp + resx + resz);
                }
             }
@@ -7542,7 +7570,7 @@ void FwiViscoelastic2D<T>::computeResiduals(){
                }
             }
          }
-         // Thresholding
+         // Thresholding x and z components
          fres = (T *) calloc(nt*ntr, sizeof(T));
          for(itr=0; itr<ntr; itr++){
             for(it=0; it<nt; it++){
@@ -7567,6 +7595,29 @@ void FwiViscoelastic2D<T>::computeResiduals(){
                   resx[I(it, itr)] = 0.0;
                   resz[I(it, itr)] = 0.0;
                }
+
+               if(std::isnan(resx[I(it, itr)]) || std::isinf(resx[I(it, itr)])) resx[I(it, itr)] = 0.0;
+               if(std::isnan(resz[I(it, itr)]) || std::isinf(resz[I(it, itr)])) resz[I(it, itr)] = 0.0;
+            }
+         }
+
+         // Thresholding P component
+         fres = (T *) calloc(nt*ntr, sizeof(T));
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               fres[I(it, itr)] = ABS(resp[I(it, itr)]);
+            }
+         }
+         std::sort(fres, fres+nt*ntr); 
+         pos = (int) (PCLIP*nt*ntr/100);
+         pclip = fres[pos];
+
+         for(itr=0; itr<ntr; itr++){
+            for(it=0; it<nt; it++){
+               if(ABS(resp[I(it, itr)]) >= pclip){
+                  resp[I(it, itr)] = 0.0;
+               }
+               if(std::isnan(resp[I(it, itr)]) || std::isinf(resp[I(it, itr)])) resp[I(it, itr)] = 0.0;
             }
          }
 
