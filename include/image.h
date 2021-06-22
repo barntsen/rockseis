@@ -49,6 +49,7 @@ public:
     void allocateImage(); /// Allocate memory for image
     void freeImage(); /// Free memory for imagedata
     bool createEmpty(); ///< Create empty image for stacking
+    bool stackImage(std::shared_ptr<Image2D<T>> imagein); ///< Stack image
     bool stackImage(std::string infile); ///< Stack image
     bool stackImage_parallel(std::string infile,int padlx, int padhx, int padlz, int padhz); ///< Stack image in parallel
     std::shared_ptr<Image2D<T>> getLocal(std::shared_ptr<Data2D<T>> data, T aperture, bool map); ///< Get image over aperture

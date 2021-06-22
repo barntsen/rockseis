@@ -312,6 +312,98 @@ bool Image2D<T>::createEmpty()
 }
 
 template<typename T>
+bool Image2D<T>::stackImage(std::shared_ptr<Image2D<T>>  imagein)
+{
+   bool status;
+
+   if(!imagein->getAllocated()) rs_error("Image2D<T>::stackImage: Input image data not allocated.");
+   if(!this->getAllocated()) rs_error("Image2D<T>::stackImage: Output image data not allocated.");
+
+   long int nxg, nzg;
+   int nhxg, nhzg;
+   T *dataout=this->getImagedata();
+   T dxg, dzg, oxg, ozg;
+   nxg = this->getNx();
+   nzg = this->getNz();
+   nhxg = this->getNhx();
+   nhzg = this->getNhz();
+   dxg = this->getDx();
+   dzg = this->getDz();
+   oxg = this->getOx();
+   ozg = this->getOz();
+
+   T *datain=imagein->getImagedata();
+   long int nxl, nzl;
+   int nhxl, nhzl;
+   T dxl, dzl, oxl, ozl;
+   nxl = imagein->getNx();
+   nzl = imagein->getNz();
+   nhxl = imagein->getNhx();
+   nhzl = imagein->getNhz();
+   dxl = imagein->getDx();
+   dzl = imagein->getDz();
+   oxl = imagein->getOx();
+   ozl = imagein->getOz();
+
+
+   if(nhxg != nhxl || nhzg != nhzl || dxg != dxl || dzg != dzl){
+      rs_error("Image2D::stackImage: Images are not compatible. Cannot stack.");
+   }
+
+   T *trcin;
+   trcin = (T *) calloc(nxl*nzl, sizeof(T));
+   if(trcin == NULL) rs_error("Image2D::stackImage: Failed to allocate memory for input trace.");
+
+   T *trcout;
+   trcout = (T *) calloc(nxg*nzg, sizeof(T));
+   if(trcout == NULL) rs_error("Image2D::stackImage: Failed to allocate memory for input trace.");
+
+   // Stack data
+   int ix, iz, ihx, ihz;
+   int ix_start, iz_start;
+   ix_start = (int) (oxl/dxl - oxg/dxg);
+   iz_start = (int) (ozl/dzl - ozg/dzg);
+   Index Iin(nxl, nzl, nhxl, nhzl);
+   Index Iout(nxg, nzg, nhxl, nhzl);
+   for(ihz=0; ihz<nhzl; ihz++) {
+      for(ihx=0; ihx<nhxl; ihx++) {
+         // Read traces 
+         for(iz=0; iz<nzl; iz++) {
+            for(ix = 0; ix < nxl; ix++) {
+               trcin[iz*nxl + ix] = datain[Iin(ix,iz,ihx,ihz)];
+            }
+         }
+         for(iz=0; iz<nzg; iz++) {
+            for(ix = 0; ix < nxg; ix++) {
+               trcout[iz*nxg + ix] = dataout[Iout(ix,iz,ihx,ihz)];
+            }
+         }
+
+         // Stack
+         for(iz=0; iz<nzl; iz++) {
+            if((iz + iz_start) >= 0 && (iz + iz_start) < nzg){
+               for(ix = 0; ix < nxl; ix++) {
+                  if((ix + ix_start) >= 0 && (ix + ix_start) < nxg){
+                     trcout[(iz + iz_start)*nxg + (ix + ix_start)] += trcin[iz*nxl + ix];
+                  }
+               }
+            }
+         }
+         // Write traces
+         for(iz=0; iz<nzg; iz++) {
+            for(ix = 0; ix < nxg; ix++) {
+               dataout[Iout(ix,iz,ihx,ihz)] = trcout[iz*nxg + ix];
+            }
+         }
+      }
+   }
+   free(trcin);
+   free(trcout);
+   status = FILE_OK;
+   return status;
+}
+
+template<typename T>
 bool Image2D<T>::stackImage(std::string infile)
 {
    bool status;
