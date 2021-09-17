@@ -60,13 +60,13 @@ class RSSdata:
         # Allocate 1d array for data
         self.data = np.zeros([self.fullsize,1], dtype='float32')
         if(self.Nheader):
-            self.srcX = np.zeros([self.geomN[1],1], dtype='float32')
-            self.srcY = np.zeros([self.geomN[1],1], dtype='float32')
-            self.srcZ = np.zeros([self.geomN[1],1], dtype='float32')
-            self.GroupX = np.zeros([self.geomN[1],1], dtype='float32')
-            self.GroupY = np.zeros([self.geomN[1],1], dtype='float32')
-            self.GroupZ = np.zeros([self.geomN[1],1], dtype='float32')
-            for i in range(0,self.geomN[1]):
+            self.srcX = np.zeros([int(self.geomN[1]),1], dtype='float32')
+            self.srcY = np.zeros([int(self.geomN[1]),1], dtype='float32')
+            self.srcZ = np.zeros([int(self.geomN[1]),1], dtype='float32')
+            self.GroupX = np.zeros([int(self.geomN[1]),1], dtype='float32')
+            self.GroupY = np.zeros([int(self.geomN[1]),1], dtype='float32')
+            self.GroupZ = np.zeros([int(self.geomN[1]),1], dtype='float32')
+            for i in range(0,int(self.geomN[1])):
                 if(self.Nheader == 4):
                     self.srcX[i] = st.unpack('f', f.read(4))[0];
                     self.srcZ[i] = st.unpack('f', f.read(4))[0];
@@ -81,7 +81,7 @@ class RSSdata:
                     self.GroupY[i] = st.unpack('f', f.read(4))[0];
                     self.GroupZ[i] = st.unpack('f', f.read(4))[0];
                             
-                self.data[i*self.geomN[0]:(i+1)*self.geomN[0],0] = st.unpack('f'*self.geomN[0], f.read(4*self.geomN[0]));
+                self.data[i*int(self.geomN[0]):(i+1)*int(self.geomN[0]),0] = st.unpack('f'*int(self.geomN[0]), f.read(4*int(self.geomN[0])));
         else:
             self.data[0:self.fullsize,0] = st.unpack('f'*self.fullsize, f.read(4*self.fullsize));
 
@@ -91,7 +91,7 @@ class RSSdata:
 
     def write(self,filename):
         f = open(filename, 'wb')
-        f.write(MAGICNUMBER)
+        f.write(MAGICNUMBER.encode())
     
         # Writting header
         f.write(st.pack('i', self.data_format))
@@ -100,24 +100,24 @@ class RSSdata:
         f.write(st.pack('Q', self.Nheader))
         f.write(st.pack('Q', self.Ndims))
         for i in range(0,MAXDIMS):
-            f.write(st.pack('Q', self.geomN[i]))
+            f.write(st.pack('Q', int(self.geomN[i])))
         for i in range(0,MAXDIMS):
-            f.write(st.pack('d', self.geomD[i]))
+            f.write(st.pack('d', int(self.geomD[i])))
         for i in range(0,MAXDIMS):
-            f.write(st.pack('d', self.geomO[i]))
+            f.write(st.pack('d', int(self.geomO[i])))
 
         #Estimating sizes for output
         self.fullsize = 1;
         self.Ndims = 0
         for i in range(0, MAXDIMS):
             if(self.geomN[i] > 0):    
-                self.fullsize = self.fullsize*self.geomN[i];
+                self.fullsize = self.fullsize*int(self.geomN[i]);
                 self.Ndims = self.Ndims + 1
 
         #Writting Coordinates and data
         dataout=self.data.reshape([self.fullsize,1], order='F')
         if(self.Nheader):
-            for i in range(0,self.geomN[1]):
+            for i in range(0,int(self.geomN[1])):
                 if(self.Nheader == 4):
                     f.write(st.pack('f', self.srcX[i]))
                     f.write(st.pack('f', self.srcZ[i]))
@@ -132,7 +132,7 @@ class RSSdata:
                     f.write(st.pack('f', self.GroupY[i]))
                     f.write(st.pack('f', self.GroupZ[i]))
                             
-                for j in range(0,self.geomN[0]):
+                for j in range(0,int(self.geomN[0])):
                     f.write(st.pack('f', dataout[j*self.geomN[1] + i]))
         else:
             for i in range(0,self.fullsize):
