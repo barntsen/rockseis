@@ -7,6 +7,7 @@ MAGICNUMBER='R0CKS' #rss identifier
 MAGICNUMBERLENGTH=5
 MAXDIMS=9
 
+
 class RSSdata:
     def __init__(self):
         self.data_format=0;
