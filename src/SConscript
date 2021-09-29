@@ -75,8 +75,8 @@ if(env['MPI']):
         mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel', 'utils'])
         mpi.Install('../bin/',mpidbg)
 
-        hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl','fft'])
-        mpi.Install('../bin/',hello_fdgrad)
+# hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl','fft'])
+#       mpi.Install('../bin/',hello_fdgrad)
 
         hello3d_acoustic = mpi.Program(prefix + 'hello3d_acoustic','hello3d_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'modelling', 'snap', 'config4cpp', 'fft'])
         mpi.Install('../bin/',hello3d_acoustic)
@@ -127,6 +127,10 @@ if(env['MPI']):
 
     Elasticfwi3d = mpi.Program(prefix + 'Elasticfwi3d','Elasticfwi3d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
     mpi.Install('../bin/',Elasticfwi3d)
+
+    Velasticfwi2d = mpi.Program(prefix + 'Velasticfwi2d','Velasticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
+    mpi.Install('../bin/',Velasticfwi2d)
+
 
     Acousticwemva2d = mpi.Program(prefix + 'Acousticwemva2d','Acousticwemva2d.cpp',LIBS=['wemva', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'mva', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft', 'hilbert'])
     mpi.Install('../bin/',Acousticwemva2d)

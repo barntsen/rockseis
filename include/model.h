@@ -524,8 +524,10 @@ public:
 
     void writeVp(); ///< Write only the Vp model to file
     void writeVs(); ///< Write only the Vs model to file
+    void writeQp(); ///< Write only the Qp model to file
+    void writeQs(); ///< Write only the Qs model to file
     void writeR(); ///< Write only the Density model to file
-    void writeModel() { writeVp(); writeVs(); writeR(); } ///< Write a model to file
+    void writeModel() { writeVp(); writeVs(); writeQp(); writeQs(); writeR(); } ///< Write a model to file
 
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp

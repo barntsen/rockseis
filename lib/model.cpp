@@ -4216,6 +4216,74 @@ void ModelViscoelastic2D<T>::writeVs() {
 }
 
 template<typename T>
+void ModelViscoelastic2D<T>::writeQp() {
+    if(!this->getRealized()) {
+        rs_error("ModelViscoelastic2D::writeQp: Model is not allocated.");
+    }
+    // Get file names
+    std::string Qpfile = this->getQpfile();
+    // Open files for writting
+    std::shared_ptr<File> Fqp (new File());
+    Fqp->output(Qpfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Fqp->setN(1,nx);
+    Fqp->setN(3,nz);
+    Fqp->setD(1,dx);
+    Fqp->setD(3,dz);
+    Fqp->setO(1,ox);
+    Fqp->setO(3,oz);
+    Fqp->setType(REGULAR);
+    Fqp->setData_format(sizeof(T));
+    Fqp->writeHeader();
+    T *Mod = this->getQp();
+    Fqp->write(Mod, nx*nz, 0);
+    Fqp->close();
+}
+
+template<typename T>
+void ModelViscoelastic2D<T>::writeQs() {
+    if(!this->getRealized()) {
+        rs_error("ModelViscoelastic2D::writeQs: Model is not allocated.");
+    }
+    // Get file names
+    std::string Qsfile = this->getQsfile();
+    // Open files for writting
+    std::shared_ptr<File> Fqs (new File());
+    Fqs->output(Qsfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Fqs->setN(1,nx);
+    Fqs->setN(3,nz);
+    Fqs->setD(1,dx);
+    Fqs->setD(3,dz);
+    Fqs->setO(1,ox);
+    Fqs->setO(3,oz);
+    Fqs->setType(REGULAR);
+    Fqs->setData_format(sizeof(T));
+    Fqs->writeHeader();
+    T *Mod = this->getQs();
+    Fqs->write(Mod, nx*nz, 0);
+    Fqs->close();
+}
+
+
+
+template<typename T>
 void ModelViscoelastic2D<T>::staggerModels(){
     if(!this->getRealized()) {
         rs_error("ModelViscoelastic2D::staggerModels: Model is not allocated.");
@@ -5401,6 +5469,8 @@ std::shared_ptr<ModelViscoelastic3D<T>> ModelViscoelastic3D<T>::getDomainmodel(s
     T *Vp = local->getVp();
     T *Vs = local->getVs();
     T *R = local->getR();
+    T *Qp = local->getQp();
+    T *Qs = local->getQs();
     T *L2M = local->getL2M();
     T *M = local->getM();
     T *M_xz = local->getM_xz();

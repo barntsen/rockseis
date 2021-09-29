@@ -158,10 +158,18 @@ class MPIdomaindecomp: public MPI {
       void setNdomain(int n) { ndomain = n; } ///< Set number of domains for decomposition
       MPI_Comm *getMasterComm() { return &MPI_COMM_MASTERS; }
       MPI_Comm *getDomainComm() { return &MPI_COMM_DOMAIN; }
+      
+      // MPI_COMM_WORLD type queue for spline projection
+      void performWorkatWorld();					///< Perform all work in work queue using MPI_COMM_WORLD
+      workModeling_t receiveWorkWorld();				///< Receive work from slave using MPI_COMM_WORLD
+      void sendResultWorld(workModeling_t _work);			///< Send result to master using MPI_COMM_WORLD
 
       // MPI Comm functions
       void splitDomains();
       bool ifActive() {return (MPI_COMM_DOMAIN != MPI_COMM_NULL) ? true : false;}
+      void barrier(); ///< Synchronize all ranks in domain
+      void reduce(float *wrk, size_t count); ///< Stack in domain array at rank 0
+      void reduce(double *wrk, size_t count); ///< Stack in domain array at rank 0
       void stopDomainSlaves() { stopSlaves(&MPI_COMM_DOMAIN); }		///< Stop slaves of the domain
 
    private:
@@ -181,6 +189,12 @@ class MPIdomaindecomp: public MPI {
       void sendWorkToAll();							///< Send work to all ranks
       workResult_t receiveResult();						///< Receive result from slaves
       workResult_t receiveResult(const int rank);				///< Receive result from a particular slave
+
+      // MPI Comm functions
+      void sendWorkWorld(std::shared_ptr<workModeling_t> work, const int rank);	///< Send work to rank
+      void sendWorkToAllWorld();							///< Send work to all ranks
+      workResult_t receiveResultWorld();						///< Receive result from slaves
+      workResult_t receiveResultWorld(const int rank);				///< Receive result from a particular slave
       void checkResult(workResult_t result);					///< Check result and update work queue
       std::shared_ptr<workModeling_t> getWork();				///< Get work that has not started
       unsigned long int getJobsleft();             ///< Return number of jobs left
