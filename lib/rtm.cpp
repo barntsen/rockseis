@@ -241,7 +241,7 @@ int RtmAcoustic2D<T>::run(){
      std::shared_ptr<Snapshot2D<T>> Psnap, Bwsnap;
      Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
-     Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+     Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
      
 
      this->writeLog("Running 2D Acoustic reverse-time migration with full checkpointing.");
@@ -250,18 +250,15 @@ int RtmAcoustic2D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves->forwardstepAcceleration(model, der);
+    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
     	//Writting out results to snapshot file
-        Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+        Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
         Psnap->writeSnap(it);
-
-    	// Roll the pointers P1 and P2
-    	waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -284,7 +281,7 @@ int RtmAcoustic2D<T>::run(){
     if(this->getRunmva()){
         Bwsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
         Bwsnap->openSnap(this->getSnapfile() + "-bw", 'w'); // Create a new snapshot file
-        Bwsnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+        Bwsnap->setData(waves->getP(), 0); //Set Pressure as snap field
     }
 
      this->writeLog("\nDoing reverse-time Loop.");
@@ -292,7 +289,7 @@ int RtmAcoustic2D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves->forwardstepAcceleration(model, der);
+    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
 
     	// Inserting source 
@@ -301,7 +298,7 @@ int RtmAcoustic2D<T>::run(){
         
         if(this->getRunmva()){
             //Writting out backward modelled wavefield to snapshot file
-            Bwsnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+            Bwsnap->setData(waves->getP(), 0); //Set Pressure as snap field
             Bwsnap->writeSnap(it);
         }
 
@@ -310,12 +307,9 @@ int RtmAcoustic2D<T>::run(){
 
         // Do Crosscorrelation
         if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-            T *wr = waves->getP1();
+            T *wr = waves->getP();
             crossCorr(Psnap->getData(0), 0, wr, waves->getLpml());
         }
-
-        // Roll the pointers P1 and P2
-    	waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -352,25 +346,22 @@ int RtmAcoustic2D<T>::run_edge(){
      // Create snapshots
      std::shared_ptr<Snapshot2D<T>> Psnap;
      Psnap = std::make_shared<Snapshot2D<T>>(waves_fw, this->getSnapinc());
-     Psnap->setData(waves_fw->getP1(), 0); //Set Pressure as snap field
+     Psnap->setData(waves_fw->getP(), 0); //Set Pressure as snap field
      Psnap->openEdge(this->getSnapfile(), 'w'); // Create a new snapshot file
 
     // Loop over forward time
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves_fw->forwardstepAcceleration(model, der);
+    	waves_fw->forwardstepVelocity(model, der);
     	waves_fw->forwardstepStress(model, der);
     
     	// Inserting source 
     	waves_fw->insertSource(model, source, SMAP, it);
 
     	//Writting out results to snapshot file
-        Psnap->setData(waves_fw->getP1(), 0); //Set Pressure as snap field
+        Psnap->setData(waves_fw->getP(), 0); //Set Pressure as snap field
         Psnap->writeEdge(it);
-
-    	// Roll the pointers P1 and P2
-    	waves_fw->roll();
 
         // Output progress to logfile
         this->writeProgress(it, 2*nt-1, 20, 48);
@@ -390,36 +381,32 @@ int RtmAcoustic2D<T>::run_edge(){
 
     Psnap.reset();
     Psnap = std::make_shared<Snapshot2D<T>>(waves_fw, this->getSnapinc());
-    Psnap->setData(waves_fw->getP2(), 0); //Set Pressure as snap field
+    Psnap->setData(waves_fw->getP(), 0); //Set Pressure as snap field
     Psnap->openEdge(this->getSnapfile(), 'r');
 
     // Loop over reverse time
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves_fw->forwardstepAcceleration(model, der);
+    	waves_fw->forwardstepVelocity(model, der);
     	waves_fw->forwardstepStress(model, der);
 
-    	waves_bw->forwardstepAcceleration(model, der);
+    	waves_bw->forwardstepVelocity(model, der);
     	waves_bw->forwardstepStress(model, der);
 
     	// Inserting source 
     	waves_bw->insertSource(model, dataP, GMAP, (nt - 1 - it));
 
         //Read forward edges
-        Psnap->setData(waves_fw->getP2(), 0); //Set Pressure as snap field
+        Psnap->setData(waves_fw->getP(), 0); //Set Pressure as snap field
         Psnap->readEdge(nt - 1 - it);
 
         // Do Crosscorrelation
         if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-            T *ws = waves_fw->getP1();
-            T *wr = waves_bw->getP1();
+            T *ws = waves_fw->getP();
+            T *wr = waves_bw->getP();
             crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
         }
-
-        // Roll the pointers P1 and P2
-    	waves_fw->roll();
-    	waves_bw->roll();
 
         // Output progress to logfile
         this->writeProgress(nt-1 + it, 2*nt-1, 20, 48);
@@ -476,14 +463,11 @@ int RtmAcoustic2D<T>::run_optimal(){
             for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
-                waves_fw->forwardstepAcceleration(model, der);
+                waves_fw->forwardstepVelocity(model, der);
                 waves_fw->forwardstepStress(model, der);
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
-
-                // Roll the pointers P1 and P2
-                waves_fw->roll();
 
                 if(!reverse){
                     // Output progress to logfile
@@ -494,7 +478,7 @@ int RtmAcoustic2D<T>::run_optimal(){
         if (whatodo == firsturn)
         {
             // Time stepping
-            waves_fw->forwardstepAcceleration(model, der);
+            waves_fw->forwardstepVelocity(model, der);
             waves_fw->forwardstepStress(model, der);
 
             // Inserting source 
@@ -504,13 +488,9 @@ int RtmAcoustic2D<T>::run_optimal(){
             waves_bw->insertSource(model, dataP, GMAP, capo);
 
             /* Do Crosscorrelation */
-            T *ws = waves_fw->getP1();
-            T *wr = waves_bw->getP1();
+            T *ws = waves_fw->getP();
+            T *wr = waves_bw->getP();
             crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
-
-            // Roll the pointers P1 and P2
-            waves_fw->roll();
-            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -526,19 +506,16 @@ int RtmAcoustic2D<T>::run_optimal(){
         if (whatodo == youturn)
         {
             // Time stepping
-            waves_bw->forwardstepAcceleration(model, der);
+            waves_bw->forwardstepVelocity(model, der);
             waves_bw->forwardstepStress(model, der);
 
             // Inserting data
             waves_bw->insertSource(model, dataP, GMAP, capo);
 
             /* Do Crosscorrelation */
-            T *ws = waves_fw->getP1();
-            T *wr = waves_bw->getP1();
+            T *ws = waves_fw->getP();
+            T *wr = waves_bw->getP();
             crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
-
-            // Roll the pointers P1 and P2
-            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);
@@ -683,7 +660,7 @@ int RtmAcoustic3D<T>::run(){
      std::shared_ptr<Snapshot3D<T>> Psnap;
      Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
-     Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+     Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
 
      this->writeLog("Running 3D Acoustic reverse-time migration with full checkpointing.");
      this->writeLog("Doing forward Loop.");
@@ -691,18 +668,15 @@ int RtmAcoustic3D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves->forwardstepAcceleration(model, der);
+    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
     	//Writting out results to snapshot file
-        Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+        Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
         Psnap->writeSnap(it);
-
-    	// Roll the pointers P1 and P2
-    	waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -727,7 +701,7 @@ int RtmAcoustic3D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves->forwardstepAcceleration(model, der);
+    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
 
     	// Inserting source 
@@ -738,15 +712,12 @@ int RtmAcoustic3D<T>::run(){
 
         // Do Crosscorrelation
         if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-            T *wr = waves->getP1();
+            T *wr = waves->getP();
             crossCorr(Psnap->getData(0), 0, wr, waves->getLpml());
         }
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
-
-        // Roll the pointers P1 and P2
-    	waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -805,14 +776,11 @@ int RtmAcoustic3D<T>::run_optimal(){
             for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
-                waves_fw->forwardstepAcceleration(model, der);
+                waves_fw->forwardstepVelocity(model, der);
                 waves_fw->forwardstepStress(model, der);
 
                 // Inserting source 
                 waves_fw->insertSource(model, source, SMAP, it);
-
-                // Roll the pointers P1 and P2
-                waves_fw->roll();
 
                 if(!reverse){
                     // Output progress to logfile
@@ -823,7 +791,7 @@ int RtmAcoustic3D<T>::run_optimal(){
         if (whatodo == firsturn)
         {
             // Time stepping
-            waves_fw->forwardstepAcceleration(model, der);
+            waves_fw->forwardstepVelocity(model, der);
             waves_fw->forwardstepStress(model, der);
 
             // Inserting source 
@@ -833,13 +801,9 @@ int RtmAcoustic3D<T>::run_optimal(){
             waves_bw->insertSource(model, dataP, GMAP, capo);
 
             /* Do Crosscorrelation */
-            T *ws = waves_fw->getP1();
-            T *wr = waves_bw->getP1();
+            T *ws = waves_fw->getP();
+            T *wr = waves_bw->getP();
             crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
-
-            // Roll the pointers P1 and P2
-            waves_fw->roll();
-            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -855,19 +819,16 @@ int RtmAcoustic3D<T>::run_optimal(){
         if (whatodo == youturn)
         {
             // Time stepping
-            waves_bw->forwardstepAcceleration(model, der);
+            waves_bw->forwardstepVelocity(model, der);
             waves_bw->forwardstepStress(model, der);
 
             // Inserting data
             waves_bw->insertSource(model, dataP, GMAP, capo);
 
             /* Do Crosscorrelation */
-            T *ws = waves_fw->getP1();
-            T *wr = waves_bw->getP1();
+            T *ws = waves_fw->getP();
+            T *wr = waves_bw->getP();
             crossCorr(ws, waves_fw->getLpml(), wr, waves_bw->getLpml());
-
-            // Roll the pointers P1 and P2
-            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);

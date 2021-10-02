@@ -40,13 +40,13 @@ int main(int argc, char** argv) {
             PRINT_DOC();
             PRINT_DOC(# Booleans);
             PRINT_DOC(            Precord = "true";  # Set these to true if recording or snapshoting is to be made.);
-            PRINT_DOC(            Axrecord = "false";);
-            PRINT_DOC(        Ayrecord = "false";);
-            PRINT_DOC(        Azrecord = "false";);
+            PRINT_DOC(            Vxrecord = "false";);
+            PRINT_DOC(        Vyrecord = "false";);
+            PRINT_DOC(        Vzrecord = "false";);
             PRINT_DOC(        Psnap = "false";);
-            PRINT_DOC(        Axsnap = "false";);
-            PRINT_DOC(        Aysnap = "false";);
-            PRINT_DOC(        Azsnap = "false";);
+            PRINT_DOC(        Vxsnap = "false";);
+            PRINT_DOC(        Vysnap = "false";);
+            PRINT_DOC(        Vzsnap = "false";);
             PRINT_DOC();
             PRINT_DOC(# Files);
             PRINT_DOC(        Vp = "Vp2d.rss";);
@@ -55,13 +55,13 @@ int main(int argc, char** argv) {
             PRINT_DOC(        Input_Pdata = "3Ddata.rss";);
             PRINT_DOC(        Datum_survey = "3Dsurvey.rss";);
             PRINT_DOC(        Precordfile = "Pshot.rss";);
-            PRINT_DOC(        Axrecordfile = "Axshot.rss";);
-            PRINT_DOC(        Ayrecordfile = "Ayshot.rss";);
-            PRINT_DOC(        Azrecordfile = "Azshot.rss";);
+            PRINT_DOC(        Vxrecordfile = "Vxshot.rss";);
+            PRINT_DOC(        Vyrecordfile = "Vyshot.rss";);
+            PRINT_DOC(        Vzrecordfile = "Vzshot.rss";);
             PRINT_DOC(        Psnapfile = "Psnaps.rss";);
-            PRINT_DOC(        Axsnapfile = "Axsnaps.rss";);
-            PRINT_DOC(        Aysnapfile = "Aysnaps.rss";);
-            PRINT_DOC(        Azsnapfile = "Azsnaps.rss";);
+            PRINT_DOC(        Vxsnapfile = "Vxsnaps.rss";);
+            PRINT_DOC(        Vysnapfile = "Vysnaps.rss";);
+            PRINT_DOC(        Vzsnapfile = "Vzsnaps.rss";);
         }
         exit(1);
     }
@@ -88,23 +88,23 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Data3D<float>> Pdata3D;
     std::shared_ptr<rockseis::Data3D<float>> Pdata3Di;
 
-    bool Axsnap=0, Axrecord=0;
-    std::string Axsnapfile;
-    std::string Axrecordfile;
-    std::shared_ptr<rockseis::Data3D<float>> Axdata3D;
-    std::shared_ptr<rockseis::Data3D<float>> Axdata3Di;
+    bool Vxsnap=0, Vxrecord=0;
+    std::string Vxsnapfile;
+    std::string Vxrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Vxdata3D;
+    std::shared_ptr<rockseis::Data3D<float>> Vxdata3Di;
 
-    bool Aysnap=0, Ayrecord=0;
-    std::string Aysnapfile;
-    std::string Ayrecordfile;
-    std::shared_ptr<rockseis::Data3D<float>> Aydata3D;
-    std::shared_ptr<rockseis::Data3D<float>> Aydata3Di;
+    bool Vysnap=0, Vyrecord=0;
+    std::string Vysnapfile;
+    std::string Vyrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Vydata3D;
+    std::shared_ptr<rockseis::Data3D<float>> Vydata3Di;
 
-    bool Azsnap=0, Azrecord=0;
-    std::string Azsnapfile;
-    std::string Azrecordfile;
-    std::shared_ptr<rockseis::Data3D<float>> Azdata3D;
-    std::shared_ptr<rockseis::Data3D<float>> Azdata3Di;
+    bool Vzsnap=0, Vzrecord=0;
+    std::string Vzsnapfile;
+    std::string Vzrecordfile;
+    std::shared_ptr<rockseis::Data3D<float>> Vzdata3D;
+    std::shared_ptr<rockseis::Data3D<float>> Vzdata3Di;
 
     // Create a local model class
 	std::shared_ptr<rockseis::ModelAcoustic3D<float>> lmodel;
@@ -132,29 +132,29 @@ int main(int argc, char** argv) {
     if(Psnap){
         if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
     }
-    if(Inpar->getPar("Axsnap", &Axsnap) == INPARSE_ERR) status = true;
-    if(Axsnap){
-        if(Inpar->getPar("Axsnapfile", &Axsnapfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vxsnap", &Vxsnap) == INPARSE_ERR) status = true;
+    if(Vxsnap){
+        if(Inpar->getPar("Vxsnapfile", &Vxsnapfile) == INPARSE_ERR) status = true;
     }
-    if(Inpar->getPar("Aysnap", &Aysnap) == INPARSE_ERR) status = true;
-    if(Aysnap){
-        if(Inpar->getPar("Aysnapfile", &Aysnapfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vysnap", &Vysnap) == INPARSE_ERR) status = true;
+    if(Vysnap){
+        if(Inpar->getPar("Vysnapfile", &Vysnapfile) == INPARSE_ERR) status = true;
     }
-    if(Inpar->getPar("Azsnap", &Azsnap) == INPARSE_ERR) status = true;
-    if(Azsnap){
-        if(Inpar->getPar("Azsnapfile", &Azsnapfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vzsnap", &Vzsnap) == INPARSE_ERR) status = true;
+    if(Vzsnap){
+        if(Inpar->getPar("Vzsnapfile", &Vzsnapfile) == INPARSE_ERR) status = true;
     }
     if(Inpar->getPar("Precord", &Precord) == INPARSE_ERR) status = true;
     if(Precord){
         if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
     }
-    if(Inpar->getPar("Axrecord", &Axrecord) == INPARSE_ERR) status = true;
-    if(Axrecord){
-        if(Inpar->getPar("Axrecordfile", &Axrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vxrecord", &Vxrecord) == INPARSE_ERR) status = true;
+    if(Vxrecord){
+        if(Inpar->getPar("Vxrecordfile", &Vxrecordfile) == INPARSE_ERR) status = true;
     }
-    if(Inpar->getPar("Azrecord", &Azrecord) == INPARSE_ERR) status = true;
-    if(Azrecord){
-        if(Inpar->getPar("Azrecordfile", &Azrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vzrecord", &Vzrecord) == INPARSE_ERR) status = true;
+    if(Vzrecord){
+        if(Inpar->getPar("Vzrecordfile", &Vzrecordfile) == INPARSE_ERR) status = true;
     }
 
 	if(status == true){
@@ -202,17 +202,17 @@ int main(int argc, char** argv) {
             Sort_out->createEmptydataset(Precordfile, ntrec, dtrec, 0.0);
         }
 
-        if(Axrecord){
+        if(Vxrecord){
             // Create an empty data file
-            Sort_out->createEmptydataset(Axrecordfile, ntrec, dtrec, 0.0);
+            Sort_out->createEmptydataset(Vxrecordfile, ntrec, dtrec, 0.0);
         }
-        if(Ayrecord){
+        if(Vyrecord){
             // Create an empty data file
-            Sort_out->createEmptydataset(Ayrecordfile, ntrec, dtrec, 0.0);
+            Sort_out->createEmptydataset(Vyrecordfile, ntrec, dtrec, 0.0);
         }
-        if(Azrecord){
+        if(Vzrecord){
             // Create an empty data file
-            Sort_out->createEmptydataset(Azrecordfile, ntrec, dtrec, 0.0);
+            Sort_out->createEmptydataset(Vzrecordfile, ntrec, dtrec, 0.0);
         }
 
 		// Create work queue
@@ -278,14 +278,14 @@ int main(int argc, char** argv) {
                 if(Psnap){
                     modelling->setSnapP(Psnapfile + "-" + std::to_string(work.id));
                 }
-                if(Axsnap){
-                    modelling->setSnapAx(Axsnapfile + "-" + std::to_string(work.id));
+                if(Vxsnap){
+                    modelling->setSnapVx(Vxsnapfile + "-" + std::to_string(work.id));
                 }
-                if(Aysnap){
-                    modelling->setSnapAy(Aysnapfile + "-" + std::to_string(work.id));
+                if(Vysnap){
+                    modelling->setSnapVy(Vysnapfile + "-" + std::to_string(work.id));
                 }
-                if(Azsnap){
-                    modelling->setSnapAz(Azsnapfile + "-" + std::to_string(work.id));
+                if(Vzsnap){
+                    modelling->setSnapVz(Vzsnapfile + "-" + std::to_string(work.id));
                 }
 
                 // Setting Record
@@ -297,29 +297,29 @@ int main(int argc, char** argv) {
                     Pdata3D->makeMap(lmodel->getGeom());
                     modelling->setRecP(Pdata3D);
                 }
-                if(Axrecord){
-                    Axdata3D = std::make_shared<rockseis::Data3D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
-                    Axdata3D->setField(rockseis::VX);
+                if(Vxrecord){
+                    Vxdata3D = std::make_shared<rockseis::Data3D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
+                    Vxdata3D->setField(rockseis::VX);
                     // Copy geometry to Data
-                    Axdata3D->copyCoords(Shotgeom);
-                    Axdata3D->makeMap(lmodel->getGeom());
-                    modelling->setRecAx(Axdata3D);
+                    Vxdata3D->copyCoords(Shotgeom);
+                    Vxdata3D->makeMap(lmodel->getGeom());
+                    modelling->setRecVx(Vxdata3D);
                 }
-                if(Ayrecord){
-                    Aydata3D = std::make_shared<rockseis::Data3D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
-                    Aydata3D->setField(rockseis::VY);
+                if(Vyrecord){
+                    Vydata3D = std::make_shared<rockseis::Data3D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
+                    Vydata3D->setField(rockseis::VY);
                     // Copy geometry to Data
-                    Aydata3D->copyCoords(Shotgeom);
-                    Aydata3D->makeMap(lmodel->getGeom());
-                    modelling->setRecAy(Aydata3D);
+                    Vydata3D->copyCoords(Shotgeom);
+                    Vydata3D->makeMap(lmodel->getGeom());
+                    modelling->setRecVy(Vydata3D);
                 }
-                if(Azrecord){
-                    Azdata3D = std::make_shared<rockseis::Data3D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
-                    Azdata3D->setField(rockseis::VZ);
+                if(Vzrecord){
+                    Vzdata3D = std::make_shared<rockseis::Data3D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
+                    Vzdata3D->setField(rockseis::VZ);
                     // Copy geometry to Data
-                    Azdata3D->copyCoords(Shotgeom);
-                    Azdata3D->makeMap(lmodel->getGeom());
-                    modelling->setRecAz(Azdata3D);
+                    Vzdata3D->copyCoords(Shotgeom);
+                    Vzdata3D->makeMap(lmodel->getGeom());
+                    modelling->setRecVz(Vzdata3D);
                 }
 
                 // Stagger model
@@ -335,23 +335,23 @@ int main(int argc, char** argv) {
                     interp->interp(Pdata3D, Pdata3Di);
                     Sort_out->put3DGather(Pdata3Di, work.id);
                 }
-                if(Axrecord){
-                    Axdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr_out, ntrec, dtrec, 0.0);
-                    Axdata3Di->setFile(Axrecordfile);
-                    interp->interp(Axdata3D, Axdata3Di);
-                    Sort_out->put3DGather(Axdata3Di, work.id);
+                if(Vxrecord){
+                    Vxdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr_out, ntrec, dtrec, 0.0);
+                    Vxdata3Di->setFile(Vxrecordfile);
+                    interp->interp(Vxdata3D, Vxdata3Di);
+                    Sort_out->put3DGather(Vxdata3Di, work.id);
                 }
-                if(Ayrecord){
-                    Aydata3Di = std::make_shared<rockseis::Data3D<float>>(ntr_out, ntrec, dtrec, 0.0);
-                    Aydata3Di->setFile(Ayrecordfile);
-                    interp->interp(Aydata3D, Aydata3Di);
-                    Sort_out->put3DGather(Aydata3Di, work.id);
+                if(Vyrecord){
+                    Vydata3Di = std::make_shared<rockseis::Data3D<float>>(ntr_out, ntrec, dtrec, 0.0);
+                    Vydata3Di->setFile(Vyrecordfile);
+                    interp->interp(Vydata3D, Vydata3Di);
+                    Sort_out->put3DGather(Vydata3Di, work.id);
                 }
-                if(Azrecord){
-                    Azdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr_out, ntrec, dtrec, 0.0);
-                    Azdata3Di->setFile(Azrecordfile);
-                    interp->interp(Azdata3D, Azdata3Di);
-                    Sort_out->put3DGather(Azdata3Di, work.id);
+                if(Vzrecord){
+                    Vzdata3Di = std::make_shared<rockseis::Data3D<float>>(ntr_out, ntrec, dtrec, 0.0);
+                    Vzdata3Di->setFile(Vzrecordfile);
+                    interp->interp(Vzdata3D, Vzdata3Di);
+                    Sort_out->put3DGather(Vzdata3Di, work.id);
                 }
 
                 // Reset all classes
@@ -364,17 +364,17 @@ int main(int argc, char** argv) {
                     Pdata3D.reset();
                     Pdata3Di.reset();
                 }
-                if(Axrecord){
-                    Axdata3D.reset();
-                    Axdata3Di.reset();
+                if(Vxrecord){
+                    Vxdata3D.reset();
+                    Vxdata3Di.reset();
                 }
-                if(Ayrecord){
-                    Aydata3D.reset();
-                    Aydata3Di.reset();
+                if(Vyrecord){
+                    Vydata3D.reset();
+                    Vydata3Di.reset();
                 }
-                if(Azrecord){
-                    Azdata3D.reset();
-                    Azdata3Di.reset();
+                if(Vzrecord){
+                    Vzdata3D.reset();
+                    Vzdata3Di.reset();
                 }
                 work.status = WORK_FINISHED;
 

@@ -141,11 +141,11 @@ ModellingAcoustic2D<T>::ModellingAcoustic2D(){
     sourceset = false;
     modelset = false;
     recPset = false;
-    recAxset = false;
-    recAzset = false;
+    recVxset = false;
+    recVzset = false;
     snapPset = false;
-    snapAxset = false;
-    snapAzset = false;
+    snapVxset = false;
+    snapVzset = false;
 }
 
 template<typename T>
@@ -155,11 +155,11 @@ ModellingAcoustic2D<T>::ModellingAcoustic2D(std::shared_ptr<ModelAcoustic2D<T>> 
     sourceset = true;
     modelset = true;
     recPset = false;
-    recAxset = false;
-    recAzset = false;
+    recVxset = false;
+    recVzset = false;
     snapPset = false;
-    snapAxset = false;
-    snapAzset = false;
+    snapVxset = false;
+    snapVzset = false;
 }
 
 template<typename T>
@@ -219,22 +219,22 @@ int ModellingAcoustic2D<T>::run(){
 
    // Create snapshots
    std::shared_ptr<Snapshot2D<T>> Psnap;
-   std::shared_ptr<Snapshot2D<T>> Axsnap;
-   std::shared_ptr<Snapshot2D<T>> Azsnap;
+   std::shared_ptr<Snapshot2D<T>> Vxsnap;
+   std::shared_ptr<Snapshot2D<T>> Vzsnap;
    if(this->snapPset){ 
       Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
       Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
-      Psnap->setData(waves->getP1(), 0); //Set Pressure as the field to snap
+      Psnap->setData(waves->getP(), 0); //Set Pressure as the field to snap
    }
-   if(this->snapAxset){ 
-      Axsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-      Axsnap->openSnap(this->snapAx, 'w'); // Create a new snapshot file
-      Axsnap->setData(waves->getAx(), 0); //Set Ax as the field to snap
+   if(this->snapVxset){ 
+      Vxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+      Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
+      Vxsnap->setData(waves->getVx(), 0); //Set Vx as the field to snap
    }
-   if(this->snapAzset){ 
-      Azsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
-      Azsnap->openSnap(this->snapAz, 'w'); // Create a new snapshot file
-      Azsnap->setData(waves->getAz(), 0); //Set Az as the field to snap
+   if(this->snapVzset){ 
+      Vzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+      Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
+      Vzsnap->setData(waves->getVz(), 0); //Set Vz as the field to snap
    }
 
    this->writeLog("Running 2D Acoustic modelling.");
@@ -242,14 +242,14 @@ int ModellingAcoustic2D<T>::run(){
    for(int it=0; it < nt; it++)
    {
       // Time stepping
-      waves->forwardstepAcceleration(model, der);
+      waves->forwardstepVelocity(model, der);
       if((model->getDomain()->getStatus())){
-         (model->getDomain())->shareEdges3D(waves->getAx());
-         (model->getDomain())->shareEdges3D(waves->getAz());
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVz());
       }
       waves->forwardstepStress(model, der);
       if((model->getDomain()->getStatus())){
-         (model->getDomain())->shareEdges3D(waves->getP2());
+         (model->getDomain())->shareEdges3D(waves->getP());
       }
 
       // Inserting source 
@@ -260,12 +260,12 @@ int ModellingAcoustic2D<T>::run(){
          waves->recordData(this->recP, GMAP, it);
       }
 
-      if(this->recAxset){
-         waves->recordData(this->recAx, GMAP, it);
+      if(this->recVxset){
+         waves->recordData(this->recVx, GMAP, it);
       }
 
-      if(this->recAzset){
-         waves->recordData(this->recAz, GMAP, it);
+      if(this->recVzset){
+         waves->recordData(this->recVz, GMAP, it);
       }
 
       //Writting out results to snapshot file
@@ -273,16 +273,13 @@ int ModellingAcoustic2D<T>::run(){
          Psnap->writeSnap(it);
       }
 
-      if(this->snapAxset){ 
-         Axsnap->writeSnap(it);
+      if(this->snapVxset){ 
+         Vxsnap->writeSnap(it);
       }
 
-      if(this->snapAzset){ 
-         Azsnap->writeSnap(it);
+      if(this->snapVzset){ 
+         Vzsnap->writeSnap(it);
       }
-
-      // Roll the pointers P1 and P2
-      waves->roll();
 
       // Output progress to logfile
       this->writeProgress(it, nt-1, 20, 48);
@@ -305,13 +302,13 @@ ModellingAcoustic3D<T>::ModellingAcoustic3D(){
     sourceset = false;
     modelset = false;
     recPset = false;
-    recAxset = false;
-    recAyset = false;
-    recAzset = false;
+    recVxset = false;
+    recVyset = false;
+    recVzset = false;
     snapPset = false;
-    snapAxset = false;
-    snapAyset = false;
-    snapAzset = false;
+    snapVxset = false;
+    snapVyset = false;
+    snapVzset = false;
 }
 
 template<typename T>
@@ -321,13 +318,13 @@ ModellingAcoustic3D<T>::ModellingAcoustic3D(std::shared_ptr<ModelAcoustic3D<T>> 
     sourceset = true;
     modelset = true;
     recPset = false;
-    recAxset = false;
-    recAyset = false;
-    recAzset = false;
+    recVxset = false;
+    recVyset = false;
+    recVzset = false;
     snapPset = false;
-    snapAxset = false;
-    snapAyset = false;
-    snapAzset = false;
+    snapVxset = false;
+    snapVyset = false;
+    snapVzset = false;
 }
 
 template<typename T>
@@ -389,28 +386,28 @@ int ModellingAcoustic3D<T>::run(){
 
    // Create snapshots
    std::shared_ptr<Snapshot3D<T>> Psnap;
-   std::shared_ptr<Snapshot3D<T>> Axsnap;
-   std::shared_ptr<Snapshot3D<T>> Aysnap;
-   std::shared_ptr<Snapshot3D<T>> Azsnap;
+   std::shared_ptr<Snapshot3D<T>> Vxsnap;
+   std::shared_ptr<Snapshot3D<T>> Vysnap;
+   std::shared_ptr<Snapshot3D<T>> Vzsnap;
    if(this->snapPset){ 
       Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
       Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
-      Psnap->setData(waves->getP1(), 0); //Set Pressure as the field to snap
+      Psnap->setData(waves->getP(), 0); //Set Pressure as the field to snap
    }
-   if(this->snapAxset){ 
-      Axsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-      Axsnap->openSnap(this->snapAx, 'w'); // Create a new snapshot file
-      Axsnap->setData(waves->getAx(), 0); //Set Ax as the field to snap
+   if(this->snapVxset){ 
+      Vxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
+      Vxsnap->setData(waves->getVx(), 0); //Set Vx as the field to snap
    }
-   if(this->snapAyset){ 
-      Aysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-      Aysnap->openSnap(this->snapAy, 'w'); // Create a new snapshot file
-      Aysnap->setData(waves->getAy(), 0); //Set Ay as the field to snap
+   if(this->snapVyset){ 
+      Vysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Vysnap->openSnap(this->snapVy, 'w'); // Create a new snapshot file
+      Vysnap->setData(waves->getVy(), 0); //Set Vy as the field to snap
    }
-   if(this->snapAzset){ 
-      Azsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
-      Azsnap->openSnap(this->snapAz, 'w'); // Create a new snapshot file
-      Azsnap->setData(waves->getAz(), 0); //Set Az as the field to snap
+   if(this->snapVzset){ 
+      Vzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
+      Vzsnap->setData(waves->getVz(), 0); //Set Vz as the field to snap
    }
 
    this->writeLog("Running 3D Acoustic modelling.");
@@ -418,15 +415,15 @@ int ModellingAcoustic3D<T>::run(){
    for(int it=0; it < nt; it++)
    {
       // Time stepping
-      waves->forwardstepAcceleration(model, der);
+      waves->forwardstepVelocity(model, der);
       if((model->getDomain()->getStatus())){
-         (model->getDomain())->shareEdges3D(waves->getAx());
-         (model->getDomain())->shareEdges3D(waves->getAy());
-         (model->getDomain())->shareEdges3D(waves->getAz());
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVy());
+         (model->getDomain())->shareEdges3D(waves->getVz());
       }
       waves->forwardstepStress(model, der);
       if((model->getDomain()->getStatus())){
-         (model->getDomain())->shareEdges3D(waves->getP2());
+         (model->getDomain())->shareEdges3D(waves->getP());
       }
 
       // Inserting source
@@ -437,16 +434,16 @@ int ModellingAcoustic3D<T>::run(){
          waves->recordData(this->recP, GMAP, it);
       }
 
-      if(this->recAxset){
-         waves->recordData(this->recAx, GMAP, it);
+      if(this->recVxset){
+         waves->recordData(this->recVx, GMAP, it);
       }
 
-      if(this->recAyset){
-         waves->recordData(this->recAy, GMAP, it);
+      if(this->recVyset){
+         waves->recordData(this->recVy, GMAP, it);
       }
 
-      if(this->recAzset){
-         waves->recordData(this->recAz, GMAP, it);
+      if(this->recVzset){
+         waves->recordData(this->recVz, GMAP, it);
       }
 
       //Writting out results to snapshot file
@@ -454,20 +451,17 @@ int ModellingAcoustic3D<T>::run(){
          Psnap->writeSnap(it);
       }
 
-      if(this->snapAxset){ 
-         Axsnap->writeSnap(it);
+      if(this->snapVxset){ 
+         Vxsnap->writeSnap(it);
       }
 
-      if(this->snapAyset){ 
-         Aysnap->writeSnap(it);
+      if(this->snapVyset){ 
+         Vysnap->writeSnap(it);
       }
 
-      if(this->snapAzset){ 
-         Azsnap->writeSnap(it);
+      if(this->snapVzset){ 
+         Vzsnap->writeSnap(it);
       }
-
-      // Roll the pointers P1 and P2
-      waves->roll();
 
       // Output progress to logfile
       this->writeProgress(it, nt-1, 20, 48);

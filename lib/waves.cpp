@@ -88,253 +88,6 @@ int Waves<T>::getNz_pml() {
    }
 }
 
-// =============== 1D ACOUSTIC MODEL CLASS =============== //
-template<typename T>
-WavesAcoustic1D<T>::WavesAcoustic1D(){
-   int nz, lpml, nz_pml;
-   T dt;
-   nz = this->getNz();
-   lpml = this->getLpml();
-   dt = this->getDt();
-   this->setDim(1);
-   nz_pml = nz + 2*lpml;
-   Pml = std::make_shared<PmlAcoustic1D<T>>(nz, lpml, dt);
-   P1 = (T *) calloc(nz_pml,sizeof(T));
-   P2 = (T *) calloc(nz_pml,sizeof(T));
-   Az = (T *) calloc(nz_pml,sizeof(T));
-}
-
-template<typename T>
-WavesAcoustic1D<T>::WavesAcoustic1D(const int _nz, const int _nt, const int _lpml, const T _dz, const T _dt, const T _oz, const T _ot): Waves<T>(1, 1, 1, _nz, _nt, _lpml, 1.0, 1.0, _dz, _dt, 0.0, 0.0, _oz, _ot) {
-
-   /* Create associated PML class */
-   Pml = std::make_shared<PmlAcoustic1D<T>>(_nz, _lpml, _dt);
-
-   /* Allocate memory variables */
-   int nz_pml;
-   this->setDim(1);
-   nz_pml = _nz + 2*_lpml;
-   P1 = (T *) calloc(nz_pml,sizeof(T));
-   P2 = (T *) calloc(nz_pml,sizeof(T));
-   Az = (T *) calloc(nz_pml,sizeof(T));
-}
-
-
-template<typename T>
-WavesAcoustic1D<T>::WavesAcoustic1D(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, int _nt, T _dt, T _ot): Waves<T>(){
-
-   int _nx, _ny, _nz;
-   T _dx, _dy, _dz; 
-   T _ox, _oy, _oz; 
-   int _dim, _lpml;
-
-   /* Get necessary parameters from model class */
-   _nx=model->getNx();
-   _ny=model->getNy();
-   _nz=model->getNz();
-   _dx=model->getDx();
-   _dy=model->getDy();
-   _dz=model->getDz();
-   _ox=model->getOx();
-   _oy=model->getOy();
-   _oz=model->getOz();
-   _dim = model->getDim();
-   _lpml = model->getLpml();
-   this->setNx(_nx);
-   this->setNy(_ny);
-   this->setNz(_nz);
-   this->setNt(_nt);
-   this->setDx(_dx);
-   this->setDy(_dy);
-   this->setDz(_dz);
-   this->setDt(_dt);
-   this->setOx(_ox);
-   this->setOy(_oy);
-   this->setOz(_oz);
-   this->setOt(_ot);
-   this->setLpml(_lpml);
-   this->setDim(_dim);
-
-   /* Create associated PML class */
-   Pml = std::make_shared<PmlAcoustic1D<T>>(_nz, _lpml, _dt);
-
-   /* Allocate memory variables */
-   int nz_pml;
-   this->setDim(1);
-   nz_pml = _nz + 2*_lpml;
-   P1 = (T *) calloc(nz_pml,sizeof(T));
-   P2 = (T *) calloc(nz_pml,sizeof(T));
-   Az = (T *) calloc(nz_pml,sizeof(T));
-}
-
-template<typename T>
-WavesAcoustic1D<T>::~WavesAcoustic1D() {
-   /* Free allocated variables */
-   free(P1);
-   free(P2);
-   free(Az);
-}
-
-template<typename T>
-void WavesAcoustic1D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
-   int i, iz, nz, lpml;
-   lpml = model->getLpml();
-   nz = model->getNz() + 2*lpml;
-   T *Rz, *df;
-   Rz = model->getRz();
-   df = der->getDf();
-
-   // Derivate P forward with respect to z
-   der->ddz_fw(P1);
-   // Compute Az
-   for(iz=0; iz < nz; iz++){
-      Az[iz] = Rz[iz]*df[iz];
-   }
-
-   // Attenuate bottom and top using staggered variables
-   for(iz=0; iz < lpml; iz++){
-      // Top
-      Pml->P_top[iz] = Pml->B_ltf_stag[iz]*Pml->P_top[iz] + Pml->A_ltf_stag[iz]*df[iz];
-
-      Az[iz] -= Rz[iz]*(Pml->P_top[iz] + Pml->C_ltf_stag[iz]*df[iz]);
-      i = iz + nz - lpml;
-      //Bottom
-      Pml->P_bottom[iz] = Pml->B_rbb_stag[iz]*Pml->P_bottom[iz] + Pml->A_rbb_stag[iz]*df[i];
-      Az[i] -= Rz[i]*(Pml->P_bottom[iz] + Pml->C_rbb_stag[iz]*df[i]);
-   }
-
-} // End of forwardstepAcceleration
-
-template<typename T>
-void WavesAcoustic1D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
-   int i, iz, nz, lpml;
-   T dt;
-   lpml = model->getLpml();
-   nz = model->getNz() + 2*lpml;
-   dt = this->getDt();
-   T *L, *df;
-   L = model->getL();
-   df = der->getDf();
-
-   // Derivate Az backward with respect to z
-   der->ddz_bw(Az);
-   // Compute P
-   for(iz=0; iz < nz; iz++){
-      P2[iz] = 2.0 * P1[iz] - P2[iz] +  dt*dt*L[iz]*df[iz];
-   }
-
-   // Attenuate top and bottom using non-staggered variables
-   for(iz=0; iz < lpml; iz++){
-      // Top
-      Pml->Azz_top[iz] = Pml->B_ltf[iz]*Pml->Azz_top[iz] + Pml->A_ltf[iz]*df[iz];
-
-      P2[iz] -= dt*dt*L[iz]*(Pml->Azz_top[iz] + Pml->C_ltf[iz]*df[iz]);
-      i = iz + nz - lpml;
-      //Bottom
-      Pml->Azz_bottom[iz] = Pml->B_rbb[iz]*Pml->Azz_bottom[iz] + Pml->A_rbb[iz]*df[i];
-      P2[i] -= dt*dt*L[i]*(Pml->Azz_bottom[iz] + Pml->C_rbb[iz]*df[i]);
-   }
-
-}
-
-template<typename T>
-void WavesAcoustic1D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
-   Point2D<int> *map;
-   T *wav; 
-   int ntrace = source->getNtrace();
-   int lpml;
-   lpml = this->getLpml();
-   T *Mod;
-   int nt = this->getNt();
-   T dt = this->getDt();
-
-   // Get correct map (source or receiver mapping)
-   if(maptype == SMAP) {
-      map = (source->getGeom())->getSmap();
-   }else{
-      map = (source->getGeom())->getGmap();
-   }
-
-   rs_field sourcetype = source->getField();
-   wav = source->getData();
-   int i;
-   //Indexes 
-   switch(sourcetype)
-   {
-      case VZ:
-         Mod = model->getRz();
-         for (i=0; i < ntrace; i++) 
-         {
-            if(map[i].y >=0)
-            { 
-               Az[lpml + map[i].y] += Mod[lpml + map[i].y]*wav[Idat(it,i)]; 
-            }
-         }
-         break;
-      case PRESSURE:
-         Mod = model->getL();
-         for (i=0; i < ntrace; i++) 
-         {
-            if(map[i].y >=0)
-            { 
-               P2[lpml + map[i].y] += dt*dt*Mod[lpml + map[i].y]*wav[Idat(it,i)]; 
-            }
-         }
-         break;
-      default:
-         break;
-   }
-}
-
-template<typename T>
-void WavesAcoustic1D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
-   Point2D<int> *map;
-   T *dataarray; 
-   T *Fielddata;
-   int ntrace = data->getNtrace();
-   int nt = data->getNt();
-   int lpml;
-   lpml = this->getLpml();
-
-   // Get correct map (data or receiver mapping)
-   if(maptype == SMAP) {
-      map = (data->getGeom())->getSmap();
-   }else{
-      map = (data->getGeom())->getGmap();
-   }
-
-   rs_field field = data->getField();
-   dataarray = data->getData();
-   int i;
-   switch(field)
-   {
-      case PRESSURE:
-         Fielddata = this->getP1();
-         for (i=0; i < ntrace; i++) 
-         { 
-            if(map[i].y >=0)
-            {
-               dataarray[Idat(it,i)] = Fielddata[lpml + map[i].y];
-            }
-         }
-         break;
-      case VZ:
-         Fielddata = this->getAz();
-         for (i=0; i < ntrace; i++) 
-         { 
-            if(map[i].y >=0)
-            {
-               dataarray[Idat(it,i)] = Fielddata[lpml + map[i].y];
-            }
-         }
-         break;
-      default:
-         break;
-   }
-
-}
-
-
 // =============== 2D ACOUSTIC WAVES CLASS =============== //
 template<typename T>
 WavesAcoustic2D<T>::WavesAcoustic2D(){
@@ -348,10 +101,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(){
    nx_pml = nx + 2*lpml;
    nz_pml = nz + 2*lpml;
    Pml = std::make_shared<PmlAcoustic2D<T>>(nx, nz, lpml, dt);
-   P1 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
 }
 
 template<typename T>
@@ -365,10 +117,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt,
    this->setDim(2);
    nx_pml = _nx + 2*_lpml;
    nz_pml = _nz + 2*_lpml;
-   P1 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
 
 }
 
@@ -434,10 +185,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
       nx_pml = _nx;
       nz_pml = _nz;
 
-      P1 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
 
    }else{
       /* Create associated PML class */
@@ -448,10 +198,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
       this->setDim(2);
       nx_pml = _nx + 2*_lpml;
       nz_pml = _nz + 2*_lpml;
-      P1 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      P2 = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      Ax = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      Az = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
    }
 
 }
@@ -459,17 +208,17 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
 template<typename T>
 WavesAcoustic2D<T>::~WavesAcoustic2D() {
    /* Free allocated variables */
-   free(P1);
-   free(P2);
-   free(Ax);
-   free(Az);
+   free(P);
+   free(Vx);
+   free(Vz);
 }
 
 template<typename T>
-void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+void WavesAcoustic2D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
    int i, ix0, ix, iz0, iz, nx, nz, lpml, nxo, nzo;
    lpml = model->getLpml();
 
+   T dt = this->getDt();
    T *Rx, *Rz, *df;
    Rx = model->getRx();
    Rz = model->getRz();
@@ -493,11 +242,11 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
    }
 
    // Derivate P forward with respect to x
-   der->ddx_fw(P1);
-   // Compute Ax
+   der->ddx_fw(P);
+   // Compute Vx
    for(iz=0; iz < nz; iz++){
       for(ix=0; ix < nx; ix++){
-         Ax[I2D(ix,iz)] = Rx[I2D(ix,iz)]*df[I2D(ix,iz)];
+         Vx[I2D(ix,iz)] += dt*Rx[I2D(ix,iz)]*df[I2D(ix,iz)];
       }
    }
 
@@ -509,7 +258,7 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                if(ix >= ix0 && ix < (ix0 + nx)){
                   // Left
                   Pml->P_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->P_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix-ix0,iz)];
-                  Ax[I2D(ix-ix0,iz)] -= Rx[I2D(ix-ix0,iz)]*(Pml->P_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)]);
+                  Vx[I2D(ix-ix0,iz)] -= dt*Rx[I2D(ix-ix0,iz)]*(Pml->P_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)]);
                }
             }
             if(Pml->getApplypml(1)){
@@ -517,7 +266,7 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                if(i >= ix0 && i < (ix0 + nx)){
                   // Right
                   Pml->P_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->P_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i-ix0,iz)];
-                  Ax[I2D(i-ix0,iz)] -= Rx[I2D(i-ix0,iz)]*(Pml->P_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)]);
+                  Vx[I2D(i-ix0,iz)] -= dt*Rx[I2D(i-ix0,iz)]*(Pml->P_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)]);
                }
             }
          }
@@ -526,11 +275,11 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
 
 
    // Derivate P forward with respect to z
-   der->ddz_fw(P1);
-   // Compute Az
+   der->ddz_fw(P);
+   // Compute Vz
    for(iz=0; iz < nz; iz++){
       for(ix=0; ix < nx; ix++){
-         Az[I2D(ix,iz)] = Rz[I2D(ix,iz)]*df[I2D(ix,iz)];
+         Vz[I2D(ix,iz)] += dt*Rz[I2D(ix,iz)]*df[I2D(ix,iz)];
       }
    }
 
@@ -542,7 +291,7 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                if(iz >= iz0 && iz < (iz0 + nz)){
                   // Top
                   Pml->P_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->P_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz-iz0)];
-                  Az[I2D(ix,iz-iz0)] -= Rz[I2D(ix,iz-iz0)]*(Pml->P_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)]);
+                  Vz[I2D(ix,iz-iz0)] -= dt*Rz[I2D(ix,iz-iz0)]*(Pml->P_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)]);
                }
             }
             if(Pml->getApplypml(5)){
@@ -550,7 +299,7 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                if(i >= iz0 && i < (iz0 + nz)){
                   //Bottom
                   Pml->P_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->P_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i-iz0)];
-                  Az[I2D(ix,i-iz0)] -= Rz[I2D(ix,i-iz0)]*(Pml->P_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)]);
+                  Vz[I2D(ix,i-iz0)] -= dt*Rz[I2D(ix,i-iz0)]*(Pml->P_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)]);
                }
             }
          }
@@ -558,7 +307,7 @@ void WavesAcoustic2D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
    }
 
 
-} // End of forwardstepAcceleration
+} // End of forwardstepVelocity
 
 template<typename T>
 void WavesAcoustic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoustic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
@@ -588,12 +337,12 @@ void WavesAcoustic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
    }
 
 
-   // Derivate Ax backward with respect to x
-   der->ddx_bw(Ax);
+   // Derivate Vx backward with respect to x
+   der->ddx_bw(Vx);
    // Compute P
    for(iz=0; iz < nz; iz++){
       for(ix=0; ix < nx; ix++){
-         P2[I2D(ix,iz)] = 2.0 * P1[I2D(ix,iz)] - P2[I2D(ix,iz)] + dt*dt*L[I2D(ix,iz)]*df[I2D(ix,iz)];
+         P[I2D(ix,iz)] += dt*L[I2D(ix,iz)]*df[I2D(ix,iz)];
       }
    }
 
@@ -604,28 +353,28 @@ void WavesAcoustic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
             if(Pml->getApplypml(0)){
                if(ix >= ix0 && ix < (ix0 + nx)){
                   // Left
-                  Pml->Axx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Axx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
-                  P2[I2D(ix-ix0,iz)] -= dt*dt*L[I2D(ix-ix0,iz)]*(Pml->Axx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+                  Pml->Vxx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
+                  P[I2D(ix-ix0,iz)] -= dt*L[I2D(ix-ix0,iz)]*(Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
                }
             }
             if(Pml->getApplypml(1)){
                i = ix + nxo - lpml;
                if(i >= ix0 && i < (ix0 + nx)){
                   // Right
-                  Pml->Axx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Axx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
-                  P2[I2D(i-ix0,iz)] -= dt*dt*L[I2D(i-ix0,iz)]*(Pml->Axx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+                  Pml->Vxx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
+                  P[I2D(i-ix0,iz)] -= dt*L[I2D(i-ix0,iz)]*(Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
                }
             }
          }
       }
    } 
 
-   // Derivate Az backward with respect to z
-   der->ddz_bw(Az);
+   // Derivate Vz backward with respect to z
+   der->ddz_bw(Vz);
    // Compute P
    for(iz=0; iz < nz; iz++){
       for(ix=0; ix < nx; ix++){
-         P2[I2D(ix,iz)] +=  dt*dt*L[I2D(ix,iz)]*df[I2D(ix,iz)];
+         P[I2D(ix,iz)] +=  dt*L[I2D(ix,iz)]*df[I2D(ix,iz)];
       }
    }
 
@@ -636,16 +385,16 @@ void WavesAcoustic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
             if(Pml->getApplypml(4)){
                if(iz >= iz0 && iz < (iz0 + nz)){
                   // Top
-                  Pml->Azz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Azz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
-                  P2[I2D(ix,iz-iz0)] -= dt*dt*L[I2D(ix,iz-iz0)]*(Pml->Azz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+                  Pml->Vzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
+                  P[I2D(ix,iz-iz0)] -= dt*L[I2D(ix,iz-iz0)]*(Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
                }
             }
             if(Pml->getApplypml(5)){
                i = iz + nzo - lpml;
                if(i >= iz0 && i < (iz0 + nz)){
                   //Bottom
-                  Pml->Azz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Azz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
-                  P2[I2D(ix,i-iz0)] -= dt*dt*L[I2D(ix,i-iz0)]*(Pml->Azz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+                  Pml->Vzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
+                  P[I2D(ix,i-iz0)] -= dt*L[I2D(ix,i-iz0)]*(Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
                }
             }
          }
@@ -693,7 +442,7 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
          {
             if(map[i].x >= 0 && map[i].y >=0)
             { 
-               Ax[I2D(lpml + map[i].x, lpml + map[i].y)] += Mod[I2D(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
+               Vx[I2D(lpml + map[i].x, lpml + map[i].y)] += Mod[I2D(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
             }
          }
          break;
@@ -703,7 +452,7 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
          {
             if(map[i].x >= 0 && map[i].y >=0)
             { 
-               Az[I2D(lpml + map[i].x, lpml + map[i].y)] += Mod[I2D(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
+               Vz[I2D(lpml + map[i].x, lpml + map[i].y)] += Mod[I2D(lpml + map[i].x, lpml + map[i].y)]*wav[Idat(it,i)]; 
             }
          }
          break;
@@ -720,7 +469,7 @@ void WavesAcoustic2D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic2D<
                ytri[1] = shift[i].y;
                for(i1=0; i1<2; i1++){
                   for(i2=0; i2<2; i2++){
-                     P2[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)] += dt*dt*Mod[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)]*wav[Idat(it,i)]*xtri[i2]*ytri[i1];
+                     P[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)] += dt*Mod[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)]*wav[Idat(it,i)]*xtri[i2]*ytri[i1];
                   }
                }
             }
@@ -765,7 +514,7 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, b
    switch(field)
    {
       case PRESSURE:
-         Fielddata = this->getP1();
+         Fielddata = this->getP();
          for (i=0; i < ntrace; i++) 
          { 
             if(map[i].x >= 0 && map[i].y >=0)
@@ -784,7 +533,7 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, b
          }
          break;
       case VX:
-         Fielddata = this->getAx();
+         Fielddata = this->getVx();
          for (i=0; i < ntrace; i++) 
          { 
             if(map[i].x >= 0 && map[i].y >=0)
@@ -798,7 +547,7 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, b
          }
          break;
       case VZ:
-         Fielddata = this->getAz();
+         Fielddata = this->getVz();
          for (i=0; i < ntrace; i++) 
          { 
             if(map[i].x >= 0 && map[i].y >=0)
@@ -818,15 +567,6 @@ void WavesAcoustic2D<T>::recordData(std::shared_ptr<rockseis::Data2D<T>> data, b
 }
 
 
-// Roll the pressure pointers
-   template<typename T>
-void WavesAcoustic2D<T>::roll()
-{
-   T *tmp;
-   tmp = P2;
-   P2 = P1;
-   P1 = tmp;
-}
 
 // =============== 3D ACOUSTIC WAVES CLASS =============== //
 template<typename T>
@@ -846,11 +586,10 @@ WavesAcoustic3D<T>::WavesAcoustic3D(const int _nx, const int _ny, const int _nz,
    nx_pml = _nx + 2*_lpml;
    ny_pml = _ny + 2*_lpml;
    nz_pml = _nz + 2*_lpml;
-   P1 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-   P2 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-   Ax = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-   Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-   Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+   P = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+   Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+   Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+   Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
 }
 
 
@@ -919,11 +658,10 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
       ny_pml = _ny;
       nz_pml = _nz;
 
-      P1 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-      P2 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-      Ax = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-      Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-      Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      P = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
    }else{
       /* Create associated PML class */
       Pml = std::make_shared<PmlAcoustic3D<T>>(_nx, _ny, _nz, _lpml, _dt);
@@ -933,16 +671,15 @@ WavesAcoustic3D<T>::WavesAcoustic3D(std::shared_ptr<rockseis::ModelAcoustic3D<T>
       nx_pml = _nx + 2*_lpml;
       ny_pml = _ny + 2*_lpml;
       nz_pml = _nz + 2*_lpml;
-      P1 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-      P2 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-      Ax = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-      Ay = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-      Az = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      P = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+      Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
    }
 }
 
 template<typename T>
-void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+void WavesAcoustic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
    int i, ix0, ix, iy0, iy, iz0, iz, nx, ny, nz, lpml, nxo, nyo, nzo;
    lpml = model->getLpml();
    T *Rx, *Ry, *Rz, *df;
@@ -950,6 +687,7 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
    Ry = model->getRx();
    Rz = model->getRz();
    df = der->getDf();
+   T dt = this->getDt();
 
    if((model->getDomain())->getStatus()){
       // Domain decomposition 
@@ -975,12 +713,12 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
    }
 
    // Derivate P forward with respect to x
-   der->ddx_fw(P1);
-   // Compute Ax
+   der->ddx_fw(P);
+   // Compute Vx
    for(iz=0; iz < nz; iz++){
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
-            Ax[I3D(ix,iy,iz)] = Rx[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+            Vx[I3D(ix,iy,iz)] += dt*Rx[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
          }
       }
    }
@@ -995,7 +733,7 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                      // Left
                      Pml->P_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->P_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)];
 
-                     Ax[I3D(ix-ix0,iy,iz)] -= Rx[I3D(ix-ix0,iy,iz)]*(Pml->P_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     Vx[I3D(ix-ix0,iy,iz)] -= dt*Rx[I3D(ix-ix0,iy,iz)]*(Pml->P_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)]);
                   }
                }
 
@@ -1004,7 +742,7 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                   if(i >= ix0 && i < (ix0 + nx)){
                      // Right
                      Pml->P_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->P_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)];
-                     Ax[I3D(i-ix0,iy,iz)] -= Rx[I3D(i-ix0,iy,iz)]*(Pml->P_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Vx[I3D(i-ix0,iy,iz)] -= dt*Rx[I3D(i-ix0,iy,iz)]*(Pml->P_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)]);
                   }
                }
             }
@@ -1013,12 +751,12 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
    }
 
    // Derivate P forward with respect to y
-   der->ddy_fw(P1);
-   // Compute Ay
+   der->ddy_fw(P);
+   // Compute Vy
    for(iz=0; iz < nz; iz++){
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
-            Ay[I3D(ix,iy,iz)] = Ry[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+            Vy[I3D(ix,iy,iz)] += dt*Ry[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
          }
       }
    }
@@ -1032,7 +770,7 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                   if(iy >= iy0 && iy < (iy0 + ny)){
                      // Front
                      Pml->P_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->P_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)];
-                     Ay[I3D(ix,iy-iy0,iz)] -= Ry[I3D(ix,iy-iy0,iz)]*(Pml->P_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Vy[I3D(ix,iy-iy0,iz)] -= dt*Ry[I3D(ix,iy-iy0,iz)]*(Pml->P_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
 
                   }
                }
@@ -1041,7 +779,7 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                   if(i >= iy0 && i < (iy0 + ny)){
                      //Back
                      Pml->P_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->P_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)];
-                     Ay[I3D(ix,i-iy0,iz)] -= Ry[I3D(ix,i-iy0,iz)]*(Pml->P_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Vy[I3D(ix,i-iy0,iz)] -= dt*Ry[I3D(ix,i-iy0,iz)]*(Pml->P_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
                   }
                }
             }
@@ -1050,12 +788,12 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
    }
 
    // Derivate P forward with respect to z
-   der->ddz_fw(P1);
-   // Compute Az
+   der->ddz_fw(P);
+   // Compute Vz
    for(iz=0; iz < nz; iz++){
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
-            Az[I3D(ix,iy,iz)] = Rz[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+            Vz[I3D(ix,iy,iz)] += dt*Rz[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
          }
       }
    }
@@ -1069,7 +807,7 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                   if(iz >= iz0 && iz < (iz0 + nz)){
                      // Top
                      Pml->P_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->P_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)];
-                     Az[I3D(ix,iy,iz-iz0)] -= Rz[I3D(ix,iy,iz-iz0)]*(Pml->P_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Vz[I3D(ix,iy,iz-iz0)] -= dt*Rz[I3D(ix,iy,iz-iz0)]*(Pml->P_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
                   }
                }
 
@@ -1078,14 +816,14 @@ void WavesAcoustic3D<T>::forwardstepAcceleration(std::shared_ptr<rockseis::Model
                   if(i >= iz0 && i < (iz0 + nz)){
                      //Bottom
                      Pml->P_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->P_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)];
-                     Az[I3D(ix,iy,i-iz0)] -= Rz[I3D(ix,iy,i-iz0)]*(Pml->P_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Vz[I3D(ix,iy,i-iz0)] -= dt*Rz[I3D(ix,iy,i-iz0)]*(Pml->P_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
                   }
                }
             }
          }
       }
    }
-} // End of forwardstepAcceleration
+} // End of forwardstepVelocity
 
 template<typename T>
 void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoustic3D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
@@ -1120,13 +858,13 @@ void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
       nzo = nz;
    }
 
-   // Derivate Ax backward with respect to x
-   der->ddx_bw(Ax);
+   // Derivate Vx backward with respect to x
+   der->ddx_bw(Vx);
    // Compute P
    for(iz=0; iz < nz; iz++){
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
-            P2[I3D(ix,iy,iz)] = 2.0 * P1[I3D(ix,iy,iz)] - P2[I3D(ix,iy,iz)] + dt*dt*L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+            P[I3D(ix,iy,iz)] += dt*L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
          }
       }
    }
@@ -1139,17 +877,17 @@ void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
                if(Pml->getApplypml(0)){
                   if(ix >= ix0 && ix < (ix0 + nx)){
                      // Left
-                     Pml->Axx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Axx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix-ix0,iy,iz)];
+                     Pml->Vxx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix-ix0,iy,iz)];
 
-                     P2[I3D(ix-ix0,iy,iz)] -= dt*dt*L[I3D(ix-ix0,iy,iz)]*(Pml->Axx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     P[I3D(ix-ix0,iy,iz)] -= dt*L[I3D(ix-ix0,iy,iz)]*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
                   }
                }
                if(Pml->getApplypml(1)){
                   i = ix + nxo - lpml;
                   if(i >= ix0 && i < (ix0 + nx)){
                      // Right
-                     Pml->Axx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Axx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i-ix0,iy,iz)];
-                     P2[I3D(i-ix0,iy,iz)] -= dt*dt*L[I3D(i-ix0,iy,iz)]*(Pml->Axx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Pml->Vxx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i-ix0,iy,iz)];
+                     P[I3D(i-ix0,iy,iz)] -= dt*L[I3D(i-ix0,iy,iz)]*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
                   }
                }
             }
@@ -1157,13 +895,13 @@ void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
       }
    }
 
-   // Derivate Ay backward with respect to y
-   der->ddy_bw(Ay);
+   // Derivate Vy backward with respect to y
+   der->ddy_bw(Vy);
    // Compute P
    for(iz=0; iz < nz; iz++){
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
-            P2[I3D(ix,iy,iz)] +=  dt*dt*L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+            P[I3D(ix,iy,iz)] +=  dt*L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
          }
       }
    }
@@ -1176,8 +914,8 @@ void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
                if(Pml->getApplypml(2)){
                   if(iy >= iy0 && iy < (iy0 + ny)){
                      // Front
-                     Pml->Ayy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Ayy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy-iy0,iz)];
-                     P2[I3D(ix,iy-iy0,iz)] -= dt*dt*L[I3D(ix,iy-iy0,iz)]*(Pml->Ayy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Pml->Vyy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy-iy0,iz)];
+                     P[I3D(ix,iy-iy0,iz)] -= dt*L[I3D(ix,iy-iy0,iz)]*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
                   }
                }
 
@@ -1185,8 +923,8 @@ void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
                   i = iy + nyo - lpml;
                   if(i >= iy0 && i < (iy0 + ny)){
                      //Back
-                     Pml->Ayy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Ayy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i-iy0,iz)];
-                     P2[I3D(ix,i-iy0,iz)] -= dt*dt*L[I3D(ix,i-iy0,iz)]*(Pml->Ayy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Pml->Vyy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i-iy0,iz)];
+                     P[I3D(ix,i-iy0,iz)] -= dt*L[I3D(ix,i-iy0,iz)]*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
                   }
                }
             }
@@ -1195,13 +933,13 @@ void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
    }
 
 
-   // Derivate Az backward with respect to z
-   der->ddz_bw(Az);
+   // Derivate Vz backward with respect to z
+   der->ddz_bw(Vz);
    // Compute P
    for(iz=0; iz < nz; iz++){
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
-            P2[I3D(ix,iy,iz)] +=  dt*dt*L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+            P[I3D(ix,iy,iz)] +=  dt*L[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
          }
       }
    }
@@ -1214,17 +952,17 @@ void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
                if(Pml->getApplypml(4)){
                   if(iz >= iz0 && iz < (iz0 + nz)){
                      // Top
-                     Pml->Azz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Azz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz-iz0)];
+                     Pml->Vzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz-iz0)];
 
-                     P2[I3D(ix,iy,iz-iz0)] -= dt*dt*L[I3D(ix,iy,iz-iz0)]*(Pml->Azz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     P[I3D(ix,iy,iz-iz0)] -= dt*L[I3D(ix,iy,iz-iz0)]*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
                   }
                }
                if(Pml->getApplypml(5)){
                   i = iz + nzo - lpml;
                   if(i >= iz0 && i < (iz0 + nz)){
                      //Bottom
-                     Pml->Azz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Azz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i-iz0)];
-                     P2[I3D(ix,iy,i-iz0)] -= dt*dt*L[I3D(ix,iy,i-iz0)]*(Pml->Azz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i-iz0)];
+                     P[I3D(ix,iy,i-iz0)] -= dt*L[I3D(ix,iy,i-iz0)]*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
                   }
                }
             }
@@ -1287,7 +1025,7 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
                for(i1 = 0; i1 < 2; i1++){ 
                   for(i2 = 0; i2 < 2; i2++){ 
                      for(i3 = 0; i3 < 2; i3++){ 
-                        P2[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                        P[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
                      }
                   }
                }
@@ -1312,7 +1050,7 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
                for(i1=0; i1<2; i1++){
                   for(i2=0; i2<2; i2++){
                      for(i3=0; i3<2; i3++){
-                        Ax[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                        Vx[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
                      }
                   }
                }
@@ -1337,7 +1075,7 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
                for(i1=0; i1<2; i1++){
                   for(i2=0; i2<2; i2++){
                      for(i3=0; i3<2; i3++){
-                        Ay[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                        Vy[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
                      }
                   }
                }
@@ -1362,7 +1100,7 @@ void WavesAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::ModelAcoustic3D<
                for(i1=0; i1<2; i1++){
                   for(i2=0; i2<2; i2++){
                      for(i3=0; i3<2; i3++){
-                        Az[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
+                        Vz[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)] += dt*Mod[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)]*wav[Idat(it,i)]*xtri[i3]*ytri[i2]*ztri[i1];
                      }
                   }
                }
@@ -1428,7 +1166,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
                for(i1 = 0; i1 < 2; i1++){ 
                   for(i2 = 0; i2 < 2; i2++){ 
                      for(i3 = 0; i3 < 2; i3++){ 
-                        dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*P1[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
+                        dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*P[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
                      }
                   }
                }
@@ -1452,7 +1190,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
                for(i1 = 0; i1 < 2; i1++){ 
                   for(i2 = 0; i2 < 2; i2++){ 
                      for(i3 = 0; i3 < 2; i3++){ 
-                        dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*Ax[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
+                        dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*Vx[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
                      }
                   }
                }
@@ -1476,7 +1214,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
                for(i1 = 0; i1 < 2; i1++){ 
                   for(i2 = 0; i2 < 2; i2++){ 
                      for(i3 = 0; i3 < 2; i3++){ 
-                        dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*Ay[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
+                        dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*Vy[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
                      }
                   }
                }
@@ -1500,7 +1238,7 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
                for(i1 = 0; i1 < 2; i1++){ 
                   for(i2 = 0; i2 < 2; i2++){ 
                      for(i3 = 0; i3 < 2; i3++){ 
-                        dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*Az[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
+                        dataarray[Idat(it,i)] += xtri[i3]*ytri[i2]*ztri[i1]*Vz[I3D(lpml + map[i].x + i3, lpml + map[i].y + i2, lpml + map[i].z + i1)];
                      }
                   }
                }
@@ -1516,22 +1254,12 @@ void WavesAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, b
 template<typename T>
 WavesAcoustic3D<T>::~WavesAcoustic3D() {
    // Freein variables
-   free(P1);
-   free(P2);
-   free(Ax);
-   free(Ay);
-   free(Az);
+   free(P);
+   free(Vx);
+   free(Vy);
+   free(Vz);
 }
 
-// Roll the pressure pointers
-   template<typename T>
-void WavesAcoustic3D<T>::roll()
-{
-   T *tmp;
-   tmp = P2;
-   P2 = P1;
-   P1 = tmp;
-}
 
 // =============== 2D ELASTIC VELOCITY-STRESS WAVES CLASS =============== //
 /** The 2D Elastic WAVES model class

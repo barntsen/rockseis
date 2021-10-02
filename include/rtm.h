@@ -102,7 +102,7 @@ public:
     void setModel(std::shared_ptr<ModelAcoustic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
-    void setDataAz(std::shared_ptr<Data2D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
+    void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *ws, int pads, T* wr, int padr);
 
@@ -113,11 +113,11 @@ private:
     std::shared_ptr<Image2D<T>> pimage;
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> dataP;
-    std::shared_ptr<Data2D<T>> dataAz;
+    std::shared_ptr<Data2D<T>> dataVz;
     bool modelset;
     bool pimageset;
     bool sourceset;
-    bool dataPset, dataAxset, dataAzset;
+    bool dataPset, dataVxset, dataVzset;
 };
 
 /** The 3D Acoustic Rtm class
@@ -133,7 +133,7 @@ public:
     void setModel(std::shared_ptr<ModelAcoustic3D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
     void setDataP(std::shared_ptr<Data3D<T>> _dataP) { dataP = _dataP; dataPset = true; }
-    void setDataAz(std::shared_ptr<Data3D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
+    void setDataVz(std::shared_ptr<Data3D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *ws, int pads, T* wr, int padr);
 
@@ -144,11 +144,11 @@ private:
     std::shared_ptr<Image3D<T>> pimage;
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> dataP;
-    std::shared_ptr<Data3D<T>> dataAz;
+    std::shared_ptr<Data3D<T>> dataVz;
     bool modelset;
     bool pimageset;
     bool sourceset;
-    bool dataPset, dataAxset, dataAyset, dataAzset;
+    bool dataPset, dataVxset, dataVyset, dataVzset;
 };
 
 /** The 2D Elastic Rtm class

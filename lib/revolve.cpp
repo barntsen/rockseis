@@ -378,7 +378,7 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic2
    nx_pml=waves->getNx_pml();
    nz_pml=waves->getNz_pml();
    lpml = waves->getLpml();
-   this->checksize = 2*nz_pml*nx_pml;
+   this->checksize = 3*nz_pml*nx_pml;
    if((waves->getPml())->getApplypml(0)){
       this->checksize += 2*nz_pml*lpml;
    }
@@ -405,7 +405,7 @@ void Revolve<T>::openCheck(std::string _filename, std::shared_ptr<WavesAcoustic3
    ny_pml=waves->getNy_pml();
    nz_pml=waves->getNz_pml();
    lpml = waves->getLpml();
-   this->checksize = 2*nz_pml*nx_pml*ny_pml;
+   this->checksize = 4*nz_pml*nx_pml*ny_pml;
    if((waves->getPml())->getApplypml(0)){
       this->checksize += 2*nz_pml*ny_pml*lpml;
    }
@@ -578,6 +578,7 @@ void Revolve<T>::removeCheck()
    }
 }
 
+
 template<typename T>
 void Revolve<T>::readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
 {
@@ -587,24 +588,30 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
    nx_pml=waves->getNx_pml();
    nz_pml=waves->getNz_pml();
    lpml = waves->getLpml();
-   T *P1 = waves->getP1();
-   T *P2 = waves->getP2();
+   T *P = waves->getP();
+   T *Vx = waves->getVx();
+   T *Vz = waves->getVz();
    std::shared_ptr<PmlAcoustic2D<T>> Pml = waves->getPml();
 
    off_t pos = this->checksize*this->check; 
    if(this->incore){
       if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");;
-      memcpy(P1, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
+      memcpy(P, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
       pos += nz_pml*nx_pml;
 
-      memcpy(P2, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
+      memcpy(Vx, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
       pos += nz_pml*nx_pml;
+
+      memcpy(Vz, this->checkpoints+pos, nz_pml*nx_pml*sizeof(T));
+      pos += nz_pml*nx_pml;
+
+
 
       if(Pml->getApplypml(0)){
          memcpy(Pml->P_left, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
          pos += nz_pml*lpml;
 
-         memcpy(Pml->Axx_left, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
+         memcpy(Pml->Vxx_left, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
          pos += nz_pml*lpml;
       }
 
@@ -612,7 +619,7 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
          memcpy(Pml->P_right, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
          pos += nz_pml*lpml;
 
-         memcpy(Pml->Axx_right, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
+         memcpy(Pml->Vxx_right, this->checkpoints+pos, nz_pml*lpml*sizeof(T));
          pos += nz_pml*lpml;
       }
 
@@ -620,7 +627,7 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
          memcpy(Pml->P_top, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
          pos += nx_pml*lpml;
 
-         memcpy(Pml->Azz_top, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
+         memcpy(Pml->Vzz_top, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
          pos += nx_pml*lpml;
       }
 
@@ -628,27 +635,28 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
          memcpy(Pml->P_bottom, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
          pos += nx_pml*lpml;
 
-         memcpy(Pml->Azz_bottom, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
+         memcpy(Pml->Vzz_bottom, this->checkpoints+pos, nx_pml*lpml*sizeof(T));
       }
    }else{
       if(this->open){
-         this->Fc->read(P1, nz_pml*nx_pml, pos*sizeof(T));
-         this->Fc->read(P2, nz_pml*nx_pml);
+         this->Fc->read(P, nz_pml*nx_pml, pos*sizeof(T));
+         this->Fc->read(Vx, nz_pml*nx_pml);
+         this->Fc->read(Vz, nz_pml*nx_pml);
          if(Pml->getApplypml(0)){
             this->Fc->read(Pml->P_left, nz_pml*lpml);
-            this->Fc->read(Pml->Axx_left, nz_pml*lpml);
+            this->Fc->read(Pml->Vxx_left, nz_pml*lpml);
          }
          if(Pml->getApplypml(1)){
             this->Fc->read(Pml->P_right, nz_pml*lpml);
-            this->Fc->read(Pml->Axx_right, nz_pml*lpml);
+            this->Fc->read(Pml->Vxx_right, nz_pml*lpml);
          }
          if(Pml->getApplypml(4)){
             this->Fc->read(Pml->P_top, nx_pml*lpml);
-            this->Fc->read(Pml->Azz_top, nx_pml*lpml);
+            this->Fc->read(Pml->Vzz_top, nx_pml*lpml);
          }
          if(Pml->getApplypml(5)){
             this->Fc->read(Pml->P_bottom, nx_pml*lpml);
-            this->Fc->read(Pml->Azz_bottom, nx_pml*lpml);
+            this->Fc->read(Pml->Vzz_bottom, nx_pml*lpml);
          }
          if(Fc->getFail()) rs_error("Revolve::readCheck: Error reading checkpoints from file.");
       }else{
@@ -667,24 +675,28 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
    nx_pml=waves->getNx_pml();
    nz_pml=waves->getNz_pml();
    lpml = waves->getLpml();
-   T *P1 = waves->getP1();
-   T *P2 = waves->getP2();
+   T *P = waves->getP();
+   T *Vx = waves->getVx();
+   T *Vz = waves->getVz();
    std::shared_ptr<PmlAcoustic2D<T>> Pml = waves->getPml();
 
    off_t pos = this->checksize*this->check; 
    if(this->incore){
       if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");;
-      memcpy(this->checkpoints+pos, P1, nz_pml*nx_pml*sizeof(T));
+      memcpy(this->checkpoints+pos, P, nz_pml*nx_pml*sizeof(T));
       pos += nz_pml*nx_pml;
 
-      memcpy(this->checkpoints+pos, P2,  nz_pml*nx_pml*sizeof(T));
+      memcpy(this->checkpoints+pos, Vx, nz_pml*nx_pml*sizeof(T));
+      pos += nz_pml*nx_pml;
+
+      memcpy(this->checkpoints+pos, Vz, nz_pml*nx_pml*sizeof(T));
       pos += nz_pml*nx_pml;
 
       if(Pml->getApplypml(0)){
          memcpy(this->checkpoints+pos, Pml->P_left, nz_pml*lpml*sizeof(T));
          pos += nz_pml*lpml;
 
-         memcpy(this->checkpoints+pos, Pml->Axx_left, nz_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vxx_left, nz_pml*lpml*sizeof(T));
          pos += nz_pml*lpml;
       }
 
@@ -692,7 +704,7 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
          memcpy(this->checkpoints+pos, Pml->P_right, nz_pml*lpml*sizeof(T));
          pos += nz_pml*lpml;
 
-         memcpy(this->checkpoints+pos, Pml->Axx_right, nz_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vxx_right, nz_pml*lpml*sizeof(T));
          pos += nz_pml*lpml;
       }
 
@@ -700,7 +712,7 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
          memcpy(this->checkpoints+pos, Pml->P_top, nx_pml*lpml*sizeof(T));
          pos += nx_pml*lpml;
 
-         memcpy(this->checkpoints+pos, Pml->Azz_top, nx_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vzz_top, nx_pml*lpml*sizeof(T));
          pos += nx_pml*lpml;
       }
 
@@ -708,27 +720,28 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesAcoustic2D<T>> waves)
          memcpy(this->checkpoints+pos, Pml->P_bottom, nx_pml*lpml*sizeof(T));
          pos += nx_pml*lpml;
 
-         memcpy(this->checkpoints+pos, Pml->Azz_bottom, nx_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vzz_bottom, nx_pml*lpml*sizeof(T));
       }
    }else{
       if(this->open){
-         this->Fc->write(P1, nz_pml*nx_pml, pos*sizeof(T));
-         this->Fc->write(P2, nz_pml*nx_pml);
+         this->Fc->write(P, nz_pml*nx_pml, pos*sizeof(T));
+         this->Fc->write(Vx, nz_pml*nx_pml);
+         this->Fc->write(Vz, nz_pml*nx_pml);
          if(Pml->getApplypml(0)){
             this->Fc->write(Pml->P_left, nz_pml*lpml);
-            this->Fc->write(Pml->Axx_left, nz_pml*lpml);
+            this->Fc->write(Pml->Vxx_left, nz_pml*lpml);
          }
          if(Pml->getApplypml(1)){
             this->Fc->write(Pml->P_right, nz_pml*lpml);
-            this->Fc->write(Pml->Axx_right, nz_pml*lpml);
+            this->Fc->write(Pml->Vxx_right, nz_pml*lpml);
          }
          if(Pml->getApplypml(4)){
             this->Fc->write(Pml->P_top, nx_pml*lpml);
-            this->Fc->write(Pml->Azz_top, nx_pml*lpml);
+            this->Fc->write(Pml->Vzz_top, nx_pml*lpml);
          }
          if(Pml->getApplypml(5)){
             this->Fc->write(Pml->P_bottom, nx_pml*lpml);
-            this->Fc->write(Pml->Azz_bottom, nx_pml*lpml);
+            this->Fc->write(Pml->Vzz_bottom, nx_pml*lpml);
          }
          if(Fc->getFail()) rs_error("Revolve::writeCheck: Error writing checkpoints to file.");
       }else{
@@ -748,79 +761,87 @@ void Revolve<T>::readCheck(std::shared_ptr<WavesAcoustic3D<T>> waves)
    ny_pml=waves->getNy_pml();
    nz_pml=waves->getNz_pml();
    lpml = waves->getLpml();
-   T *P1 = waves->getP1();
-   T *P2 = waves->getP2();
+   T *P = waves->getP();
+   T *Vx = waves->getVx();
+   T *Vy = waves->getVy();
+   T *Vz = waves->getVz();
    std::shared_ptr<PmlAcoustic3D<T>> Pml = waves->getPml();
 
    off_t pos = this->checksize*this->check; 
    if(this->incore){
       if(!this->allocated) rs_error("Revolve::readCheck: checkpoint array is not allocated.");
-      memcpy(P1, this->checkpoints+pos, nz_pml*ny_pml*nx_pml*sizeof(T));
+      memcpy(P, this->checkpoints+pos, nz_pml*ny_pml*nx_pml*sizeof(T));
       pos += nz_pml*ny_pml*nx_pml;
-      memcpy(P2, this->checkpoints+pos, nz_pml*ny_pml*nx_pml*sizeof(T));
+      memcpy(Vx, this->checkpoints+pos, nz_pml*ny_pml*nx_pml*sizeof(T));
+      pos += nz_pml*ny_pml*nx_pml;
+      memcpy(Vy, this->checkpoints+pos, nz_pml*ny_pml*nx_pml*sizeof(T));
+      pos += nz_pml*ny_pml*nx_pml;
+      memcpy(Vz, this->checkpoints+pos, nz_pml*ny_pml*nx_pml*sizeof(T));
       pos += nz_pml*ny_pml*nx_pml;
       if(Pml->getApplypml(0)){
          memcpy(Pml->P_left, this->checkpoints+pos, nz_pml*ny_pml*lpml*sizeof(T));
          pos += nz_pml*ny_pml*lpml;
-         memcpy(Pml->Axx_left, this->checkpoints+pos, nz_pml*ny_pml*lpml*sizeof(T));
+         memcpy(Pml->Vxx_left, this->checkpoints+pos, nz_pml*ny_pml*lpml*sizeof(T));
          pos += nz_pml*ny_pml*lpml;
       }
       if(Pml->getApplypml(1)){
          memcpy(Pml->P_right, this->checkpoints+pos, nz_pml*ny_pml*lpml*sizeof(T));
          pos += nz_pml*ny_pml*lpml;
-         memcpy(Pml->Axx_right, this->checkpoints+pos, nz_pml*ny_pml*lpml*sizeof(T));
+         memcpy(Pml->Vxx_right, this->checkpoints+pos, nz_pml*ny_pml*lpml*sizeof(T));
          pos += nz_pml*ny_pml*lpml;
       }
       if(Pml->getApplypml(2)){
          memcpy(Pml->P_front, this->checkpoints+pos, nz_pml*nx_pml*lpml*sizeof(T));
          pos += nz_pml*nx_pml*lpml;
-         memcpy(Pml->Ayy_front, this->checkpoints+pos, nx_pml*nz_pml*lpml*sizeof(T));
+         memcpy(Pml->Vyy_front, this->checkpoints+pos, nx_pml*nz_pml*lpml*sizeof(T));
          pos += nx_pml*nz_pml*lpml;
       }
       if(Pml->getApplypml(3)){
          memcpy(Pml->P_back, this->checkpoints+pos, nz_pml*nx_pml*lpml*sizeof(T));
          pos += nz_pml*nx_pml*lpml;
-         memcpy(Pml->Ayy_back, this->checkpoints+pos, nx_pml*nz_pml*lpml*sizeof(T));
+         memcpy(Pml->Vyy_back, this->checkpoints+pos, nx_pml*nz_pml*lpml*sizeof(T));
          pos += nz_pml*nx_pml*lpml;
       }
       if(Pml->getApplypml(4)){
          memcpy(Pml->P_top, this->checkpoints+pos, nx_pml*ny_pml*lpml*sizeof(T));
          pos += nx_pml*ny_pml*lpml;
-         memcpy(Pml->Azz_top, this->checkpoints+pos, nx_pml*ny_pml*lpml*sizeof(T));
+         memcpy(Pml->Vzz_top, this->checkpoints+pos, nx_pml*ny_pml*lpml*sizeof(T));
          pos += nx_pml*ny_pml*lpml;
       }
       if(Pml->getApplypml(5)){
          memcpy(Pml->P_bottom, this->checkpoints+pos, nx_pml*ny_pml*lpml*sizeof(T));
          pos += nx_pml*ny_pml*lpml;
-         memcpy(Pml->Azz_bottom, this->checkpoints+pos, nx_pml*ny_pml*lpml*sizeof(T));
+         memcpy(Pml->Vzz_bottom, this->checkpoints+pos, nx_pml*ny_pml*lpml*sizeof(T));
       }
    }else{
       if(this->open){
-         this->Fc->read(P1,nz_pml*ny_pml*nx_pml, pos*sizeof(T));
-         this->Fc->read(P2,nz_pml*ny_pml*nx_pml);
+         this->Fc->read(P,nz_pml*ny_pml*nx_pml, pos*sizeof(T));
+         this->Fc->read(Vx,nz_pml*ny_pml*nx_pml);
+         this->Fc->read(Vy,nz_pml*ny_pml*nx_pml);
+         this->Fc->read(Vz,nz_pml*ny_pml*nx_pml);
          if(Pml->getApplypml(0)){
             this->Fc->read(Pml->P_left,nz_pml*ny_pml*lpml);
-            this->Fc->read(Pml->Axx_left,nz_pml*ny_pml*lpml);
+            this->Fc->read(Pml->Vxx_left,nz_pml*ny_pml*lpml);
          }
          if(Pml->getApplypml(1)){
             this->Fc->read(Pml->P_right,nz_pml*ny_pml*lpml);
-            this->Fc->read(Pml->Axx_right,nz_pml*ny_pml*lpml);
+            this->Fc->read(Pml->Vxx_right,nz_pml*ny_pml*lpml);
          }
          if(Pml->getApplypml(2)){
             this->Fc->read(Pml->P_front,nz_pml*nx_pml*lpml);
-            this->Fc->read(Pml->Ayy_front,nx_pml*nz_pml*lpml);
+            this->Fc->read(Pml->Vyy_front,nx_pml*nz_pml*lpml);
          }
          if(Pml->getApplypml(3)){
             this->Fc->read(Pml->P_back,nz_pml*nx_pml*lpml);
-            this->Fc->read(Pml->Ayy_back,nx_pml*nz_pml*lpml);
+            this->Fc->read(Pml->Vyy_back,nx_pml*nz_pml*lpml);
          }
          if(Pml->getApplypml(4)){
             this->Fc->read(Pml->P_top,nx_pml*ny_pml*lpml);
-            this->Fc->read(Pml->Azz_top,nx_pml*ny_pml*lpml);
+            this->Fc->read(Pml->Vzz_top,nx_pml*ny_pml*lpml);
          }
          if(Pml->getApplypml(5)){
             this->Fc->read(Pml->P_bottom,nx_pml*ny_pml*lpml);
-            this->Fc->read(Pml->Azz_bottom,nx_pml*ny_pml*lpml);
+            this->Fc->read(Pml->Vzz_bottom,nx_pml*ny_pml*lpml);
          }
          if(Fc->getFail()) rs_error("Revolve::readCheck: Error reading checkpoints from file.");
       }else{
@@ -840,79 +861,87 @@ void Revolve<T>::writeCheck(std::shared_ptr<WavesAcoustic3D<T>> waves)
    ny_pml=waves->getNy_pml();
    nz_pml=waves->getNz_pml();
    lpml = waves->getLpml();
-   T *P1 = waves->getP1();
-   T *P2 = waves->getP2();
+   T *P = waves->getP();
+   T *Vx = waves->getVx();
+   T *Vy = waves->getVy();
+   T *Vz = waves->getVz();
    std::shared_ptr<PmlAcoustic3D<T>> Pml = waves->getPml();
 
    off_t pos = this->checksize*this->check; 
    if(this->incore){
       if(!this->allocated) rs_error("Revolve::writeCheck: checkpoint array is not allocated.");
-      memcpy(this->checkpoints+pos, P1, nz_pml*ny_pml*nx_pml*sizeof(T));
+      memcpy(this->checkpoints+pos, P, nz_pml*ny_pml*nx_pml*sizeof(T));
       pos += nz_pml*ny_pml*nx_pml;
-      memcpy(this->checkpoints+pos, P2, nz_pml*ny_pml*nx_pml*sizeof(T));
+      memcpy(this->checkpoints+pos, Vx, nz_pml*ny_pml*nx_pml*sizeof(T));
+      pos += nz_pml*ny_pml*nx_pml;
+      memcpy(this->checkpoints+pos, Vy, nz_pml*ny_pml*nx_pml*sizeof(T));
+      pos += nz_pml*ny_pml*nx_pml;
+      memcpy(this->checkpoints+pos, Vz, nz_pml*ny_pml*nx_pml*sizeof(T));
       pos += nz_pml*ny_pml*nx_pml;
       if(Pml->getApplypml(0)){
          memcpy(this->checkpoints+pos, Pml->P_left, nz_pml*ny_pml*lpml*sizeof(T));
          pos += nz_pml*ny_pml*lpml;
-         memcpy(this->checkpoints+pos, Pml->Axx_left, nz_pml*ny_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vxx_left, nz_pml*ny_pml*lpml*sizeof(T));
          pos += nz_pml*ny_pml*lpml;
       }
       if(Pml->getApplypml(1)){
          memcpy(this->checkpoints+pos, Pml->P_right, nz_pml*ny_pml*lpml*sizeof(T));
          pos += nz_pml*ny_pml*lpml;
-         memcpy(this->checkpoints+pos, Pml->Axx_right, nz_pml*ny_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vxx_right, nz_pml*ny_pml*lpml*sizeof(T));
          pos += nz_pml*ny_pml*lpml;
       }
       if(Pml->getApplypml(2)){
          memcpy(this->checkpoints+pos, Pml->P_front, nz_pml*nx_pml*lpml*sizeof(T));
          pos += nz_pml*nx_pml*lpml;
-         memcpy(this->checkpoints+pos, Pml->Ayy_front, nx_pml*nz_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vyy_front, nx_pml*nz_pml*lpml*sizeof(T));
          pos += nx_pml*nz_pml*lpml;
       }
       if(Pml->getApplypml(3)){
          memcpy(this->checkpoints+pos, Pml->P_back, nz_pml*nx_pml*lpml*sizeof(T));
          pos += nz_pml*nx_pml*lpml;
-         memcpy(this->checkpoints+pos, Pml->Ayy_back, nx_pml*nz_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vyy_back, nx_pml*nz_pml*lpml*sizeof(T));
          pos += nz_pml*nx_pml*lpml;
       }
       if(Pml->getApplypml(4)){
          memcpy(this->checkpoints+pos, Pml->P_top, nx_pml*ny_pml*lpml*sizeof(T));
          pos += nx_pml*ny_pml*lpml;
-         memcpy(this->checkpoints+pos, Pml->Azz_top, nx_pml*ny_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vzz_top, nx_pml*ny_pml*lpml*sizeof(T));
          pos += nx_pml*ny_pml*lpml;
       }
       if(Pml->getApplypml(5)){
          memcpy(this->checkpoints+pos, Pml->P_bottom, nx_pml*ny_pml*lpml*sizeof(T));
          pos += nx_pml*ny_pml*lpml;
-         memcpy(this->checkpoints+pos, Pml->Azz_bottom, nx_pml*ny_pml*lpml*sizeof(T));
+         memcpy(this->checkpoints+pos, Pml->Vzz_bottom, nx_pml*ny_pml*lpml*sizeof(T));
       }
    }else{
       if(this->open){
-         this->Fc->write(P1,nz_pml*ny_pml*nx_pml, pos*sizeof(T));
-         this->Fc->write(P2,nz_pml*ny_pml*nx_pml);
+         this->Fc->write(P,nz_pml*ny_pml*nx_pml, pos*sizeof(T));
+         this->Fc->write(Vx,nz_pml*ny_pml*nx_pml);
+         this->Fc->write(Vy,nz_pml*ny_pml*nx_pml);
+         this->Fc->write(Vz,nz_pml*ny_pml*nx_pml);
          if(Pml->getApplypml(0)){
             this->Fc->write(Pml->P_left,nz_pml*ny_pml*lpml);
-            this->Fc->write(Pml->Axx_left,nz_pml*ny_pml*lpml);
+            this->Fc->write(Pml->Vxx_left,nz_pml*ny_pml*lpml);
          }
          if(Pml->getApplypml(1)){
             this->Fc->write(Pml->P_right,nz_pml*ny_pml*lpml);
-            this->Fc->write(Pml->Axx_right,nz_pml*ny_pml*lpml);
+            this->Fc->write(Pml->Vxx_right,nz_pml*ny_pml*lpml);
          }
          if(Pml->getApplypml(2)){
             this->Fc->write(Pml->P_front,nz_pml*nx_pml*lpml);
-            this->Fc->write(Pml->Ayy_front,nx_pml*nz_pml*lpml);
+            this->Fc->write(Pml->Vyy_front,nx_pml*nz_pml*lpml);
          }
          if(Pml->getApplypml(3)){
             this->Fc->write(Pml->P_back,nz_pml*nx_pml*lpml);
-            this->Fc->write(Pml->Ayy_back,nx_pml*nz_pml*lpml);
+            this->Fc->write(Pml->Vyy_back,nx_pml*nz_pml*lpml);
          }
          if(Pml->getApplypml(4)){
             this->Fc->write(Pml->P_top,nx_pml*ny_pml*lpml);
-            this->Fc->write(Pml->Azz_top,nx_pml*ny_pml*lpml);
+            this->Fc->write(Pml->Vzz_top,nx_pml*ny_pml*lpml);
          }
          if(Pml->getApplypml(5)){
             this->Fc->write(Pml->P_bottom,nx_pml*ny_pml*lpml);
-            this->Fc->write(Pml->Azz_bottom,nx_pml*ny_pml*lpml);
+            this->Fc->write(Pml->Vzz_bottom,nx_pml*ny_pml*lpml);
          }
          if(Fc->getFail()) rs_error("Revolve::writeCheck: Error writting checkpoints to file.");
       }else{

@@ -242,8 +242,8 @@ void MvaAcoustic2D<T>::insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>> w
     T dt = waves_fw->getDt();
     int padw = waves_fw->getLpml();
     int nxw = nx+2*padw;
-    T* ws = waves_fw->getP2();
-    T* wr = waves_bw->getP2();
+    T* ws = waves_fw->getP();
+    T* wr = waves_bw->getP();
     for (ix=0; ix<nx; ix++){
         for (iz=0; iz<nz; iz++){
             ws[kw2D(ix+padw,iz+padw)] += dt*dt*L[kw2D(ix+padw,iz+padw)]*adjsrc_fw[km2D(ix, iz)];
@@ -333,10 +333,10 @@ int MvaAcoustic2D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves_adj_fw->forwardstepAcceleration(model, der);
+    	waves_adj_fw->forwardstepVelocity(model, der);
     	waves_adj_fw->forwardstepStress(model, der);
 
-    	waves_adj_bw->forwardstepAcceleration(model, der);
+    	waves_adj_bw->forwardstepVelocity(model, der);
     	waves_adj_bw->forwardstepStress(model, der);
     
         //Read snapshots (interpolation needed here if snapinc not 1!)
@@ -356,20 +356,16 @@ int MvaAcoustic2D<T>::run(){
         Bwsnap->readSnap(it);
         // Do Crosscorrelation
         if((((nt - 1 - it)-Fwsnap->getEnddiff()) % Fwsnap->getSnapinc()) == 0){
-            wrp = waves_adj_fw->getP1();
-            wrx = waves_adj_fw->getAx(); 
-            wrz = waves_adj_fw->getAz(); 
+            wrp = waves_adj_fw->getP();
+            wrx = waves_adj_fw->getVx(); 
+            wrz = waves_adj_fw->getVz(); 
             crossCorr(Fwsnap->getData(0), 0, wrp, wrx, wrz, waves_adj_fw->getLpml(), model->getVp(), model->getR(), adjsrc_fw);
-            wrp = waves_adj_bw->getP1();
-            wrx = waves_adj_bw->getAx(); 
-            wrz = waves_adj_bw->getAz(); 
+            wrp = waves_adj_bw->getP();
+            wrx = waves_adj_bw->getVx(); 
+            wrz = waves_adj_bw->getVz(); 
             crossCorr(Bwsnap->getData(0), 0, wrp, wrx, wrz, waves_adj_bw->getLpml(), model->getVp(), model->getR(), adjsrc_bw);
             imageit++;
         }
-
-    	// Roll the pointers P1 and P2
-    	waves_adj_fw->roll();
-    	waves_adj_bw->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -448,19 +444,15 @@ int MvaAcoustic2D<T>::run_optimal(){
             for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
-                waves_fw1->forwardstepAcceleration(model, der);
+                waves_fw1->forwardstepVelocity(model, der);
                 waves_fw1->forwardstepStress(model, der);
 
-                waves_bw1->forwardstepAcceleration(model, der);
+                waves_bw1->forwardstepVelocity(model, der);
                 waves_bw1->forwardstepStress(model, der);
 
                 // Inserting source 
                 waves_fw1->insertSource(model, source, SMAP, it);
                 waves_bw1->insertSource(model, dataP, GMAP, nt-1-it);
-
-                // Roll the pointers P1 and P2
-                waves_fw1->roll();
-                waves_bw1->roll();
 
                 if(!reverse){
                     // Output progress to logfile
@@ -471,19 +463,19 @@ int MvaAcoustic2D<T>::run_optimal(){
         if (whatodo == firsturn)
         {
             // Time stepping
-            waves_fw1->forwardstepAcceleration(model, der);
+            waves_fw1->forwardstepVelocity(model, der);
             waves_fw1->forwardstepStress(model, der);
-            waves_bw1->forwardstepAcceleration(model, der);
+            waves_bw1->forwardstepVelocity(model, der);
             waves_bw1->forwardstepStress(model, der);
 
-            waves_fw2->forwardstepAcceleration(model, der);
+            waves_fw2->forwardstepVelocity(model, der);
             waves_fw2->forwardstepStress(model, der);
-            waves_bw2->forwardstepAcceleration(model, der);
+            waves_bw2->forwardstepVelocity(model, der);
             waves_bw2->forwardstepStress(model, der);
 
-            waves_adj_fw->forwardstepAcceleration(model, der);
+            waves_adj_fw->forwardstepVelocity(model, der);
             waves_adj_fw->forwardstepStress(model, der);
-            waves_adj_bw->forwardstepAcceleration(model, der);
+            waves_adj_bw->forwardstepVelocity(model, der);
             waves_adj_bw->forwardstepStress(model, der);
 
             // Inserting source 
@@ -493,30 +485,22 @@ int MvaAcoustic2D<T>::run_optimal(){
             waves_bw2->insertSource(model, dataP, GMAP, capo);
 
             // Inserting adjoint sources
-            wsp = waves_fw2->getP1();
-            wrp = waves_bw2->getP1();
+            wsp = waves_fw2->getP();
+            wrp = waves_bw2->getP();
             this->calcAdjointsource(adjsrc_fw, wrp, waves_adj_fw->getLpml(), adjsrc_bw, wsp, waves_adj_bw->getLpml());
             this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model->getL());
 
             /* Do Crosscorrelation */
-            wsp = waves_fw1->getP1();
-            wrp = waves_adj_fw->getP1();
-            wrx = waves_adj_fw->getAx(); 
-            wrz = waves_adj_fw->getAz(); 
+            wsp = waves_fw1->getP();
+            wrp = waves_adj_fw->getP();
+            wrx = waves_adj_fw->getVx(); 
+            wrz = waves_adj_fw->getVz(); 
             crossCorr(wsp, waves_fw1->getLpml(), wrp, wrx, wrz, waves_adj_fw->getLpml(), model->getVp(), model->getR(), adjsrc_fw);
-            wsp = waves_bw1->getP1();
-            wrp = waves_adj_bw->getP1();
-            wrx = waves_adj_bw->getAx(); 
-            wrz = waves_adj_bw->getAz(); 
+            wsp = waves_bw1->getP();
+            wrp = waves_adj_bw->getP();
+            wrx = waves_adj_bw->getVx(); 
+            wrz = waves_adj_bw->getVz(); 
             crossCorr(wsp, waves_bw1->getLpml(), wrp, wrx, wrz, waves_adj_bw->getLpml(), model->getVp(), model->getR(), adjsrc_bw);
-
-            // Roll the pointers P1 and P2
-            waves_fw1->roll();
-            waves_bw1->roll();
-            waves_fw2->roll();
-            waves_bw2->roll();
-            waves_adj_fw->roll();
-            waves_adj_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -535,14 +519,14 @@ int MvaAcoustic2D<T>::run_optimal(){
         if (whatodo == youturn)
         {
             // Time stepping
-            waves_fw2->forwardstepAcceleration(model, der);
+            waves_fw2->forwardstepVelocity(model, der);
             waves_fw2->forwardstepStress(model, der);
-            waves_bw2->forwardstepAcceleration(model, der);
+            waves_bw2->forwardstepVelocity(model, der);
             waves_bw2->forwardstepStress(model, der);
 
-            waves_adj_fw->forwardstepAcceleration(model, der);
+            waves_adj_fw->forwardstepVelocity(model, der);
             waves_adj_fw->forwardstepStress(model, der);
-            waves_adj_bw->forwardstepAcceleration(model, der);
+            waves_adj_bw->forwardstepVelocity(model, der);
             waves_adj_bw->forwardstepStress(model, der);
 
             // Inserting source
@@ -550,29 +534,23 @@ int MvaAcoustic2D<T>::run_optimal(){
             waves_bw2->insertSource(model, dataP, GMAP, capo);
 
             // Inserting adjoint sources
-            T *wsp = waves_fw2->getP1();
-            T *wrp = waves_bw2->getP1();
+            T *wsp = waves_fw2->getP();
+            T *wrp = waves_bw2->getP();
             this->calcAdjointsource(adjsrc_fw, wrp, waves_adj_fw->getLpml(), adjsrc_bw, wsp, waves_adj_bw->getLpml());
             this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model->getL());
 
             /* Do Crosscorrelation */
-            wsp = waves_fw1->getP1();
-            wrp = waves_adj_fw->getP1();
-            T* wrx = waves_adj_fw->getAx(); 
-            T* wrz = waves_adj_fw->getAz(); 
+            wsp = waves_fw1->getP();
+            wrp = waves_adj_fw->getP();
+            T* wrx = waves_adj_fw->getVx(); 
+            T* wrz = waves_adj_fw->getVz(); 
             crossCorr(wsp, waves_fw1->getLpml(), wrp, wrx, wrz, waves_adj_fw->getLpml(), model->getVp(), model->getR(), adjsrc_fw);
 
-            wsp = waves_bw1->getP1();
-            wrp = waves_adj_bw->getP1();
-            wrx = waves_adj_bw->getAx(); 
-            wrz = waves_adj_bw->getAz(); 
+            wsp = waves_bw1->getP();
+            wrp = waves_adj_bw->getP();
+            wrx = waves_adj_bw->getVx(); 
+            wrz = waves_adj_bw->getVz(); 
             crossCorr(wsp, waves_bw1->getLpml(), wrp, wrx, wrz, waves_adj_bw->getLpml(), model->getVp(), model->getR(), adjsrc_bw);
-
-            // Roll the pointers P1 and P2
-            waves_fw2->roll();
-            waves_bw2->roll();
-    	    waves_adj_fw->roll();
-    	    waves_adj_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);
@@ -1144,7 +1122,7 @@ int PPmvaElastic2D<T>::run_optimal(){
             wrz = waves_bw1->getUz1();
             crossCorr(wrx, wrz, waves_bw1->getLpml(), waves_adj_bw, model, adjsrc_bw);
 
-            // Roll the pointers P1 and P2
+            // Roll the pointers 
             waves_fw2->roll();
             waves_bw2->roll();
             waves_adj_fw->roll();
@@ -1584,7 +1562,7 @@ int PSmvaElastic2D<T>::run_optimal(){
                 waves_bw1->insertForcesource(model, dataUx, GMAP, nt-1-it);
                 waves_bw1->insertForcesource(model, dataUz, GMAP, nt-1-it);
 
-                // Roll the pointers P1 and P2
+                // Roll the pointers 
                 waves_fw1->roll();
                 waves_bw1->roll();
 
@@ -1636,7 +1614,7 @@ int PSmvaElastic2D<T>::run_optimal(){
             wrz = waves_bw1->getUz1();
             crossCorr(wrx, wrz, waves_bw1->getLpml(), waves_adj_bw, model, adjsrcxx, adjsrczz, adjsrcxz);
 
-            // Roll the pointers P1 and P2
+            // Roll the pointers 
             waves_fw1->roll();
             waves_bw1->roll();
             waves_fw2->roll();
@@ -1683,7 +1661,7 @@ int PSmvaElastic2D<T>::run_optimal(){
             wrz = waves_bw1->getUz1();
             crossCorr(wrx, wrz, waves_bw1->getLpml(), waves_adj_bw, model, adjsrcxx, adjsrczz, adjsrcxz);
 
-            // Roll the pointers P1 and P2
+            // Roll the pointers 
             waves_fw2->roll();
             waves_adj_bw->roll();
 

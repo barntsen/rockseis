@@ -39,11 +39,11 @@ int main(int argc, char** argv) {
             PRINT_DOC();
             PRINT_DOC(# Booleans);
             PRINT_DOC(            Precord = "true";  # Set these to true if recording or snapshoting is to be made.);
-            PRINT_DOC(            Axrecord = "true";);
-            PRINT_DOC(        Azrecord = "true";);
+            PRINT_DOC(            Vxrecord = "true";);
+            PRINT_DOC(        Vzrecord = "true";);
             PRINT_DOC(        Psnap = "false";);
-            PRINT_DOC(        Axsnap = "false";);
-            PRINT_DOC(        Azsnap = "false";);
+            PRINT_DOC(        Vxsnap = "false";);
+            PRINT_DOC(        Vzsnap = "false";);
             PRINT_DOC();
             PRINT_DOC(# Files);
             PRINT_DOC(        Vp = "Vp2d.rss";);
@@ -52,11 +52,11 @@ int main(int argc, char** argv) {
             PRINT_DOC(        Input_Pdata = "2Ddata.rss";);
             PRINT_DOC(        Datum_survey = "2Dsurvey.rss";);
             PRINT_DOC(        Precordfile = "Pshot.rss";);
-            PRINT_DOC(        Axrecordfile = "Axshot.rss";);
-            PRINT_DOC(        Azrecordfile = "Azshot.rss";);
+            PRINT_DOC(        Vxrecordfile = "Vxshot.rss";);
+            PRINT_DOC(        Vzrecordfile = "Vzshot.rss";);
             PRINT_DOC(        Psnapfile = "Psnaps.rss";);
-            PRINT_DOC(        Axsnapfile = "Axsnaps.rss";);
-            PRINT_DOC(        Azsnapfile = "Azsnaps.rss";);
+            PRINT_DOC(        Vxsnapfile = "Vxsnaps.rss";);
+            PRINT_DOC(        Vzsnapfile = "Vzsnaps.rss";);
         }
         exit(1);
     }
@@ -82,17 +82,17 @@ int main(int argc, char** argv) {
     std::shared_ptr<rockseis::Data2D<float>> Pdata2D;
     std::shared_ptr<rockseis::Data2D<float>> Pdata2Di;
 
-    bool Axsnap=0, Axrecord=0;
-    std::string Axsnapfile;
-    std::string Axrecordfile;
-    std::shared_ptr<rockseis::Data2D<float>> Axdata2D;
-    std::shared_ptr<rockseis::Data2D<float>> Axdata2Di;
+    bool Vxsnap=0, Vxrecord=0;
+    std::string Vxsnapfile;
+    std::string Vxrecordfile;
+    std::shared_ptr<rockseis::Data2D<float>> Vxdata2D;
+    std::shared_ptr<rockseis::Data2D<float>> Vxdata2Di;
 
-    bool Azsnap=0, Azrecord=0;
-    std::string Azsnapfile;
-    std::string Azrecordfile;
-    std::shared_ptr<rockseis::Data2D<float>> Azdata2D;
-    std::shared_ptr<rockseis::Data2D<float>> Azdata2Di;
+    bool Vzsnap=0, Vzrecord=0;
+    std::string Vzsnapfile;
+    std::string Vzrecordfile;
+    std::shared_ptr<rockseis::Data2D<float>> Vzdata2D;
+    std::shared_ptr<rockseis::Data2D<float>> Vzdata2Di;
 
     // Create a local model class
 	std::shared_ptr<rockseis::ModelAcoustic2D<float>> lmodel;
@@ -119,25 +119,25 @@ int main(int argc, char** argv) {
     if(Psnap){
         if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
     }
-    if(Inpar->getPar("Axsnap", &Axsnap) == INPARSE_ERR) status = true;
-    if(Axsnap){
-        if(Inpar->getPar("Axsnapfile", &Axsnapfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vxsnap", &Vxsnap) == INPARSE_ERR) status = true;
+    if(Vxsnap){
+        if(Inpar->getPar("Vxsnapfile", &Vxsnapfile) == INPARSE_ERR) status = true;
     }
-    if(Inpar->getPar("Azsnap", &Azsnap) == INPARSE_ERR) status = true;
-    if(Azsnap){
-        if(Inpar->getPar("Azsnapfile", &Azsnapfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vzsnap", &Vzsnap) == INPARSE_ERR) status = true;
+    if(Vzsnap){
+        if(Inpar->getPar("Vzsnapfile", &Vzsnapfile) == INPARSE_ERR) status = true;
     }
     if(Inpar->getPar("Precord", &Precord) == INPARSE_ERR) status = true;
     if(Precord){
         if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
     }
-    if(Inpar->getPar("Axrecord", &Axrecord) == INPARSE_ERR) status = true;
-    if(Axrecord){
-        if(Inpar->getPar("Axrecordfile", &Axrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vxrecord", &Vxrecord) == INPARSE_ERR) status = true;
+    if(Vxrecord){
+        if(Inpar->getPar("Vxrecordfile", &Vxrecordfile) == INPARSE_ERR) status = true;
     }
-    if(Inpar->getPar("Azrecord", &Azrecord) == INPARSE_ERR) status = true;
-    if(Azrecord){
-        if(Inpar->getPar("Azrecordfile", &Azrecordfile) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("Vzrecord", &Vzrecord) == INPARSE_ERR) status = true;
+    if(Vzrecord){
+        if(Inpar->getPar("Vzrecordfile", &Vzrecordfile) == INPARSE_ERR) status = true;
     }
 
 	if(status == true){
@@ -185,13 +185,13 @@ int main(int argc, char** argv) {
             Sort_out->createEmptydataset(Precordfile, ntrec, dtrec, 0.0);
         }
 
-        if(Axrecord){
+        if(Vxrecord){
             // Create an empty data file
-            Sort_out->createEmptydataset(Axrecordfile, ntrec, dtrec, 0.0);
+            Sort_out->createEmptydataset(Vxrecordfile, ntrec, dtrec, 0.0);
         }
-        if(Azrecord){
+        if(Vzrecord){
             // Create an empty data file
-            Sort_out->createEmptydataset(Azrecordfile, ntrec, dtrec, 0.0);
+            Sort_out->createEmptydataset(Vzrecordfile, ntrec, dtrec, 0.0);
         }
 
 		// Create work queue
@@ -257,11 +257,11 @@ int main(int argc, char** argv) {
                 if(Psnap){
                     modelling->setSnapP(Psnapfile + "-" + std::to_string(work.id));
                 }
-                if(Axsnap){
-                    modelling->setSnapAx(Axsnapfile + "-" + std::to_string(work.id));
+                if(Vxsnap){
+                    modelling->setSnapVx(Vxsnapfile + "-" + std::to_string(work.id));
                 }
-                if(Azsnap){
-                    modelling->setSnapAz(Azsnapfile + "-" + std::to_string(work.id));
+                if(Vzsnap){
+                    modelling->setSnapVz(Vzsnapfile + "-" + std::to_string(work.id));
                 }
 
                 // Setting Record
@@ -273,21 +273,21 @@ int main(int argc, char** argv) {
                     Pdata2D->makeMap(lmodel->getGeom());
                     modelling->setRecP(Pdata2D);
                 }
-                if(Axrecord){
-                    Axdata2D = std::make_shared<rockseis::Data2D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
-                    Axdata2D->setField(rockseis::VX);
+                if(Vxrecord){
+                    Vxdata2D = std::make_shared<rockseis::Data2D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
+                    Vxdata2D->setField(rockseis::VX);
                     // Copy geometry to Data
-                    Axdata2D->copyCoords(Shotgeom);
-                    Axdata2D->makeMap(lmodel->getGeom());
-                    modelling->setRecAx(Axdata2D);
+                    Vxdata2D->copyCoords(Shotgeom);
+                    Vxdata2D->makeMap(lmodel->getGeom());
+                    modelling->setRecVx(Vxdata2D);
                 }
-                if(Azrecord){
-                    Azdata2D = std::make_shared<rockseis::Data2D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
-                    Azdata2D->setField(rockseis::VZ);
+                if(Vzrecord){
+                    Vzdata2D = std::make_shared<rockseis::Data2D<float>>(ntr_out, source->getNt(), source->getDt(), 0.0);
+                    Vzdata2D->setField(rockseis::VZ);
                     // Copy geometry to Data
-                    Azdata2D->copyCoords(Shotgeom);
-                    Azdata2D->makeMap(lmodel->getGeom());
-                    modelling->setRecAz(Azdata2D);
+                    Vzdata2D->copyCoords(Shotgeom);
+                    Vzdata2D->makeMap(lmodel->getGeom());
+                    modelling->setRecVz(Vzdata2D);
                 }
 
                 // Stagger model
@@ -303,17 +303,17 @@ int main(int argc, char** argv) {
                     interp->interp(Pdata2D, Pdata2Di);
                     Sort_out->put2DGather(Pdata2Di, work.id);
                 }
-                if(Axrecord){
-                    Axdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr_out, ntrec, dtrec, 0.0);
-                    Axdata2Di->setFile(Axrecordfile);
-                    interp->interp(Axdata2D, Axdata2Di);
-                    Sort_out->put2DGather(Axdata2Di, work.id);
+                if(Vxrecord){
+                    Vxdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr_out, ntrec, dtrec, 0.0);
+                    Vxdata2Di->setFile(Vxrecordfile);
+                    interp->interp(Vxdata2D, Vxdata2Di);
+                    Sort_out->put2DGather(Vxdata2Di, work.id);
                 }
-                if(Azrecord){
-                    Azdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr_out, ntrec, dtrec, 0.0);
-                    Azdata2Di->setFile(Azrecordfile);
-                    interp->interp(Azdata2D, Azdata2Di);
-                    Sort_out->put2DGather(Azdata2Di, work.id);
+                if(Vzrecord){
+                    Vzdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr_out, ntrec, dtrec, 0.0);
+                    Vzdata2Di->setFile(Vzrecordfile);
+                    interp->interp(Vzdata2D, Vzdata2Di);
+                    Sort_out->put2DGather(Vzdata2Di, work.id);
                 }
 
                 // Reset all classes
@@ -326,13 +326,13 @@ int main(int argc, char** argv) {
                     Pdata2D.reset();
                     Pdata2Di.reset();
                 }
-                if(Axrecord){
-                    Axdata2D.reset();
-                    Axdata2Di.reset();
+                if(Vxrecord){
+                    Vxdata2D.reset();
+                    Vxdata2Di.reset();
                 }
-                if(Azrecord){
-                    Azdata2D.reset();
-                    Azdata2Di.reset();
+                if(Vzrecord){
+                    Vzdata2D.reset();
+                    Vzdata2Di.reset();
                 }
                 work.status = WORK_FINISHED;
 

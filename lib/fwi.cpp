@@ -508,7 +508,7 @@ bool FwiAcoustic2D<T>::checkStability(){
 }
 
 template<typename T>
-void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, T* Vp, T* Rho, bool domdec)
+void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int padr, std::shared_ptr<ModelAcoustic2D<T>> model, bool domdec)
 {
    if(!vpgradset && !rhogradset) rs_error("FwiAcoustic2D:crossCorr: No gradient set in fwi class");
    if(!vpgrad->getAllocated()) vpgrad->allocateImage();
@@ -524,11 +524,9 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
    if(srcilumset){
       srcilumdata = srcilum->getImagedata();
    }
-   T mspx, mspz;
-   T mrpx, mrpz;
    T mrxx, mrzz;
-   T L;
-   T vpscale, rhoscale1, rhoscale2;
+   T uderx=0.0, uderz=0.0;
+   T vpscale, rhoscale1;
    int nx = vpgrad->getNx();
    int nz = vpgrad->getNz();
    T dx = vpgrad->getDx();
@@ -543,22 +541,26 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
       nxs = nx+2*pads;
       nxr = nx+2*padr;
    }
+
+   T* Vp = model->getVp();
+   T* Rho = model->getR();
+   T* Rx = model->getRx();
+   T* Rz = model->getRz();
+
    for (ix=1; ix<nx-1; ix++){
       {
          for (iz=1; iz<nz-1; iz++){
-            L = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
-            vpscale = -2.0/(Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)]);
-            rhoscale1 = -1.0/(Rho[km2D(ix, iz)]*Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)]);
-            rhoscale2 = -1.0/(Rho[km2D(ix, iz)]*Rho[km2D(ix, iz)]);
+            vpscale = -2.0/(Vp[km2D(ix, iz)]);
+            rhoscale1 = -1.0/(Rho[km2D(ix, iz)]);
             mrxx = (wrx[kr2D(ix+padr, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr)])/dx;
             mrzz = (wrz[kr2D(ix+padr, iz+padr)] - wrz[kr2D(ix+padr, iz+padr-1)])/dz;
-            vpgraddata[ki2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*L*(mrxx + mrzz);
-            rhograddata[ki2D(ix,iz)] -= rhoscale1*wsp[ks2D(ix+pads, iz+pads)]*L*(mrxx + mrzz);
-            mspx = (wsp[ks2D(ix+pads+1, iz+pads)] - wsp[ks2D(ix+pads-1, iz+pads)])/(2.0*dx);
-            mspz = (wsp[ks2D(ix+pads, iz+pads+1)] - wsp[ks2D(ix+pads, iz+pads-1)])/(2.0*dz);
-            mrpx = (wrp[kr2D(ix+padr+1, iz+padr)] - wrp[kr2D(ix+padr-1, iz+padr)])/(2.0*dx);
-            mrpz = (wrp[kr2D(ix+padr, iz+padr+1)] - wrp[kr2D(ix+padr, iz+padr-1)])/(2.0*dz);
-            rhograddata[ki2D(ix,iz)] -= rhoscale2*(mspx*mrpx + mspz*mrpz);
+            vpgraddata[ki2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*(mrxx + mrzz);
+            rhograddata[ki2D(ix,iz)] -= rhoscale1*wsp[ks2D(ix+pads, iz+pads)]*(mrxx + mrzz);
+            uderx = 0.5*wrx[kr2D(ix+padr, iz+padr)]*Rx[kr2D(ix+padr, iz+padr)]*(wsp[ks2D(ix+pads+1, iz+pads)] - wsp[ks2D(ix+pads, iz+pads)])/dx;
+            uderx += 0.5*wrx[kr2D(ix+padr-1, iz+padr)]*Rx[kr2D(ix+padr-1, iz+padr)]*(wsp[ks2D(ix+pads, iz+pads)] - wsp[ks2D(ix+pads-1, iz+pads)])/dx;
+            uderz = 0.5*wrz[kr2D(ix+padr, iz+padr)]*Rz[kr2D(ix+padr, iz+padr)]*(wsp[ks2D(ix+pads, iz+pads+1)] - wsp[ks2D(ix+pads, iz+pads)])/dz;
+            uderz += 0.5*wrz[kr2D(ix+padr, iz+padr-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(wsp[ks2D(ix+pads, iz+pads)] - wsp[ks2D(ix+pads, iz+pads-1)])/dz;
+            rhograddata[ki2D(ix,iz)] -= (uderx + uderz);
 
             if(srcilumset){
                srcilumdata[ki2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*wsp[ks2D(ix+pads, iz+pads)];
@@ -1048,7 +1050,7 @@ int FwiAcoustic2D<T>::run(){
    std::shared_ptr<Snapshot2D<T>> Psnap;
    Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
    Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
-   Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+   Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
 
    this->writeLog("Running 2D Acoustic full-waveform inversion gradient with full checkpointing.");
    this->writeLog("Doing forward Loop.");
@@ -1056,14 +1058,14 @@ int FwiAcoustic2D<T>::run(){
    for(int it=0; it < nt; it++)
    {
       // Time stepping
-      waves->forwardstepAcceleration(model, der);
+      waves->forwardstepVelocity(model, der);
       if((model->getDomain()->getStatus())){
-         (model->getDomain())->shareEdges3D(waves->getAx());
-         (model->getDomain())->shareEdges3D(waves->getAz());
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVz());
       }
       waves->forwardstepStress(model, der);
       if((model->getDomain()->getStatus())){
-         (model->getDomain())->shareEdges3D(waves->getP2());
+         (model->getDomain())->shareEdges3D(waves->getP());
       }
 
       // Inserting source 
@@ -1075,11 +1077,8 @@ int FwiAcoustic2D<T>::run(){
       }
 
       //Writting out results to snapshot file
-      Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+      Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
       Psnap->writeSnap(it);
-
-      // Roll the pointers P1 and P2
-      waves->roll();
 
       // Output progress to logfile
       this->writeProgress(it, nt-1, 20, 48);
@@ -1114,14 +1113,14 @@ int FwiAcoustic2D<T>::run(){
       for(int it=0; it < nt; it++)
       {
          // Time stepping
-         waves->forwardstepAcceleration(model, der);
+         waves->forwardstepVelocity(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves->getAx());
-            (model->getDomain())->shareEdges3D(waves->getAz());
+            (model->getDomain())->shareEdges3D(waves->getVx());
+            (model->getDomain())->shareEdges3D(waves->getVz());
          }
          waves->forwardstepStress(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves->getP2());
+            (model->getDomain())->shareEdges3D(waves->getP());
          }
 
          // Inserting residuals
@@ -1132,16 +1131,13 @@ int FwiAcoustic2D<T>::run(){
 
          // Do Crosscorrelation
          if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-            T *wrp = waves->getP1();
-            T* wrx = waves->getAx(); 
-            T* wrz = waves->getAz(); 
-            crossCorr(Psnap->getData(0), 0, wrp, wrx, wrz, waves->getLpml(), model->getVp(), model->getR(), waves->getDomdec());
+            T *wrp = waves->getP();
+            T* wrx = waves->getVx(); 
+            T* wrz = waves->getVz(); 
+            crossCorr(Psnap->getData(0), 0, wrp, wrx, wrz, waves->getLpml(), model, waves->getDomdec());
          }
          // Record wavelet gradient
          waves->recordData(this->wavgrad, SMAP, nt-1-it);
-
-         // Roll the pointers P1 and P2
-         waves->roll();
 
          // Output progress to logfile
          this->writeProgress(it, nt-1, 20, 48);
@@ -1205,14 +1201,14 @@ int FwiAcoustic2D<T>::run_optimal(){
          for(int it=oldcapo; it < capo; it++)
          {
             // Time stepping
-            waves_fw->forwardstepAcceleration(model, der);
+            waves_fw->forwardstepVelocity(model, der);
             if((model->getDomain()->getStatus())){
-               (model->getDomain())->shareEdges3D(waves_fw->getAx());
-               (model->getDomain())->shareEdges3D(waves_fw->getAz());
+               (model->getDomain())->shareEdges3D(waves_fw->getVx());
+               (model->getDomain())->shareEdges3D(waves_fw->getVz());
             }
             waves_fw->forwardstepStress(model, der);
             if((model->getDomain()->getStatus())){
-               (model->getDomain())->shareEdges3D(waves_fw->getP2());
+               (model->getDomain())->shareEdges3D(waves_fw->getP());
             }
 
             // Inserting source 
@@ -1223,9 +1219,6 @@ int FwiAcoustic2D<T>::run_optimal(){
                waves_fw->recordData(this->datamodP, GMAP, it);
             }
 
-            // Roll the pointers P1 and P2
-            waves_fw->roll();
-
             if(!reverse){
                // Output progress to logfile
                this->writeProgress(it, nt-1, 20, 48);
@@ -1235,14 +1228,14 @@ int FwiAcoustic2D<T>::run_optimal(){
       if (whatodo == firsturn)
       {
          // Time stepping
-         waves_fw->forwardstepAcceleration(model, der);
+         waves_fw->forwardstepVelocity(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves_fw->getAx());
-            (model->getDomain())->shareEdges3D(waves_fw->getAz());
+            (model->getDomain())->shareEdges3D(waves_fw->getVx());
+            (model->getDomain())->shareEdges3D(waves_fw->getVz());
          }
          waves_fw->forwardstepStress(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves_fw->getP2());
+            (model->getDomain())->shareEdges3D(waves_fw->getP());
          }
 
          // Inserting source 
@@ -1263,18 +1256,14 @@ int FwiAcoustic2D<T>::run_optimal(){
          waves_bw->insertSource(model, dataresP, GMAP, capo);
 
          /* Do Crosscorrelation */
-         T *wsp = waves_fw->getP1();
-         T *wrp = waves_bw->getP1();
-         T* wrx = waves_bw->getAx(); 
-         T* wrz = waves_bw->getAz(); 
-         crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model->getVp(), model->getR(), waves_fw->getDomdec());
+         T *wsp = waves_fw->getP();
+         T *wrp = waves_bw->getP();
+         T* wrx = waves_bw->getVx(); 
+         T* wrz = waves_bw->getVz(); 
+         crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model, waves_fw->getDomdec());
 
          // Record wavelet gradient
          waves_bw->recordData(this->wavgrad, SMAP, capo);
-
-         // Roll the pointers P1 and P2
-         waves_fw->roll();
-         waves_bw->roll();
 
          // Output progress to logfile
          this->writeProgress(capo, nt-1, 20, 48);
@@ -1290,31 +1279,28 @@ int FwiAcoustic2D<T>::run_optimal(){
       if (whatodo == youturn)
       {
          // Time stepping
-         waves_bw->forwardstepAcceleration(model, der);
+         waves_bw->forwardstepVelocity(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves_bw->getAx());
-            (model->getDomain())->shareEdges3D(waves_bw->getAz());
+            (model->getDomain())->shareEdges3D(waves_bw->getVx());
+            (model->getDomain())->shareEdges3D(waves_bw->getVz());
          }
          waves_bw->forwardstepStress(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves_bw->getP2());
+            (model->getDomain())->shareEdges3D(waves_bw->getP());
          }
 
          // Inserting data
          waves_bw->insertSource(model, dataresP, GMAP, capo);
 
          /* Do Crosscorrelation */
-         T *wsp = waves_fw->getP1();
-         T *wrp = waves_bw->getP1();
-         T* wrx = waves_bw->getAx(); 
-         T* wrz = waves_bw->getAz(); 
-         crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model->getVp(), model->getR(), waves_fw->getDomdec());
+         T *wsp = waves_fw->getP();
+         T *wrp = waves_bw->getP();
+         T* wrx = waves_bw->getVx(); 
+         T* wrz = waves_bw->getVz(); 
+         crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wrz, waves_bw->getLpml(), model, waves_fw->getDomdec());
 
          // Record wavelet gradient
          waves_bw->recordData(this->wavgrad, SMAP, capo);
-
-         // Roll the pointers P1 and P2
-         waves_bw->roll();
 
          // Output progress to logfile
          this->writeProgress(nt-1-capo, nt-1, 20, 48);
@@ -1412,7 +1398,7 @@ bool FwiAcoustic3D<T>::checkStability(){
 }
 
 template<typename T>
-void FwiAcoustic3D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wry, T*wrz, int padr, T* Vp, T* Rho, bool domdec)
+void FwiAcoustic3D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wry, T*wrz, int padr, std::shared_ptr<ModelAcoustic3D<T>> model, bool domdec)
 {
    if(!vpgradset && !rhogradset) rs_error("FwiAcoustic3D:crossCorr: No gradient set in fwi class");
    if(!vpgrad->getAllocated()) vpgrad->allocateImage();
@@ -1420,11 +1406,9 @@ void FwiAcoustic3D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wry, T*wrz
    int ix, iy, iz;
    T *vpgraddata = vpgrad->getImagedata();
    T *rhograddata = rhograd->getImagedata();
-   T mspx, mspy, mspz;
-   T mrpx, mrpy, mrpz;
    T mrxx, mryy, mrzz;
-   T L;
-   T vpscale, rhoscale1, rhoscale2;
+   T uderx=0.0, udery=0.0, uderz=0.0;
+   T vpscale, rhoscale1;
    int nx = vpgrad->getNx();
    int ny = vpgrad->getNy();
    int nz = vpgrad->getNz();
@@ -1446,25 +1430,33 @@ void FwiAcoustic3D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wry, T*wrz
       nyr = ny + 2*padr;
    }
 
+   T* Vp = model->getVp();
+   T* Rho = model->getR();
+   T* Rx = model->getRx();
+   T* Ry = model->getRy();
+   T* Rz = model->getRz();
+
    for (ix=1; ix<nx; ix++){
       for (iy=1; iy<ny; iy++){
          for (iz=1; iz<nz; iz++){
-            L = Rho[km3D(ix, iy, iz)]*Vp[km3D(ix, iy, iz)]*Vp[km3D(ix, iy, iz)];
-            vpscale = -2.0/(Rho[km3D(ix, iy, iz)]*Vp[km3D(ix, iy, iz)]*Vp[km3D(ix, iy, iz)]*Vp[km3D(ix, iy, iz)]);
-            rhoscale1 = -1.0/(Rho[km3D(ix, iy, iz)]*Rho[km3D(ix, iy, iz)]*Vp[km3D(ix, iy, iz)]*Vp[km3D(ix, iy, iz)]);
-            rhoscale2 = -1.0/(Rho[km3D(ix, iy, iz)]*Rho[km3D(ix, iy, iz)]);
+            vpscale = -2.0/(Vp[km3D(ix, iy, iz)]);
+            rhoscale1 = -1.0/(Rho[km3D(ix, iy, iz)]);
             mrxx = (wrx[kr3D(ix+padr, iy+padr, iz+padr)] - wrx[kr3D(ix+padr-1, iy+padr, iz+padr)])/dx;
             mryy = (wry[kr3D(ix+padr, iy+padr, iz+padr)] - wry[kr3D(ix+padr, iy+padr-1, iz+padr)])/dy;
             mrzz = (wrz[kr3D(ix+padr, iy+padr, iz+padr)] - wrz[kr3D(ix+padr, iy+padr, iz+padr-1)])/dz;
-            mspx = (wsp[ks3D(ix+pads, iy+pads, iz+pads)] - wsp[ks3D(ix+pads-1, iy+pads, iz+pads)])/dx;
-            mspy = (wsp[ks3D(ix+pads, iy+pads, iz+pads)] - wsp[ks3D(ix+pads, iy+pads-1, iz+pads)])/dy;
-            mspz = (wsp[ks3D(ix+pads, iy+pads, iz+pads)] - wsp[ks3D(ix+pads, iy+pads, iz+pads-1)])/dz;
-            mrpx = (wrp[kr3D(ix+padr, iy+padr, iz+padr)] - wrp[kr3D(ix+padr-1, iy+padr, iz+padr)])/dx;
-            mrpy = (wrp[kr3D(ix+padr, iy+padr, iz+padr)] - wrp[kr3D(ix+padr, iy+padr-1, iz+padr)])/dy;
-            mrpz = (wrp[kr3D(ix+padr, iy+padr, iz+padr)] - wrp[kr3D(ix+padr, iy+padr, iz+padr-1)])/dz;
-            vpgraddata[ki3D(ix,iy,iz)] -= vpscale*wsp[ks3D(ix+pads, iy+pads, iz+pads)]*L*(mrxx + mryy + mrzz);
-            rhograddata[ki3D(ix,iy,iz)] -= rhoscale1*wsp[ks3D(ix+pads, iy+pads, iz+pads)]*L*(mrxx + mryy + mrzz);
-            rhograddata[ki3D(ix,iy,iz)] -= rhoscale2*(mspx*mrpx + mspy*mrpy + mspz*mrpz);
+            vpgraddata[ki3D(ix,iy,iz)] -= vpscale*wsp[ks3D(ix+pads, iy+pads, iz+pads)]*(mrxx + mryy + mrzz);
+            rhograddata[ki3D(ix,iy,iz)] -= rhoscale1*wsp[ks3D(ix+pads, iy+pads, iz+pads)]*(mrxx + mryy + mrzz);
+
+            uderx = (0.5)*wrx[kr3D(ix+padr, iy+padr, iz+padr)]*Rx[kr3D(ix+padr, iy+padr, iz+padr)]*(wsp[ks3D(ix+pads+1, iy+pads, iz+pads)] - wsp[ks3D(ix+pads, iy+pads, iz+pads)])/dx;
+            uderx += (0.5)*wrx[kr3D(ix+padr-1, iy+padr, iz+padr)]*Rx[kr3D(ix+padr-1, iy+padr, iz+padr)]*(wsp[ks3D(ix+pads, iy+pads, iz+pads)] - wsp[ks3D(ix+pads-1, iy+pads, iz+pads)])/dx;
+
+            udery = (0.5)*wry[kr3D(ix+padr, iy+padr, iz+padr)]*Ry[kr3D(ix+padr, iy+padr, iz+padr)]*(wsp[ks3D(ix+pads, iy+pads+1, iz+pads)] - wsp[ks3D(ix+pads, iy+pads, iz+pads)])/dy;
+            udery += (0.5)*wry[kr3D(ix+padr, iy+padr-1, iz+padr)]*Ry[kr3D(ix+padr, iy+padr-1, iz+padr)]*(wsp[ks3D(ix+pads, iy+pads, iz+pads)] - wsp[ks3D(ix+pads, iy+pads-1, iz+pads)])/dy;
+
+            uderz = (0.5)*wrz[kr3D(ix+padr, iy+padr, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr)]*(wsp[ks3D(ix+pads, iy+pads, iz+pads+1)] - wsp[ks3D(ix+pads, iy+pads, iz+pads)])/dz;
+            uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr-1, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr-1)]*(wsp[ks3D(ix+pads, iy+pads, iz+pads)] - wsp[ks3D(ix+pads, iy+pads, iz+pads-1)])/dz;
+            rhograddata[ki3D(ix,iy,iz)] -= (uderx + udery + uderz);
+ 
          }	
       }
    }
@@ -1880,7 +1872,7 @@ int FwiAcoustic3D<T>::run(){
    std::shared_ptr<Snapshot3D<T>> Psnap;
    Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
    Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
-   Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+   Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
 
    this->writeLog("Running 3D Acoustic full-waveform inversion gradient with full checkpointing.");
    this->writeLog("Doing forward Loop.");
@@ -1888,15 +1880,15 @@ int FwiAcoustic3D<T>::run(){
    for(int it=0; it < nt; it++)
    {
       // Time stepping
-      waves->forwardstepAcceleration(model, der);
+      waves->forwardstepVelocity(model, der);
       if((model->getDomain()->getStatus())){
-         (model->getDomain())->shareEdges3D(waves->getAx());
-         (model->getDomain())->shareEdges3D(waves->getAy());
-         (model->getDomain())->shareEdges3D(waves->getAz());
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVy());
+         (model->getDomain())->shareEdges3D(waves->getVz());
       }
       waves->forwardstepStress(model, der);
       if((model->getDomain()->getStatus())){
-         (model->getDomain())->shareEdges3D(waves->getP2());
+         (model->getDomain())->shareEdges3D(waves->getP());
       }
 
       // Inserting source 
@@ -1908,11 +1900,8 @@ int FwiAcoustic3D<T>::run(){
       }
 
       //Writting out results to snapshot file
-      Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+      Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
       Psnap->writeSnap(it);
-
-      // Roll the pointers P1 and P2
-      waves->roll();
 
       // Output progress to logfile
       this->writeProgress(it, nt-1, 20, 48);
@@ -1947,15 +1936,15 @@ int FwiAcoustic3D<T>::run(){
       for(int it=0; it < nt; it++)
       {
          // Time stepping
-         waves->forwardstepAcceleration(model, der);
+         waves->forwardstepVelocity(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves->getAx());
-            (model->getDomain())->shareEdges3D(waves->getAy());
-            (model->getDomain())->shareEdges3D(waves->getAz());
+            (model->getDomain())->shareEdges3D(waves->getVx());
+            (model->getDomain())->shareEdges3D(waves->getVy());
+            (model->getDomain())->shareEdges3D(waves->getVz());
          }
          waves->forwardstepStress(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves->getP2());
+            (model->getDomain())->shareEdges3D(waves->getP());
          }
 
          // Inserting source 
@@ -1966,11 +1955,11 @@ int FwiAcoustic3D<T>::run(){
 
          // Do Crosscorrelation
          if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-            T *wrp = waves->getP1();
-            T* wrx = waves->getAx(); 
-            T* wry = waves->getAy(); 
-            T* wrz = waves->getAz(); 
-            crossCorr(Psnap->getData(0), 0, wrp, wrx, wry, wrz, waves->getLpml(), model->getVp(), model->getR(),waves->getDomdec());
+            T *wrp = waves->getP();
+            T* wrx = waves->getVx(); 
+            T* wry = waves->getVy(); 
+            T* wrz = waves->getVz(); 
+            crossCorr(Psnap->getData(0), 0, wrp, wrx, wry, wrz, waves->getLpml(), model,waves->getDomdec());
          }
 
          // Record wavelet gradient
@@ -1978,9 +1967,6 @@ int FwiAcoustic3D<T>::run(){
 
          // Output progress to logfile
          this->writeProgress(it, nt-1, 20, 48);
-
-         // Roll the pointers P1 and P2
-         waves->roll();
 
          // Output progress to logfile
          this->writeProgress(it, nt-1, 20, 48);
@@ -2044,15 +2030,15 @@ int FwiAcoustic3D<T>::run_optimal(){
          for(int it=oldcapo; it < capo; it++)
          {
             // Time stepping
-            waves_fw->forwardstepAcceleration(model, der);
+            waves_fw->forwardstepVelocity(model, der);
             if((model->getDomain()->getStatus())){
-               (model->getDomain())->shareEdges3D(waves_fw->getAx());
-               (model->getDomain())->shareEdges3D(waves_fw->getAy());
-               (model->getDomain())->shareEdges3D(waves_fw->getAz());
+               (model->getDomain())->shareEdges3D(waves_fw->getVx());
+               (model->getDomain())->shareEdges3D(waves_fw->getVy());
+               (model->getDomain())->shareEdges3D(waves_fw->getVz());
             }
             waves_fw->forwardstepStress(model, der);
             if((model->getDomain()->getStatus())){
-               (model->getDomain())->shareEdges3D(waves_fw->getP2());
+               (model->getDomain())->shareEdges3D(waves_fw->getP());
             }
 
             // Inserting source 
@@ -2063,9 +2049,6 @@ int FwiAcoustic3D<T>::run_optimal(){
                waves_fw->recordData(this->datamodP, GMAP, it);
             }
 
-            // Roll the pointers P1 and P2
-            waves_fw->roll();
-
             if(!reverse){
                // Output progress to logfile
                this->writeProgress(it, nt-1, 20, 48);
@@ -2075,15 +2058,15 @@ int FwiAcoustic3D<T>::run_optimal(){
       if (whatodo == firsturn)
       {
          // Time stepping
-         waves_fw->forwardstepAcceleration(model, der);
+         waves_fw->forwardstepVelocity(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves_fw->getAx());
-            (model->getDomain())->shareEdges3D(waves_fw->getAy());
-            (model->getDomain())->shareEdges3D(waves_fw->getAz());
+            (model->getDomain())->shareEdges3D(waves_fw->getVx());
+            (model->getDomain())->shareEdges3D(waves_fw->getVy());
+            (model->getDomain())->shareEdges3D(waves_fw->getVz());
          }
          waves_fw->forwardstepStress(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves_fw->getP2());
+            (model->getDomain())->shareEdges3D(waves_fw->getP());
          }
 
          // Inserting source 
@@ -2104,19 +2087,15 @@ int FwiAcoustic3D<T>::run_optimal(){
          waves_bw->insertSource(model, dataresP, GMAP, capo);
 
          /* Do Crosscorrelation */
-         T *wsp = waves_fw->getP1();
-         T *wrp = waves_bw->getP1();
-         T* wrx = waves_bw->getAx(); 
-         T* wry = waves_bw->getAy(); 
-         T* wrz = waves_bw->getAz(); 
-         crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wry, wrz, waves_bw->getLpml(), model->getVp(), model->getR(), waves_fw->getDomdec());
+         T *wsp = waves_fw->getP();
+         T *wrp = waves_bw->getP();
+         T* wrx = waves_bw->getVx(); 
+         T* wry = waves_bw->getVy(); 
+         T* wrz = waves_bw->getVz(); 
+         crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wry, wrz, waves_bw->getLpml(), model, waves_fw->getDomdec());
 
          // Record wavelet gradient
          waves_bw->recordData(this->wavgrad, SMAP, capo);
-
-         // Roll the pointers P1 and P2
-         waves_fw->roll();
-         waves_bw->roll();
 
          // Output progress to logfile
          this->writeProgress(capo, nt-1, 20, 48);
@@ -2132,33 +2111,30 @@ int FwiAcoustic3D<T>::run_optimal(){
       if (whatodo == youturn)
       {
          // Time stepping
-         waves_bw->forwardstepAcceleration(model, der);
+         waves_bw->forwardstepVelocity(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves_bw->getAx());
-            (model->getDomain())->shareEdges3D(waves_bw->getAy());
-            (model->getDomain())->shareEdges3D(waves_bw->getAz());
+            (model->getDomain())->shareEdges3D(waves_bw->getVx());
+            (model->getDomain())->shareEdges3D(waves_bw->getVy());
+            (model->getDomain())->shareEdges3D(waves_bw->getVz());
          }
          waves_bw->forwardstepStress(model, der);
          if((model->getDomain()->getStatus())){
-            (model->getDomain())->shareEdges3D(waves_bw->getP2());
+            (model->getDomain())->shareEdges3D(waves_bw->getP());
          }
 
          // Inserting residuals
          waves_bw->insertSource(model, dataresP, GMAP, capo);
 
          /* Do Crosscorrelation */
-         T *wsp = waves_fw->getP1();
-         T *wrp = waves_bw->getP1();
-         T* wrx = waves_bw->getAx(); 
-         T* wry = waves_bw->getAy(); 
-         T* wrz = waves_bw->getAz(); 
-         crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wry, wrz, waves_bw->getLpml(), model->getVp(), model->getR(), waves_fw->getDomdec());
+         T *wsp = waves_fw->getP();
+         T *wrp = waves_bw->getP();
+         T* wrx = waves_bw->getVx(); 
+         T* wry = waves_bw->getVy(); 
+         T* wrz = waves_bw->getVz(); 
+         crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wry, wrz, waves_bw->getLpml(), model, waves_fw->getDomdec());
 
          // Record wavelet gradient
          waves_bw->recordData(this->wavgrad, SMAP, capo);
-
-         // Roll the pointers P1 and P2
-         waves_bw->roll();
 
          // Output progress to logfile
          this->writeProgress(nt-1-capo, nt-1, 20, 48);

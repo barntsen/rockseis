@@ -93,8 +93,8 @@ public:
     
     T *P_top;
     T *P_bottom;
-    T *Azz_top;
-    T *Azz_bottom;
+    T *Vzz_top;
+    T *Vzz_bottom;
 };
 
 // =============== 2D ACOUSTIC PML CLASS =============== //
@@ -114,10 +114,10 @@ public:
     T *P_right;
     T *P_top;
     T *P_bottom;
-    T *Axx_left;
-    T *Axx_right;
-    T *Azz_top;
-    T *Azz_bottom;
+    T *Vxx_left;
+    T *Vxx_right;
+    T *Vzz_top;
+    T *Vzz_bottom;
 };
 
 // =============== 3D ACOUSTIC PML CLASS =============== //
@@ -139,12 +139,12 @@ public:
     T *P_bottom;
     T *P_front;
     T *P_back;
-    T *Axx_left;
-    T *Axx_right;
-    T *Ayy_front;
-    T *Ayy_back;
-    T *Azz_top;
-    T *Azz_bottom;
+    T *Vxx_left;
+    T *Vxx_right;
+    T *Vyy_front;
+    T *Vyy_back;
+    T *Vzz_top;
+    T *Vzz_bottom;
 };
 
 // =============== 2D ELASTIC PML CLASS =============== //

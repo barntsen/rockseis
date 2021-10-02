@@ -82,43 +82,6 @@ private:
     bool domdec; // Domain decomposition flag
 };
 
-/** The 1D Acoustic WAVES class
- *
- */
-template<typename T>
-class WavesAcoustic1D: public Waves<T> {
-public:
-    WavesAcoustic1D();					///< Constructor
-    WavesAcoustic1D(const int _nz, const int _nt, const int _L, const T _dz, const T _dt, const T _oz, const T _ot);	///< Constructor
-    WavesAcoustic1D(std::shared_ptr<rockseis::ModelAcoustic1D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
-    ~WavesAcoustic1D();					///< Destructor
-    
-    // Time stepping
-    void forwardstepAcceleration(std::shared_ptr<ModelAcoustic1D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with acceleration
-    void forwardstepStress(std::shared_ptr<ModelAcoustic1D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with stress
-
-    // Get functions
-    std::shared_ptr<PmlAcoustic1D<T>> getPml() { return Pml; } ///< Get pml
-    T * getP2() { return P2; }  ///< Get advanced pressure
-    T * getP1() { return P1; }  ///< Get current pressure
-    T * getAz() { return Az; }  ///< Get z-component of acceleration
-
-    void computeABC() { Pml->callcompABC(); } ///< Compute the PML decay constants (needed if changes are made to the Amax, Kmax and Smax)
-    void roll();  ///< Roll the pressure pointers
-
-    // Insert source functions
-    void insertSource(std::shared_ptr<ModelAcoustic1D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
-
-    // Record data at receivers functions
-    void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
-
-private:
-    T *P1; // Pressure at time t
-    T *P2; // Pressure at time t+1
-    T *Az; // Acceleration component at time t
-    std::shared_ptr<PmlAcoustic1D<T>> Pml; // Associated PML class
-};
-
 
 /** The 2D Acoustic WAVES class
  *
@@ -132,30 +95,27 @@ public:
     ~WavesAcoustic2D();					///< Destructor
     
     // Time stepping
-    void forwardstepAcceleration(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with acceleration
+    void forwardstepVelocity(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with velocity
     void forwardstepStress(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with stress
 
     // Get functions
     std::shared_ptr<PmlAcoustic2D<T>> getPml() { return Pml; } ///< Get pml
-    T * getP2() { return P2; }  ///< Get advanced pressure
-    T * getP1() { return P1; }  ///< Get current pressure
-    T * getAx() { return Ax; }  ///< Get x-component of acceleration 
-    T * getAz() { return Az; }  ///< Get z-component of acceleration
+    T * getP() { return P; }  ///< Get advanced pressure
+    T * getVx() { return Vx; }  ///< Get x-component of velocity 
+    T * getVz() { return Vz; }  ///< Get z-component of velocity
 
     void computeABC() { Pml->callcompABC(); } ///< Compute the PML decay constants (needed if changes are made to the Amax, Kmax and Smax)
-    void roll();  ///< Roll the pressure pointers
 
     // Insert source functions
-    void insertSource(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+    void insertSource(std::shared_ptr<ModelAcoustic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Velocity type or Pressure )
 
     // Record data at receivers functions
-    void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
+    void recordData(std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
 
 private:
-    T *P1; // Pressure at time t
-    T *P2; // Pressure at time t+1
-    T *Ax; // Acceleration component at time t
-    T *Az; // Acceleration component at time t
+    T *P; // Pressure at time t+1
+    T *Vx; // Velocity component at time t
+    T *Vz; // Velocity component at time t
     std::shared_ptr<PmlAcoustic2D<T>> Pml; // Associated PML class
     
 };
@@ -173,31 +133,28 @@ public:
 
     // Get functions
     std::shared_ptr<PmlAcoustic3D<T>> getPml() { return Pml; }  ///< Get pml
-    T * getP2() { return P2; }  ///< Get advanced pressure
-    T * getP1() { return P1; }  ///< Get current pressure
-    T * getAx() { return Ax; }  ///< Get current x-acceleration
-    T * getAy() { return Ay; }  ///< Get current y-acceleration
-    T * getAz() { return Az; }  ///< Get current z-acceleration
+    T * getP() { return P; }  ///< Get advanced pressure
+    T * getVx() { return Vx; }  ///< Get current x-velocity
+    T * getVy() { return Vy; }  ///< Get current y-velocity
+    T * getVz() { return Vz; }  ///< Get current z-velocity
 
     // Time stepping functions
-    void forwardstepAcceleration(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with acceleration
+    void forwardstepVelocity(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with velocity
     void forwardstepStress(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with stress
     
     // Insert source functions
-    void insertSource(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+    void insertSource(std::shared_ptr<ModelAcoustic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Velocity type or Pressure )
 
     // Record data at receivers functions
-    void recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Acceleration type or Pressure )
+    void recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
 
     void computeABC() { Pml->callcompABC(); } ///< Compute the PML decay constants (needed if changes are made to the Amax, Kmax and Smax)
-    void roll();  // Roll the pressure pointers
 
 private:
-    T *P1; // Pressure at time t
-    T *P2; // Pressure at time t+1
-    T *Ax; // Acceleration component at time t
-    T *Ay; // Acceleration component at time t
-    T *Az; // Acceleration component at time t
+    T *P; // Pressure at time t+1
+    T *Vx; // Velocity component at time t
+    T *Vy; // Velocity component at time t
+    T *Vz; // Velocity component at time t
     std::shared_ptr<PmlAcoustic3D<T>> Pml; // Associated Pml class
 
 };
@@ -426,7 +383,7 @@ public:
     void backwardstepStress(std::shared_ptr<ModelViscoelastic2D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step backward with Stress
 
     // Insert source functions
-    void insertSource(std::shared_ptr<ModelViscoelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+    void insertSource(std::shared_ptr<ModelViscoelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Velocity type or Pressure )
 
     // Record data at receivers functions
     void recordData(std::shared_ptr<ModelViscoelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
@@ -482,7 +439,7 @@ public:
     void backwardstepStress(std::shared_ptr<ModelViscoelastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step backward with particle velocity
 
     // Insert source functions
-    void insertSource(std::shared_ptr<ModelViscoelastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Acceleration type or Pressure )
+    void insertSource(std::shared_ptr<ModelViscoelastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Velocity type or Pressure )
     void recordData(std::shared_ptr<ModelViscoelastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
 
 

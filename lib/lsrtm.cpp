@@ -530,7 +530,7 @@ void LsrtmAcoustic2D<T>::insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>>
     T dt = waves_bw->getDt();
     int padw = waves_bw->getLpml();
     int nxw = nx+2*padw;
-    T* wr = waves_bw->getP2();
+    T* wr = waves_bw->getP();
     for (ix=0; ix<nx; ix++){
         for (iz=0; iz<nz; iz++){
             wr[kw2D(ix+padw,iz+padw)] += dt*dt*L[kw2D(ix+padw,iz+padw)]*adjsrc_bw[km2D(ix, iz)];
@@ -672,7 +672,7 @@ void LsrtmAcoustic2D<T>::computeResiduals(){
     T* mod = datamodP->getData();
     T* rec = dataP->getData();
     T* res = dataresP->getData();
-    T* resh = dataresAz->getData();
+    T* resh = dataresVz->getData();
     T* wei = NULL;
     if(dataweightset) 
     {
@@ -789,7 +789,7 @@ int LsrtmAcoustic2D<T>::run(){
      std::shared_ptr<Snapshot2D<T>> Psnap;
      Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
-     Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+     Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
 
      T* adjsrc;
      adjsrc = (T *) calloc(waves_adj->getNx()*waves_adj->getNz(), sizeof(T));
@@ -800,17 +800,17 @@ int LsrtmAcoustic2D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves->forwardstepAcceleration(model, der);
+    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
 
-    	waves_adj->forwardstepAcceleration(model, der);
+    	waves_adj->forwardstepVelocity(model, der);
     	waves_adj->forwardstepStress(model, der);
     
     	// Inserting source 
     	waves->insertSource(model, source, SMAP, it);
 
         // Inserting adjoint sources
-        wsp = waves->getP1();
+        wsp = waves->getP();
         this->calcAdjointsource(adjsrc, wsp, waves_adj->getLpml());
         this->insertAdjointsource(waves_adj, adjsrc, model->getL());
 
@@ -820,12 +820,8 @@ int LsrtmAcoustic2D<T>::run(){
         }
 
     	//Writting out results to snapshot file
-        Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+        Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
         Psnap->writeSnap(it);
-
-    	// Roll the pointers P1 and P2
-    	waves->roll();
-    	waves_adj->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -852,8 +848,8 @@ int LsrtmAcoustic2D<T>::run(){
         // Compute residuals
         computeResiduals();
 
-        // Apply Hilbert transform to residuals in dataresAz
-        this->dataresAz->applyHilbert();
+        // Apply Hilbert transform to residuals in dataresVz
+        this->dataresVz->applyHilbert();
 
         Psnap->openSnap(this->getSnapfile(), 'r');
         Psnap->allocSnap(0);
@@ -863,15 +859,15 @@ int LsrtmAcoustic2D<T>::run(){
         for(int it=0; it < nt; it++)
         {
             // Time stepping
-            waves->forwardstepAcceleration(model, der);
+            waves->forwardstepVelocity(model, der);
             waves->forwardstepStress(model, der);
 
-            waves_hilb->forwardstepAcceleration(model, der);
+            waves_hilb->forwardstepVelocity(model, der);
             waves_hilb->forwardstepStress(model, der);
 
             // Inserting residuals
             waves->insertSource(model, dataresP, GMAP, (nt - 1 - it));
-            waves_hilb->insertSource(model, dataresAz, GMAP, (nt - 1 - it));
+            waves_hilb->insertSource(model, dataresVz, GMAP, (nt - 1 - it));
 
             //Read forward snapshot
             Psnap->readSnap(nt - 1 - it);
@@ -881,18 +877,14 @@ int LsrtmAcoustic2D<T>::run(){
                 T *wsp = Psnap->getData(0);
                 hilb_s->hilbertz(Psnap->getData(0));
                 T *wsp_hilbz = hilb_s->getDf();
-                T *wrp1 = waves->getP1();
-                hilb_r1->hilbertz(waves->getP1());
+                T *wrp1 = waves->getP();
+                hilb_r1->hilbertz(waves->getP());
                 T *wrp1_hilbz = hilb_r1->getDf();
-                T* wrp2 = waves_hilb->getP1(); 
-                hilb_r2->hilbertz(waves_hilb->getP1()); 
+                T* wrp2 = waves_hilb->getP(); 
+                hilb_r2->hilbertz(waves_hilb->getP()); 
                 T* wrp2_hilbz = hilb_r2->getDf();
                 crossCorr(wsp, wsp_hilbz, 0, wrp1, wrp2, wrp1_hilbz, wrp2_hilbz, waves->getLpml(), model->getVp(), model->getR(), this->getSnapinc());
             }
-
-            // Roll the pointers P1 and P2
-            waves->roll();
-            waves_hilb->roll();
 
             // Output progress to logfile
             this->writeProgress(it, nt-1, 20, 48);
@@ -963,7 +955,7 @@ int LsrtmAcoustic2D<T>::run_optimal(){
             for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
-                waves_fw->forwardstepAcceleration(model, der);
+                waves_fw->forwardstepVelocity(model, der);
                 waves_fw->forwardstepStress(model, der);
 
                 // Inserting source 
@@ -972,18 +964,14 @@ int LsrtmAcoustic2D<T>::run_optimal(){
 
                 // Recording data 
                 if(this->datamodPset && !reverse){
-                    waves_adj->forwardstepAcceleration(model, der);
+                    waves_adj->forwardstepVelocity(model, der);
                     waves_adj->forwardstepStress(model, der);
                     // Inserting adjoint sources
-                    wsp = waves_fw->getP1();
+                    wsp = waves_fw->getP();
                     this->calcAdjointsource(adjsrc, wsp, waves_adj->getLpml());
                     this->insertAdjointsource(waves_adj, adjsrc, model->getL());
                     waves_adj->recordData(this->datamodP, GMAP, it);
-                    waves_adj->roll();
                 }
-
-                // Roll the pointers P1 and P2
-                waves_fw->roll();
 
                 if(!reverse){
                     // Output progress to logfile
@@ -994,17 +982,17 @@ int LsrtmAcoustic2D<T>::run_optimal(){
         if (whatodo == firsturn)
         {
             // Time stepping
-            waves_fw->forwardstepAcceleration(model, der);
+            waves_fw->forwardstepVelocity(model, der);
             waves_fw->forwardstepStress(model, der);
 
-            waves_adj->forwardstepAcceleration(model, der);
+            waves_adj->forwardstepVelocity(model, der);
             waves_adj->forwardstepStress(model, der);
 
             // Inserting source 
             waves_fw->insertSource(model, source, SMAP, capo);
 
             // Inserting adjoint sources
-            wsp = waves_fw->getP1();
+            wsp = waves_fw->getP();
             this->calcAdjointsource(adjsrc, wsp, waves_adj->getLpml());
             this->insertAdjointsource(waves_adj, adjsrc, model->getL());
             waves_adj->recordData(this->datamodP, GMAP, capo);
@@ -1020,32 +1008,26 @@ int LsrtmAcoustic2D<T>::run_optimal(){
             // Compute residuals
             computeResiduals();
 
-            // Apply Hilbert transform to residuals in dataresAz
-            this->dataresAz->applyHilbert();
+            // Apply Hilbert transform to residuals in dataresVz
+            this->dataresVz->applyHilbert();
 
             // Inserting data
             waves_bw->insertSource(model, dataresP, GMAP, capo);
-            waves_hilb->insertSource(model, dataresAz, GMAP, capo);
+            waves_hilb->insertSource(model, dataresVz, GMAP, capo);
 
             /* Do Crosscorrelation */
             if((capo % this->getSnapinc()) == 0){
-                T *wsp = waves_fw->getP1();
-                hilb_s->hilbertz(waves_fw->getP1());
+                T *wsp = waves_fw->getP();
+                hilb_s->hilbertz(waves_fw->getP());
                 T *wsp_hilbz = hilb_s->getDf();
-                T *wrp1 = waves_bw->getP1();
-                hilb_r1->hilbertz(waves_bw->getP1());
+                T *wrp1 = waves_bw->getP();
+                hilb_r1->hilbertz(waves_bw->getP());
                 T *wrp1_hilbz = hilb_r1->getDf();
-                T* wrp2 = waves_hilb->getP1(); 
-                hilb_r2->hilbertz(waves_hilb->getP1()); 
+                T* wrp2 = waves_hilb->getP(); 
+                hilb_r2->hilbertz(waves_hilb->getP()); 
                 T* wrp2_hilbz = hilb_r2->getDf();
                 crossCorr(wsp, wsp_hilbz, waves_fw->getLpml(), wrp1, wrp2, wrp1_hilbz, wrp2_hilbz, waves_bw->getLpml(), model->getVp(), model->getR(), this->getSnapinc());
             }
-
-            // Roll the pointers P1 and P2
-            waves_fw->roll();
-            waves_bw->roll();
-            waves_hilb->roll();
-            waves_adj->roll();
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -1061,33 +1043,29 @@ int LsrtmAcoustic2D<T>::run_optimal(){
         if (whatodo == youturn)
         {
             // Time stepping
-            waves_bw->forwardstepAcceleration(model, der);
+            waves_bw->forwardstepVelocity(model, der);
             waves_bw->forwardstepStress(model, der);
 
-            waves_hilb->forwardstepAcceleration(model, der);
+            waves_hilb->forwardstepVelocity(model, der);
             waves_hilb->forwardstepStress(model, der);
 
             // Inserting data
             waves_bw->insertSource(model, dataresP, GMAP, capo);
-            waves_hilb->insertSource(model, dataresAz, GMAP, capo);
+            waves_hilb->insertSource(model, dataresVz, GMAP, capo);
 
             /* Do Crosscorrelation */
             if((capo % this->getSnapinc()) == 0){
-                T *wsp = waves_fw->getP1();
-                hilb_s->hilbertz(waves_fw->getP1());
+                T *wsp = waves_fw->getP();
+                hilb_s->hilbertz(waves_fw->getP());
                 T *wsp_hilbz = hilb_s->getDf();
-                T *wrp1 = waves_bw->getP1();
-                hilb_r1->hilbertz(waves_bw->getP1());
+                T *wrp1 = waves_bw->getP();
+                hilb_r1->hilbertz(waves_bw->getP());
                 T *wrp1_hilbz = hilb_r1->getDf();
-                T* wrp2 = waves_hilb->getP1(); 
-                hilb_r2->hilbertz(waves_hilb->getP1()); 
+                T* wrp2 = waves_hilb->getP(); 
+                hilb_r2->hilbertz(waves_hilb->getP()); 
                 T* wrp2_hilbz = hilb_r2->getDf();
                 crossCorr(wsp, wsp_hilbz, waves_fw->getLpml(), wrp1, wrp2, wrp1_hilbz, wrp2_hilbz, waves_bw->getLpml(), model->getVp(), model->getR(), this->getSnapinc());
             }
-
-            // Roll the pointers P1 and P2
-            waves_bw->roll();
-            waves_hilb->roll();
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);
@@ -1596,7 +1574,7 @@ int LsrtmAcoustic3D<T>::run(){
      std::shared_ptr<Snapshot3D<T>> Psnap;
      Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
      Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
-     Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+     Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
 
      this->writeLog("Running 3D Acoustic least-squares rtm gradient with full checkpointing.");
      this->writeLog("Doing forward Loop.");
@@ -1604,7 +1582,7 @@ int LsrtmAcoustic3D<T>::run(){
     for(int it=0; it < nt; it++)
     {
     	// Time stepping
-    	waves->forwardstepAcceleration(model, der);
+    	waves->forwardstepVelocity(model, der);
     	waves->forwardstepStress(model, der);
     
     	// Inserting source 
@@ -1616,11 +1594,8 @@ int LsrtmAcoustic3D<T>::run(){
         }
 
     	//Writting out results to snapshot file
-        Psnap->setData(waves->getP1(), 0); //Set Pressure as snap field
+        Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
         Psnap->writeSnap(it);
-
-    	// Roll the pointers P1 and P2
-    	waves->roll();
 
         // Output progress to logfile
         this->writeProgress(it, nt-1, 20, 48);
@@ -1653,7 +1628,7 @@ int LsrtmAcoustic3D<T>::run(){
         for(int it=0; it < nt; it++)
         {
             // Time stepping
-            waves->forwardstepAcceleration(model, der);
+            waves->forwardstepVelocity(model, der);
             waves->forwardstepStress(model, der);
 
             // Inserting source 
@@ -1664,10 +1639,10 @@ int LsrtmAcoustic3D<T>::run(){
 
             // Do Crosscorrelation
             if((((nt - 1 - it)-Psnap->getEnddiff()) % Psnap->getSnapinc()) == 0){
-                T *wrp = waves->getP1();
-                T* wrx = waves->getAx(); 
-                T* wry = waves->getAy(); 
-                T* wrz = waves->getAz(); 
+                T *wrp = waves->getP();
+                T* wrx = waves->getVx(); 
+                T* wry = waves->getVy(); 
+                T* wrz = waves->getVz(); 
                 crossCorr(Psnap->getData(0), 0, wrp, wrx, wry, wrz, waves->getLpml(), model->getVp(), model->getR());
             }
 
@@ -1676,9 +1651,6 @@ int LsrtmAcoustic3D<T>::run(){
 
             // Output progress to logfile
             this->writeProgress(it, nt-1, 20, 48);
-
-            // Roll the pointers P1 and P2
-            waves->roll();
 
             // Output progress to logfile
             this->writeProgress(it, nt-1, 20, 48);
@@ -1736,7 +1708,7 @@ int LsrtmAcoustic3D<T>::run_optimal(){
             for(int it=oldcapo; it < capo; it++)
             {
                 // Time stepping
-                waves_fw->forwardstepAcceleration(model, der);
+                waves_fw->forwardstepVelocity(model, der);
                 waves_fw->forwardstepStress(model, der);
 
                 // Inserting source 
@@ -1747,9 +1719,6 @@ int LsrtmAcoustic3D<T>::run_optimal(){
                     waves_fw->recordData(this->datamodP, GMAP, it);
                 }
 
-                // Roll the pointers P1 and P2
-                waves_fw->roll();
-
                 if(!reverse){
                     // Output progress to logfile
                     this->writeProgress(it, nt-1, 20, 48);
@@ -1759,7 +1728,7 @@ int LsrtmAcoustic3D<T>::run_optimal(){
         if (whatodo == firsturn)
         {
             // Time stepping
-            waves_fw->forwardstepAcceleration(model, der);
+            waves_fw->forwardstepVelocity(model, der);
             waves_fw->forwardstepStress(model, der);
 
             // Inserting source 
@@ -1780,19 +1749,15 @@ int LsrtmAcoustic3D<T>::run_optimal(){
             waves_bw->insertSource(model, dataresP, GMAP, capo);
 
             /* Do Crosscorrelation */
-            T *wsp = waves_fw->getP1();
-            T *wrp = waves_bw->getP1();
-            T* wrx = waves_bw->getAx(); 
-            T* wry = waves_bw->getAy(); 
-            T* wrz = waves_bw->getAz(); 
+            T *wsp = waves_fw->getP();
+            T *wrp = waves_bw->getP();
+            T* wrx = waves_bw->getVx(); 
+            T* wry = waves_bw->getVy(); 
+            T* wrz = waves_bw->getVz(); 
             crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wry, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
 
             // Record wavelet gradient
             waves_bw->recordData(this->wavgrad, SMAP, capo);
-
-            // Roll the pointers P1 and P2
-            waves_fw->roll();
-            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(capo, nt-1, 20, 48);
@@ -1808,25 +1773,22 @@ int LsrtmAcoustic3D<T>::run_optimal(){
         if (whatodo == youturn)
         {
             // Time stepping
-            waves_bw->forwardstepAcceleration(model, der);
+            waves_bw->forwardstepVelocity(model, der);
             waves_bw->forwardstepStress(model, der);
 
             // Inserting residuals
             waves_bw->insertSource(model, dataresP, GMAP, capo);
 
             /* Do Crosscorrelation */
-            T *wsp = waves_fw->getP1();
-            T *wrp = waves_bw->getP1();
-            T* wrx = waves_bw->getAx(); 
-            T* wry = waves_bw->getAy(); 
-            T* wrz = waves_bw->getAz(); 
+            T *wsp = waves_fw->getP();
+            T *wrp = waves_bw->getP();
+            T* wrx = waves_bw->getVx(); 
+            T* wry = waves_bw->getVy(); 
+            T* wrz = waves_bw->getVz(); 
             crossCorr(wsp, waves_fw->getLpml(), wrp, wrx, wry, wrz, waves_bw->getLpml(), model->getVp(), model->getR());
 
             // Record wavelet gradient
             waves_bw->recordData(this->wavgrad, SMAP, capo);
-
-            // Roll the pointers P1 and P2
-            waves_bw->roll();
 
             // Output progress to logfile
             this->writeProgress(nt-1-capo, nt-1, 20, 48);

@@ -133,8 +133,8 @@ PmlAcoustic1D<T>::PmlAcoustic1D(): Pml<T>() {
     /* Minimal allocation to avoid free from crashing */
     P_top=(T *) malloc(1);
     P_bottom=(T *) malloc(1);
-    Azz_top=(T *) malloc(1);
-    Azz_bottom=(T *) malloc(1);
+    Vzz_top=(T *) malloc(1);
+    Vzz_bottom=(T *) malloc(1);
 
 }
 
@@ -144,8 +144,8 @@ PmlAcoustic1D<T>::PmlAcoustic1D(const int Lpml, const T dt): Pml<T>(Lpml, dt) {
     /* Allocate variables */
     P_top=(T *) calloc(Lpml,sizeof(T));
     P_bottom=(T *) calloc(Lpml,sizeof(T));
-    Azz_top=(T *) calloc(Lpml,sizeof(T));
-    Azz_bottom=(T *) calloc(Lpml,sizeof(T));
+    Vzz_top=(T *) calloc(Lpml,sizeof(T));
+    Vzz_bottom=(T *) calloc(Lpml,sizeof(T));
 }
 
 template<typename T>
@@ -153,8 +153,8 @@ PmlAcoustic1D<T>::~PmlAcoustic1D() {
     /* Free variables */
     free(P_top);
     free(P_bottom);
-    free(Azz_top);
-    free(Azz_bottom);
+    free(Vzz_top);
+    free(Vzz_bottom);
 }
 
 
@@ -168,10 +168,10 @@ PmlAcoustic2D<T>::PmlAcoustic2D(): Pml<T>() {
     P_right=(T *) malloc(1);
     P_top=(T *) malloc(1);
     P_bottom=(T *) malloc(1);
-    Axx_left=(T *) malloc(1);
-    Axx_right=(T *) malloc(1);
-    Azz_top=(T *) malloc(1);
-    Azz_bottom=(T *) malloc(1);
+    Vxx_left=(T *) malloc(1);
+    Vxx_right=(T *) malloc(1);
+    Vzz_top=(T *) malloc(1);
+    Vzz_bottom=(T *) malloc(1);
 
 }
 
@@ -186,10 +186,10 @@ PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, cons
     P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
     P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
     P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
-    Axx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
-    Axx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
-    Azz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-    Azz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Vxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Vxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Vzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Vzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
 }
 
 template<typename T>
@@ -204,22 +204,22 @@ PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, cons
     /* Allocate variables */
     if(low[0]){
        P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
-       Axx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
        this->setApplypml(0,true);
     }
     if(high[0]){
        P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
-       Axx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
        this->setApplypml(1,true);
     }
     if(low[1]){
        P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-       Azz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
        this->setApplypml(4,true);
     }
     if(high[1]){
        P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
-       Azz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
        this->setApplypml(5,true);
     }
 }
@@ -229,19 +229,19 @@ PmlAcoustic2D<T>::~PmlAcoustic2D() {
    /* Free variables */
    if(this->getApplypml(0)){
       free(P_left);
-      free(Axx_left);
+      free(Vxx_left);
    }
    if(this->getApplypml(1)){
       free(P_right);
-      free(Axx_right);
+      free(Vxx_right);
    }
    if(this->getApplypml(4)){
       free(P_top);
-      free(Azz_top);
+      free(Vzz_top);
    }
    if(this->getApplypml(5)){
       free(P_bottom);
-      free(Azz_bottom);
+      free(Vzz_bottom);
    }
 }
 
@@ -256,12 +256,12 @@ PmlAcoustic3D<T>::PmlAcoustic3D(): Pml<T>() {
     P_bottom=(T *) malloc(1);
     P_front=(T *) malloc(1);
     P_back=(T *) malloc(1);
-    Axx_left=(T *) malloc(1);
-    Axx_right=(T *) malloc(1);
-    Ayy_front=(T *) malloc(1);
-    Ayy_back=(T *) malloc(1);
-    Azz_top=(T *) malloc(1);
-    Azz_bottom=(T *) malloc(1);
+    Vxx_left=(T *) malloc(1);
+    Vxx_right=(T *) malloc(1);
+    Vyy_front=(T *) malloc(1);
+    Vyy_back=(T *) malloc(1);
+    Vzz_top=(T *) malloc(1);
+    Vzz_bottom=(T *) malloc(1);
 }
 
 template<typename T>
@@ -278,12 +278,12 @@ PmlAcoustic3D<T>::PmlAcoustic3D(const int nx, const int ny, const int nz, const 
     P_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
     P_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
     P_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-    Axx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-    Axx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-    Ayy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-    Ayy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-    Azz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-    Azz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+    Vxx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+    Vxx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+    Vyy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+    Vyy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+    Vzz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+    Vzz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
 }
 
 template<typename T>
@@ -299,34 +299,34 @@ PmlAcoustic3D<T>::PmlAcoustic3D(const int nx, const int ny, const int nz, const 
     /* Allocate variables */
     if(low[0]){
        P_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-       Axx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Vxx_left=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
        this->setApplypml(0,true);
     }
     if(high[0]){
        P_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
-       Axx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
+       Vxx_right=(T *) calloc(ny_pml*nz_pml*Lpml,sizeof(T));
        this->setApplypml(1,true);
     }
 
     if(low[1]){
        P_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-       Ayy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Vyy_front=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
        this->setApplypml(2,true);
     }
     if(high[1]){
        P_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
-       Ayy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
+       Vyy_back=(T *) calloc(nx_pml*nz_pml*Lpml,sizeof(T));
        this->setApplypml(3,true);
     }
 
     if(low[2]){
        P_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-       Azz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Vzz_top=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
        this->setApplypml(4,true);
     }
     if(high[2]){
        P_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
-       Azz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
+       Vzz_bottom=(T *) calloc(nx_pml*ny_pml*Lpml,sizeof(T));
        this->setApplypml(5,true);
     }
 }
@@ -337,28 +337,28 @@ PmlAcoustic3D<T>::~PmlAcoustic3D() {
 
     if(this->getApplypml(0)){
         free(P_left);
-        free(Axx_left);
+        free(Vxx_left);
 
     }
     if(this->getApplypml(1)){
         free(P_right);
-        free(Axx_right);
+        free(Vxx_right);
     }
     if(this->getApplypml(2)){
         free(P_front);
-        free(Ayy_front);
+        free(Vyy_front);
     }
     if(this->getApplypml(3)){
         free(P_back);
-        free(Ayy_back);
+        free(Vyy_back);
     }
     if(this->getApplypml(4)){
         free(P_top);
-        free(Azz_top);
+        free(Vzz_top);
     }
     if(this->getApplypml(5)){
         free(P_bottom);
-        free(Azz_bottom);
+        free(Vzz_bottom);
     }
 }
 

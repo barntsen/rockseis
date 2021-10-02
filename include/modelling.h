@@ -71,12 +71,12 @@ public:
     void setModel(std::shared_ptr<ModelAcoustic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setRecP(std::shared_ptr<Data2D<T>> _recP) { recP = _recP; recPset = true; }
-    void setRecAx(std::shared_ptr<Data2D<T>> _recAx) { recAx = _recAx; recAxset = true; }
-    void setRecAz(std::shared_ptr<Data2D<T>> _recAz) { recAz = _recAz; recAzset = true; }
+    void setRecVx(std::shared_ptr<Data2D<T>> _recVx) { recVx = _recVx; recVxset = true; }
+    void setRecVz(std::shared_ptr<Data2D<T>> _recVz) { recVz = _recVz; recVzset = true; }
 
     void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
-    void setSnapAx(std::string _snapAx) { snapAx = _snapAx; snapAxset = true; }
-    void setSnapAz(std::string _snapAz) { snapAz = _snapAz; snapAzset = true; }
+    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
+    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
@@ -86,13 +86,13 @@ private:
     std::shared_ptr<ModelAcoustic2D<T>> model;
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> recP;
-    std::shared_ptr<Data2D<T>> recAx;
-    std::shared_ptr<Data2D<T>> recAz;
+    std::shared_ptr<Data2D<T>> recVx;
+    std::shared_ptr<Data2D<T>> recVz;
     bool modelset;
     bool sourceset;
-    bool recPset, recAxset, recAzset;
-    std::string snapP, snapAx, snapAz;
-    bool snapPset, snapAxset, snapAzset;
+    bool recPset, recVxset, recVzset;
+    std::string snapP, snapVx, snapVz;
+    bool snapPset, snapVxset, snapVzset;
 };
 
 /** The 3D Acoustic Modelling class
@@ -107,14 +107,14 @@ public:
     void setModel(std::shared_ptr<ModelAcoustic3D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
     void setRecP(std::shared_ptr<Data3D<T>> _recP) { recP = _recP; recPset = true; }
-    void setRecAx(std::shared_ptr<Data3D<T>> _recAx) { recAx = _recAx; recAxset = true; }
-    void setRecAy(std::shared_ptr<Data3D<T>> _recAy) { recAy = _recAy; recAyset = true; }
-    void setRecAz(std::shared_ptr<Data3D<T>> _recAz) { recAz = _recAz; recAzset = true; }
+    void setRecVx(std::shared_ptr<Data3D<T>> _recVx) { recVx = _recVx; recVxset = true; }
+    void setRecVy(std::shared_ptr<Data3D<T>> _recVy) { recVy = _recVy; recVyset = true; }
+    void setRecVz(std::shared_ptr<Data3D<T>> _recVz) { recVz = _recVz; recVzset = true; }
 
     void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
-    void setSnapAx(std::string _snapAx) { snapAx = _snapAx; snapAxset = true; }
-    void setSnapAy(std::string _snapAy) { snapAy = _snapAy; snapAyset = true; }
-    void setSnapAz(std::string _snapAz) { snapAz = _snapAz; snapAzset = true; }
+    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
+    void setSnapVy(std::string _snapVy) { snapVy = _snapVy; snapVyset = true; }
+    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
@@ -124,14 +124,14 @@ private:
     std::shared_ptr<ModelAcoustic3D<T>> model;
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> recP;
-    std::shared_ptr<Data3D<T>> recAx;
-    std::shared_ptr<Data3D<T>> recAy;
-    std::shared_ptr<Data3D<T>> recAz;
+    std::shared_ptr<Data3D<T>> recVx;
+    std::shared_ptr<Data3D<T>> recVy;
+    std::shared_ptr<Data3D<T>> recVz;
     bool modelset;
     bool sourceset;
-    bool recPset, recAxset, recAyset, recAzset;
-    std::string snapP, snapAx, snapAy, snapAz;
-    bool snapPset, snapAxset, snapAyset, snapAzset;
+    bool recPset, recVxset, recVyset, recVzset;
+    std::string snapP, snapVx, snapVy, snapVz;
+    bool snapPset, snapVxset, snapVyset, snapVzset;
 };
 
 
