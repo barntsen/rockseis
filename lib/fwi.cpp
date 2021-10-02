@@ -560,7 +560,7 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
             uderx += 0.5*wrx[kr2D(ix+padr-1, iz+padr)]*Rx[kr2D(ix+padr-1, iz+padr)]*(wsp[ks2D(ix+pads, iz+pads)] - wsp[ks2D(ix+pads-1, iz+pads)])/dx;
             uderz = 0.5*wrz[kr2D(ix+padr, iz+padr)]*Rz[kr2D(ix+padr, iz+padr)]*(wsp[ks2D(ix+pads, iz+pads+1)] - wsp[ks2D(ix+pads, iz+pads)])/dz;
             uderz += 0.5*wrz[kr2D(ix+padr, iz+padr-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(wsp[ks2D(ix+pads, iz+pads)] - wsp[ks2D(ix+pads, iz+pads-1)])/dz;
-            rhograddata[ki2D(ix,iz)] -= (uderx + uderz);
+            rhograddata[ki2D(ix,iz)] += (uderx + uderz);
 
             if(srcilumset){
                srcilumdata[ki2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*wsp[ks2D(ix+pads, iz+pads)];
@@ -1455,7 +1455,7 @@ void FwiAcoustic3D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wry, T*wrz
 
             uderz = (0.5)*wrz[kr3D(ix+padr, iy+padr, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr)]*(wsp[ks3D(ix+pads, iy+pads, iz+pads+1)] - wsp[ks3D(ix+pads, iy+pads, iz+pads)])/dz;
             uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr-1, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr-1)]*(wsp[ks3D(ix+pads, iy+pads, iz+pads)] - wsp[ks3D(ix+pads, iy+pads, iz+pads-1)])/dz;
-            rhograddata[ki3D(ix,iy,iz)] -= (uderx + udery + uderz);
+            rhograddata[ki3D(ix,iy,iz)] += (uderx + udery + uderz);
  
          }	
       }
