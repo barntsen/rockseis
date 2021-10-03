@@ -1816,6 +1816,23 @@ void InversionAcoustic3D<T>::runGrad() {
             // Read wavelet data, set shot coordinates and make a map
             source->read();
             source->copyCoords(shot3D);
+            switch(this->getSourcetype()){
+                case 0:
+                    source->setField(PRESSURE);
+                    break;
+                case 1:
+                    source->setField(VX);
+                    break;
+                case 2:
+                    source->setField(VY);
+                    break;
+                case 3:
+                    source->setField(VZ);
+                    break;
+                default:
+                    rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
+                    break;
+            }
             source->makeMap(lmodel->getGeom(), SMAP);
 
             // Interpolate shot
