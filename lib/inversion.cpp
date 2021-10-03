@@ -556,7 +556,7 @@ void InversionAcoustic2D<T>::runGrad() {
                wavgrad->apply_filter(this->getFreqs());
             }
             //Scale wavelet gradient in case of particle velocity source
-            if(wavgrad->getField() == 1 || wavgrad->getField() == 3){
+            if((wavgrad->getField() == 1 || wavgrad->getField() == 3) && (shotres2D->getField() == 0)){
                wavgrad->scale_data(-1);
             }
             
@@ -1973,7 +1973,7 @@ void InversionAcoustic3D<T>::runGrad() {
             }
 
             //Scale wavelet gradient in case of particle velocity source
-            if(wavgrad->getField() == 1 || wavgrad->getField() == 2 || wavgrad->getField() == 3){
+            if((wavgrad->getField() == 1 || wavgrad->getField() == 2 || wavgrad->getField() == 3) && (shotres3D->getField() == 0)){
                wavgrad->scale_data(-1);
             }
             // Reduce wavelet gradient
