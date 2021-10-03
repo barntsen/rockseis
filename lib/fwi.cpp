@@ -820,7 +820,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
             norm3 /= (norm1*norm2);
 
             for(it=0; it<nt; it++){
-               res[I(it, itr)]=(-1.0)*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
+               res[I(it, itr)]=(-1.0)*scaling*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
                if(dataweightset)
                {
                   res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
@@ -888,7 +888,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
 
             for(it=0; it<nt; it++){
                H = this->gauss(it, stdev);
-               res[I(it, itr)] = -1.0*(H*H - 2.0*misfit)*shaper[it]/norm;
+               res[I(it, itr)] = -1.0*scaling*(H*H - 2.0*misfit)*shaper[it]/norm;
             }
             this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
             this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
@@ -970,7 +970,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
 
             for(it=0; it<nt; it++){
                H = this->linear(it, stdev);
-               res[I(it, itr)] = (H*H - 2.0*misfit)*shaper[it]/norm;
+               res[I(it, itr)] = scaling*(H*H - 2.0*misfit)*shaper[it]/norm;
             }
             this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
             this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
@@ -1015,7 +1015,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
       default:
          for(itr=0; itr<ntr; itr++){
             for(it=0; it<nt; it++){
-               res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+               res[I(it, itr)] = scaling*(mod[I(it, itr)] - rec[I(it, itr)]);
                if(dataweightset)
                {
                   res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
@@ -1675,13 +1675,17 @@ void FwiAcoustic3D<T>::computeResiduals(){
    T H;
    T stdev;
 
+
+   int scaling = 1; 
+   if(dataresP->getField() == 1 || dataresP->getField() == 2 || dataresP->getField() == 3) scaling = -1;
+
    size_t itr, it;
    Index I(nt, ntr);
    switch(this->getMisfit_type()){
       case DIFFERENCE:
          for(itr=0; itr<ntr; itr++){
             for(it=0; it<nt; it++){
-               res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+               res[I(it, itr)] = scaling*(mod[I(it, itr)] - rec[I(it, itr)]);
                if(dataweightset)
                {
                   res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
@@ -1709,7 +1713,7 @@ void FwiAcoustic3D<T>::computeResiduals(){
             norm3 /= (norm1*norm2);
 
             for(it=0; it<nt; it++){
-               res[I(it, itr)]=(-1.0)*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
+               res[I(it, itr)]=(-1.0)*scaling*((rec[I(it, itr)]/(norm1*norm2)) - (mod[I(it, itr)]/(norm1*norm1))*norm3);
                if(dataweightset)
                {
                   res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];
@@ -1758,7 +1762,7 @@ void FwiAcoustic3D<T>::computeResiduals(){
 
             for(it=0; it<nt; it++){
                H = this->gauss(it, stdev);
-               res[I(it, itr)] = -1.0*(H*H - 2.0*misfit)*shaper[it]/norm;
+               res[I(it, itr)] = -1.0*scaling*(H*H - 2.0*misfit)*shaper[it]/norm;
             }
             this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
             this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
@@ -1816,7 +1820,7 @@ void FwiAcoustic3D<T>::computeResiduals(){
 
             for(it=0; it<nt; it++){
                H = this->linear(it, stdev);
-               res[I(it, itr)] = (H*H - 2.0*misfit)*shaper[it]/norm;
+               res[I(it, itr)] = scaling*(H*H - 2.0*misfit)*shaper[it]/norm;
             }
             this->stoep(nt, autocorr, &res[I(0, itr)], shaper, spiker);
             this->convolve(nt, 0, shaper, nt, 0, recwei, nt, 0, &res[I(0, itr)]);        
@@ -1837,7 +1841,7 @@ void FwiAcoustic3D<T>::computeResiduals(){
       default:
          for(itr=0; itr<ntr; itr++){
             for(it=0; it<nt; it++){
-               res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+               res[I(it, itr)] = scaling*(mod[I(it, itr)] - rec[I(it, itr)]);
                if(dataweightset)
                {
                   res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];

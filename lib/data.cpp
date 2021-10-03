@@ -857,6 +857,22 @@ void Data2D<T>::putTrace(std::string filename, size_t number)
 }
 
 template<typename T>
+void Data2D<T>::scale_data (T scale)
+{
+    int i,j;
+    unsigned long nt = this->getNt();
+    int ntr = this->getNtrace();
+	Index Idata(nt,ntr);
+    T *data = this->getData();
+
+    for(i=0; i< ntr; i++){
+        for(j=0; j<nt; j++){
+            data[Idata(j,i)] *= scale;
+        }
+    }
+}
+
+template<typename T>
 void Data2D<T>::apply_filter (T *freqs)
 {
     int i,j;
@@ -1497,6 +1513,22 @@ void Data3D<T>::putImage(std::string imagefile)
 
     // Free allocated array
     free(imagedata);
+}
+
+template<typename T>
+void Data3D<T>::scale_data (T scale)
+{
+    int i,j;
+    unsigned long nt = this->getNt();
+    int ntr = this->getNtrace();
+	Index Idata(nt,ntr);
+    T *data = this->getData();
+
+    for(i=0; i< ntr; i++){
+        for(j=0; j<nt; j++){
+            data[Idata(j,i)] *= scale;
+        }
+    }
 }
 
 template<typename T>

@@ -152,6 +152,8 @@ int main(int argc, char** argv) {
          PRINT_DOC(snapinc = "1"; # Snap interval in multiples of modelling interval);
          PRINT_DOC(apertx = "900"; # Aperture for local model (source is in the middle));
          PRINT_DOC(aperty = "900"; # Aperture for local model (source is in the middle));
+         PRINT_DOC(source_type = "0"; # 0 - PRESSURE; 1 - VX; 3 - VZ);
+         PRINT_DOC(receiver_type = "0"; # 0 - PRESSURE; 1 - VX; 3 - VZ);
          PRINT_DOC();
          PRINT_DOC(# Checkpointing parameters);
          PRINT_DOC(snapmethod = "1";  # 0- Full checkpointing; 1- Optimal checkpointing);
@@ -214,6 +216,8 @@ int main(int argc, char** argv) {
    int _snapmethod;
    int _paramtype;
    int misfit_type;
+   int source_type;
+   int receiver_type;
    float apertx;
    float aperty;
    float dtx=-1;
@@ -268,6 +272,8 @@ int main(int argc, char** argv) {
    if(Inpar->getPar("kvp", &kvp) == INPARSE_ERR) status = true;
    if(Inpar->getPar("krho", &krho) == INPARSE_ERR) status = true;
    if(Inpar->getPar("ksource", &ksource) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("source_type", &source_type) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("receiver_type", &receiver_type) == INPARSE_ERR) status = true;
    if(Inpar->getPar("paramtype", &_paramtype) == INPARSE_ERR) status = true;
    rockseis::rs_paramtype paramtype = static_cast<rockseis::rs_paramtype>(_paramtype);
    if(paramtype == PAR_BSPLINE){
@@ -361,6 +367,8 @@ int main(int argc, char** argv) {
    inv->setKrho(krho);
    inv->setKsource(ksource);
    inv->setParamtype(paramtype);
+   inv->setSourcetype(source_type);
+   inv->setReceivertype(receiver_type);
    inv->setDtx(dtx);
    inv->setDty(dty);
    inv->setDtz(dtz);

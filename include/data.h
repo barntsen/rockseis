@@ -126,6 +126,9 @@ public:
     //Hilbert transform
     void applyHilbert(); ///< Apply a Hilbert transform to the data
 
+    // Apply scaling to data
+    void scale_data(T scale); ///< Apply scaling to data 
+
 private:
     std::shared_ptr<Geometry2D<T>> geometry; // Data geometry 
     T *data; // Data array
@@ -177,6 +180,9 @@ public:
 
     //Hilbert transform
     void applyHilbert(); ///< Apply a Hilbert transform to the data
+
+    // Apply scaling to data
+    void scale_data(T scale); ///< Apply scaling to data 
 
 private:
     std::shared_ptr<Geometry3D<T>> geometry;  // Data geometry 

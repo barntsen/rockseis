@@ -555,6 +555,10 @@ void InversionAcoustic2D<T>::runGrad() {
                // Filter wavelet gradient 
                wavgrad->apply_filter(this->getFreqs());
             }
+            //Scale wavelet gradient in case of particle velocity source
+            if(wavgrad->getField() == 1 || wavgrad->getField() == 3){
+               wavgrad->scale_data(-1);
+            }
             
             // Reduce wavelet gradient
             mpi->reduce(wavgrad->getData(), wavgrad->getNt());
@@ -1616,6 +1620,9 @@ InversionAcoustic3D<T>::InversionAcoustic3D() {
    apertx = -1;
    aperty = -1;
 
+   sourcetype = 0;
+   receivertype = 0;
+
    kvp = 1.0;
    krho = 1.0;
    ksource = 1.0;
@@ -1635,6 +1642,9 @@ InversionAcoustic3D<T>::InversionAcoustic3D(MPIdomaindecomp *mpi): Inversion<T>(
    // Set default parameters
    apertx = -1;
    aperty = -1;
+
+   sourcetype = 0;
+   receivertype = 0;
 
    kvp = 1.0;
    krho = 1.0;
@@ -1811,6 +1821,23 @@ void InversionAcoustic3D<T>::runGrad() {
             // Interpolate shot
             shot3Di = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             interp->interp(shot3D, shot3Di);
+            switch(this->getReceivertype()){
+                case 0:
+                    shot3Di->setField(PRESSURE);
+                    break;
+                case 1:
+                    shot3Di->setField(VX);
+                    break;
+                case 2:
+                    shot3Di->setField(VY);
+                    break;
+                case 3:
+                    shot3Di->setField(VZ);
+                    break;
+                default:
+                    rs_error("Unknown receiver type: ", std::to_string(this->getReceivertype()));
+                    break;
+            }
             shot3Di->makeMap(lmodel->getGeom(), GMAP);
 
             // Create fwi object
@@ -1819,12 +1846,35 @@ void InversionAcoustic3D<T>::runGrad() {
             // Create modelled and residual data objects 
             shotmod3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             shotmod3D->copyCoords(shot3D);
-            shotmod3D->makeMap(lmodel->getGeom(), GMAP);
-            fwi->setDatamodP(shotmod3D);
             shotres3D = std::make_shared<rockseis::Data3D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             shotres3D->copyCoords(shot3D);
+
+            switch(this->getReceivertype()){
+                case 0:
+                    shotmod3D->setField(PRESSURE);
+                    shotres3D->setField(PRESSURE);
+                    break;
+                case 1:
+                    shotmod3D->setField(VX);
+                    shotres3D->setField(VX);
+                    break;
+                case 2:
+                    shotmod3D->setField(VY);
+                    shotres3D->setField(VY);
+                    break;
+                case 3:
+                    shotmod3D->setField(VZ);
+                    shotres3D->setField(VZ);
+                    break;
+                default:
+                    rs_error("Unknown receiver type: ", std::to_string(this->getReceivertype()));
+                    break;
+            }
+            shotmod3D->makeMap(lmodel->getGeom(), GMAP);
             shotres3D->makeMap(lmodel->getGeom(), GMAP);
+            fwi->setDatamodP(shotmod3D);
             fwi->setDataresP(shotres3D);
+
 
             // Interpolate weight
             if(dataweight){
@@ -1848,7 +1898,23 @@ void InversionAcoustic3D<T>::runGrad() {
             fwi->setRhograd(rhograd);
 
             wavgrad = std::make_shared<rockseis::Data3D<T>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
-            wavgrad->setField(rockseis::PRESSURE);
+            switch(this->getSourcetype()){
+                case 0:
+                    wavgrad->setField(PRESSURE);
+                    break;
+                case 1:
+                    wavgrad->setField(VX);
+                    break;
+                case 2:
+                    wavgrad->setField(VY);
+                    break;
+                case 3:
+                    wavgrad->setField(VZ);
+                    break;
+                default:
+                    rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
+                    break;
+            }
             // Copy geometry
             wavgrad->copyCoords(source);
             wavgrad->makeMap(lmodel->getGeom(),SMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(1),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(1),(lmodel->getDomain())->getPadh(2));
@@ -1904,6 +1970,11 @@ void InversionAcoustic3D<T>::runGrad() {
             if(this->getFilter()){
             // Apply filter to wavelet gradient
                wavgrad->apply_filter(this->getFreqs());
+            }
+
+            //Scale wavelet gradient in case of particle velocity source
+            if(wavgrad->getField() == 1 || wavgrad->getField() == 2 || wavgrad->getField() == 3){
+               wavgrad->scale_data(-1);
             }
             // Reduce wavelet gradient
             mpi->reduce(wavgrad->getData(), wavgrad->getNt());
