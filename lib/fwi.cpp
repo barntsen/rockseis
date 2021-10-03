@@ -770,6 +770,8 @@ void FwiAcoustic2D<T>::computeResiduals(){
    {
       wei = dataweight->getData();
    }
+   int scaling = 1; 
+   if(dataresP->getField() == 1 || dataresP->getField() == 3) scaling = -1;
 
    T *shaper;
    T *spiker;
@@ -790,7 +792,7 @@ void FwiAcoustic2D<T>::computeResiduals(){
       case DIFFERENCE:
          for(itr=0; itr<ntr; itr++){
             for(it=0; it<nt; it++){
-               res[I(it, itr)] = mod[I(it, itr)] - rec[I(it, itr)];
+               res[I(it, itr)] = scaling*(mod[I(it, itr)] - rec[I(it, itr)]);
                if(dataweightset)
                {
                   res[I(it, itr)] *= wei[I(it, itr)]*wei[I(it, itr)];

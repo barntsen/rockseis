@@ -289,6 +289,12 @@ class InversionAcoustic2D: public Inversion<T> {
       void setRhoregeps(T val) { reg_eps[1] = val; }
       T getRhoregeps() { return reg_eps[1]; }
 
+      void setSourcetype(int type) { sourcetype = type; }
+      int getSourcetype() { return sourcetype; }
+
+      void setReceivertype(int type) { receivertype = type; }
+      int getReceivertype() { return receivertype; }
+
       // Run gradient
       void runGrad();
 
@@ -359,6 +365,8 @@ class InversionAcoustic2D: public Inversion<T> {
       T kvp, krho, ksource;
       T reg_eps[2];
       T reg_alpha[2];
+      int sourcetype;
+      int receivertype;
 };
 
 // ##### ACOUSTIC 3D INVERSION CLASS

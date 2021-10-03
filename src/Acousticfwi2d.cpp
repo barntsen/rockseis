@@ -163,6 +163,8 @@ int main(int argc, char** argv) {
          PRINT_DOC(lpml = "8"; # Size of pml absorbing boundary (should be larger than order + 5 ));
          PRINT_DOC(snapinc = "1"; # Snap interval in multiples of modelling interval);
          PRINT_DOC(apertx = "900"; # Aperture for local model (source is in the middle));
+         PRINT_DOC(source_type = "0"; # 0 - PRESSURE; 1 - VX; 3 - VZ);
+         PRINT_DOC(receiver_type = "0"; # 0 - PRESSURE; 1 - VX; 3 - VZ);
          PRINT_DOC();
          PRINT_DOC(# Checkpointing parameters);
          PRINT_DOC(snapmethod = "1";  # 0- Full checkpointing; 1- Optimal checkpointing);
@@ -239,6 +241,8 @@ int main(int argc, char** argv) {
    int _snapmethod;
    int _paramtype;
    int misfit_type;
+   int source_type;
+   int receiver_type;
    float apertx;
    float dtx=-1;
    float dtz=-1;
@@ -291,6 +295,8 @@ int main(int argc, char** argv) {
    if(Inpar->getPar("ksource", &ksource) == INPARSE_ERR) status = true;
    if(Inpar->getPar("paramtype", &_paramtype) == INPARSE_ERR) status = true;
    if(Inpar->getPar("outputhess", &outputhess) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("source_type", &source_type) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("receiver_type", &receiver_type) == INPARSE_ERR) status = true;
    rockseis::rs_paramtype paramtype = static_cast<rockseis::rs_paramtype>(_paramtype);
    if(paramtype == PAR_BSPLINE){
       if(Inpar->getPar("dtx", &dtx) == INPARSE_ERR) status = true;
@@ -397,6 +403,8 @@ int main(int argc, char** argv) {
    inv->setKrho(krho);
    inv->setKsource(ksource);
    inv->setParamtype(paramtype);
+   inv->setSourcetype(source_type);
+   inv->setReceivertype(receiver_type);
    inv->setDtx(dtx);
    inv->setDtz(dtz);
 

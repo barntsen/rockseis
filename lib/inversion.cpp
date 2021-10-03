@@ -184,6 +184,9 @@ InversionAcoustic2D<T>::InversionAcoustic2D() {
    // Set default parameters
    apertx = -1;
 
+   sourcetype = 0;
+   receivertype = 0;
+
    kvp = 1.0;
    krho = 1.0;
    ksource = 1.0;
@@ -202,6 +205,9 @@ template<typename T>
 InversionAcoustic2D<T>::InversionAcoustic2D(MPIdomaindecomp *mpi): Inversion<T>(mpi) {
    // Set default parameters
    apertx = -1;
+
+   sourcetype = 0;
+   receivertype = 0;
 
    kvp = 1.0;
    krho = 1.0;
@@ -381,12 +387,44 @@ void InversionAcoustic2D<T>::runGrad() {
             // Read wavelet data, set shot coordinates and make a map
             source->read();
             source->copyCoords(shot2D);
+            //Setting sourcetype 
+            switch(this->getSourcetype()){
+                case 0:
+                    source->setField(PRESSURE);
+                    break;
+                case 1:
+                    source->setField(VX);
+                    break;
+                case 3:
+                    source->setField(VZ);
+                    break;
+                default:
+                    rs_error("Unknown source type: ", std::to_string(this->getSourcetype()));
+                    break;
+            }
+
             source->makeMap(lmodel->getGeom(), SMAP);
 
             // Interpolate shot
             shot2Di = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             interp->interp(shot2D, shot2Di);
+            switch(this->getReceivertype()){
+                case 0:
+                    shot2Di->setField(PRESSURE);
+                    break;
+                case 1:
+                    shot2Di->setField(VX);
+                    break;
+                case 3:
+                    shot2Di->setField(VZ);
+                    break;
+                default:
+                    rs_error("Unknown source type: ", std::to_string(this->getReceivertype()));
+                    break;
+            }
+
             shot2Di->makeMap(lmodel->getGeom(), GMAP);
+
 
             // Create fwi object
             fwi = std::make_shared<rockseis::FwiAcoustic2D<T>>(lmodel, source, shot2Di, this->getOrder(), this->getSnapinc());
@@ -394,11 +432,30 @@ void InversionAcoustic2D<T>::runGrad() {
             // Create modelled and residual data objects 
             shotmod2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             shotmod2D->copyCoords(shot2D);
-            shotmod2D->makeMap(lmodel->getGeom(),GMAP);
-            fwi->setDatamodP(shotmod2D);
             shotres2D = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
             shotres2D->copyCoords(shot2D);
+
+            switch(this->getReceivertype()){
+                case 0:
+                    shotmod2D->setField(PRESSURE);
+                    shotres2D->setField(PRESSURE);
+                    break;
+                case 1:
+                    shotmod2D->setField(VX);
+                    shotres2D->setField(VX);
+                    break;
+                case 3:
+                    shotmod2D->setField(VZ);
+                    shotres2D->setField(VZ);
+                    break;
+                default:
+                    rs_error("Unknown source type: ", std::to_string(this->getReceivertype()));
+                    break;
+            }
+
+            shotmod2D->makeMap(lmodel->getGeom(),GMAP);
             shotres2D->makeMap(lmodel->getGeom(),GMAP);
+            fwi->setDatamodP(shotmod2D);
             fwi->setDataresP(shotres2D);
 
             // Interpolate weight
@@ -428,7 +485,20 @@ void InversionAcoustic2D<T>::runGrad() {
             fwi->setRhograd(rhograd);
 
             wavgrad = std::make_shared<rockseis::Data2D<T>>(source->getNtrace(), source->getNt(), source->getDt(), 0.0);
-            wavgrad->setField(rockseis::PRESSURE);
+            switch(this->getSourcetype()){
+                case 0:
+                    wavgrad->setField(PRESSURE);
+                    break;
+                case 1:
+                    wavgrad->setField(VX);
+                    break;
+                case 3:
+                    wavgrad->setField(VZ);
+                    break;
+                default:
+                    rs_error("Unknown wavgrad type: ", std::to_string(this->getSourcetype()));
+                    break;
+            }
             // Copy geometry
             wavgrad->copyCoords(source);
             wavgrad->makeMap(lmodel->getGeom(),SMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
