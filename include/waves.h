@@ -179,9 +179,14 @@ public:
     T * getVx() { return Vx; }  ///< Get Velocity component at time t+1/2
     T * getVz() { return Vz; }  ///< Get Velocity component at time t+1/2
 
+    bool getAdjoint() {return adjoint;} ///< Return adjoint flag
+    void setAdjoint(); ///< Set adjoint flag and allocate work array for adjoint computation
+
     // Time stepping functions
     void forwardstepVelocity(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with particle velocity 
     void forwardstepStress(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with Stress
+    void backwardstepVelocity(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step backward with particle velocity 
+    void backwardstepStress(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step backward with Stress
 
     // Insert source functions
     void insertSource(std::shared_ptr<ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling 
@@ -197,7 +202,9 @@ private:
     T *Sxz; // Stress component at time t+1
     T *Vx; // Velocity component at time t+1/2
     T *Vz; // Velocity component at time t+1/2
+    T *wrk; // work array used in adjoint state modelling
     std::shared_ptr<PmlElastic2D<T>> Pml; // Associated Pml class
+    bool adjoint; 
 
 };
 
@@ -223,10 +230,14 @@ public:
     T * getVx() { return Vx; }    ///< Get Velocity component at time t+1/2
     T * getVy() { return Vy; }    ///< Get Velocity component at time t+1/2
     T * getVz() { return Vz; }    ///< Get Velocity component at time t+1/2
+    bool getAdjoint() {return adjoint;} ///< Return adjoint flag
+    void setAdjoint(); ///< Set adjoint flag and allocate work array for adjoint computation
 
     // Time stepping functions
     void forwardstepVelocity(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity
     void forwardstepStress(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with particle velocity
+    void backwardstepVelocity(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step backward with particle velocity
+    void backwardstepStress(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step backward with particle velocity
 
    // Insert source functions
     void insertSource(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it); ///< Insert source for modeling 
@@ -244,7 +255,9 @@ private:
     T *Vx; // Velocity component at time t+1/2
     T *Vy; // Velocity component at time t+1/2
     T *Vz; // Velocity component at time t+1/2
+    T *wrk; // work array used in adjoint state modelling
     std::shared_ptr<PmlElastic3D<T>> Pml; // Associated Pml class
+    bool adjoint; 
 };
 
 /** The 2D Elastic displacement-stress WAVES class

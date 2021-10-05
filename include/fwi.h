@@ -269,6 +269,7 @@ public:
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
+    void crossCorr(std::shared_ptr<WavesElastic2D<T>> waves_fw, std::shared_ptr<WavesElastic2D<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesElastic2D_DS<T>> waves_bw, std::shared_ptr<ModelElastic2D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic2D<T>> model);
     void computeMisfit();

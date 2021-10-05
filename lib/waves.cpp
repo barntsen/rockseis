@@ -1294,7 +1294,7 @@ WavesAcoustic3D<T>::~WavesAcoustic3D() {
  *
  */
 
-   template<typename T>
+template<typename T>
 WavesElastic2D<T>::WavesElastic2D()	///< Constructor
 {
    // Do nothing
@@ -1317,6 +1317,8 @@ WavesElastic2D<T>::WavesElastic2D(const int _nx, const int _nz, const int _nt, c
    Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
    Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
    Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+
+   adjoint = false;
 }
 
 template<typename T>
@@ -1352,6 +1354,7 @@ WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> m
    this->setOt(_ot);
    this->setLpml(_lpml);
    this->setDim(_dim);
+   adjoint = false;
 
    if((model->getDomain())->getStatus()){
       // Domain decomposition mode
@@ -1403,6 +1406,15 @@ WavesElastic2D<T>::WavesElastic2D(std::shared_ptr<rockseis::ModelElastic2D<T>> m
    }
 }
 
+template<typename T>
+void WavesElastic2D<T>::setAdjoint(){
+   if(this->getAdjoint()){
+      rs_error("WavesElastic2D<T>::setAdjoint:Adjoint already set.");
+   }else{
+      wrk = (T *) calloc(this->getNx_pml()*this->getNz_pml(), sizeof(T));
+      adjoint = true;
+   }
+}
 
 template<typename T>
 void WavesElastic2D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
@@ -1556,6 +1568,7 @@ void WavesElastic2D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelElast
    }
 
 } // End of forwardstepVelocity
+
 
 
 template<typename T>
@@ -1723,7 +1736,354 @@ void WavesElastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
          }
       }
    }
+} // End of forwardstepStress
+
+template<typename T>
+void WavesElastic2D<T>::backwardstepVelocity(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+   int i, ix0, ix, iz0, iz, nx, nz, lpml, nxo, nzo;
+   lpml = model->getLpml();
+   T dt;
+   dt = this->getDt();
+   T *Rx, *Rz, *df;
+   T *L, *L2M, *M;
+   L = model->getL();
+   L2M = model->getL2M();
+   M = model->getM();
+   Rx = model->getRx();
+   Rz = model->getRz();
+   df = der->getDf();
+
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition 
+      nx = model->getNx();
+      nz = model->getNz();
+      ix0 = (model->getDomain())->getIx0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nzo = (model->getDomain())->getNz_orig();
+   }else{
+      nx = model->getNx() + 2*lpml;
+      nz = model->getNz() + 2*lpml;
+      ix0 = 0;
+      iz0 = 0;
+      nxo = nx;
+      nzo = nz;
+   }
+
+   if(!this->getAdjoint()) this->setAdjoint();
+
+   //// VX
+   // Prepare wrk array
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         wrk[I2D(ix,iz)] = L2M[I2D(ix,iz)]*Sxx[I2D(ix,iz)] + L[I2D(ix,iz)]*Szz[I2D(ix,iz)];
+      }
+   }
+   // Derivate Sxx forward with respect to x
+   der->ddx_fw(wrk);
+   // Compute Vx
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Vx[I2D(ix,iz)] += dt*Rx[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate left and right using staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Sxx_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix-ix0,iz)];
+               Vx[I2D(ix-ix0,iz)] -= dt*Rx[I2D(ix-ix0,iz)]*(Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)]);
+            }
+         }
+
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Sxx_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i-ix0,iz)];
+               Vx[I2D(i-ix0,iz)] -= dt*Rx[I2D(i-ix0,iz)]*(Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+
+   // Prepare wrk array
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         wrk[I2D(ix,iz)] = M[I2D(ix,iz)]*Sxz[I2D(ix,iz)];
+      }
+   }
+
+
+   // Derivate Sxz backward with respect to z
+   der->ddz_bw(wrk);
+   // Compute Vx
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Vx[I2D(ix,iz)] += dt*Rx[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate bottom and top using non-staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Sxzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
+               Vx[I2D(ix,iz-iz0)] -= dt*Rx[I2D(ix,iz-iz0)]*(Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Sxzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
+               Vx[I2D(ix,i-iz0)] -= dt*Rx[I2D(ix,i-iz0)]*(Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+
+   // Derivate Sxz backward with respect to x
+   der->ddx_bw(wrk);
+   // Compute Vz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Vz[I2D(ix,iz)] += dt*Rz[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate left and right using non-staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Sxzx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
+               Vz[I2D(ix-ix0,iz)] -= dt*Rz[I2D(ix-ix0,iz)]*(Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Sxzx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
+               Vz[I2D(i-ix0,iz)] -= dt*Rz[I2D(i-ix0,iz)]*(Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+
+   // Prepare wrk array
+   for(iz=0; iz < nz; iz++){
+       for(ix=0; ix < nx; ix++){
+           wrk[I2D(ix,iz)] = L[I2D(ix,iz)]*Sxx[I2D(ix,iz)] + L2M[I2D(ix,iz)]*Szz[I2D(ix,iz)];
+       }
+   }
+
+   // Derivate Szz forward with respect to z
+   der->ddz_fw(wrk);
+   // Compute Vz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Vz[I2D(ix,iz)] += dt*Rz[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate bottom and top using staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Szz_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->Szz_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz-iz0)];
+               Vz[I2D(ix,iz-iz0)] -= dt*Rz[I2D(ix,iz-iz0)]*(Pml->Szz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Szz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i-iz0)];
+               Vz[I2D(ix,i-iz0)] -= dt*Rz[I2D(ix,i-iz0)]*(Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+} // End of backwardstepVelocity
+
+template<typename T>
+void WavesElastic2D<T>::backwardstepStress(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+   int i, ix0, ix, iz0, iz, nx, nz, lpml, nxo, nzo;
+   lpml = model->getLpml();
+   nx = model->getNx() + 2*lpml;
+   nz = model->getNz() + 2*lpml;
+   T *df;
+   T dt = this->getDt();
+   df = der->getDf();
+
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition 
+      nx = model->getNx();
+      nz = model->getNz();
+      ix0 = (model->getDomain())->getIx0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nzo = (model->getDomain())->getNz_orig();
+   }else{
+      nx = model->getNx() + 2*lpml;
+      nz = model->getNz() + 2*lpml;
+      ix0 = 0;
+      iz0 = 0;
+      nxo = nx;
+      nzo = nz;
+   }
+   if(!this->getAdjoint()) this->setAdjoint();
+
+   // Derivate Vx backward with respect to x
+   der->ddx_bw(Vx);
+   // Compute Sxx and Szz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxx[I2D(ix,iz)] += dt*df[I2D(ix,iz)];
+      }
+   }
+
+
+   // Attenuate left and right using non-staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Vxx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
+
+               Sxx[I2D(ix-ix0,iz)] -= dt*(Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Vxx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
+
+               Sxx[I2D(i-ix0,iz)] -= dt*(Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+
+   // Derivate Vz backward with respect to z
+   der->ddz_bw(Vz);
+   // Compute Sxx and Szz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Szz[I2D(ix,iz)] += dt*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate top and bottom using non-staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Vzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
+
+               Szz[I2D(ix,iz-iz0)] -= dt*(Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Vzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
+               Szz[I2D(ix,i-iz0)] -= dt*(Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+
+   // Free surface conditions
+   if(model->getFs()){
+      iz = lpml;
+      if(iz >= iz0 && iz < (iz0 + nz)){
+         for(ix=0; ix < nx; ix++){
+            Szz[I2D(ix,iz-iz0)] = 0.0;
+         }
+      }
+   }
+
+   // Derivate Vz forward with respect to x
+   der->ddx_fw(Vz);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxz[I2D(ix,iz)] += dt*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate left and right using staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Vzx_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->Vzx_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix-ix0,iz)];
+               Sxz[I2D(ix-ix0,iz)] -= dt*(Pml->Vzx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)]);
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Vzx_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->Vzx_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i-ix0,iz)];
+               Sxz[I2D(i-ix0,iz)] -= dt*(Pml->Vzx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+
+   // Derivate Vx forward with respect to z
+   der->ddz_fw(Vx);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxz[I2D(ix,iz)] += dt*df[I2D(ix,iz)];
+      }
+   }
+
+   // Attenuate top and bottom using staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Vxz_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->Vxz_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz-iz0)];
+               Sxz[I2D(ix,iz-iz0)] -= dt*(Pml->Vxz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Vxz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->Vxz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i-iz0)];
+               Sxz[I2D(ix,i-iz0)] -= dt*(Pml->Vxz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+
 }
+
+
 
 template<typename T>
 void WavesElastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
@@ -1940,6 +2300,9 @@ WavesElastic2D<T>::~WavesElastic2D() {
    free(Sxz);
    free(Vx);
    free(Vz);
+   if(this->getAdjoint()) {
+      free(wrk);
+   }
 }
 
 // =============== 3D ELASTIC WAVES CLASS =============== //
@@ -1973,6 +2336,7 @@ WavesElastic3D<T>::WavesElastic3D(const int _nx, const int _ny, const int _nz, c
    Vx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
    Vy = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
    Vz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+   adjoint = false;
 }
 
 template<typename T>
@@ -2008,6 +2372,7 @@ WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> m
    this->setOt(_ot);
    this->setLpml(_lpml);
    this->setDim(_dim);
+   adjoint = false;
 
    if((model->getDomain())->getStatus()){
       // Domain decomposition mode
@@ -2074,6 +2439,16 @@ WavesElastic3D<T>::WavesElastic3D(std::shared_ptr<rockseis::ModelElastic3D<T>> m
 }
 
 template<typename T>
+void WavesElastic3D<T>::setAdjoint(){
+   if(this->getAdjoint()){
+      rs_error("WavesElastic3D<T>::setAdjoint:Adjoint already set.");
+   }else{
+      wrk = (T *) calloc(this->getNx_pml()*this->getNy_pml()*this->getNz_pml(), sizeof(T));
+      adjoint = true;
+   }
+}
+
+template<typename T>
 WavesElastic3D<T>::~WavesElastic3D() {
    /* Free allocated variables */
    free(Sxx);
@@ -2085,6 +2460,9 @@ WavesElastic3D<T>::~WavesElastic3D() {
    free(Vx);
    free(Vy);
    free(Vz);
+   if(this->getAdjoint()) {
+      free(wrk);
+   }
 }
 
 template<typename T>
@@ -2881,6 +3259,862 @@ void WavesElastic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelElastic
       }
    }
 }
+
+template<typename T>
+void WavesElastic3D<T>::backwardstepVelocity(std::shared_ptr<rockseis::ModelElastic3D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+   int i, ix0, ix, iy0, iy, iz0, iz, nx, ny, nz, lpml, nxo, nyo, nzo;
+   lpml = model->getLpml();
+   T *L, *L2M, *M_xz, *M_yz, *M_xy;
+   L = model->getL();
+   L2M = model->getL2M();
+   M_xy = model->getM_xy();
+   M_xz = model->getM_xz();
+   M_yz = model->getM_yz();
+   T *Rx, *Ry, *Rz, *df;
+   T dt;
+   dt = this->getDt();
+   Rx = model->getRx();
+   Ry = model->getRx();
+   Rz = model->getRz();
+   df = der->getDf();
+
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition 
+      nx = model->getNx();
+      ny = model->getNy();
+      nz = model->getNz();
+      ix0 = (model->getDomain())->getIx0();
+      iy0 = (model->getDomain())->getIy0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nyo = (model->getDomain())->getNy_orig();
+      nzo = (model->getDomain())->getNz_orig();
+   }else{
+      nx = model->getNx() + 2*lpml;
+      ny = model->getNy() + 2*lpml;
+      nz = model->getNz() + 2*lpml;
+      ix0 = 0;
+      iy0 = 0;
+      iz0 = 0;
+      nxo = nx;
+      nyo = ny;
+      nzo = nz;
+   }
+
+   if(!this->getAdjoint()) this->setAdjoint();
+
+   //////////////////////////// VX //////////////////////////
+   //
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            wrk[I3D(ix,iy,iz)] = L2M[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Syy[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)];
+         }
+      }
+   }
+   // Derivate Sxx forward with respect to x
+   der->ddx_fw(wrk);
+   // Compute Vx
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Vx[I3D(ix,iy,iz)] += dt*Rx[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate left and right using staggered variables
+   if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < lpml; ix++){
+               if(Pml->getApplypml(0)){
+                  if(ix >= ix0 && ix < (ix0 + nx)){
+                     // Left
+                     Pml->Sxx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->Sxx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)];
+
+                     Vx[I3D(ix-ix0,iy,iz)] -= dt*Rx[I3D(ix-ix0,iy,iz)]*(Pml->Sxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)]);
+                  }
+               }
+
+               if(Pml->getApplypml(1)){
+                  i = ix + nxo - lpml;
+                  if(i >= ix0 && i < (ix0 + nx)){
+                     // Right
+                     Pml->Sxx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->Sxx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)];
+                     Vx[I3D(i-ix0,iy,iz)] -= dt*Rx[I3D(i-ix0,iy,iz)]*(Pml->Sxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            wrk[I3D(ix,iy,iz)] = M_xy[I3D(ix,iy,iz)]*Sxy[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Derivate Sxy backward with respect to y
+   der->ddy_bw(wrk);
+   // Compute Vx
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Vx[I3D(ix,iy,iz)] += dt*Rx[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate front and back using non-staggered variables
+   if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < lpml; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(2)){
+                  if(iy >= iy0 && iy < (iy0 + ny)){
+                     // Front
+                     Pml->Sxyy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Sxyy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                     Vx[I3D(ix,iy-iy0,iz)] -= dt*Rx[I3D(ix,iy-iy0,iz)]*(Pml->Sxyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(3)){
+                  i = iy + nyo - lpml;
+                  if(i >= iy0 && i < (iy0 + ny)){
+                     //Back
+                     Pml->Sxyy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Sxyy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i-iy0,iz)];
+                     Vx[I3D(ix,i-iy0,iz)] -= dt*Rx[I3D(ix,i-iy0,iz)]*(Pml->Sxyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            wrk[I3D(ix,iy,iz)] = M_xz[I3D(ix,iy,iz)]*Sxz[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Derivate Sxy backward with respect to z
+   der->ddz_bw(wrk);
+   // Compute Vx
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Vx[I3D(ix,iy,iz)] += dt*Rx[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate bottom and top using non-staggered variables
+   if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+      for(iz=0; iz < lpml; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(4)){
+                  if(iz >= iz0 && iz < (iz0 + nz)){
+                     // Top
+                     Pml->Sxzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Sxzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz-iz0)];
+
+                     Vx[I3D(ix,iy,iz-iz0)] -= dt*Rx[I3D(ix,iy,iz-iz0)]*(Pml->Sxzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                  }
+               }
+               if(Pml->getApplypml(5)){
+                  i = iz + nzo - lpml;
+                  if(i >= iz0 && i < (iz0 + nz)){
+                     //Bottom
+                     Pml->Sxzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Sxzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i-iz0)];
+                     Vx[I3D(ix,iy,i-iz0)] -= dt*Rx[I3D(ix,iy,i-iz0)]*(Pml->Sxzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+   //////////////////////////// VY //////////////////////////
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            wrk[I3D(ix,iy,iz)] = M_xy[I3D(ix,iy,iz)]*Sxy[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Derivate Sxy backward with respect to x
+   der->ddx_bw(wrk);
+   // Compute Vy
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Vy[I3D(ix,iy,iz)] += dt*Ry[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate left and right using non-staggered variables
+   if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < lpml; ix++){
+               if(Pml->getApplypml(0)){
+                  if(ix >= ix0 && ix < (ix0 + nx)){
+                     // Left
+                     Pml->Sxyx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Sxyx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix-ix0,iy,iz)];
+
+                     Vy[I3D(ix-ix0,iy,iz)] -= dt*Ry[I3D(ix-ix0,iy,iz)]*(Pml->Sxyx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(1)){
+                  i = ix + nxo - lpml;
+                  if(i >= ix0 && i < (ix0 + nx)){
+                     // Right
+                     Pml->Sxyx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Sxyx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i-ix0,iy,iz)];
+                     Vy[I3D(i-ix0,iy,iz)] -= dt*Ry[I3D(i-ix0,iy,iz)]*(Pml->Sxyx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            wrk[I3D(ix,iy,iz)] = L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)] + L2M[I3D(ix,iy,iz)]*Syy[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Derivate Syy forward with respect to y
+   der->ddy_fw(wrk);
+   // Compute Vy
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Vy[I3D(ix,iy,iz)] += dt*Ry[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate front and back using staggered variables
+   if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < lpml; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(2)){
+                  if(iy >= iy0 && iy < (iy0 + ny)){
+                     // Front
+                     Pml->Syy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->Syy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                     Vy[I3D(ix,iy-iy0,iz)] -= dt*Ry[I3D(ix,iy-iy0,iz)]*(Pml->Syy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(3)){
+                  i = iy + nyo - lpml;
+                  if(i >= iy0 && i < (iy0 + ny)){
+                     //Back
+                     Pml->Syy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->Syy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)];
+                     Vy[I3D(ix,i-iy0,iz)] -= dt*Ry[I3D(ix,i-iy0,iz)]*(Pml->Syy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            wrk[I3D(ix,iy,iz)] = M_yz[I3D(ix,iy,iz)]*Syz[I3D(ix,iy,iz)];
+         }
+      }
+   }
+   // Derivate Syz backward with respect to z
+   der->ddz_bw(wrk);
+   // Compute Vy
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Vy[I3D(ix,iy,iz)] += dt*Ry[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate bottom and top using non-staggered variables
+   if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+      for(iz=0; iz < lpml; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(4)){
+                  if(iz >= iz0 && iz < (iz0 + nz)){
+                     // Top
+                     Pml->Syzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Syzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz-iz0)];
+
+                     Vy[I3D(ix,iy,iz-iz0)] -= dt*Ry[I3D(ix,iy,iz-iz0)]*(Pml->Syzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                  }
+               }
+               if(Pml->getApplypml(5)){
+                  i = iz + nzo - lpml;
+                  if(i >= iz0 && i < (iz0 + nz)){
+                     //Bottom
+                     Pml->Syzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Syzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i-iz0)];
+                     Vy[I3D(ix,iy,i-iz0)] -= dt*Ry[I3D(ix,iy,i-iz0)]*(Pml->Syzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+   //////////////////////////// VZ //////////////////////////
+
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            wrk[I3D(ix,iy,iz)] = M_xz[I3D(ix,iy,iz)]*Sxz[I3D(ix,iy,iz)];
+         }
+      }
+   }
+   // Derivate Sxz backward with respect to x
+   der->ddx_bw(wrk);
+   // Compute Vz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Vz[I3D(ix,iy,iz)] += dt*Rz[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate left and right using non-staggered variables
+   if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+      for(iz=0; iz < nz; iz++){
+         for(iz=0; iz < nz; iz++){
+            for(iy=0; iy < ny; iy++){
+               for(ix=0; ix < lpml; ix++){
+                  if(Pml->getApplypml(0)){
+                     if(ix >= ix0 && ix < (ix0 + nx)){
+                        // Left
+                        Pml->Sxzx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Sxzx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix-ix0,iy,iz)];
+
+                        Vz[I3D(ix-ix0,iy,iz)] -= dt*Rz[I3D(ix-ix0,iy,iz)]*(Pml->Sxzx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     }
+                  }
+                  if(Pml->getApplypml(1)){
+                     i = ix + nxo - lpml;
+                     if(i >= ix0 && i < (ix0 + nx)){
+                        // Right
+                        Pml->Sxzx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Sxzx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i-ix0,iy,iz)];
+                        Vz[I3D(i-ix0,iy,iz)] -= dt*Rz[I3D(i-ix0,iy,iz)]*(Pml->Sxzx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            wrk[I3D(ix,iy,iz)] = M_yz[I3D(ix,iy,iz)]*Syz[I3D(ix,iy,iz)];
+         }
+      }
+   }
+   // Derivate Syz backward with respect to y
+   der->ddy_bw(wrk);
+   // Compute Vz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Vz[I3D(ix,iy,iz)] += dt*Rz[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate front and back using non-staggered variables
+   if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < lpml; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(2)){
+                  if(iy >= iy0 && iy < (iy0 + ny)){
+                     // Front
+                     Pml->Syzy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Syzy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                     Vz[I3D(ix,iy-iy0,iz)] -= dt*Rz[I3D(ix,iy-iy0,iz)]*(Pml->Syzy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(3)){
+                  i = iy + nyo - lpml;
+                  if(i >= iy0 && i < (iy0 + ny)){
+                     //Back
+                     Pml->Syzy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Syzy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i-iy0,iz)];
+                     Vz[I3D(ix,i-iy0,iz)] -= dt*Rz[I3D(ix,i-iy0,iz)]*(Pml->Syzy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            wrk[I3D(ix,iy,iz)] = L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Syy[I3D(ix,iy,iz)] + L2M[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)];
+         }
+      }
+   }
+   // Derivate Szz forward with respect to z
+   der->ddz_fw(wrk);
+   // Compute Vz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Vz[I3D(ix,iy,iz)] += dt*Rz[I3D(ix,iy,iz)]*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate bottom and top using staggered variables
+   if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+      for(iz=0; iz < lpml; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(4)){
+                  if(iz >= iz0 && iz < (iz0 + nz)){
+                     // Top
+                     Pml->Szz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Szz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)];
+                     Vz[I3D(ix,iy,iz-iz0)] -= dt*Rz[I3D(ix,iy,iz-iz0)]*(Pml->Szz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
+                  }
+               }
+               if(Pml->getApplypml(5)){
+                  i = iz + nzo - lpml;
+                  if(i >= iz0 && i < (iz0 + nz)){
+                     //Bottom
+                     Pml->Szz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Szz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)];
+                     Vz[I3D(ix,iy,i-iz0)] -= dt*Rz[I3D(ix,iy,i-iz0)]*(Pml->Szz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+} // End of backwardstepVelocity
+
+template<typename T>
+void WavesElastic3D<T>::backwardstepStress(std::shared_ptr<rockseis::ModelElastic3D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+   int i, ix0, ix, iy0, iy, iz0, iz, nx, ny, nz, lpml, nxo, nyo, nzo;
+   T dt;
+   lpml = model->getLpml();
+   dt = this->getDt();
+   T *df;
+   df = der->getDf();
+
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition 
+      nx = model->getNx();
+      ny = model->getNy();
+      nz = model->getNz();
+      ix0 = (model->getDomain())->getIx0();
+      iy0 = (model->getDomain())->getIy0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nyo = (model->getDomain())->getNy_orig();
+      nzo = (model->getDomain())->getNz_orig();
+   }else{
+      nx = model->getNx() + 2*lpml;
+      ny = model->getNy() + 2*lpml;
+      nz = model->getNz() + 2*lpml;
+      ix0 = 0;
+      iy0 = 0;
+      iz0 = 0;
+      nxo = nx;
+      nyo = ny;
+      nzo = nz;
+   }
+   if(!this->getAdjoint()) this->setAdjoint();
+
+   // Derivate Vx backward with respect to x
+   der->ddx_bw(Vx);
+   // Compute Sxx,Syy,Szz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Sxx[I3D(ix,iy,iz)] += dt*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+
+   // Attenuate left and right using non-staggered variables
+   if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < lpml; ix++){
+               if(Pml->getApplypml(0)){
+                  if(ix >= ix0 && ix < (ix0 + nx)){
+                     // Left
+                     Pml->Vxx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix-ix0,iy,iz)];
+
+                     Sxx[I3D(ix-ix0,iy,iz)] -= dt*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     Syy[I3D(ix-ix0,iy,iz)] -= dt*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                     Szz[I3D(ix-ix0,iy,iz)] -= dt*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(1)){
+                  i = ix + nxo - lpml;
+                  if(i >= ix0 && i < (ix0 + nx)){
+                     // Right
+                     Pml->Vxx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i-ix0,iy,iz)];
+                     Sxx[I3D(i-ix0,iy,iz)] -= dt*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Syy[I3D(i-ix0,iy,iz)] -= dt*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                     Szz[I3D(i-ix0,iy,iz)] -= dt*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   // Derivate Vy backward with respect to y
+   der->ddy_bw(Vy);
+   // Compute Sxx,Syy,Szz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Syy[I3D(ix,iy,iz)] +=  dt*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate front and back using non-staggered variables
+   if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < lpml; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(2)){
+                  if(iy >= iy0 && iy < (iy0 + ny)){
+                     // Front
+                     Pml->Vyy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                     Sxx[I3D(ix,iy-iy0,iz)] -= dt*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Syy[I3D(ix,iy-iy0,iz)] -= dt*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                     Szz[I3D(ix,iy-iy0,iz)] -= dt*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(3)){
+                  i = iy + nyo - lpml;
+                  if(i >= iy0 && i < (iy0 + ny)){
+                     //Back
+                     Pml->Vyy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i-iy0,iz)];
+                     Sxx[I3D(ix,i-iy0,iz)] -= dt*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Syy[I3D(ix,i-iy0,iz)] -= dt*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                     Szz[I3D(ix,i-iy0,iz)] -= dt*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   // Derivate Vz backward with respect to z
+   der->ddz_bw(Vz);
+   // Compute Sxx,Syy,Szz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Szz[I3D(ix,iy,iz)] +=  dt*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Free surface conditions
+   if(model->getFs()){
+      iz = lpml;
+      if(iz >= iz0 && iz < (iz0 + nz)){
+         for(ix=0; ix < nx; ix++){
+            for(iy=0; iy < ny; iy++){
+               Szz[I3D(ix,iy,iz-iz0)] = 0.0;
+            }
+         }
+      }
+   }
+
+   // Attenuate top and bottom using non-staggered variables
+   if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+      for(iz=0; iz < lpml; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(4)){
+                  if(iz >= iz0 && iz < (iz0 + nz)){
+                     // Top
+                     Pml->Vzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz-iz0)];
+
+                     Sxx[I3D(ix,iy,iz-iz0)] -= dt*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Syy[I3D(ix,iy,iz-iz0)] -= dt*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     Szz[I3D(ix,iy,iz-iz0)] -= dt*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
+                  }
+               }
+               if(Pml->getApplypml(5)){
+                  i = iz + nzo - lpml;
+                  if(i >= iz0 && i < (iz0 + nz)){
+                     //Bottom
+                     Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i-iz0)];
+                     Sxx[I3D(ix,iy,i-iz0)] -= dt*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Syy[I3D(ix,iy,i-iz0)] -= dt*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                     Szz[I3D(ix,iy,i-iz0)] -= dt*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   //////////////////////////// Sxz //////////////////////////
+
+   // Derivate Vz forward with respect to x
+   der->ddx_fw(Vz);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Sxz[I3D(ix,iy,iz)] +=  dt*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate left and right using staggered variables
+   if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < lpml; ix++){
+               if(Pml->getApplypml(0)){
+                  if(ix >= ix0 && ix < (ix0 + nx)){
+                     // Left
+                     Pml->Vzx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->Vzx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)];
+
+                     Sxz[I3D(ix-ix0,iy,iz)] -= dt*(Pml->Vzx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(1)){
+                  i = ix + nxo - lpml;
+                  if(i >= ix0 && i < (ix0 + nx)){
+                     // Right
+                     Pml->Vzx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->Vzx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)];
+                     Sxz[I3D(i-ix0,iy,iz)] -= dt*(Pml->Vzx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+   // Derivate Vx forward with respect to z
+   der->ddz_fw(Vx);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Sxz[I3D(ix,iy,iz)] +=  dt*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate top and bottom using staggered variables
+   if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+      for(iz=0; iz < lpml; iz++){
+         for(iz=0; iz < lpml; iz++){
+            for(iy=0; iy < ny; iy++){
+               for(ix=0; ix < nx; ix++){
+                  if(Pml->getApplypml(4)){
+                     if(iz >= iz0 && iz < (iz0 + nz)){
+                        // Top
+                        Pml->Vxz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)];
+
+                        Sxz[I3D(ix,iy,iz-iz0)] -= dt*(Pml->Vxz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
+                     }
+                  }
+                  if(Pml->getApplypml(5)){
+                     i = iz + nzo - lpml;
+                     if(i >= iz0 && i < (iz0 + nz)){
+                        //Bottom
+                        Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)];
+                        Sxz[I3D(ix,iy,i-iz0)] -= dt*(Pml->Vxz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+   //////////////////////////// Syz //////////////////////////
+   // Derivate Vy forward with respect to z
+   der->ddz_fw(Vy);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Syz[I3D(ix,iy,iz)] +=  dt*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate top and bottom using staggered variables
+   if(Pml->getApplypml(4) || Pml->getApplypml(5)){
+      for(iz=0; iz < lpml; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(4)){
+                  if(iz >= iz0 && iz < (iz0 + nz)){
+                     // Top
+                     Pml->Vyz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf_stag[iz]*Pml->Vyz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)];
+
+                     Syz[I3D(ix,iy,iz-iz0)] -= dt*(Pml->Vyz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
+                  }
+               }
+               if(Pml->getApplypml(5)){
+                  i = iz + nzo - lpml;
+                  if(i >= iz0 && i < (iz0 + nz)){
+                     //Bottom
+                     Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb_stag[iz]*Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)];
+                     Syz[I3D(ix,iy,i-iz0)] -= dt*(Pml->Vyz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb_stag[iz]*df[I3D(ix,iy,i-iz0)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   // Derivate Vz forward with respect to y
+   der->ddy_fw(Vz);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Syz[I3D(ix,iy,iz)] +=  dt*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate front and back using staggered variables
+   if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < lpml; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(2)){
+                  if(iy >= iy0 && iy < (iy0 + ny)){
+                     // Front
+                     Pml->Vzy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->Vzy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                     Syz[I3D(ix,iy-iy0,iz)] -= dt*(Pml->Vzy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(3)){
+                  i = iy + nyo - lpml;
+                  if(i >= iy0 && i < (iy0 + ny)){
+                     //Back
+                     Pml->Vzy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->Vzy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)];
+                     Syz[I3D(ix,i-iy0,iz)] -= dt*(Pml->Vzy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+
+   //////////////////////////// Sxy //////////////////////////
+   // Derivate Vx forward with respect to y
+   der->ddy_fw(Vx);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Sxy[I3D(ix,iy,iz)] +=  dt*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+   // Attenuate front and back using staggered variables
+   if(Pml->getApplypml(2) || Pml->getApplypml(3)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < lpml; iy++){
+            for(ix=0; ix < nx; ix++){
+               if(Pml->getApplypml(2)){
+                  if(iy >= iy0 && iy < (iy0 + ny)){
+                     // Front
+                     Pml->Vxy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->Vxy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)];
+
+                     Sxy[I3D(ix,iy-iy0,iz)] -= dt*(Pml->Vxy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(3)){
+                  i = iy + nyo - lpml;
+                  if(i >= iy0 && i < (iy0 + ny)){
+                     //Back
+                     Pml->Vxy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb_stag[iy]*Pml->Vxy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)];
+                     Sxy[I3D(ix,i-iy0,iz)] -= dt*(Pml->Vxy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb_stag[iy]*df[I3D(ix,i-iy0,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+
+   // Derivate Vy forward with respect to x
+   der->ddx_fw(Vy);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(iy=0; iy < ny; iy++){
+         for(ix=0; ix < nx; ix++){
+            Sxy[I3D(ix,iy,iz)] +=  dt*df[I3D(ix,iy,iz)];
+         }
+      }
+   }
+
+   // Attenuate left and right using staggered variables
+   if(Pml->getApplypml(0) || Pml->getApplypml(1)){
+      for(iz=0; iz < nz; iz++){
+         for(iy=0; iy < ny; iy++){
+            for(ix=0; ix < lpml; ix++){
+               if(Pml->getApplypml(0)){
+                  if(ix >= ix0 && ix < (ix0 + nx)){
+                     // Left
+                     Pml->Vyx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf_stag[ix]*Pml->Vyx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)];
+
+                     Sxy[I3D(ix-ix0,iy,iz)] -= dt*(Pml->Vyx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)]);
+                  }
+               }
+               if(Pml->getApplypml(1)){
+                  i = ix + nxo - lpml;
+                  if(i >= ix0 && i < (ix0 + nx)){
+                     // Right
+                     Pml->Vyx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb_stag[ix]*Pml->Vyx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)];
+                     Sxy[I3D(i-ix0,iy,iz)] -= dt*(Pml->Vyx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb_stag[ix]*df[I3D(i-ix0,iy,iz)]);
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
 
 template<typename T>
 void WavesElastic3D<T>::insertSource(std::shared_ptr<rockseis::ModelElastic3D<T>> model, std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, int it){
