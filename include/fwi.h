@@ -346,6 +346,7 @@ public:
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesElastic3D_DS<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
     void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesElastic3D<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
+    void crossCorr(std::shared_ptr<WavesElastic3D<T>> waves_fw, std::shared_ptr<WavesElastic3D<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
     void scaleGrad(std::shared_ptr<ModelElastic3D<T>> model);
     void computeMisfit();
     void computeResiduals();

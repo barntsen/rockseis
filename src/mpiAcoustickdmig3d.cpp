@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
          PRINT_DOC(nhz = "1";);
          PRINT_DOC();
          PRINT_DOC(# Booleans);
+         PRINT_DOC(Verb = "false"; # If to print queue status);
          PRINT_DOC(Gather = "false"; # If surface gathers are to be output);
          PRINT_DOC();
          PRINT_DOC(# Input files);
@@ -76,6 +77,7 @@ int main(int argc, char** argv) {
    float radius;
    bool incore;
    bool homogen;
+   bool verb;
    std::string Vpfile;
    std::string Ttablefile;
    std::string Pimagefile;
@@ -102,6 +104,7 @@ int main(int argc, char** argv) {
    if(Inpar->getPar("maxfreq", &maxfreq) == INPARSE_ERR) status = true;
    if(Inpar->getPar("radius", &radius) == INPARSE_ERR) status = true;
    if(Inpar->getPar("incore", &incore) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("verb", &verb) == INPARSE_ERR) status = true;
    if(incore){
        if(Inpar->getPar("homogen", &homogen) == INPARSE_ERR) status = true;
    }
@@ -138,7 +141,7 @@ int main(int argc, char** argv) {
            rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dy = dz).");
        }
    }
-   mpi.setVerbose(false);
+   mpi.setVerbose(verb);
 
 
    if(mpi.getRank() == 0) {

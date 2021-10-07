@@ -949,9 +949,10 @@ void KdmvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                         for (iz=1; iz<nz-1; iz++){
 						    wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
                         }
-                        for (iz=0; iz<nz-1; iz++){
+                        for (iz=1; iz<nz-1; iz++){
                             imagedata[ki2D(ix,iz,ihx,ihz)] = G2*wrk[iz];
                         }
+                        imagedata[ki2D(ix,0,ihx,ihz)] = 0.0;
                         imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
                     }
                 }
@@ -986,9 +987,10 @@ void KdmvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                         for (iz=1; iz<nz-1; iz++){
 						    wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
                         }
-                        for (iz=0; iz<nz-1; iz++){
+                        for (iz=1; iz<nz-1; iz++){
                             imagedata[ki2D(ix,iz,ihx,ihz)] = -1.0*G2*wrk[iz];
                         }
+                        imagedata[ki2D(ix,0,ihx,ihz)] = 0.0;
                         imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
                     }
                 }
@@ -1039,9 +1041,10 @@ void KdmvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                         for (iz=1; iz<nz-1; iz++){
                             wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
                         }	
-                        for (iz=0; iz<nz-1; iz++){
+                        for (iz=1; iz<nz-1; iz++){
                             imagedata[ki2D(ix,iz,ihx,ihz)] = (f1/(f2*f2))*G2*wrk[iz] - (((hx*hx) +  (hz*hz))*1.0/f2)*wrk[iz]; 
                         }	
+                        imagedata[ki2D(ix,0,ihx,ihz)] = 0.0;
                         imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
                     }
                 }
