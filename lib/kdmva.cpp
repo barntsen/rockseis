@@ -802,6 +802,7 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
     vpls = lsmodel->getVelocity(); 
     int i;
     int N, Nmod;
+    T vint;
 
     // If mute
     if(!Modelmutefile.empty()){
@@ -832,7 +833,12 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
             {
-                vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
+               if(i == 0){
+                  vint = x[i];
+               }else{
+                  vint = (i+1)*x[i] - i*x[i-1];
+               }
+                vpls[i] = vp0[i] + vint*vpmutedata[i]*kvp;
                 if(this->getConstrain()){
                     if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
                     if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
@@ -854,7 +860,12 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
 
             for(i=0; i< Nmod; i++)
             {
-                vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
+               if(i == 0){
+                  vint = mod[i];
+               }else{
+                  vint = (i+1)*mod[i] - i*mod[i-1];
+               }
+               vpls[i] = vp0[i] + vint*vpmutedata[i]*kvp;
                 if(this->getConstrain()){
                     if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
                     if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
@@ -1323,7 +1334,10 @@ void KdmvaAcoustic2D<T>::readGrad(double *g)
             gvp = modelgrad->getVelocity(); 
             for(i=0; i< N; i++)
             {
-                g[i] = gvp[i]*kvp;
+                g[i] = (gvp[i]*(i+1))*kvp;
+                if((i+1) < N){
+                   g[i] -= (gvp[i+1]*(i+1))*kvp;
+                }
             }
             break;
         case PAR_BSPLINE:
@@ -1336,7 +1350,10 @@ void KdmvaAcoustic2D<T>::readGrad(double *g)
             Fgrad->close();
             for(i=0; i< N; i++)
             {
-                g[i] = g_in[i]*kvp;
+                g[i] = (g_in[i]*(i+1))*kvp;
+                if((i+1) < N){
+                   g[i] -= (g_in[i+1]*(i+1))*kvp;
+                }
             }
             // Free temporary array
             free(g_in);
@@ -1468,7 +1485,7 @@ void KdmvaAcoustic2D<T>::computeRegularisation(double *x)
 
             break;
         default:
-            rs_error("KdmvaAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
+            rs_error("KdmvaAcoustic2D<T>::computeRegularisation(): Unknown parameterisation."); 
             break;
     }
     // Computing misfit
