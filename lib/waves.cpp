@@ -712,7 +712,7 @@ void WavesAcoustic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelAcou
    lpml = model->getLpml();
    T *Rx, *Ry, *Rz, *df;
    Rx = model->getRx();
-   Ry = model->getRx();
+   Ry = model->getRy();
    Rz = model->getRz();
    df = der->getDf();
    T dt = this->getDt();
@@ -2473,7 +2473,7 @@ void WavesElastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelElast
    T dt;
    dt = this->getDt();
    Rx = model->getRx();
-   Ry = model->getRx();
+   Ry = model->getRy();
    Rz = model->getRz();
    df = der->getDf();
 
@@ -3274,7 +3274,7 @@ void WavesElastic3D<T>::backwardstepVelocity(std::shared_ptr<rockseis::ModelElas
    T dt;
    dt = this->getDt();
    Rx = model->getRx();
-   Ry = model->getRx();
+   Ry = model->getRy();
    Rz = model->getRz();
    df = der->getDf();
 
@@ -3308,7 +3308,7 @@ void WavesElastic3D<T>::backwardstepVelocity(std::shared_ptr<rockseis::ModelElas
    for(iz=0; iz < nz; iz++){
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
-            wrk[I3D(ix,iy,iz)] = L2M[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Syy[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)];
+            wrk[I3D(ix,iy,iz)] = L2M[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Syy[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Szz[I3D(ix,iy,iz)];
          }
       }
    }
@@ -3491,7 +3491,7 @@ void WavesElastic3D<T>::backwardstepVelocity(std::shared_ptr<rockseis::ModelElas
    for(iz=0; iz < nz; iz++){
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
-            wrk[I3D(ix,iy,iz)] = L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)] + L2M[I3D(ix,iy,iz)]*Syy[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)];
+            wrk[I3D(ix,iy,iz)] = L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)] + L2M[I3D(ix,iy,iz)]*Syy[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Szz[I3D(ix,iy,iz)];
          }
       }
    }
@@ -3673,7 +3673,7 @@ void WavesElastic3D<T>::backwardstepVelocity(std::shared_ptr<rockseis::ModelElas
    for(iz=0; iz < nz; iz++){
       for(iy=0; iy < ny; iy++){
          for(ix=0; ix < nx; ix++){
-            wrk[I3D(ix,iy,iz)] = L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Syy[I3D(ix,iy,iz)] + L2M[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)];
+            wrk[I3D(ix,iy,iz)] = L[I3D(ix,iy,iz)]*Sxx[I3D(ix,iy,iz)] + L[I3D(ix,iy,iz)]*Syy[I3D(ix,iy,iz)] + L2M[I3D(ix,iy,iz)]*Szz[I3D(ix,iy,iz)];
          }
       }
    }
@@ -3771,8 +3771,6 @@ void WavesElastic3D<T>::backwardstepStress(std::shared_ptr<rockseis::ModelElasti
                      Pml->Vxx_left[I3D_lr(ix,iy,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->A_ltf[ix]*df[I3D(ix-ix0,iy,iz)];
 
                      Sxx[I3D(ix-ix0,iy,iz)] -= dt*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
-                     Syy[I3D(ix-ix0,iy,iz)] -= dt*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
-                     Szz[I3D(ix-ix0,iy,iz)] -= dt*(Pml->Vxx_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf[ix]*df[I3D(ix-ix0,iy,iz)]);
                   }
                }
                if(Pml->getApplypml(1)){
@@ -3781,8 +3779,6 @@ void WavesElastic3D<T>::backwardstepStress(std::shared_ptr<rockseis::ModelElasti
                      // Right
                      Pml->Vxx_right[I3D_lr(ix,iy,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->A_rbb[ix]*df[I3D(i-ix0,iy,iz)];
                      Sxx[I3D(i-ix0,iy,iz)] -= dt*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
-                     Syy[I3D(i-ix0,iy,iz)] -= dt*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
-                     Szz[I3D(i-ix0,iy,iz)] -= dt*(Pml->Vxx_right[I3D_lr(ix,iy,iz)] + Pml->C_rbb[ix]*df[I3D(i-ix0,iy,iz)]);
                   }
                }
             }
@@ -3811,9 +3807,7 @@ void WavesElastic3D<T>::backwardstepStress(std::shared_ptr<rockseis::ModelElasti
                      // Front
                      Pml->Vyy_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf[iy]*Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf[iy]*df[I3D(ix,iy-iy0,iz)];
 
-                     Sxx[I3D(ix,iy-iy0,iz)] -= dt*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
                      Syy[I3D(ix,iy-iy0,iz)] -= dt*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
-                     Szz[I3D(ix,iy-iy0,iz)] -= dt*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
                   }
                }
                if(Pml->getApplypml(3)){
@@ -3821,9 +3815,7 @@ void WavesElastic3D<T>::backwardstepStress(std::shared_ptr<rockseis::ModelElasti
                   if(i >= iy0 && i < (iy0 + ny)){
                      //Back
                      Pml->Vyy_back[I3D_fb(ix,iy,iz)] = Pml->B_rbb[iy]*Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->A_rbb[iy]*df[I3D(ix,i-iy0,iz)];
-                     Sxx[I3D(ix,i-iy0,iz)] -= dt*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
                      Syy[I3D(ix,i-iy0,iz)] -= dt*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
-                     Szz[I3D(ix,i-iy0,iz)] -= dt*(Pml->Vyy_back[I3D_fb(ix,iy,iz)] + Pml->C_rbb[iy]*df[I3D(ix,i-iy0,iz)]);
                   }
                }
             }
@@ -3864,8 +3856,6 @@ void WavesElastic3D<T>::backwardstepStress(std::shared_ptr<rockseis::ModelElasti
                      // Top
                      Pml->Vzz_top[I3D_tb(ix,iy,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->A_ltf[iz]*df[I3D(ix,iy,iz-iz0)];
 
-                     Sxx[I3D(ix,iy,iz-iz0)] -= dt*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
-                     Syy[I3D(ix,iy,iz-iz0)] -= dt*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
                      Szz[I3D(ix,iy,iz-iz0)] -= dt*(Pml->Vzz_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf[iz]*df[I3D(ix,iy,iz-iz0)]);
                   }
                }
@@ -3874,8 +3864,6 @@ void WavesElastic3D<T>::backwardstepStress(std::shared_ptr<rockseis::ModelElasti
                   if(i >= iz0 && i < (iz0 + nz)){
                      //Bottom
                      Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->A_rbb[iz]*df[I3D(ix,iy,i-iz0)];
-                     Sxx[I3D(ix,iy,i-iz0)] -= dt*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
-                     Syy[I3D(ix,iy,i-iz0)] -= dt*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
                      Szz[I3D(ix,iy,i-iz0)] -= dt*(Pml->Vzz_bottom[I3D_tb(ix,iy,iz)] + Pml->C_rbb[iz]*df[I3D(ix,iy,i-iz0)]);
                   }
                }
@@ -5071,7 +5059,7 @@ void WavesElastic3D_DS<T>::forwardstepDisplacement(std::shared_ptr<rockseis::Mod
    T dt;
    dt = this->getDt();
    Rx = model->getRx();
-   Ry = model->getRx();
+   Ry = model->getRy();
    Rz = model->getRz();
    df = der->getDf();
 
@@ -7229,7 +7217,7 @@ void WavesViscoelastic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::Model
    T dt;
    dt = this->getDt();
    Rx = model->getRx();
-   Ry = model->getRx();
+   Ry = model->getRy();
    Rz = model->getRz();
    df = der->getDf();
 

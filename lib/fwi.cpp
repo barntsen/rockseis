@@ -5048,6 +5048,7 @@ void FwiElastic3D<T>::crossCorr(std::shared_ptr<WavesElastic3D<T>> waves_fw, std
    if(!vpgradset && !vsgradset && !rhogradset && !wavgradset) rs_error("FwiElastic3D<T>::crossCorr: No gradient set for computation.");
    int ix, iy, iz;
 
+   bool domdec = waves_bw->getDomdec();
    int pads = waves_fw->getLpml();
    int padr = waves_bw->getLpml();
    T* wsx = waves_fw->getVx();
@@ -5126,10 +5127,24 @@ void FwiElastic3D<T>::crossCorr(std::shared_ptr<WavesElastic3D<T>> waves_fw, std
    dy = waves_bw->getDy(); 
    dz = waves_bw->getDz(); 
 
-   int nxs = nx + 2*pads;
-   int nxr = nx + 2*padr;
-   int nys = ny + 2*pads;
-   int nyr = ny + 2*padr;
+   int nxs;
+   int nxr;
+   int nys;
+   int nyr;
+   // Check for domain decomposition
+   if(domdec){
+       nxs = nx;
+       nxr = nx;
+       nys = ny;
+       nyr = ny;
+       pads = 0;
+       padr = 0;
+   }else{
+       nxs = nx+2*pads;
+       nxr = nx+2*padr;
+       nys = ny+2*pads;
+       nyr = ny+2*padr;
+   }
 
    for (ix=1; ix<nx-1; ix++){
       for (iy=1; iy<ny-1; iy++){
@@ -5243,26 +5258,27 @@ void FwiElastic3D<T>::crossCorr(std::shared_ptr<WavesElastic3D<T>> waves_fw, std
             }
 
             if(rhogradset){
-               uderx = (0.5)*wrx[kr3D(ix+padr, iy+padr, iz+padr)]*Rx[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxx[kr3D(ix+padr+1, iy+padr, iz+padr)] - fsxx[kr3D(ix+padr, iy+padr, iz+padr)])/dx;
-               uderx += (0.5)*wrx[kr3D(ix+padr-1, iy+padr, iz+padr)]*Rx[kr3D(ix+padr-1, iy+padr, iz+padr)]*(fsxx[kr3D(ix+padr, iy+padr, iz+padr)] - fsxx[kr3D(ix+padr-1, iy+padr, iz+padr)])/dx;
-               uderx += (0.5)*wrx[kr3D(ix+padr, iy+padr, iz+padr)]*Rx[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxy[kr3D(ix+padr, iy+padr, iz+padr)] - fsxy[kr3D(ix+padr, iy+padr-1, iz+padr)])/dy;
-               uderx += (0.5)*wrx[kr3D(ix+padr-1, iy+padr, iz+padr)]*Rx[kr3D(ix+padr-1, iy+padr, iz+padr)]*(fsxy[kr3D(ix+padr-1, iy+padr, iz+padr)] - fsxy[kr3D(ix+padr-1, iy+padr-1, iz+padr)])/dy;
-               uderx += (0.5)*wrx[kr3D(ix+padr, iy+padr, iz+padr)]*Rx[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxz[kr3D(ix+padr, iy+padr, iz+padr)] - fsxz[kr3D(ix+padr, iy+padr, iz+padr-1)])/dz;
-               uderx += (0.5)*wrx[kr3D(ix+padr-1, iy+padr, iz+padr)]*Rx[kr3D(ix+padr-1, iy+padr, iz+padr)]*(fsxz[kr3D(ix+padr-1, iy+padr, iz+padr)] - fsxz[kr3D(ix+padr-1, iy+padr, iz+padr-1)])/dz;
+               uderx = (0.5)*wrx[kr3D(ix+padr, iy+padr, iz+padr)]*Rx[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxx[ks3D(ix+pads+1, iy+pads, iz+pads)] - fsxx[ks3D(ix+pads, iy+pads, iz+pads)])/dx;
+               uderx += (0.5)*wrx[kr3D(ix+padr-1, iy+padr, iz+padr)]*Rx[kr3D(ix+padr-1, iy+padr, iz+padr)]*(fsxx[ks3D(ix+pads, iy+pads, iz+pads)] - fsxx[ks3D(ix+pads-1, iy+pads, iz+pads)])/dx;
+               uderx += (0.5)*wrx[kr3D(ix+padr, iy+padr, iz+padr)]*Rx[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxy[ks3D(ix+pads, iy+pads, iz+pads)] - fsxy[ks3D(ix+pads, iy+pads-1, iz+pads)])/dy;
+               uderx += (0.5)*wrx[kr3D(ix+padr-1, iy+padr, iz+padr)]*Rx[kr3D(ix+padr-1, iy+padr, iz+padr)]*
+                   (fsxy[ks3D(ix+pads-1, iy+pads, iz+pads)] - fsxy[ks3D(ix+pads-1, iy+pads-1, iz+pads)])/dy;
+               uderx += (0.5)*wrx[kr3D(ix+padr, iy+padr, iz+padr)]*Rx[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxz[ks3D(ix+pads, iy+pads, iz+pads)] - fsxz[ks3D(ix+pads, iy+pads, iz+pads-1)])/dz;
+               uderx += (0.5)*wrx[kr3D(ix+padr-1, iy+padr, iz+padr)]*Rx[kr3D(ix+padr-1, iy+padr, iz+padr)]*(fsxz[ks3D(ix+pads-1, iy+pads, iz+pads)] - fsxz[ks3D(ix+pads-1, iy+pads, iz+pads-1)])/dz;
 
-               udery = (0.5)*wry[kr3D(ix+padr, iy+padr, iz+padr)]*Ry[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxy[kr3D(ix+padr, iy+padr, iz+padr)] - fsxy[kr3D(ix+padr-1, iy+padr, iz+padr)])/dx;
-               udery += (0.5)*wry[kr3D(ix+padr, iy+padr-1, iz+padr)]*Ry[kr3D(ix+padr, iy+padr-1, iz+padr)]*(fsxy[kr3D(ix+padr, iy+padr-1, iz+padr)] - fsxy[kr3D(ix+padr-1, iy+padr-1, iz+padr)])/dx;
-               udery += (0.5)*wry[kr3D(ix+padr, iy+padr, iz+padr)]*Ry[kr3D(ix+padr, iy+padr, iz+padr)]*(fsyy[kr3D(ix+padr, iy+padr+1, iz+padr)] - fsyy[kr3D(ix+padr, iy+padr, iz+padr)])/dy;
-               udery += (0.5)*wry[kr3D(ix+padr, iy+padr-1, iz+padr)]*Ry[kr3D(ix+padr, iy+padr-1, iz+padr)]*(fsyy[kr3D(ix+padr, iy+padr, iz+padr)] - fsyy[kr3D(ix+padr, iy+padr-1, iz+padr)])/dy;
-               udery += (0.5)*wry[kr3D(ix+padr, iy+padr, iz+padr)]*Ry[kr3D(ix+padr, iy+padr, iz+padr)]*(fsyz[kr3D(ix+padr, iy+padr, iz+padr)] - fsyz[kr3D(ix+padr, iy+padr, iz+padr-1)])/dz;
-               udery += (0.5)*wry[kr3D(ix+padr, iy+padr-1, iz+padr)]*Ry[kr3D(ix+padr, iy+padr-1, iz+padr)]*(fsyz[kr3D(ix+padr, iy+padr-1, iz+padr)] - fsyz[kr3D(ix+padr, iy+padr-1, iz+padr-1)])/dz;
+               udery = (0.5)*wry[kr3D(ix+padr, iy+padr, iz+padr)]*Ry[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxy[ks3D(ix+pads, iy+pads, iz+pads)] - fsxy[ks3D(ix+pads-1, iy+pads, iz+pads)])/dx;
+               udery += (0.5)*wry[kr3D(ix+padr, iy+padr-1, iz+padr)]*Ry[kr3D(ix+padr, iy+padr-1, iz+padr)]*(fsxy[ks3D(ix+pads, iy+pads-1, iz+pads)] - fsxy[ks3D(ix+pads-1, iy+pads-1, iz+pads)])/dx;
+               udery += (0.5)*wry[kr3D(ix+padr, iy+padr, iz+padr)]*Ry[kr3D(ix+padr, iy+padr, iz+padr)]*(fsyy[ks3D(ix+pads, iy+pads+1, iz+pads)] - fsyy[ks3D(ix+pads, iy+pads, iz+pads)])/dy;
+               udery += (0.5)*wry[kr3D(ix+padr, iy+padr-1, iz+padr)]*Ry[kr3D(ix+padr, iy+padr-1, iz+padr)]*(fsyy[ks3D(ix+pads, iy+pads, iz+pads)] - fsyy[ks3D(ix+pads, iy+pads-1, iz+pads)])/dy;
+               udery += (0.5)*wry[kr3D(ix+padr, iy+padr, iz+padr)]*Ry[kr3D(ix+padr, iy+padr, iz+padr)]*(fsyz[ks3D(ix+pads, iy+pads, iz+pads)] - fsyz[ks3D(ix+pads, iy+pads, iz+pads-1)])/dz;
+               udery += (0.5)*wry[kr3D(ix+padr, iy+padr-1, iz+padr)]*Ry[kr3D(ix+padr, iy+padr-1, iz+padr)]*(fsyz[ks3D(ix+pads, iy+pads-1, iz+pads)] - fsyz[ks3D(ix+pads, iy+pads-1, iz+pads-1)])/dz;
 
-               uderz = (0.5)*wrz[kr3D(ix+padr, iy+padr, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxz[kr3D(ix+padr, iy+padr, iz+padr)] - fsxz[kr3D(ix+padr-1, iy+padr, iz+padr)])/dx;
-               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr-1, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr-1)]*(fsxz[kr3D(ix+padr, iy+padr, iz+padr-1)] - fsxz[kr3D(ix+padr-1, iy+padr, iz+padr-1)])/dx;
-               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr)]*(fsyz[kr3D(ix+padr, iy+padr, iz+padr)] - fsyz[kr3D(ix+padr, iy+padr-1, iz+padr)])/dy;
-               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr-1, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr-1)]*(fsyz[kr3D(ix+padr, iy+padr, iz+padr-1)] - fsyz[kr3D(ix+padr, iy+padr-1, iz+padr-1)])/dy;
-               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr)]*(fszz[kr3D(ix+padr, iy+padr, iz+padr+1)] - fszz[kr3D(ix+padr, iy+padr, iz+padr)])/dz;
-               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr-1, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr-1)]*(fszz[kr3D(ix+padr, iy+padr, iz+padr)] - fszz[kr3D(ix+padr, iy+padr, iz+padr-1)])/dz;
+               uderz = (0.5)*wrz[kr3D(ix+padr, iy+padr, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr)]*(fsxz[ks3D(ix+pads, iy+pads, iz+pads)] - fsxz[ks3D(ix+pads-1, iy+pads, iz+pads)])/dx;
+               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr-1, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr-1)]*(fsxz[ks3D(ix+pads, iy+pads, iz+pads-1)] - fsxz[ks3D(ix+pads-1, iy+pads, iz+pads-1)])/dx;
+               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr)]*(fsyz[ks3D(ix+pads, iy+pads, iz+pads)] - fsyz[ks3D(ix+pads, iy+pads-1, iz+pads)])/dy;
+               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr-1, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr-1)]*(fsyz[ks3D(ix+pads, iy+pads, iz+pads-1)] - fsyz[ks3D(ix+pads, iy+pads-1, iz+pads-1)])/dy;
+               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr)]*(fszz[ks3D(ix+pads, iy+pads, iz+pads+1)] - fszz[ks3D(ix+pads, iy+pads, iz+pads)])/dz;
+               uderz += (0.5)*wrz[kr3D(ix+padr, iy+padr-1, iz+padr)]*Rz[kr3D(ix+padr, iy+padr, iz+padr-1)]*(fszz[ks3D(ix+pads, iy+pads, iz+pads)] - fszz[ks3D(ix+pads, iy+pads, iz+pads-1)])/dz;
 
                rhograddata[ki3D(ix,iy,iz)] -= (uderx + udery + uderz);
             }

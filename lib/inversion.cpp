@@ -5016,6 +5016,9 @@ void InversionElastic3D<T>::runGrad() {
       /* Slave */
       std::shared_ptr<rockseis::FwiElastic3D<T>> fwi;
       while(1) {
+         if(!mpi->ifActive()){
+            break;
+         }
          workModeling_t work = mpi->receiveWork();
 
          if(work.MPItag == MPI_TAG_DIE) {
