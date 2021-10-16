@@ -42,7 +42,7 @@ void evaluate(rockseis::OptInstancePtr instance)
     wva->applyMute();
 
     // Project gradient to B-spline 
-    if(wva->getParamtype() == PAR_BSPLINE)
+    if(wva->getParamtype() == PAR_BSPLINE || wva->getParamtype() == PAR_AVG)
     {
         wva->writeLog("Projecting gradient in B-spline grid");
         task = RUN_BS_PROJ;
@@ -238,7 +238,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("kvp", &kvp) == INPARSE_ERR) status = true;
     if(Inpar->getPar("paramtype", &_paramtype) == INPARSE_ERR) status = true;
     rockseis::rs_paramtype paramtype = static_cast<rockseis::rs_paramtype>(_paramtype);
-    if(paramtype == PAR_BSPLINE){
+    if(paramtype == PAR_BSPLINE || paramtype == PAR_AVG){
         if(Inpar->getPar("dtx", &dtx) == INPARSE_ERR) status = true;
         if(Inpar->getPar("dtz", &dtz) == INPARSE_ERR) status = true;
     }

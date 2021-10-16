@@ -83,7 +83,7 @@
 namespace rockseis {
 
 // =============== ENUMS =============== //
-typedef enum {PAR_GRID, PAR_BSPLINE, PAR_1D} rs_paramtype; ///< Type of parameterisation
+typedef enum {PAR_GRID, PAR_BSPLINE, PAR_1D, PAR_AVG} rs_paramtype; ///< Type of parameterisation
 
 // ##### KDMVA CLASS
 template<typename T>

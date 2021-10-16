@@ -246,8 +246,8 @@ void MvaAcoustic2D<T>::insertAdjointsource(std::shared_ptr<WavesAcoustic2D<T>> w
     T* wr = waves_bw->getP();
     for (ix=0; ix<nx; ix++){
         for (iz=0; iz<nz; iz++){
-            ws[kw2D(ix+padw,iz+padw)] += dt*dt*L[kw2D(ix+padw,iz+padw)]*adjsrc_fw[km2D(ix, iz)];
-            wr[kw2D(ix+padw,iz+padw)] += dt*dt*L[kw2D(ix+padw,iz+padw)]*adjsrc_bw[km2D(ix, iz)];
+            ws[kw2D(ix+padw,iz+padw)] += dt*L[kw2D(ix+padw,iz+padw)]*adjsrc_fw[km2D(ix, iz)];
+            wr[kw2D(ix+padw,iz+padw)] += dt*L[kw2D(ix+padw,iz+padw)]*adjsrc_bw[km2D(ix, iz)];
 
         }
 
@@ -263,7 +263,6 @@ void MvaAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
     int ix, iz;
     T *vpgraddata = vpgrad->getImagedata();
     T mrxx, mrzz;
-    T L;
     T vpscale;
     int nx = vpgrad->getNx();
     int nz = vpgrad->getNz();
@@ -274,11 +273,10 @@ void MvaAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
     for (ix=1; ix<nx-1; ix++){
         {
             for (iz=1; iz<nz-1; iz++){
-                L = Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)];
-                vpscale = -2.0/(Rho[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)]*Vp[km2D(ix, iz)]);
+                vpscale = -2.0/(Vp[km2D(ix, iz)]);
                 mrxx = (wrx[kr2D(ix+padr, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr)])/dx;
                 mrzz = (wrz[kr2D(ix+padr, iz+padr)] - wrz[kr2D(ix+padr, iz+padr-1)])/dz;
-                vpgraddata[km2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*L*(mrxx + mrzz + adjsrc[km2D(ix,iz)]);
+                vpgraddata[km2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*(mrxx + mrzz + adjsrc[km2D(ix,iz)]);
             }
         }	
     }

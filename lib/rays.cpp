@@ -635,20 +635,20 @@ void RaysAcoustic2D<T>::insertImageresiduals(T *res){
     }
 
     //Left and right padding
-    for(ix=0; ix < lpml; ix++){
-        for(iz=0; iz < nz_pml; iz++){
-            adjsource[Iray(ix,iz)]=adjsource[Iray(lpml,iz)];
-            adjsource[Iray(nx_pml-lpml+ix,iz)]=adjsource[Iray(nx_pml-lpml-1,iz)];
-        }
-    }
+    //for(ix=0; ix < lpml; ix++){
+      //  for(iz=0; iz < nz_pml; iz++){
+        //    adjsource[Iray(ix,iz)]=adjsource[Iray(lpml,iz)];
+          //  adjsource[Iray(nx_pml-lpml+ix,iz)]=adjsource[Iray(nx_pml-lpml-1,iz)];
+      //  }
+   // }
 
     //Top and bottom padding
-    for(ix=0; ix<nx_pml; ix++){
-        for(iz=0; iz<lpml; iz++){
-            adjsource[Iray(ix,iz)]=adjsource[Iray(ix,lpml)];
-            adjsource[Iray(ix,nz_pml-lpml+iz)]=adjsource[Iray(ix,nz_pml-lpml-1)];
-        }
-    }
+   // for(ix=0; ix<nx_pml; ix++){
+     //   for(iz=0; iz<lpml; iz++){
+       //     adjsource[Iray(ix,iz)]=adjsource[Iray(ix,lpml)];
+         //   adjsource[Iray(ix,nz_pml-lpml+iz)]=adjsource[Iray(ix,nz_pml-lpml-1)];
+      //  }
+  //  }
 }
 
 template<typename T>

@@ -42,7 +42,7 @@ void evaluate(rockseis::OptInstancePtr instance)
     kdmva->applyMute();
 
     // Project gradient to B-spline 
-    if(kdmva->getParamtype() == PAR_BSPLINE)
+    if(kdmva->getParamtype() == PAR_BSPLINE || kdmva->getParamtype() == PAR_AVG)
     {
         kdmva->writeLog("Projecting gradient in B-spline grid");
         task = RUN_BS_PROJ;
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(nhz = "1"; # Subsurface offsets in z direction);
             PRINT_DOC();
             PRINT_DOC(#Parameterisation);
-            PRINT_DOC(paramtype = "1";  # 0- grid; 1- B-spline;);
+            PRINT_DOC(paramtype = "1";  # 0- grid; 1- B-spline; 3- Average);
             PRINT_DOC(dtx = "25.0"; # knot sampling in B-spline);
             PRINT_DOC(dtz = "25.0"; # knot sampling in B-spline);
             PRINT_DOC();
@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("paramtype", &_paramtype) == INPARSE_ERR) status = true;
     if(Inpar->getPar("outputhess", &outputhess) == INPARSE_ERR) status = true;
     rockseis::rs_paramtype paramtype = static_cast<rockseis::rs_paramtype>(_paramtype);
-    if(paramtype == PAR_BSPLINE){
+    if(paramtype == PAR_BSPLINE || paramtype == PAR_AVG){
         if(Inpar->getPar("dtx", &dtx) == INPARSE_ERR) status = true;
         if(Inpar->getPar("dtz", &dtz) == INPARSE_ERR) status = true;
     }

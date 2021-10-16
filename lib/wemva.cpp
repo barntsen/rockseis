@@ -565,9 +565,24 @@ void WemvaAcoustic2D<T>::runBsproj() {
 				spline->bisp(); // Evaluate spline for this coefficient
                 wrk = spline->getMod();
 				vpsum = 0.0;
-				for(long int i=0; i<grad->getNx()*grad->getNz(); i++){
-						vpsum += wrk[i]*vpgrad[i];
-				}
+                                if(this->getParamtype() == PAR_AVG){
+                                   Index I2D(grad->getNx(), grad->getNz());
+                                   T vpint;
+                                   for(int ix=0; ix< grad->getNx(); ix++){
+                                      for(int iz=0; iz< grad->getNz(); iz++){
+                                         vpint = (vpgrad[I2D(ix,iz)]*(iz+1));
+                                         if((iz+1) < grad->getNz()){
+                                            vpint -= (vpgrad[I2D(ix,iz+1)]*(iz+1));
+                                         }
+                                         vpsum += wrk[I2D(ix,iz)]*vpint;
+                                      }
+                                   }
+                                }else{
+
+                                   for(long int i=0; i<grad->getNx()*grad->getNz(); i++){
+                                      vpsum += wrk[i]*vpgrad[i];
+                                   }
+                                }
 				vpproj[work.id]=vpsum;
 				c[work.id]=0.0; // Reset coefficient to 0
 			}
@@ -619,6 +634,10 @@ int WemvaAcoustic2D<T>::setInitial(double *x, std::string vpfile, std::string rh
             N = (model_in->getGeom())->getNtot();
             break;
         case PAR_BSPLINE:
+            spline = std::make_shared<rockseis::Bspl2D<T>>(model_in->getNx(), model_in->getNz(), model_in->getDx(), model_in->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+            N=spline->getNc();
+            break;
+        case PAR_AVG:
             spline = std::make_shared<rockseis::Bspl2D<T>>(model_in->getNx(), model_in->getNz(), model_in->getDx(), model_in->getDz(), this->getDtx(), this->getDtz(), 3, 3);
             N=spline->getNc();
             break;
@@ -682,6 +701,12 @@ void WemvaAcoustic2D<T>::saveLinesearch(double *x)
     int i;
     int N, Ns, Nmod;
 
+    int Nz,Nx,iz,ix;
+    Nz = lsmodel->getNz();
+    Nx = lsmodel->getNx();
+    Index I2D(Nx,Nz); 
+    T vint;
+
     // If mute
     if(!Modelmutefile.empty()){
         mute = std::make_shared <rockseis::ModelAcoustic2D<T>>(Modelmutefile, Modelmutefile, 1 ,0);
@@ -700,6 +725,36 @@ void WemvaAcoustic2D<T>::saveLinesearch(double *x)
     }
 
     switch (this->getParamtype()){
+       case PAR_AVG:
+          Nmod = (lsmodel->getGeom())->getNtot();
+          spline = std::make_shared<rockseis::Bspl2D<T>>(model0->getNx(), model0->getNz(), model0->getDx(), model0->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+          N = spline->getNc();
+          c = spline->getSpline();
+          for(i=0; i< N; i++)
+          {
+             c[i] = x[i];
+          }
+          spline->bisp();
+          mod = spline->getMod();
+          for(ix=0; ix< Nx; ix++){
+             for(iz=0; iz< Nz; iz++){
+                if(iz == 0){
+                   vint = mod[I2D(ix,iz)];
+                }else{
+                   vint = (iz+1)*mod[I2D(ix,iz)] - iz*mod[I2D(ix,iz-1)];
+                }
+                vpls[I2D(ix,iz)] = vp0[I2D(ix,iz)] + vint*vpmutedata[I2D(ix,iz)]*kvp;
+                rhols[I2D(ix,iz)] = rho0[I2D(ix,iz)];
+             }
+          }
+          lsmodel->writeModel();
+          Ns = lssource->getNt();
+          for(i=0; i< Ns; i++)
+          {
+             wavls[i] = wav0[i];
+          }
+          lssource->write();
+          break;
         case PAR_GRID:
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
@@ -1193,6 +1248,22 @@ void WemvaAcoustic2D<T>::readGrad(double *g)
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
     std::shared_ptr<rockseis::File> Fgrad;
     switch (this->getParamtype()){
+       case PAR_AVG:
+          spline = std::make_shared<rockseis::Bspl2D<T>>(modelgrad->getNx(), modelgrad->getNz(), modelgrad->getDx(), modelgrad->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+          N = spline->getNc();
+          g_in = (float *) calloc(2*N, sizeof(float));
+          Fgrad = std::make_shared<rockseis::File>();
+          Fgrad->input(VPPROJGRADFILE);
+          Fgrad->read(&g_in[0], N, 0);
+          Fgrad->close();
+          for(i=0; i< N; i++)
+          {
+             g[i] = (g_in[i])*kvp;
+          }
+          // Free temporary array
+          free(g_in);
+          break;
+
         case PAR_GRID:
             modelgrad->readModel();
             N = (modelgrad->getGeom())->getNtot();
@@ -1309,6 +1380,18 @@ void WemvaAcoustic2D<T>::computeRegularisation(double *x)
     model->setRfile(VPREGGRADFILE);
     vpgrad = model->getVp();
     switch (this->getParamtype()){
+       case PAR_AVG:
+            N = (model->getGeom())->getNtot();
+            for(i=0; i< N; i++)
+            {
+                dvpdx[i] = 0.0;
+            }
+            der->ddz_fw(x);
+            for(i=0; i< N; i++)
+            {
+                dvpdz[i] = 0.0;
+            }
+            break;
         case PAR_GRID:
             N = (model->getGeom())->getNtot();
             der->ddx_fw(x);

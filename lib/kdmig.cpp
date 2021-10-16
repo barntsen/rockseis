@@ -333,6 +333,13 @@ void KdmigAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelEikonal2D<T>> 
             }else{
                 grad[Igrad(i,j)] += -1.0*lam[Ilam(i+lpml,j+lpml)]/CUB(vp[Igrad(i,j)]);
             }
+
+            if(j == 0 || j == nz-1){
+                grad[Igrad(i,j)] = 0.0;
+            }
+            if(i == 0 || i == nx-1){
+                grad[Igrad(i,j)] = 0.0;
+            }
         }
     }
 }
@@ -513,7 +520,7 @@ void KdmigAcoustic2D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::sh
                                 wsr = data[it0];
                                 wsi = data[it1];
                                 omega = (TTsum - it0*dt + ot)/dt;
-							    adjsrc_sou[km2D(ix,iz)] += imagedata[ki2D(ix+hx,iz+hz,ihx,ihz)]*((1.0-omega)*wsr + omega*wsi);
+                                adjsrc_sou[km2D(ix,iz)] += imagedata[ki2D(ix+hx,iz+hz,ihx,ihz)]*((1.0-omega)*wsr + omega*wsi);
                             }
 
                             // Receiver side residual
