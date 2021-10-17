@@ -492,6 +492,10 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
                 lmodel->Expand();
 
+                // Map coordinates to model
+                shot2D->makeMap(lmodel->getGeom(), SMAP);
+                shot2D->makeMap(lmodel->getGeom(), GMAP);
+
                 // Make image class
                 pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile + "-" + std::to_string(work.id), lmodel, this->getNhx(), this->getNhz());
 
@@ -501,6 +505,9 @@ void KdmvaAcoustic2D<T>::runGrad() {
 
                 // Create imaging class
                 kdmig = std::make_shared<rockseis::KdmigAcoustic2D<T>>(lmodel, ttable, shot2D, pimage);
+
+                // Set traveltime parameters
+                kdmig->setIncore(true);
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(1);

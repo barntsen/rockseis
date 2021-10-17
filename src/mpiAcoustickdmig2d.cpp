@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
    }
    bool status;
    /* General input parameters */
-   int lpml = 0;
+   int lpml = 3;
    float apertx;
    int nhx=1, nhz=1;
    int freqinc;

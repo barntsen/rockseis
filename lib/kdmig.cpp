@@ -678,7 +678,7 @@ void KdmigAcoustic2D<T>::demigShot_td(std::shared_ptr<RaysAcoustic2D<T>> rays_so
                for (ix=0; ix<nx; ix++){
                         if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
                   {
-                      TTsum = TT_rec[kt2D(ix, iz)] + TT_sou[kt2D(ix-2*hx, iz-2*hz)] - ot;
+                     TTsum = TT_sou[kt2D(ix-2*hx+pad, iz-2*hz+pad)] + TT_rec[kt2D(ix+pad, iz+pad)] - ot;
                      it0 = (int) ((TTsum -ot)/dt);
                      it1 = it0 + 1;
 

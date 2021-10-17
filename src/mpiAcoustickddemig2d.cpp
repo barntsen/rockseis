@@ -43,9 +43,6 @@ int main(int argc, char** argv) {
          PRINT_DOC(maxfreq = "100.0"; # Maximum frequency to migrate);
          PRINT_DOC(radius = "50.0"; # Radius of traveltime interpolation);
          PRINT_DOC();
-         PRINT_DOC(# Booleans);
-         PRINT_DOC(Gather = "false"; # If surface gathers are to be output);
-         PRINT_DOC();
          PRINT_DOC(# Files);
          PRINT_DOC(Vp = "Vp2d.rss";);
          PRINT_DOC(Wavelet = "Wav2d.rss";);
@@ -59,7 +56,7 @@ int main(int argc, char** argv) {
    }
    bool status;
    /* General input parameters */
-   int lpml = 0;
+   int lpml = 3;
    float apertx;
    int freqinc;
    float minfreq;
@@ -182,8 +179,8 @@ int main(int argc, char** argv) {
             lmodel->Expand();
 
             // Map coordinates to model
-            shot2D->makeMap(lmodel->getGeom(), SMAP, lpml, lpml);
-            shot2D->makeMap(lmodel->getGeom(), GMAP, lpml, lpml);
+            shot2D->makeMap(lmodel->getGeom(), SMAP);
+            shot2D->makeMap(lmodel->getGeom(), GMAP);
 
             // Make image class
             pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile);
