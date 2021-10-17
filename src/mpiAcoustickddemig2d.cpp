@@ -42,18 +42,17 @@ int main(int argc, char** argv) {
          PRINT_DOC(minfreq = "100.0"; # Minimum frequency to migrate);
          PRINT_DOC(maxfreq = "100.0"; # Maximum frequency to migrate);
          PRINT_DOC(radius = "50.0"; # Radius of traveltime interpolation);
-         PRINT_DOC(nhx = "1";);
-         PRINT_DOC(nhz = "1";);
          PRINT_DOC();
          PRINT_DOC(# Booleans);
          PRINT_DOC(Gather = "false"; # If surface gathers are to be output);
          PRINT_DOC();
          PRINT_DOC(# Files);
          PRINT_DOC(Vp = "Vp2d.rss";);
+         PRINT_DOC(Wavelet = "Wav2d.rss";);
          PRINT_DOC(Ttable = "Ttable2d.rss";);
+         PRINT_DOC(Survey = "2DSurvey.rss";);
          PRINT_DOC(Precordfile = "Pshots2d.rss";);
          PRINT_DOC(Pimagefile = "Pimage2d.rss";);
-         PRINT_DOC(Pgatherfile = "Pgather2d.rss";);
          PRINT_DOC();
       }
       exit(1);
@@ -62,7 +61,6 @@ int main(int argc, char** argv) {
    /* General input parameters */
    int lpml = 0;
    float apertx;
-   int nhx=1, nhz=1;
    int freqinc;
    float minfreq;
    float maxfreq;
@@ -71,13 +69,12 @@ int main(int argc, char** argv) {
    std::string Vpfile;
    std::string Ttablefile;
    std::string Pimagefile;
+   std::string Surveyfile;
+   std::string Waveletfile;
    std::string Precordfile;
    std::shared_ptr<rockseis::Data2D<float>> shot2D;
    std::shared_ptr<rockseis::Image2D<float>> pimage;
-   std::shared_ptr<rockseis::Image2D<float>> pimage_lstack;
-   bool Gather;
-   std::string Pgatherfile;
-   std::shared_ptr<rockseis::Data2D<float>> pgather;
+   std::shared_ptr<rockseis::Image2D<float>> lpimage;
    std::shared_ptr<rockseis::ModelEikonal2D<float>> lmodel;
 
    std::shared_ptr<rockseis::Ttable2D<float>> ttable;
@@ -100,13 +97,9 @@ int main(int argc, char** argv) {
    }
    if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Pimagefile", &Pimagefile) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("Survey", &Surveyfile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Precordfile", &Precordfile) == INPARSE_ERR) status = true;
-   if(Inpar->getPar("nhx", &nhx) == INPARSE_ERR) status = true;
-   if(Inpar->getPar("nhz", &nhz) == INPARSE_ERR) status = true;
-   if(Inpar->getPar("Gather", &Gather) == INPARSE_ERR) status = true;
-   if(Gather){
-      if(Inpar->getPar("Pgatherfile", &Pgatherfile) == INPARSE_ERR) status = true;
-   }
 
    if(status == true){
       rs_error("Program terminated due to input errors.");
@@ -114,10 +107,23 @@ int main(int argc, char** argv) {
 
    // Create a sort class
    std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
-   Sort->setDatafile(Precordfile);
+   Sort->setDatafile(Surveyfile);
 
    // Create a global model class
    std::shared_ptr<rockseis::ModelEikonal2D<float>> gmodel (new rockseis::ModelEikonal2D<float>(Vpfile, lpml));
+
+   // Create a data class for the source wavelet
+   std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Waveletfile));
+
+   // Create an interpolation class
+   std::shared_ptr<rockseis::Interp<float>> interp (new rockseis::Interp<float>(SINC));
+
+   // Compute record length in samples
+   size_t ntrec; 
+   float dtrec;
+   ntrec = source->getNt();
+   dtrec = source->getDt();
+
 
    // Test for problematic model sampling
    if(incore){
@@ -128,12 +134,15 @@ int main(int argc, char** argv) {
 
    if(mpi.getRank() == 0) {
       // Master
-      Sort->createShotmap(Precordfile); 
+      Sort->createShotmap(Surveyfile); 
       Sort->writeKeymap();
       Sort->writeSortmap();
 
       // Get number of shots
       size_t ngathers =  Sort->getNensemb();
+
+      // Create an empty data file
+      Sort->createEmptydataset(Precordfile, ntrec, dtrec, 0.0);
 
       // Create work queue
       for(long int i=0; i<ngathers; i++) {
@@ -144,39 +153,10 @@ int main(int argc, char** argv) {
 
       // Perform work in parallel
       mpi.performWork();
-
-      // Image gathers
-      if(Gather){
-         std::shared_ptr<rockseis::File> Fimg (new rockseis::File());
-         Fimg->input(Pimagefile + "-" + std::to_string(0));
-         pgather = std::make_shared<rockseis::Data2D<float>>(Fimg->getN(1),Fimg->getN(3),Fimg->getD(3),Fimg->getO(3));
-         pgather->setFile(Pgatherfile);
-         pgather->open("o");
-         for(long int i=0; i<ngathers; i++) {
-            pgather->putImage(Pimagefile + "-" + std::to_string(i));
-         }
-         pgather->close();
-         Fimg->close();
-      }
-
-      // Image
-      pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile, gmodel, nhx, nhz);
-      pimage->createEmpty();
-      for(long int i=1; i<mpi.getNrank(); i++) {
-         pimage->stackImage(Pimagefile + "-" + std::to_string(i));
-         remove_file(Pimagefile + "-" + std::to_string(i));
-      }
-
    }
    else {
       /* Slave */
       std::shared_ptr<rockseis::KdmigAcoustic2D<float>> kdmig;
-      pimage_lstack = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(mpi.getRank()), gmodel, nhx, nhz);
-      if(incore){
-          pimage_lstack->allocateImage();
-      }else{
-          pimage_lstack->createEmpty();
-      }
 
       while(1) {
          workModeling_t work = mpi.receiveWork();
@@ -189,9 +169,10 @@ int main(int argc, char** argv) {
             mpi.sendNoWork(0);
          }
          else {
-            // Do migration
+            // Do demigration
             Sort->readKeymap();
             Sort->readSortmap();
+            Sort->setDatafile(Precordfile);
 
             // Get the shot
             shot2D = Sort->get2DGather(work.id);
@@ -201,56 +182,51 @@ int main(int argc, char** argv) {
             lmodel->Expand();
 
             // Map coordinates to model
-            shot2D->makeMap(lmodel->getGeom(), SMAP);
-            shot2D->makeMap(lmodel->getGeom(), GMAP);
+            shot2D->makeMap(lmodel->getGeom(), SMAP, lpml, lpml);
+            shot2D->makeMap(lmodel->getGeom(), GMAP, lpml, lpml);
 
             // Make image class
-            pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
+            pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile);
+            lpimage = pimage->getLocal(shot2D, apertx, SMAP);
 
             if(!incore){
-               // Create traveltime table class
-               ttable = std::make_shared<rockseis::Ttable2D<float>>(Ttablefile);
-               ttable->allocTtable();
+                // Create traveltime table class
+                ttable = std::make_shared<rockseis::Ttable2D<float>>(Ttablefile);
+                ttable->allocTtable();
             }
 
             // Create imaging class
-            kdmig = std::make_shared<rockseis::KdmigAcoustic2D<float>>(lmodel, ttable, shot2D, pimage);
+            kdmig = std::make_shared<rockseis::KdmigAcoustic2D<float>>(lmodel, ttable, shot2D, lpimage);
 
             // Set traveltime parameters
             kdmig->setIncore(incore);
 
             // Set frequency decimation 
-            kdmig->setFreqinc(freqinc);
+            kdmig->setFreqinc(1);
 
             // Set minimum and maximum frequency to migrate
-            kdmig->setMinfreq(minfreq);
-            kdmig->setMaxfreq(maxfreq);
+            kdmig->setMinfreq(0.0);
+            kdmig->setMaxfreq(125.0);
 
             // Set radius of interpolation
             kdmig->setRadius(radius);
 
+
             // Set logfile
             //kdmig->setLogfile("log.txt-" + std::to_string(work.id));
 
-            // Run migration
-            kdmig->run();
+            // Run demigration
+            kdmig->run_demig();
 
-            // Stack image
-            if(incore){
-               pimage_lstack->stackImage(pimage);
-            }else{
-               // Output image
-               pimage->write();
-               pimage_lstack->stackImage(Pimagefile + "-tmp-" + std::to_string(work.id));
-               remove_file(Pimagefile + "-tmp-" + std::to_string(work.id));
-            }
-
-
+            shot2D->setFile(Precordfile);
+            //Sort->put2DGather(shot2D, work.id,(shot2D->getGeom())->getGmap());
+            Sort->put2DGather(shot2D, work.id);
 
             // Reset all classes
             shot2D.reset();
             lmodel.reset();
             pimage.reset();
+            lpimage.reset();
             kdmig.reset();
             if(!incore){
                ttable.reset();
@@ -260,10 +236,6 @@ int main(int argc, char** argv) {
             work.status = WORK_FINISHED;
             mpi.sendResult(work);		
          }
-      }
-      if(incore){
-          // Write out stack
-          pimage_lstack->write();
       }
    }
 }

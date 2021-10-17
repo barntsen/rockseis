@@ -221,8 +221,8 @@ void MvaAcoustic2D<T>::calcAdjointsource(T *adjsrc_fw, T* wsp, int pads, T *adjs
                     for (iz=0; iz<nz; iz++){
                         if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz))
                         {
-							adjsrc_fw[km2D(ix,iz)] += imagedata[ki2D(ix+hx,iz+hz,ihx,ihz)]*wsp[kr2D(ix+2*hx+padr, iz+2*hz+padr)];
-							adjsrc_bw[km2D(ix,iz)] += imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*wrp[ks2D(ix-2*hx+pads, iz-2*hz+pads)];
+							adjsrc_fw[km2D(ix,iz)] += imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*wsp[kr2D(ix-2*hx+padr, iz-2*hz+padr)];
+							adjsrc_bw[km2D(ix,iz)] += imagedata[ki2D(ix+hx,iz+hz,ihx,ihz)]*wrp[ks2D(ix+2*hx+pads, iz+2*hz+pads)];
 
                         }
 
@@ -483,18 +483,18 @@ int MvaAcoustic2D<T>::run_optimal(){
             waves_bw2->insertSource(model, dataP, GMAP, capo);
 
             // Inserting adjoint sources
-            wsp = waves_fw2->getP();
-            wrp = waves_bw2->getP();
-            this->calcAdjointsource(adjsrc_fw, wrp, waves_adj_fw->getLpml(), adjsrc_bw, wsp, waves_adj_bw->getLpml());
+            wsp = waves_fw1->getP();
+            wrp = waves_bw1->getP();
+            this->calcAdjointsource(adjsrc_fw, wsp, waves_adj_fw->getLpml(), adjsrc_bw, wrp, waves_adj_bw->getLpml());
             this->insertAdjointsource(waves_adj_fw, adjsrc_fw, waves_adj_bw, adjsrc_bw, model->getL());
 
             /* Do Crosscorrelation */
-            wsp = waves_fw1->getP();
+            wsp = waves_bw2->getP();
             wrp = waves_adj_fw->getP();
             wrx = waves_adj_fw->getVx(); 
             wrz = waves_adj_fw->getVz(); 
             crossCorr(wsp, waves_fw1->getLpml(), wrp, wrx, wrz, waves_adj_fw->getLpml(), model->getVp(), model->getR(), adjsrc_fw);
-            wsp = waves_bw1->getP();
+            wsp = waves_fw2->getP();
             wrp = waves_adj_bw->getP();
             wrx = waves_adj_bw->getVx(); 
             wrz = waves_adj_bw->getVz(); 

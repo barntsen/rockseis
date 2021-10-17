@@ -113,8 +113,12 @@ public:
     void crossCorr_td(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T* data, unsigned long nfs, T df, T ot, int pad);
     void calcAdjointsource(T *adj_sou, T *adj_rec, std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     void scaleGrad(std::shared_ptr<rockseis::ModelEikonal2D<T>> model, T *lam, T *grad);
+    void demigShot_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
+    void demigShot_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
+    void demigShot_td(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T* data, unsigned long nfs, T df, T ot, int pad);
     int run();
     int run_adj();
+    int run_demig();
 
     ~KdmigAcoustic2D();	///< Destructor
 
