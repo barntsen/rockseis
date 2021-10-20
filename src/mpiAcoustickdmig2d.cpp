@@ -145,6 +145,9 @@ int main(int argc, char** argv) {
       // Perform work in parallel
       mpi.performWork();
 
+      // Wait for all processes to have written their files
+      mpi.barrier();
+
       // Image gathers
       if(Gather){
          std::shared_ptr<rockseis::File> Fimg (new rockseis::File());
@@ -265,6 +268,9 @@ int main(int argc, char** argv) {
           // Write out stack
           pimage_lstack->write();
       }
+
+      // Synchronize with master
+      mpi.barrier();
    }
 }
 

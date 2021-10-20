@@ -431,6 +431,10 @@ void MPImodeling::checkResult(workResult_t result) {
    }
 }
 
+void MPImodeling::barrier() {
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
 
 // =============== DOMAIN DECOMPOSITION MPI CLASS =============== //
 MPIdomaindecomp::MPIdomaindecomp(): MPI() {

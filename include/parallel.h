@@ -106,6 +106,8 @@ class MPImodeling: public MPI {
       void sendResult(workModeling_t _work);			///< Send result to master
       void clearWork() { work.clear(); } ///< Clears all elements of work
 
+      void barrier(); ///< Synchronize all ranks in world
+
    private:
       // Variables
       MPI_Datatype MPIwork;					// MPI type for work
