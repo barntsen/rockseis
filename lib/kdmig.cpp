@@ -734,7 +734,7 @@ void KdmigAcoustic2D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::sh
                             TTsum = TT_sou[kt2D(ix, iz)] + TT_rec[kt2D(ix+2*hx, iz+2*hz)] - ot;
                             it0 = (int) ((TTsum -ot)/dt);
                             it1 = it0 + 1;
-                            if(it0 > 0 && it1 < nt){
+                            if(it0 > 0 && it1 < nt-1){
                                 wsr = data[it0];
                                 wsi = data[it1];
                                 omega = (TTsum - it0*dt + ot)/dt;
@@ -745,7 +745,7 @@ void KdmigAcoustic2D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::sh
                             TTsum = TT_sou[kt2D(ix-2*hx, iz-2*hz)] + TT_rec[kt2D(ix, iz)] - ot;
                             it0 = (int) ((TTsum -ot)/dt);
                             it1 = it0 + 1;
-                            if(it0 > 0 && it1 < nt){
+                            if(it0 > 0 && it1 < nt-1){
                                 wsr = data[it0];
                                 wsi = data[it1];
                                 omega = (TTsum - it0*dt + ot)/dt;
