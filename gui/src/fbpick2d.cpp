@@ -36,6 +36,7 @@ wxDEFINE_EVENT(SaveEvent, wxCommandEvent);
 wxDEFINE_EVENT(LoadEvent, wxCommandEvent);
 wxDEFINE_EVENT(Crosshair, wxCommandEvent);
 wxDEFINE_EVENT(MuteEvent, wxCommandEvent);
+wxDEFINE_EVENT(ZoomEvent, wxCommandEvent);
 
 // Class implementation of the app
 bool MyApp::OnInit()
@@ -146,7 +147,7 @@ void MyApp::readGath(wxCommandEvent& event)
     frame->setN2(gather2d->getNt());
     frame->setImagedata(gather2d->getData());
     frame->ComputeClip();
-    frame->setZoom(frame->getO1(), (frame->getN1()-1)*frame->getD1() + frame->getO1(), frame->getO2(), (frame->getN2()-1)*frame->getD2() + frame->getO2(), 0, frame->getN1(), 0, frame->getN2());
+    frame->setZoomdata(frame->getO1(), (frame->getN1()-1)*frame->getD1() + frame->getO1(), frame->getO2(), (frame->getN2()-1)*frame->getD2() + frame->getO2(), 0, frame->getN1(), 0, frame->getN2());
     frame->LoadImage(0, gather2d->getNtrace(), 0, gather2d->getNt());
     frame->setStatusbar(ix, 0., 0., 0.); 
     frame->Refresh();

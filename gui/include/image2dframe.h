@@ -78,7 +78,8 @@ class Image2dframe: public wxFrame
         float getD2() { return d2; }
         float getO2() { return o2; }
         void setImagedata (float *data) { imagedata = data; }
-        void setZoom(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny);
+        void setZoomdata(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny);
+        Zoom *getZoom() {return zoom; }
         std::vector<Picks*> *getPicks() { return &picks; }
 
         float *getCrosshair_pt() { return &crosshair_pt[0]; }
@@ -208,5 +209,6 @@ wxDECLARE_EVENT(SaveEvent, wxCommandEvent);
 wxDECLARE_EVENT(LoadEvent, wxCommandEvent);
 wxDECLARE_EVENT(Crosshair, wxCommandEvent);
 wxDECLARE_EVENT(MuteEvent, wxCommandEvent);
+wxDECLARE_EVENT(ZoomEvent, wxCommandEvent);
 
 #endif

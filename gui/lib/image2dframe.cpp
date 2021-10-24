@@ -495,6 +495,14 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
         }
         zoom->Setzooming(false);
         this->LoadImage(zoom->Getix0(), zoom->Getnx(), zoom->Getiy0(), zoom->Getny());
+
+        // Synchronizing Zoom
+        wxCommandEvent parevent(ZoomEvent, GetId());
+        parevent.SetEventObject(this);
+        parevent.SetClientData((void*) this->getZoom());
+        // Send event to App
+        ProcessWindowEvent(parevent);
+
         Refresh();
     }
 }
@@ -931,7 +939,7 @@ void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
         }
 }
 
-void Image2dframe::setZoom(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny)
+void Image2dframe::setZoomdata(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny)
 {
             zoom->Setx0(o1);
             zoom->Setix0(ix0);
