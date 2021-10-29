@@ -78,7 +78,8 @@ class Image2dframe: public wxFrame
         float getD2() { return d2; }
         float getO2() { return o2; }
         void setImagedata (float *data) { imagedata = data; }
-        void setZoom(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny);
+        void setZoomdata(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny);
+        Zoom *getZoom() {return zoom; }
         std::vector<Picks*> *getPicks() { return &picks; }
 
         float *getCrosshair_pt() { return &crosshair_pt[0]; }
@@ -86,52 +87,52 @@ class Image2dframe: public wxFrame
         void createPicks();
         void createPicks(int dir, long n, float d, float o);
 
-		//(*Declarations(Image2dframe)
-		wxPanel* Imagewindow;
-		wxStatusBar* StatusBar1;
-		wxPanel* LeftCorner;
-		wxPanel* Zaxis;
-		wxPanel* Xaxis;
-		wxPanel* RightCorner;
+        //(*Declarations(Image2dframe)
+        wxPanel* Imagewindow;
+        wxStatusBar* StatusBar1;
+        wxPanel* LeftCorner;
+        wxPanel* Zaxis;
+        wxPanel* Xaxis;
+        wxPanel* RightCorner;
 
-		wxToolBar* ToolBar1;
-		wxToolBarToolBase* ToolBarItem1;
-		wxToolBarToolBase* ToolBarItem2;
-		wxToolBarToolBase* ToolBarItem3;
-		wxToolBarToolBase* ToolBarItem4;
-		wxToolBarToolBase* ToolBarItem5;
-		wxToolBarToolBase* ToolBarItem6;
-		wxToolBarToolBase* ToolBarItem7;
+        wxToolBar* ToolBar1;
+        wxToolBarToolBase* ToolBarItem1;
+        wxToolBarToolBase* ToolBarItem2;
+        wxToolBarToolBase* ToolBarItem3;
+        wxToolBarToolBase* ToolBarItem4;
+        wxToolBarToolBase* ToolBarItem5;
+        wxToolBarToolBase* ToolBarItem6;
+        wxToolBarToolBase* ToolBarItem7;
 
 
-		wxMenuBar* MenuBar;
-		wxMenu* Menu1;
-		wxMenu* Menu2;
-		wxMenuItem* MenuItem1;
-		wxMenuItem* MenuItem2;
-		wxMenuItem* MenuItem3;
-		wxMenuItem* MenuItem4;
-		wxMenuItem* MenuItem5;
-		wxMenuItem* MenuItem6;
-		//*)
+        wxMenuBar* MenuBar;
+        wxMenu* Menu1;
+        wxMenu* Menu2;
+        wxMenuItem* MenuItem1;
+        wxMenuItem* MenuItem2;
+        wxMenuItem* MenuItem3;
+        wxMenuItem* MenuItem4;
+        wxMenuItem* MenuItem5;
+        wxMenuItem* MenuItem6;
+        //*)
 
-	protected:
+        protected:
 
-		//(*Identifiers(Image2dframe)
-		static const long ID_PANEL1;
-		static const long ID_PANEL2;
-		static const long ID_PANEL3;
-		static const long ID_PANEL4;
-		static const long ID_IMAGEWINDOW1;
-		static const long ID_STATUSBAR1;
-		static const long idToolNext;
-		static const long idToolcmpint;
-		static const long idToolPrev;
-		static const long idToolpick;
-		static const long idToolzoom;
-		static const long idToolSave;
-		static const long idToolLoad;
-		static const long ID_TOOLBAR1;
+        //(*Identifiers(Image2dframe)
+        static const long ID_PANEL1;
+        static const long ID_PANEL2;
+        static const long ID_PANEL3;
+        static const long ID_PANEL4;
+        static const long ID_IMAGEWINDOW1;
+        static const long ID_STATUSBAR1;
+        static const long idToolNext;
+        static const long idToolcmpint;
+        static const long idToolPrev;
+        static const long idToolpick;
+        static const long idToolzoom;
+        static const long idToolSave;
+        static const long idToolLoad;
+        static const long ID_TOOLBAR1;
         static const long ID_LISTBOX1;
         static const long ID_MENUITEM1;
         static const long ID_MENUITEM2;
@@ -139,28 +140,28 @@ class Image2dframe: public wxFrame
         static const long ID_MENUITEM4;
         static const long ID_MENUITEM5;
         static const long ID_MENUITEM6;
-		//*)
+        //*)
 
-	private:
-		//(*Handlers(Image2dframe)
-		void OnImagewindowPaint(wxPaintEvent& event);
-		void OnZaxisPaint(wxPaintEvent& event);
-		void OnXaxisPaint(wxPaintEvent& event);
-		void OnImagewindowMouseMove(wxMouseEvent& event);
-		void OnImagewindowLeftUp(wxMouseEvent& event);
-		void OnImagewindowRightUp(wxMouseEvent& event);
-		void OnImagewindowLeftDown(wxMouseEvent& event);
-		void OnImagewindowKeyUp(wxKeyEvent& event);
-		void OnNextClicked(wxCommandEvent& event);
-		void OnPreviousClicked(wxCommandEvent& event);
-		void OnSavepicks(wxCommandEvent& event);
-		void OnClearpicks(wxCommandEvent& event);
-		void OnLoadpicks(wxCommandEvent& event);
-		void OnMute_la(wxCommandEvent& event);
-		void OnMute_rb(wxCommandEvent& event);
-		void OnCMPinterval(wxCommandEvent& event);
-		void OnClose(wxCloseEvent& event);
-		void OnImagewindowEraseBackground(wxEraseEvent& event);
+        private:
+        //(*Handlers(Image2dframe)
+        void OnImagewindowPaint(wxPaintEvent& event);
+        void OnZaxisPaint(wxPaintEvent& event);
+        void OnXaxisPaint(wxPaintEvent& event);
+        void OnImagewindowMouseMove(wxMouseEvent& event);
+        void OnImagewindowLeftUp(wxMouseEvent& event);
+        void OnImagewindowRightUp(wxMouseEvent& event);
+        void OnImagewindowLeftDown(wxMouseEvent& event);
+        void OnImagewindowKeyUp(wxKeyEvent& event);
+        void OnNextClicked(wxCommandEvent& event);
+        void OnPreviousClicked(wxCommandEvent& event);
+        void OnSavepicks(wxCommandEvent& event);
+        void OnClearpicks(wxCommandEvent& event);
+        void OnLoadpicks(wxCommandEvent& event);
+        void OnMute_la(wxCommandEvent& event);
+        void OnMute_rb(wxCommandEvent& event);
+        void OnCMPinterval(wxCommandEvent& event);
+        void OnClose(wxCloseEvent& event);
+        void OnImagewindowEraseBackground(wxEraseEvent& event);
         bool getImage2dAlloc() { return image2d_allocated; }
         void setImage2dAlloc(bool val) { image2d_allocated = val; }
         //void getRgb(int color);
@@ -208,5 +209,6 @@ wxDECLARE_EVENT(SaveEvent, wxCommandEvent);
 wxDECLARE_EVENT(LoadEvent, wxCommandEvent);
 wxDECLARE_EVENT(Crosshair, wxCommandEvent);
 wxDECLARE_EVENT(MuteEvent, wxCommandEvent);
+wxDECLARE_EVENT(ZoomEvent, wxCommandEvent);
 
 #endif

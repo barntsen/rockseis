@@ -202,7 +202,7 @@ void Image2dframe::OnImagewindowPaint(wxPaintEvent& event)
 
     //Plot Zoom box
     if(zoom->Getzooming()){
-        wxPen myWhitePen(*wxWHITE,2,wxSOLID);
+        wxPen myWhitePen(*wxWHITE,2,wxPENSTYLE_SOLID);
         dc.SetPen(myWhitePen);
         dc.DrawLines( 5, zoom->Getbox() );
     }
@@ -228,14 +228,14 @@ void Image2dframe::OnZaxisPaint(wxPaintEvent& event)
     n=51;
     d=(t1-t0)/(n-1);
     char label[32];
-    wxFont font(FONTSIZE1, wxFONTFAMILY_SWISS, wxNORMAL, wxBOLD);
+    wxFont font(FONTSIZE1, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
     dc.SetFont(font);
     wxPoint pt;
     //Small ticks
     for(i=0; i<n; i++){
         t= t0 + i*d;
         tl = (int) ((t-t0)/a);
-        dc.SetPen(wxPen(*wxBLACK, 1, wxSOLID));
+        dc.SetPen(wxPen(*wxBLACK, 1, wxPENSTYLE_SOLID));
         dc.DrawLine(w-4, tl, w-1, tl);
     }
     
@@ -249,11 +249,11 @@ void Image2dframe::OnZaxisPaint(wxPaintEvent& event)
         pt.y=tl-5;
         snprintf(label, 32, "%.2f", t);
         dc.DrawText(_(label), pt);
-        dc.SetPen(wxPen(*wxBLACK, 2, wxSOLID));
+        dc.SetPen(wxPen(*wxBLACK, 2, wxPENSTYLE_SOLID));
         dc.DrawLine(w-5, tl, w-1, tl);
     }
     wxCoord ht,wt;
-    wxFont font2(FONTSIZE2, wxFONTFAMILY_SWISS, wxNORMAL, wxBOLD);
+    wxFont font2(FONTSIZE2, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
     dc.SetFont(font2);
     dc.GetTextExtent(wxT("Z"), &wt, &ht);
     dc.DrawRotatedText(wxT("Z"), 0, h/2+ht, 90);
@@ -280,14 +280,14 @@ void Image2dframe::OnXaxisPaint(wxPaintEvent& event)
     n=24;
     d=(t1-t0)/(n-1);
     char label[32];
-    wxFont font(FONTSIZE1, wxFONTFAMILY_SWISS, wxNORMAL, wxBOLD);
+    wxFont font(FONTSIZE1, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
     dc.SetFont(font);
     wxPoint pt;
     //Small ticks
     for(i=0; i<25; i++){
         t= t0 + i*d;
         tl = (int) ((t-t0)/a);
-        dc.SetPen(wxPen(*wxBLACK, 1, wxSOLID));
+        dc.SetPen(wxPen(*wxBLACK, 1, wxPENSTYLE_SOLID));
         dc.DrawLine(tl, h-4, tl, h-1);
     }
     wxCoord ht,wt;
@@ -304,10 +304,10 @@ void Image2dframe::OnXaxisPaint(wxPaintEvent& event)
         pt.y=h-5-ht;
         pt.x=tl-wt/2;
         dc.DrawText(_(label), pt);
-        dc.SetPen(wxPen(*wxBLACK, 2, wxSOLID));
+        dc.SetPen(wxPen(*wxBLACK, 2, wxPENSTYLE_SOLID));
         dc.DrawLine(tl, h-5, tl, h-1);
     }
-    wxFont font2(FONTSIZE2, wxFONTFAMILY_SWISS, wxNORMAL, wxBOLD);
+    wxFont font2(FONTSIZE2, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
     dc.SetFont(font2);
     dc.GetTextExtent(wxT("X"), &wt, &ht);
     dc.DrawRotatedText(wxT("X"), w/2-wt/2, 0, 0);
@@ -495,6 +495,14 @@ void Image2dframe::OnImagewindowLeftUp(wxMouseEvent& event)
         }
         zoom->Setzooming(false);
         this->LoadImage(zoom->Getix0(), zoom->Getnx(), zoom->Getiy0(), zoom->Getny());
+
+        // Synchronizing Zoom
+        wxCommandEvent parevent(ZoomEvent, GetId());
+        parevent.SetEventObject(this);
+        parevent.SetClientData((void*) this->getZoom());
+        // Send event to App
+        ProcessWindowEvent(parevent);
+
         Refresh();
     }
 }
@@ -687,6 +695,17 @@ void Image2dframe::OnNextClicked(wxCommandEvent& event)
    parevent.SetInt(cmpnumber);
    // Send event to App
    ProcessWindowEvent(parevent);
+
+    if(getcrosshair){
+        if(getToolbarset()){
+            crosshair_pt[0] = this->getCmpnumber();
+        }
+        wxCommandEvent parevent(Crosshair, GetId());
+        parevent.SetEventObject(this);
+        parevent.SetClientData((void*) &crosshair_pt[0]);
+        // Send event to App
+        ProcessWindowEvent(parevent);
+    }
 }
 
 void Image2dframe::OnCMPinterval(wxCommandEvent& event)
@@ -708,6 +727,18 @@ void Image2dframe::OnPreviousClicked(wxCommandEvent& event)
    parevent.SetInt(cmpnumber);
    // Send event to App
    ProcessWindowEvent(parevent);
+
+    if(getcrosshair){
+        if(getToolbarset()){
+            crosshair_pt[0] = this->getCmpnumber();
+        }
+        wxCommandEvent parevent(Crosshair, GetId());
+        parevent.SetEventObject(this);
+        parevent.SetClientData((void*) &crosshair_pt[0]);
+        // Send event to App
+        ProcessWindowEvent(parevent);
+    }
+
 }
 
 
@@ -819,7 +850,7 @@ void Image2dframe::Plotcrosshair(wxDC &dc, int w, int h)
         pos[0].x=(int) ((crosshair_pt[0] - v0)/ax);
         pos[0].y=(int) ((crosshair_pt[1] - t0)/ay);
 
-        wxPen myCrossPen(*wxWHITE,2,wxDOT_DASH);
+        wxPen myCrossPen(*wxWHITE,2,wxPENSTYLE_DOT_DASH);
         dc.SetPen(myCrossPen);
         dc.CrossHair(pos[0]);
 }
@@ -861,7 +892,7 @@ void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
                 pos[i].y=(int) ((points[previous*maxpicks + i].y - t0)/ay);
             }
                 // Create a red pen 2 pixels wide drawing a dotted line
-                wxPen myPen(*wxRED,2,wxDOT_DASH);
+                wxPen myPen(*wxRED,2,wxPENSTYLE_DOT_DASH);
                 // Tell dc to start using this pen to draw.
                 dc.SetPen( myPen );
                 dc.DrawLines(nump, pos);
@@ -881,7 +912,7 @@ void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
                 pos[i].y=(int) ((points[next*maxpicks + i].y - t0)/ay);
             }
                 // Create a red pen 2 pixels wide drawing a dotted line
-                wxPen myPen(*wxGREEN,2,wxDOT_DASH);
+                wxPen myPen(*wxGREEN,2,wxPENSTYLE_DOT_DASH);
                 // Tell dc to start using this pen to draw.
                 dc.SetPen( myPen );
                 dc.DrawLines(nump, pos);
@@ -895,7 +926,7 @@ void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
         }
         if(nump){
         // Create a green pen 3 pixels wide drawing a solid line
-            wxPen myWhitePen(*wxWHITE,2,wxSOLID);
+            wxPen myWhitePen(*wxWHITE,2,wxPENSTYLE_SOLID);
         // Tell dc to start using this pen to draw.
             dc.SetPen( myWhitePen );
             for(i=0; i<nump; i++){
@@ -908,7 +939,7 @@ void Image2dframe::Plotpicks(wxDC &dc, int w, int h)
         }
 }
 
-void Image2dframe::setZoom(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny)
+void Image2dframe::setZoomdata(float o1, float max1, float o2, float max2, int ix0, int nx, int iy0, int ny)
 {
             zoom->Setx0(o1);
             zoom->Setix0(ix0);

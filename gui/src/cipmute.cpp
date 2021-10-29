@@ -17,6 +17,7 @@ public:
 	void Load(wxCommandEvent& event);
 	void Mute(wxCommandEvent& event);
 	void Cross(wxCommandEvent& event);
+	void Zoom(wxCommandEvent& event);
 	int FilterEvent(wxEvent& event);
 
 
@@ -44,6 +45,7 @@ wxDEFINE_EVENT(SaveEvent, wxCommandEvent);
 wxDEFINE_EVENT(LoadEvent, wxCommandEvent);
 wxDEFINE_EVENT(Crosshair, wxCommandEvent);
 wxDEFINE_EVENT(MuteEvent, wxCommandEvent);
+wxDEFINE_EVENT(ZoomEvent, wxCommandEvent);
 
 // Class implementation of the app
 bool MyApp::OnInit()
@@ -198,26 +200,28 @@ bool MyApp::OnInit()
     wxInitAllImageHandlers();
     if ( wxsOK ){
 
-	    cipframe = new Image2dframe(n4, d4, o4, n3, d3, o3, cipdata, 0);
-	    cipframe->createToolbar();
-	    cipframe->createMenubar();
-	    cipframe->SetLabel (wxT("Picking window"));
-	    cipframe->setMaxcmp(n1-1);
-        cipframe->createPicks(PICK_VERTICAL, n3, d3, o3);
-        cipframe->setGetcrosshair(true);
-        cipframe->Connect(wxEVT_DESTROY, wxWindowDestroyEventHandler(MyApp::OnCipframeDestroy),NULL, this);
-	    cipframe->Show( true );
-	    Bind(SelectCmp, &MyApp::readCIP, this, cipframe->GetId());
-	    Bind(SaveEvent, &MyApp::Save, this, cipframe->GetId());
-	    Bind(LoadEvent, &MyApp::Load, this, cipframe->GetId());
-	    Bind(Crosshair, &MyApp::Cross, this, cipframe->GetId());
-	    Bind(MuteEvent, &MyApp::Mute, this, cipframe->GetId());
+       cipframe = new Image2dframe(n4, d4, o4, n3, d3, o3, cipdata, 0);
+       cipframe->createToolbar();
+       cipframe->createMenubar();
+       cipframe->SetLabel (wxT("Picking window"));
+       cipframe->setMaxcmp(n1-1);
+       cipframe->createPicks(PICK_VERTICAL, n3, d3, o3);
+       cipframe->setGetcrosshair(true);
+       cipframe->Connect(wxEVT_DESTROY, wxWindowDestroyEventHandler(MyApp::OnCipframeDestroy),NULL, this);
+       cipframe->Show( true );
+       Bind(SelectCmp, &MyApp::readCIP, this, cipframe->GetId());
+       Bind(SaveEvent, &MyApp::Save, this, cipframe->GetId());
+       Bind(LoadEvent, &MyApp::Load, this, cipframe->GetId());
+       Bind(Crosshair, &MyApp::Cross, this, cipframe->GetId());
+       Bind(MuteEvent, &MyApp::Mute, this, cipframe->GetId());
+       Bind(ZoomEvent, &MyApp::Zoom, this, cipframe->GetId());
 
-	    zoframe = new Image2dframe(n1, d1, o1, n3, d3, o3, zodata, 0);
-	    zoframe->SetLabel (wxT("Zero offset image window"));
-        zoframe->setDisplaycrosshair(true);
-        zoframe->Connect(wxEVT_DESTROY, wxWindowDestroyEventHandler(MyApp::OnZoframeDestroy),NULL, this);
-	    zoframe->Show( true );
+       zoframe = new Image2dframe(n1, d1, o1, n3, d3, o3, zodata, 0);
+       zoframe->SetLabel (wxT("Zero offset image window"));
+       zoframe->setDisplaycrosshair(true);
+       zoframe->Connect(wxEVT_DESTROY, wxWindowDestroyEventHandler(MyApp::OnZoframeDestroy),NULL, this);
+       zoframe->Show( true );
+       Bind(ZoomEvent, &MyApp::Zoom, this, zoframe->GetId());
     }
 
     return wxsOK;
@@ -355,6 +359,26 @@ void MyApp::Cross(wxCommandEvent& event)
     ptzo[0] = pt[0]*d1 + o1;
     ptzo[1] = pt[1];
     zoframe->Refresh();
+}
+
+void MyApp::Zoom(wxCommandEvent& event)
+{
+    if(event.GetId() == cipframe->GetId()){
+        (zoframe->getZoom())->Sety0((cipframe->getZoom())->Gety0());
+        (zoframe->getZoom())->Sety1((cipframe->getZoom())->Gety1());
+        (zoframe->getZoom())->Setiy0((cipframe->getZoom())->Getiy0());
+        (zoframe->getZoom())->Setny((cipframe->getZoom())->Getny());
+        zoframe->LoadImage((zoframe->getZoom())->Getix0(), (zoframe->getZoom())->Getnx(), (zoframe->getZoom())->Getiy0(), (zoframe->getZoom())->Getny());
+        zoframe->Refresh();
+    }
+    if(event.GetId() == zoframe->GetId()){
+        (cipframe->getZoom())->Sety0((zoframe->getZoom())->Gety0());
+        (cipframe->getZoom())->Sety1((zoframe->getZoom())->Gety1());
+        (cipframe->getZoom())->Setiy0((zoframe->getZoom())->Getiy0());
+        (cipframe->getZoom())->Setny((zoframe->getZoom())->Getny());
+        cipframe->LoadImage((cipframe->getZoom())->Getix0(), (cipframe->getZoom())->Getnx(), (cipframe->getZoom())->Getiy0(), (cipframe->getZoom())->Getny());
+        cipframe->Refresh();
+    }
 }
 
 void MyApp::Mute(wxCommandEvent& event)
