@@ -84,6 +84,27 @@ void MPI::sendNoWork(MPI_Comm *Comm, const int rank) {
 }
 
 
+void MPI::errorHandling(MPI_Status status) {
+   switch(status.MPI_ERROR){
+      case MPI_ERR_COMM:
+         rs_error("MPI:: Receive error. Invalid communicator."); 
+         break;
+      case MPI_ERR_COUNT:
+         rs_error("MPI::  Receive error. Invalid count argument."); 
+         break;
+      case MPI_ERR_TYPE:
+         rs_error("MPI::  Receive error. Invalid datatype argument."); 
+         break;
+      case MPI_ERR_TAG:
+         rs_error("MPI::  Receive error. Invalid tag argument."); 
+         break;
+      case MPI_ERR_RANK:
+         rs_error("MPI::  Receive error. Invalid source or destination rank."); 
+         break;
+      default:
+         break;
+   }
+}
 
 
 // =============== MODELING MPI CLASS =============== //
@@ -880,6 +901,9 @@ void MPIdomaindecomp::receiveEdges(float *wrk, size_t wrksize, int from_rank) {
     MPI_Status status;
     int count = (int) wrksize;
     MPI_Recv(&wrk[0],count,MPI_FLOAT,from_rank,MPI_TAG_SHARE_EDGE,MPI_COMM_DOMAIN, &status);
+    if(status.MPI_ERROR != MPI_SUCCESS){
+       this->errorHandling(status);
+    }
 }
 
 void MPIdomaindecomp::receiveEdges(double *wrk, size_t wrksize, int from_rank) {
@@ -889,6 +913,9 @@ void MPIdomaindecomp::receiveEdges(double *wrk, size_t wrksize, int from_rank) {
     MPI_Status status;
     int count = (int) wrksize;
     MPI_Recv(&wrk[0],count,MPI_DOUBLE,from_rank,MPI_TAG_SHARE_EDGE,MPI_COMM_DOMAIN, &status);
+    if(status.MPI_ERROR != MPI_SUCCESS){
+       this->errorHandling(status);
+    }
 }
 
 void MPIdomaindecomp::sendrecvEdges(float *wrksnd, float *wrkrcv, size_t wrksize, int peer) {
@@ -896,8 +923,12 @@ void MPIdomaindecomp::sendrecvEdges(float *wrksnd, float *wrkrcv, size_t wrksize
        rs_error("MPIdomaindecomp::sendrcvEdges:Integer overflow in MPI count. This will be fixed soon. Need to split the send receive job into smaller chunks.");
     }
 
+    MPI_Status status;
     int count = (int) wrksize;
-    MPI_Sendrecv(&wrksnd[0],count,MPI_FLOAT, peer, MPI_TAG_SHARE_EDGE, &wrkrcv[0],count,MPI_FLOAT, peer, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN, MPI_STATUS_IGNORE);
+    MPI_Sendrecv(&wrksnd[0],count,MPI_FLOAT, peer, MPI_TAG_SHARE_EDGE, &wrkrcv[0],count,MPI_FLOAT, peer, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN, &status);
+    if(status.MPI_ERROR != MPI_SUCCESS){
+       this->errorHandling(status);
+    }
 }
 
 void MPIdomaindecomp::sendrecvEdges(double *wrksnd, double *wrkrcv, size_t wrksize, int peer) {
@@ -906,7 +937,11 @@ void MPIdomaindecomp::sendrecvEdges(double *wrksnd, double *wrkrcv, size_t wrksi
     }
 
     int count = (int) wrksize;
-    MPI_Sendrecv(&wrksnd[0],count,MPI_DOUBLE, peer, MPI_TAG_SHARE_EDGE, &wrkrcv[0],count,MPI_DOUBLE, peer, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN, MPI_STATUS_IGNORE);
+    MPI_Status status;
+    MPI_Sendrecv(&wrksnd[0],count,MPI_DOUBLE, peer, MPI_TAG_SHARE_EDGE, &wrkrcv[0],count,MPI_DOUBLE, peer, MPI_TAG_SHARE_EDGE, MPI_COMM_DOMAIN,  &status);
+    if(status.MPI_ERROR != MPI_SUCCESS){
+       this->errorHandling(status);
+    }
 }
 
 void MPIdomaindecomp::barrier() {

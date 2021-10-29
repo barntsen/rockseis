@@ -63,6 +63,7 @@ class MPI {
       void clearLogfile() { logfile.clear(); }    ///< Clear log file name
       void setVerbose(bool val) { verbose = val; } ///< Set verbose on
       void finalize() { MPI_Finalize(); } ///< Finalize MPI
+      void errorHandling(MPI_Status status);
 
       // Send and receive functions
       virtual void performWork() = 0;
