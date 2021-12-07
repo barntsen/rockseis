@@ -397,126 +397,150 @@ void TomoAcoustic2D<T>::runGrad() {
 
 template<typename T>
 void TomoAcoustic2D<T>::runBsproj() {
-    MPImodeling *mpi = this->getMpi();
-	T vpsum = 0.0; // Sum over splines
-	float *global_stack;
-    T *c;
-    T *wrk;
+   MPImodeling *mpi = this->getMpi();
+   T vpsum = 0.0; // Sum over splines
+   float *global_stack;
+   T *c;
+   T *wrk;
 
-    std::string vpgradfile;
+   std::string vpgradfile;
 
-    if(Mutefile.empty()){
-        vpgradfile = VPGRADCOMBFILE;
-    }else{
-        vpgradfile = VPGRADMUTEFILE;
-    }
+   if(Mutefile.empty()){
+      vpgradfile = VPGRADCOMBFILE;
+   }else{
+      vpgradfile = VPGRADMUTEFILE;
+   }
 
-	// Get gradients
-	std::shared_ptr<rockseis::ModelEikonal2D<T>> grad (new rockseis::ModelEikonal2D<T>(vpgradfile, this->getLpml()));
+   // Get gradients
+   std::shared_ptr<rockseis::ModelEikonal2D<T>> grad (new rockseis::ModelEikonal2D<T>(vpgradfile, this->getLpml()));
 
-	// Read model
-	grad->readVelocity();
-	
-	T *vpgrad;
-	vpgrad = grad->getVelocity();
+   // Read model
+   grad->readVelocity();
 
-    /* Initializing spline */
-    std::shared_ptr<rockseis::Bspl2D<T>> spline (new rockseis::Bspl2D<T>(grad->getNx(), grad->getNz(), grad->getDx(), grad->getDz(), this->getDtx(), this->getDtz(), 3, 3));
-    int nc = spline->getNc();
+   T *vpgrad;
+   vpgrad = grad->getVelocity();
 
-	/* Allocating projection arrays */
-	float *vpproj= (float *) calloc(nc, sizeof(float));
-	if(vpproj==NULL){
-		rs_error("TomoAcoustic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
-	}
+   /* Initializing spline */
+   std::shared_ptr<rockseis::Bspl2D<T>> spline (new rockseis::Bspl2D<T>(grad->getNx(), grad->getNz(), grad->getDx(), grad->getDz(), this->getDtx(), this->getDtz(), 3, 3));
+   int nc = spline->getNc();
 
-    if(mpi->getRank() == 0) {
-		// Master
+   /* Allocating projection arrays */
+   float *vpproj= (float *) calloc(nc, sizeof(float));
+   if(vpproj==NULL){
+      rs_error("TomoAcoustic2D<T>::runBsproj(): Not enough memory to allocate projection array (vpproj)");
+   }
 
-        mpi->setVerbose(false); // Turn off queue printing
-		// Create work queue
-		for(long int i=0; i<nc; i++) {
-			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
-			mpi->addWork(work);
-		}
+   if(mpi->getRank() == 0) {
+      // Master
 
-		// Perform work in parallel
-		mpi->performWork();
+      mpi->setVerbose(false); // Turn off queue printing
+      // Create work queue
+      for(long int i=0; i<nc; i++) {
+         // Work struct
+         std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED,0,0,0});
+         mpi->addWork(work);
+      }
 
-		//Clear work vector 
-		mpi->clearWork();
+      // Perform work in parallel
+      mpi->performWork();
 
-		global_stack= (float *) calloc(nc, sizeof(float));
-		if(global_stack==NULL){
-			rs_error("TomoAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
-		}
+      //Clear work vector 
+      mpi->clearWork();
 
-		/* Starting reduce operation */
-		MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
+      global_stack= (float *) calloc(nc, sizeof(float));
+      if(global_stack==NULL){
+         rs_error("TomoAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
+      }
 
-		/* Output spline */
-        std::shared_ptr<File> Fout (new File());
-        Fout->output(VPPROJGRADFILE);
-        Fout->setN(1,nc);
-        Fout->setD(1,1.0);
-        Fout->setData_format(sizeof(float));
-        Fout->write(global_stack, nc, 0);
-        Fout->close();
+      /* Starting reduce operation */
+      MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);   
 
-        mpi->setVerbose(true); // Turn on queue printing
+      /* Output spline */
+      std::shared_ptr<File> Fout (new File());
+      Fout->output(VPPROJGRADFILE);
+      Fout->setN(1,nc);
+      Fout->setD(1,1.0);
+      Fout->setData_format(sizeof(float));
+      Fout->write(global_stack, nc, 0);
+      Fout->close();
 
-       }else {
-        /* Slave */
-        while(1) {
-            workModeling_t work = mpi->receiveWork();
+      mpi->setVerbose(true); // Turn on queue printing
 
-            if(work.MPItag == MPI_TAG_DIE) {
-                break;
+   }else {
+      /* Slave */
+      while(1) {
+         workModeling_t work = mpi->receiveWork();
+
+         if(work.MPItag == MPI_TAG_DIE) {
+            break;
+         }
+
+         if(work.MPItag == MPI_TAG_NO_WORK) {
+            mpi->sendNoWork(0);
+         }
+         else {
+            // Do work
+            c = spline->getSpline();
+            c[work.id]=1.0; // Projection point
+            spline->bisp(); // Evaluate spline for this coefficient
+            wrk = spline->getMod();
+            vpsum = 0.0;
+            for(long int i=0; i<grad->getNx()*grad->getNz(); i++){
+               vpsum += wrk[i]*vpgrad[i];
             }
+            vpproj[work.id]=vpsum;
+            c[work.id]=0.0; // Reset coefficient to 0
+         }
 
-            if(work.MPItag == MPI_TAG_NO_WORK) {
-                mpi->sendNoWork(0);
-            }
-            else {
-                // Do work
-                c = spline->getSpline();
-				c[work.id]=1.0; // Projection point
-				spline->bisp(); // Evaluate spline for this coefficient
-                wrk = spline->getMod();
-				vpsum = 0.0;
-				for(long int i=0; i<grad->getNx()*grad->getNz(); i++){
-						vpsum += wrk[i]*vpgrad[i];
-				}
-				vpproj[work.id]=vpsum;
-				c[work.id]=0.0; // Reset coefficient to 0
-			}
+         // Send result back
+         work.status = WORK_FINISHED;
+         mpi->sendResult(work);		
+      }
 
-			// Send result back
-			work.status = WORK_FINISHED;
-			mpi->sendResult(work);		
-		}
+      global_stack= (float *) calloc(nc, sizeof(float));
+      if(global_stack==NULL){
+         rs_error("TomoAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
+      }
 
-		global_stack= (float *) calloc(nc, sizeof(float));
-		if(global_stack==NULL){
-			rs_error("TomoAcoustic2D<T>::runBsproj(): Not enough memory to allocate global stack array");
-		}
+      /* Starting reduce operation */
+      MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
 
-		/* Starting reduce operation */
-        MPI_Reduce(vpproj, global_stack, nc, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD); 
-
-	   }
-    // Free variables
-    free(global_stack);
-    free(vpproj);
+   }
+   // Free variables
+   free(global_stack);
+   free(vpproj);
 }
 
 template<typename T>
 int TomoAcoustic2D<T>::setInitial(double *x, std::string vpfile)
 {
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
+    bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
     std::shared_ptr<rockseis::ModelEikonal2D<T>> model_in (new rockseis::ModelEikonal2D<T>(vpfile, 1));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
+
+    // Read initial model
     model_in->readVelocity();  
+
+    // Check bounds 
+    if(this->getConstrain()){
+       bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
+       T *lbounddata;
+       T *ubounddata;
+       T *vp0;
+       bound->readModel();
+       long Nbound = (bound->getGeom())->getNtot();
+       long N = (long) (model_in->getGeom())->getNtot();
+       if(N != Nbound) rs_error("TomoAcoustic2D<T>::setInitial(): Geometry in Boundary files does not match geometry in the model.");
+       lbounddata = bound->getVp();
+       ubounddata = bound->getR();
+       vp0 = model_in->getVelocity();
+       for (long i=0; i< N; i++){
+          if(vp0[i] <= lbounddata[i]) vp0[i] = lbounddata[i] + 1e-1;
+          if(vp0[i] >= ubounddata[i]) vp0[i] = ubounddata[i] - 1e-1;
+       }
+    }
+
     // Write initial model files
     model_in->setVelocityfile(VP0FILE);
     model_in->writeVelocity();
@@ -572,6 +596,9 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
     T *vpmutedata;
     T *lbounddata;
     T *ubounddata;
+    T *x0;
+    double log_in, log_out, exp_in, exp_out;
+
     vp0 = model0->getVelocity(); 
     vpls = lsmodel->getVelocity(); 
     int i;
@@ -600,17 +627,23 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
         if(N != Nbound) rs_error("TomoAcoustic2D<T>::saveLinesearch(): Geometry in Boundary files does not match geometry in the model.");
         lbounddata = bound->getVp();
         ubounddata = bound->getR();
+        x0 = (T *) calloc(N, sizeof(T));
     }
     switch (this->getParamtype()){
         case PAR_GRID:
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
             {
-                vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
-                if(this->getConstrain()){
-                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
-                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
-                }
+               if(!this->getConstrain()){
+                  vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
+               }else{
+                  log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+                  log_out = log(log_in);
+                  x0[i] =((T) log_out);
+                  exp_in = (double) (-(x[i]*vpmutedata[i]*kvp + x0[i]));
+                  exp_out = exp(exp_in);
+                  vpls[i] = lbounddata[i] + (ubounddata[i]-lbounddata[i])*(1.0/(1.0 + (T) exp_out));
+               }
             }
             lsmodel->writeVelocity();
             break;
@@ -628,11 +661,16 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
 
             for(i=0; i< Nmod; i++)
             {
-                vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
-                if(this->getConstrain()){
-                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
-                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
-                }
+               if(!this->getConstrain()){
+                  vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
+               }else{
+                  log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+                  log_out = log(log_in);
+                  x0[i] =((T) log_out);
+                  exp_in = (double) (-(mod[i]*vpmutedata[i]*kvp + x0[i]));
+                  exp_out = exp(exp_in);
+                  vpls[i] = lbounddata[i] + (ubounddata[i]-lbounddata[i])*(1.0/(1.0 + (T) exp_out));
+               }
             }
             lsmodel->writeVelocity();
             break;
@@ -641,7 +679,10 @@ void TomoAcoustic2D<T>::saveLinesearch(double *x)
             break;
     }
     if(Mutefile.empty()){
-        free(vpmutedata);
+       free(vpmutedata);
+    }
+    if(this->getConstrain()){
+       free(x0);
     }
 }
 
@@ -807,29 +848,126 @@ void TomoAcoustic2D<T>::readGrad(double *g)
 template<typename T>
 void TomoAcoustic2D<T>::combineGradients()
 {
-    // Gradients
-    std::shared_ptr<rockseis::ModelEikonal2D<T>> grad;
-    std::shared_ptr<rockseis::ModelEikonal2D<T>> reggrad;
-    grad = std::make_shared<rockseis::ModelEikonal2D<T>>(VPGRADFILE, 1);
-    reggrad = std::make_shared<rockseis::ModelEikonal2D<T>>(VPREGGRADFILE, 1);
+   // Gradients
+   std::shared_ptr<rockseis::ModelEikonal2D<T>> grad;
+   std::shared_ptr<rockseis::ModelEikonal2D<T>> reggrad;
+   grad = std::make_shared<rockseis::ModelEikonal2D<T>>(VPGRADFILE, 1);
+   reggrad = std::make_shared<rockseis::ModelEikonal2D<T>>(VPREGGRADFILE, 1);
 
-    // Read gradients
-    grad->readVelocity();
-    reggrad->readVelocity();
-    T *vp, *regvp;
-    vp = grad->getVelocity(); 
-    regvp = reggrad->getVelocity(); 
-    int i;
-    int N;
+   // Read gradients
+   grad->readVelocity();
+   reggrad->readVelocity();
+   T *vp, *regvp;
+   vp = grad->getVelocity(); 
+   regvp = reggrad->getVelocity(); 
+   int i;
+   int N;
+   N = (grad->getGeom())->getNtot();
+   
+   // Compute 
+   for(i=0; i< N; i++)
+   {
+      vp[i] = vp[i] + reg_alpha[0]*regvp[i];
+   }
+   grad->setVelocityfile(VPGRADCOMBFILE);
+   grad->writeVelocity();
+}
 
-    N = (grad->getGeom())->getNtot();
-    // Compute 
-    for(i=0; i< N; i++)
-    {
-        vp[i] = vp[i] + reg_alpha[0]*regvp[i];
-    }
-    grad->setVelocityfile(VPGRADCOMBFILE);
-    grad->writeVelocity();
+
+template<typename T>
+void TomoAcoustic2D<T>::applyChainrule(double *x)
+{
+   // Models
+   std::shared_ptr<rockseis::ModelEikonal2D<T>> model0 (new rockseis::ModelEikonal2D<T>(VP0FILE, 1));
+   std::shared_ptr<rockseis::ModelEikonal2D<T>> grad (new rockseis::ModelEikonal2D<T>(VPGRADCOMBFILE, 1));
+   std::shared_ptr<rockseis::Bspl2D<T>> spline;
+   std::shared_ptr<rockseis::ModelEikonal2D<T>> mute;
+   std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
+
+   // Write linesearch model
+   model0->readVelocity();
+   grad->readVelocity();
+   T *vp0, *vpgrad;
+   T *c, *mod;
+   T *vpmutedata;
+   T *lbounddata;
+   T *ubounddata;
+   T *x0;
+   double log_in, log_out, exp_in, exp_out;
+
+   vp0 = model0->getVelocity(); 
+   vpgrad = grad->getVelocity(); 
+   int i;
+   int N, Nmod;
+
+   // If mute
+   if(!Mutefile.empty()){
+      mute = std::make_shared <rockseis::ModelEikonal2D<T>>(Mutefile, 1);
+      long Nmute = (mute->getGeom())->getNtot();
+      N = (grad->getGeom())->getNtot();
+      if(N != Nmute) rs_error("TomoAcoustic2D<T>::applyChainrule(): Geometry in Mutefile does not match geometry in the model.");
+      mute->readVelocity();
+      vpmutedata = mute->getVelocity();
+   }else{
+      N = (grad->getGeom())->getNtot();
+      vpmutedata = (T *) calloc(N, sizeof(T)); 
+      for(i=0; i < N; i++){
+         vpmutedata[i] = 1.0;
+      }
+   }
+   bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
+   bound->readModel();
+   long Nbound = (bound->getGeom())->getNtot();
+   N = (grad->getGeom())->getNtot();
+   if(N != Nbound) rs_error("TomoAcoustic2D<T>::applyChainrule(): Geometry in Boundary files does not match geometry in the model.");
+   lbounddata = bound->getVp();
+   ubounddata = bound->getR();
+   x0 = (T *) calloc(N, sizeof(T));
+   switch (this->getParamtype()){
+      case PAR_GRID:
+         N = (grad->getGeom())->getNtot();
+         for(i=0; i< N; i++)
+         {
+            log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+            log_out = log(log_in);
+            x0[i] =((T) log_out);
+            exp_in = (double) (-(x[i]*vpmutedata[i]*kvp + x0[i]));
+            exp_out = exp(exp_in);
+            vpgrad[i] *= kvp*(ubounddata[i]-lbounddata[i])*((T) exp_out/((1.0 + (T) exp_out)*(1.0 + (T) exp_out)));
+         }
+         grad->writeVelocity();
+         break;
+      case PAR_BSPLINE:
+         Nmod = (grad->getGeom())->getNtot();
+         spline = std::make_shared<rockseis::Bspl2D<T>>(model0->getNx(), model0->getNz(), model0->getDx(), model0->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+         N = spline->getNc();
+         c = spline->getSpline();
+         for(i=0; i< N; i++)
+         {
+            c[i] = x[i];
+         }
+         spline->bisp();
+         mod = spline->getMod();
+
+         for(i=0; i< Nmod; i++)
+         {
+            log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+            log_out = log(log_in);
+            x0[i] =((T) log_out);
+            exp_in = (double) (-(mod[i]*vpmutedata[i]*kvp + x0[i]));
+            exp_out = exp(exp_in);
+            vpgrad[i] *= kvp*(ubounddata[i]-lbounddata[i])*((T) exp_out/((1.0 + (T) exp_out)*(1.0 + (T) exp_out)));
+         }
+         grad->writeVelocity();
+         break;
+      default:
+         rs_error("TomoAcoustic2D<T>::applyChainrule(): Unknown parameterisation."); 
+         break;
+   }
+   if(Mutefile.empty()){
+      free(vpmutedata);
+   }
+   free(x0);
 }
 
 template<typename T>
