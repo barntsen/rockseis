@@ -141,12 +141,12 @@ public:
     void setConstrain(bool val) { constrain = val; }
 
 private:
-	int lpml;
-	bool fs;
+    int lpml;
+    bool fs;
     bool incore;
-	int order;
-	int snapinc;
-	int nsnaps;
+    int order;
+    int snapinc;
+    int nsnaps;
     bool filter;
     double fnorm;
     std::string logfile; ///< Log file
@@ -230,6 +230,9 @@ public:
 
     // Mute gradient
     void applyMute();
+
+    // Apply Chain rule for constrained optimisation using logistic model
+    void applyChainrule(double *x);
 
     // Regularisation computation
     void computeRegularisation(double *x);

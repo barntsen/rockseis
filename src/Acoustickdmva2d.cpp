@@ -37,6 +37,12 @@ void evaluate(rockseis::OptInstancePtr instance)
     kdmva->writeLog("Combining gradients");
     kdmva->combineGradients();
 
+    // Apply Chain rule of logistic model
+    if(kdmva->getConstrain()){
+       kdmva->writeLog("Computing Chain rule");
+       kdmva->applyChainrule(x);
+    }
+
     // Apply mute to gradient
     kdmva->writeLog("Muting gradients");
     kdmva->applyMute();
@@ -202,7 +208,7 @@ int main(int argc, char** argv) {
     bool constrain;
     bool outputhess;
     int _paramtype;
-	int misfit_type;
+    int misfit_type;
     float dtx=-1;
     float dtz=-1;
     float radius;

@@ -22,6 +22,7 @@ Kdmva<T>::Kdmva() {
     nhy = 1;
     nhz = 1;
     fnorm = 0.0;
+    constrain = false;
     if(createLog() == KVA_ERR)
     {
         rs_error("Kdmva<T>::Kdmva(): Error creating logfile for writting.");
@@ -52,6 +53,7 @@ Kdmva<T>::Kdmva(MPImodeling *_mpi) {
     nhy = 1;
     nhz = 1;
     fnorm = 0.0;
+    constrain = false;
     if(createLog() == KVA_ERR)
     {
         rs_error("Kdmva<T>::Kdmva(): Error creating logfile for writting.");
@@ -752,9 +754,33 @@ void KdmvaAcoustic2D<T>::runBsproj() {
 template<typename T>
 int KdmvaAcoustic2D<T>::setInitial(double *x, std::string vpfile)
 {
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
+    bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
     std::shared_ptr<rockseis::ModelEikonal2D<T>> model_in (new rockseis::ModelEikonal2D<T>(vpfile, 1));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
+
+    // Read initial model
     model_in->readVelocity();  
+
+    // Check bounds 
+    if(this->getConstrain()){
+       bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
+       T *lbounddata;
+       T *ubounddata;
+       T *vp0;
+       bound->readModel();
+       long Nbound = (bound->getGeom())->getNtot();
+       long N = (long) (model_in->getGeom())->getNtot();
+       if(N != Nbound) rs_error("KdmvaAcoustic2D<T>::setInitial(): Geometry in Boundary files does not match geometry in the model.");
+       lbounddata = bound->getVp();
+       ubounddata = bound->getR();
+       vp0 = model_in->getVelocity();
+       for (long i=0; i< N; i++){
+          if(vp0[i] <= lbounddata[i]) vp0[i] = lbounddata[i] + 1e-1;
+          if(vp0[i] >= ubounddata[i]) vp0[i] = ubounddata[i] - 1e-1;
+       }
+    }
+
     // Write initial model files
     model_in->setVelocityfile(VP0FILE);
     model_in->writeVelocity();
@@ -767,10 +793,6 @@ int KdmvaAcoustic2D<T>::setInitial(double *x, std::string vpfile)
             N = (model_in->getGeom())->getNtot();
             break;
         case PAR_BSPLINE:
-            spline = std::make_shared<rockseis::Bspl2D<T>>(model_in->getNx(), model_in->getNz(), model_in->getDx(), model_in->getDz(), this->getDtx(), this->getDtz(), 3, 3);
-            N=spline->getNc();
-            break;
-        case PAR_AVG:
             spline = std::make_shared<rockseis::Bspl2D<T>>(model_in->getNx(), model_in->getNz(), model_in->getDx(), model_in->getDz(), this->getDtx(), this->getDtz(), 3, 3);
             N=spline->getNc();
             break;
@@ -823,16 +845,13 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
     T *vpmutedata;
     T *lbounddata;
     T *ubounddata;
+    T *x0;
+    double log_in, log_out, exp_in, exp_out;
+
     vp0 = model0->getVelocity(); 
     vpls = lsmodel->getVelocity(); 
     int i;
     int N, Nmod;
-    int Nz,Nx,iz,ix;
-
-    Nz = lsmodel->getNz();
-    Nx = lsmodel->getNx();
-    Index I2D(Nx,Nz); 
-    T vint;
 
     // If mute
     if(!Modelmutefile.empty()){
@@ -857,44 +876,23 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
         if(N != Nbound) rs_error("KdmvaAcoustic2D<T>::saveLinesearch(): Geometry in Boundary files does not match geometry in the model.");
         lbounddata = bound->getVp();
         ubounddata = bound->getR();
+        x0 = (T *) calloc(N, sizeof(T));
     }
     switch (this->getParamtype()){
-       case PAR_AVG:
-          Nmod = (lsmodel->getGeom())->getNtot();
-          spline = std::make_shared<rockseis::Bspl2D<T>>(model0->getNx(), model0->getNz(), model0->getDx(), model0->getDz(), this->getDtx(), this->getDtz(), 3, 3);
-          N = spline->getNc();
-          c = spline->getSpline();
-          for(i=0; i< N; i++)
-          {
-             c[i] = x[i];
-          }
-          spline->bisp();
-          mod = spline->getMod();
-          for(ix=0; ix< Nx; ix++){
-             for(iz=0; iz< Nz; iz++){
-                if(iz == 0){
-                   vint = mod[I2D(ix,iz)];
-                }else{
-                   vint = (iz+1)*mod[I2D(ix,iz)] - iz*mod[I2D(ix,iz-1)];
-                }
-                vpls[I2D(ix,iz)] = vp0[I2D(ix,iz)] + vint*vpmutedata[I2D(ix,iz)]*kvp;
-                if(this->getConstrain()){
-                   if(vpls[I2D(ix,iz)] < lbounddata[I2D(ix,iz)]) vpls[I2D(ix,iz)] = lbounddata[I2D(ix,iz)];
-                   if(vpls[I2D(ix,iz)] > ubounddata[I2D(ix,iz)]) vpls[I2D(ix,iz)] = ubounddata[I2D(ix,iz)];
-                }
-             }
-          }
-          lsmodel->writeVelocity();
-          break;
         case PAR_GRID:
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
             {
-                vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
-                if(this->getConstrain()){
-                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
-                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
-                }
+               if(!this->getConstrain()){
+                  vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
+               }else{
+                  log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+                  log_out = log(log_in);
+                  x0[i] =((T) log_out);
+                  exp_in = (double) (-(x[i]*vpmutedata[i]*kvp + x0[i]));
+                  exp_out = exp(exp_in);
+                  vpls[i] = lbounddata[i] + (ubounddata[i]-lbounddata[i])*(1.0/(1.0 + (T) exp_out));
+               }
             }
             lsmodel->writeVelocity();
             break;
@@ -912,11 +910,16 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
 
             for(i=0; i< Nmod; i++)
             {
-               vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
-                if(this->getConstrain()){
-                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
-                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
-                }
+               if(!this->getConstrain()){
+                  vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
+               }else{
+                  log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+                  log_out = log(log_in);
+                  x0[i] =((T) log_out);
+                  exp_in = (double) (-(mod[i]*vpmutedata[i]*kvp + x0[i]));
+                  exp_out = exp(exp_in);
+                  vpls[i] = lbounddata[i] + (ubounddata[i]-lbounddata[i])*(1.0/(1.0 + (T) exp_out));
+               }
             }
             lsmodel->writeVelocity();
             break;
@@ -925,7 +928,10 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
             break;
     }
     if(Modelmutefile.empty()){
-        free(vpmutedata);
+       free(vpmutedata);
+    }
+    if(this->getConstrain()){
+       free(x0);
     }
 }
 
@@ -1447,6 +1453,103 @@ void KdmvaAcoustic2D<T>::combineGradients()
     grad->setVelocityfile(VPGRADCOMBFILE);
     grad->writeVelocity();
 }
+
+template<typename T>
+void KdmvaAcoustic2D<T>::applyChainrule(double *x)
+{
+   // Models
+   std::shared_ptr<rockseis::ModelEikonal2D<T>> model0 (new rockseis::ModelEikonal2D<T>(VP0FILE, 1));
+   std::shared_ptr<rockseis::ModelEikonal2D<T>> grad (new rockseis::ModelEikonal2D<T>(VPGRADCOMBFILE, 1));
+   std::shared_ptr<rockseis::Bspl2D<T>> spline;
+   std::shared_ptr<rockseis::ModelEikonal2D<T>> mute;
+   std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
+
+   // Write linesearch model
+   model0->readVelocity();
+   grad->readVelocity();
+   T *vp0, *vpgrad;
+   T *c, *mod;
+   T *vpmutedata;
+   T *lbounddata;
+   T *ubounddata;
+   T *x0;
+   double log_in, log_out, exp_in, exp_out;
+
+   vp0 = model0->getVelocity(); 
+   vpgrad = grad->getVelocity(); 
+   int i;
+   int N, Nmod;
+
+   // If mute
+   if(!Modelmutefile.empty()){
+      mute = std::make_shared <rockseis::ModelEikonal2D<T>>(Modelmutefile, 1);
+      long Nmute = (mute->getGeom())->getNtot();
+      N = (grad->getGeom())->getNtot();
+      if(N != Nmute) rs_error("KdmvaAcoustic2D<T>::applyChainrule(): Geometry in Modelmutefile does not match geometry in the model.");
+      mute->readVelocity();
+      vpmutedata = mute->getVelocity();
+   }else{
+      N = (grad->getGeom())->getNtot();
+      vpmutedata = (T *) calloc(N, sizeof(T)); 
+      for(i=0; i < N; i++){
+         vpmutedata[i] = 1.0;
+      }
+   }
+   bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
+   bound->readModel();
+   long Nbound = (bound->getGeom())->getNtot();
+   N = (grad->getGeom())->getNtot();
+   if(N != Nbound) rs_error("KdmvaAcoustic2D<T>::applyChainrule(): Geometry in Boundary files does not match geometry in the model.");
+   lbounddata = bound->getVp();
+   ubounddata = bound->getR();
+   x0 = (T *) calloc(N, sizeof(T));
+   switch (this->getParamtype()){
+      case PAR_GRID:
+         N = (grad->getGeom())->getNtot();
+         for(i=0; i< N; i++)
+         {
+            log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+            log_out = log(log_in);
+            x0[i] =((T) log_out);
+            exp_in = (double) (-(x[i]*vpmutedata[i]*kvp + x0[i]));
+            exp_out = exp(exp_in);
+            vpgrad[i] *= kvp*(ubounddata[i]-lbounddata[i])*((T) exp_out/((1.0 + (T) exp_out)*(1.0 + (T) exp_out)));
+         }
+         grad->writeVelocity();
+         break;
+      case PAR_BSPLINE:
+         Nmod = (grad->getGeom())->getNtot();
+         spline = std::make_shared<rockseis::Bspl2D<T>>(model0->getNx(), model0->getNz(), model0->getDx(), model0->getDz(), this->getDtx(), this->getDtz(), 3, 3);
+         N = spline->getNc();
+         c = spline->getSpline();
+         for(i=0; i< N; i++)
+         {
+            c[i] = x[i];
+         }
+         spline->bisp();
+         mod = spline->getMod();
+
+         for(i=0; i< Nmod; i++)
+         {
+            log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+            log_out = log(log_in);
+            x0[i] =((T) log_out);
+            exp_in = (double) (-(mod[i]*vpmutedata[i]*kvp + x0[i]));
+            exp_out = exp(exp_in);
+            vpgrad[i] *= kvp*(ubounddata[i]-lbounddata[i])*((T) exp_out/((1.0 + (T) exp_out)*(1.0 + (T) exp_out)));
+         }
+         grad->writeVelocity();
+         break;
+      default:
+         rs_error("KdmvaAcoustic2D<T>::applyChainrule(): Unknown parameterisation."); 
+         break;
+   }
+   if(Modelmutefile.empty()){
+      free(vpmutedata);
+   }
+   free(x0);
+}
+
 
 template<typename T>
 void KdmvaAcoustic2D<T>::applyMute()
