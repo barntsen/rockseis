@@ -515,7 +515,6 @@ template<typename T>
 int TomoAcoustic2D<T>::setInitial(double *x, std::string vpfile)
 {
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
-    bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
     std::shared_ptr<rockseis::ModelEikonal2D<T>> model_in (new rockseis::ModelEikonal2D<T>(vpfile, 1));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
 
@@ -536,8 +535,9 @@ int TomoAcoustic2D<T>::setInitial(double *x, std::string vpfile)
        ubounddata = bound->getR();
        vp0 = model_in->getVelocity();
        for (long i=0; i< N; i++){
-          if(vp0[i] <= lbounddata[i]) vp0[i] = lbounddata[i] + 1e-1;
-          if(vp0[i] >= ubounddata[i]) vp0[i] = ubounddata[i] - 1e-1;
+          if(lbounddata[i] == ubounddata[i]) rs_error("TomoAcoustic2D<T>::setInitial():The lower bound cannot be equal to the upper bound, use a mute function insted.");
+          if(vp0[i] <= lbounddata[i]) vp0[i] = lbounddata[i] + 1e-2;
+          if(vp0[i] >= ubounddata[i]) vp0[i] = ubounddata[i] - 1e-2;
        }
     }
 
@@ -1473,9 +1473,33 @@ void TomoAcoustic3D<T>::runBsproj() {
 template<typename T>
 int TomoAcoustic3D<T>::setInitial(double *x, std::string vpfile)
 {
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> bound;
     std::shared_ptr<rockseis::ModelEikonal3D<T>> model_in (new rockseis::ModelEikonal3D<T>(vpfile, 1));
     std::shared_ptr<rockseis::Bspl3D<T>> spline;
+
+    // Read initial model
     model_in->readVelocity();  
+
+    // Check bounds 
+    if(this->getConstrain()){
+       bound = std::make_shared <rockseis::ModelAcoustic3D<T>>(Lboundfile, Uboundfile, 1 ,0);
+       T *lbounddata;
+       T *ubounddata;
+       T *vp0;
+       bound->readModel();
+       long Nbound = (bound->getGeom())->getNtot();
+       long N = (long) (model_in->getGeom())->getNtot();
+       if(N != Nbound) rs_error("TomoAcoustic2D<T>::setInitial(): Geometry in Boundary files does not match geometry in the model.");
+       lbounddata = bound->getVp();
+       ubounddata = bound->getR();
+       vp0 = model_in->getVelocity();
+       for (long i=0; i< N; i++){
+          if(lbounddata[i] == ubounddata[i]) rs_error("TomoAcoustic2D<T>::setInitial():The lower bound cannot be equal to the upper bound, use a mute function insted.");
+          if(vp0[i] <= lbounddata[i]) vp0[i] = lbounddata[i] + 1e-2;
+          if(vp0[i] >= ubounddata[i]) vp0[i] = ubounddata[i] - 1e-2;
+       }
+    }
+
     // Write initial model files
     model_in->setVelocityfile(VP0FILE);
     model_in->writeVelocity();
@@ -1531,6 +1555,8 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
     T *vpmutedata;
     T *lbounddata;
     T *ubounddata;
+    T *x0;
+    double log_in, log_out, exp_in, exp_out;
     vp0 = model0->getVelocity(); 
     vpls = lsmodel->getVelocity(); 
     int i;
@@ -1561,6 +1587,7 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
         if(N != Nbound) rs_error("TomoAcoustic3D<T>::saveLinesearch(): Geometry in Boundary files does not match geometry in the model.");
         lbounddata = bound->getVp();
         ubounddata = bound->getR();
+        x0 = (T *) calloc(N, sizeof(T));
     }
 
     switch (this->getParamtype()){
@@ -1568,10 +1595,15 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
             {
-                vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
-                if(this->getConstrain()){
-                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
-                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
+                if(!this->getConstrain()){
+                    vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
+                }else{
+                    log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+                    log_out = log(log_in);
+                    x0[i] =((T) log_out);
+                    exp_in = (double) (-(x[i]*vpmutedata[i]*kvp + x0[i]));
+                    exp_out = exp(exp_in);
+                    vpls[i] = lbounddata[i] + (ubounddata[i]-lbounddata[i])*(1.0/(1.0 + (T) exp_out));
                 }
             }
             lsmodel->writeVelocity();
@@ -1590,10 +1622,15 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
 
             for(i=0; i< Nmod; i++)
             {
-                vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
-                if(this->getConstrain()){
-                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
-                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
+                if(!this->getConstrain()){
+                    vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
+                }else{
+                    log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+                    log_out = log(log_in);
+                    x0[i] =((T) log_out);
+                    exp_in = (double) (-(mod[i]*vpmutedata[i]*kvp + x0[i]));
+                    exp_out = exp(exp_in);
+                    vpls[i] = lbounddata[i] + (ubounddata[i]-lbounddata[i])*(1.0/(1.0 + (T) exp_out));
                 }
             }
             lsmodel->writeVelocity();
@@ -1604,6 +1641,10 @@ void TomoAcoustic3D<T>::saveLinesearch(double *x)
     }
     if(Mutefile.empty()){
         free(vpmutedata);
+    }
+
+    if(this->getConstrain()){
+       free(x0);
     }
 }
 
@@ -1703,6 +1744,103 @@ void TomoAcoustic3D<T>::combineGradients()
     grad->setVelocityfile(VPGRADCOMBFILE);
     grad->writeVelocity();
 }
+
+template<typename T>
+void TomoAcoustic3D<T>::applyChainrule(double *x)
+{
+   // Models
+   std::shared_ptr<rockseis::ModelEikonal3D<T>> model0 (new rockseis::ModelEikonal3D<T>(VP0FILE, 1));
+   std::shared_ptr<rockseis::ModelEikonal3D<T>> grad (new rockseis::ModelEikonal3D<T>(VPGRADCOMBFILE, 1));
+   std::shared_ptr<rockseis::Bspl3D<T>> spline;
+   std::shared_ptr<rockseis::ModelEikonal3D<T>> mute;
+   std::shared_ptr<rockseis::ModelAcoustic3D<T>> bound;
+
+   // Write linesearch model
+   model0->readVelocity();
+   grad->readVelocity();
+   T *vp0, *vpgrad;
+   T *c, *mod;
+   T *vpmutedata;
+   T *lbounddata;
+   T *ubounddata;
+   T *x0;
+   double log_in, log_out, exp_in, exp_out;
+
+   vp0 = model0->getVelocity(); 
+   vpgrad = grad->getVelocity(); 
+   int i;
+   int N, Nmod;
+
+   // If mute
+   if(!Mutefile.empty()){
+      mute = std::make_shared <rockseis::ModelEikonal3D<T>>(Mutefile, 1);
+      long Nmute = (mute->getGeom())->getNtot();
+      N = (grad->getGeom())->getNtot();
+      if(N != Nmute) rs_error("TomoAcoustic3D<T>::applyChainrule(): Geometry in Mutefile does not match geometry in the model.");
+      mute->readVelocity();
+      vpmutedata = mute->getVelocity();
+   }else{
+      N = (grad->getGeom())->getNtot();
+      vpmutedata = (T *) calloc(N, sizeof(T)); 
+      for(i=0; i < N; i++){
+         vpmutedata[i] = 1.0;
+      }
+   }
+   bound = std::make_shared <rockseis::ModelAcoustic3D<T>>(Lboundfile, Uboundfile, 1 ,0);
+   bound->readModel();
+   long Nbound = (bound->getGeom())->getNtot();
+   N = (grad->getGeom())->getNtot();
+   if(N != Nbound) rs_error("TomoAcoustic3D<T>::applyChainrule(): Geometry in Boundary files does not match geometry in the model.");
+   lbounddata = bound->getVp();
+   ubounddata = bound->getR();
+   x0 = (T *) calloc(N, sizeof(T));
+   switch (this->getParamtype()){
+      case PAR_GRID:
+         N = (grad->getGeom())->getNtot();
+         for(i=0; i< N; i++)
+         {
+            log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+            log_out = log(log_in);
+            x0[i] =((T) log_out);
+            exp_in = (double) (-(x[i]*vpmutedata[i]*kvp + x0[i]));
+            exp_out = exp(exp_in);
+            vpgrad[i] *= kvp*(ubounddata[i]-lbounddata[i])*((T) exp_out/((1.0 + (T) exp_out)*(1.0 + (T) exp_out)));
+         }
+         grad->writeVelocity();
+         break;
+      case PAR_BSPLINE:
+         Nmod = (grad->getGeom())->getNtot();
+         spline = std::make_shared<rockseis::Bspl3D<T>>(model0->getNx(), model0->getNy(), model0->getNz(), model0->getDx(), model0->getDy(), model0->getDz(), this->getDtx(),this->getDty(), this->getDtz(), 3, 3, 3);
+         N = spline->getNc();
+         c = spline->getSpline();
+         for(i=0; i< N; i++)
+         {
+            c[i] = x[i];
+         }
+         spline->bisp();
+         mod = spline->getMod();
+
+         for(i=0; i< Nmod; i++)
+         {
+            log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
+            log_out = log(log_in);
+            x0[i] =((T) log_out);
+            exp_in = (double) (-(mod[i]*vpmutedata[i]*kvp + x0[i]));
+            exp_out = exp(exp_in);
+            vpgrad[i] *= kvp*(ubounddata[i]-lbounddata[i])*((T) exp_out/((1.0 + (T) exp_out)*(1.0 + (T) exp_out)));
+         }
+         grad->writeVelocity();
+         break;
+      default:
+         rs_error("TomoAcoustic3D<T>::applyChainrule(): Unknown parameterisation."); 
+         break;
+   }
+   if(Mutefile.empty()){
+      free(vpmutedata);
+   }
+   free(x0);
+}
+
 
 template<typename T>
 void TomoAcoustic3D<T>::applyMute()

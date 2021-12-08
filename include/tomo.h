@@ -319,6 +319,9 @@ public:
     // Mute gradient
     void applyMute();
 
+    // Aplly Chain rule for contrained optimisation using logistic model
+    void applyChainrule(double *x);
+
     // Regularisation computation
     void computeRegularisation(double *x);
 
