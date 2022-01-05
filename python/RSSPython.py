@@ -101,11 +101,11 @@ class RSSdata:
         f.write(st.pack('Q', self.Nheader))
         f.write(st.pack('Q', self.Ndims))
         for i in range(0,MAXDIMS):
-            f.write(st.pack('Q', int(self.geomN[i])))
+            f.write(st.pack('Q', (self.geomN[i])))
         for i in range(0,MAXDIMS):
-            f.write(st.pack('d', int(self.geomD[i])))
+            f.write(st.pack('d', (self.geomD[i])))
         for i in range(0,MAXDIMS):
-            f.write(st.pack('d', int(self.geomO[i])))
+            f.write(st.pack('d', (self.geomO[i])))
 
         #Estimating sizes for output
         self.fullsize = 1;
