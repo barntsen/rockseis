@@ -74,6 +74,7 @@ public:
     void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
     void setDim(const int _dim) { dim = _dim; }		///< Set the dimension
     void setLpml(const int _lpml) { lpml = _lpml; }	///< Set lpml
+    void bubble_sort(T *a, T *b, int n); ///< Sort two collumns, where a is sorted in ascending order 
 
 private:
     int dim;

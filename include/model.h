@@ -692,6 +692,89 @@ private:
     std::string Qsfile; ///< Filename to S-wave Q model
 };
 
+// =============== 2D VTI MODEL CLASS =============== //
+/** The 2D vti model class
+ *
+ */
+template<typename T>
+class ModelVti2D: public Model<T> {
+public:
+    ModelVti2D();	///< Constructor
+    ModelVti2D(const int _nx, const int _nz, const int lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs);	///< Constructor
+    ModelVti2D(std::string _C11file, std::string _C13file, std::string _C33file, std::string _C55file, std::string _Rfile, const int lpml, const bool _fs);	///< Constructor
+    ~ModelVti2D();	///< Destructor
+    
+    // I/O functions
+    void readModel();	///< Read a model from file
+
+    void writeC11(); ///< Write only the C11 model to file
+    void writeC13(); ///< Write only the C13 model to file
+    void writeC33(); ///< Write only the C33 model to file
+    void writeC55(); ///< Write only the C55 model to file
+    void writeR(); ///< Write only the Density model to file
+    void writeModel() { writeC11(); writeC13(); writeC33(); writeC55();} ///< Write a model to file
+
+    // Get functions
+    T *getC11() { return c11; }	///< Get C11
+    T *getC13() { return c13; }	///< Get C13
+    T *getC33() { return c33; }	///< Get C33
+    T *getC55() { return c55; }	///< Get C55
+    T *getC11p() { return c11p; }	///< Get C11 padded
+    T *getC13p() { return c13p; }	///< Get C13 padded
+    T *getC33p() { return c33p; }	///< Get C33 padded
+    T *getC55p() { return c55p; }	///< Get C55 padded
+    T *getR() { return R; }		///< Get R
+    T *getRx() { return Rx; }		///< Get Rx
+    T *getRz() { return Rz; }		///< Get Rz
+    std::string getC11file() { return c11file; }
+    std::string getC13file() { return c13file; }
+    std::string getC33file() { return c33file; }
+    std::string getC55file() { return c55file; }
+    std::string getRfile() { return Rfile; }
+    void setC11file(std::string name) { c11file = name; }
+    void setC13file(std::string name) { c13file = name; }
+    void setC33file(std::string name) { c33file = name; }
+    void setC55file(std::string name) { c55file = name; }
+    void setRfile(std::string name) { Rfile = name; }
+    T getMinVp();  ///< Returns min Vp
+    T getMinVs();  ///< Returns min Vs
+    T getMinR() {return this->getMin(R); } ///< Returns min R
+    T getMaxVp();  ///< Returns max Vp
+    T getMaxVs(); ///< Returns max Vs
+    T getMaxR() {return this->getMax(R); } ///< Returns max R
+    /** Stagger model functions. 
+    It creates the padded Rx, Rz, L, L2M and M from the non-padded models R, Vp and Vs. 
+    */
+    void staggerModels();
+    std::shared_ptr<ModelVti2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
+    std::shared_ptr<ModelVti2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int order); ///< Returns a model of a domain
+
+    /** Create model
+    It creates an empty model of Vp, Vs and R
+    */
+    void createModel();
+    void createPaddedmodel();
+
+private:
+    T *c11;  // C11 stiffness
+    T *c13;  // C13 stiffness
+    T *c33;   // C33 stiffness
+    T *c55;  // C55 stiffness
+    T *c11p;   // C11 padded
+    T *c13p; // C13 padded
+    T *c33p; // C33 padded
+    T *c55p; // C55 padded
+    T *R;  // Density model
+    T *Rx;  // Staggered inverse of density in x (padded)
+    T *Rz;  // Staggered inverse of density in z (padded)
+    std::string c11file; ///< Filename to c11 model
+    std::string c13file; ///< Filename to c13 model
+    std::string c33file; ///< Filename to c33 model
+    std::string c55file; ///< Filename to c55 model
+    std::string Rfile; ///< Filename to density model
+};
+
+
 
 }
 #endif //MODEL_H

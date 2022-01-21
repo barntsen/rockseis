@@ -46,6 +46,25 @@ Rays<T>::Rays(const int _dim, const int _nx, const int _ny, const int _nz, const
 
 }
 
+template<typename T>
+void Rays<T>::bubble_sort(T *a, T *b, int n) {
+   int i = 0, j = 0;
+   T tmp;
+   for (i = 0; i < n; i++) {   // loop n times - 1 per element
+      for (j = 0; j < n - i - 1; j++) { // last i elements are sorted already
+         if (a[j] > a[j + 1]) {  // swop if order is broken
+            tmp = a[j];
+            a[j] = a[j + 1];
+            a[j + 1] = tmp;
+
+            tmp = b[j];
+            b[j] = b[j + 1];
+            b[j + 1] = tmp;
+         }
+      }
+   }
+}
+
 // =============== 2D ACOUSTIC RAYS CLASS =============== //
 template<typename T>
 RaysAcoustic2D<T>::RaysAcoustic2D(){
@@ -171,7 +190,8 @@ void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 
     int nx = model->getNx_pml();
     int ny = model->getNz_pml();
-    T dh = model->getDx();
+    T dx = model->getDx();
+    T dz = model->getDz();
     T *TT = this->getTT();
     T *Vp = model->getL();
 
@@ -244,10 +264,10 @@ void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 
 
             /* calculate solution */
-            if(ABS(a-b)>=(S(I2D(k,h))*dh)){
-                Tt = MIN(a,b) + S(I2D(k,h))*dh;
+            if((ABS(a-b)>=(S(I2D(k,h))*dx)) || (ABS(a-b)>=(S(I2D(k,h))*dz))){
+               Tt = MIN(a + S(I2D(k,h))*dz, b + S(I2D(k,h))*dx);
             }else{
-                Tt = (a + b + sqrt((2.0*pow(S(I2D(k,h)),2.0)*pow(dh,2.0)) - pow((a-b),2.0)))/2.0;
+                Tt = (a*SQ(dx) + b*SQ(dz) + dx*dz*sqrt((SQ(dx)+SQ(dz))*SQ(S(I2D(k,h))) - SQ(a-b)))/(SQ(dx)+SQ(dz));
             }
 
             TT[I2D(k,h)] = MIN(TT[I2D(k,h)],Tt);
@@ -263,7 +283,8 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
 {
     int nx = model->getNx_pml();
     int ny = model->getNz_pml();
-    T dh = model->getDx();
+    T dx = model->getDx();
+    T dz = model->getDz();
     T *TT = this->getTT();
     T *lam = this->getLam();
     T *adjsource = this->getAdjsource();
@@ -281,11 +302,11 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
         k = ny1;
         for (j=1;j<ny-1;j++){
                 /* assemble equation (3.6) in Leung & Qian (2006) */
-                ap = -(TT[I2D(k,h+1)]-TT[I2D(k,h)])/dh;
-                am = -(TT[I2D(k,h)]-TT[I2D(k,h-1)])/dh;
+                ap = -(TT[I2D(k,h+1)]-TT[I2D(k,h)])/dz;
+                am = -(TT[I2D(k,h)]-TT[I2D(k,h-1)])/dz;
 
-                bp = -(TT[I2D(k+1,h)]-TT[I2D(k,h)])/dh;
-                bm = -(TT[I2D(k,h)]-TT[I2D(k-1,h)])/dh;
+                bp = -(TT[I2D(k+1,h)]-TT[I2D(k,h)])/dx;
+                bm = -(TT[I2D(k,h)]-TT[I2D(k-1,h)])/dx;
 
                 app = (ap + ABS(ap))/2.0;
                 apm = (ap - ABS(ap))/2.0;
@@ -301,8 +322,8 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
 
 
                 /* Leung & Qian (2006) */
-                lhs = (app-amm)/dh + (bpp-bmm)/dh;
-                rhs = (amp*lam[I2D(k,h-1)]-apm*lam[I2D(k,h+1)])/dh + (bmp*lam[I2D(k-1,h)]-bpm*lam[I2D(k+1,h)])/dh - adjsource[I2D(k,h)];
+                lhs = (app-amm)/dz + (bpp-bmm)/dx;
+                rhs = (amp*lam[I2D(k,h-1)]-apm*lam[I2D(k,h+1)])/dz + (bmp*lam[I2D(k-1,h)]-bpm*lam[I2D(k+1,h)])/dx - adjsource[I2D(k,h)];
                 //
                 lamt = rhs*lhs/(SQ(lhs)+EPS_ADJ);
                 lam[I2D(k,h)] = MIN(lam[I2D(k,h)],lamt);
@@ -834,16 +855,18 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
     size_t nx = model->getNx_pml();
     size_t ny = model->getNy_pml();
     size_t nz = model->getNz_pml();
-    T dh = model->getDx();
     T *TT = this->getTT();
     T *Vp = model->getL();
 
     /* local variables */
     size_t i, j, k, m, n, l;
-    T a[3];
+    T a[3], d[3];
     a[0] = 0.0;
     a[1] = 0.0;
     a[2] = 0.0;
+    d[0] = model->getDx();
+    d[1] = model->getDy();
+    d[2] = model->getDz();
     T Tt;
 
     T slo;
@@ -1053,18 +1076,16 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 
 
                 /* calculate solution */
-                std::sort(a,a+3);
+                this->bubble_sort(a,d,3);
                 while(1){
-                    slo = S(I3D(m,n,l))*dh;
-                    Tt = a[0] + slo;
+                    slo = S(I3D(m,n,l));
+                    Tt = a[0] + slo*d[0];
                     if(Tt <= a[1]) break;
-                    Tt = 0.5*(a[0]+a[1]+sqrt(2.*slo*slo - (a[0]-a[1])*(a[0]-a[1])));
+                    Tt = (a[0]*SQ(d[1]) + a[1]*SQ(d[0]) + d[0]*d[1]*sqrt((SQ(d[0])+SQ(d[1]))*SQ(slo) - SQ(a[0]-a[1])))/(SQ(d[0])+SQ(d[1]));
                     if(Tt <= a[2]) break;
-                    Tt = 1./3. * ((a[0] + a[1] + a[2]) + sqrt(-2.*a[0]*a[0] + 2.*a[0]*a[1] - 2.*a[1]*a[1] + 2.*a[0]*a[2] + 2.*a[1]*a[2] - 2.*a[2]*a[2] + 3.*slo*slo));
+                    Tt =( (2*a[0]/SQ(d[0])) + (2*a[1]/SQ(d[1])) + (2*a[2]/SQ(d[2])) + sqrt( (4*SQ(a[0]/SQ(d[0]) + a[1]/SQ(d[1]) + a[2]/SQ(d[2]))) - 4*(1/SQ(d[0]) + 1/SQ(d[1]) + 1/SQ(d[2]))*(SQ(a[0])/SQ(d[0]) + SQ(a[1])/SQ(d[1]) + SQ(a[2])/SQ(d[2]) - SQ(slo)))) / (2*(1/SQ(d[0]) + 1/SQ(d[1]) + 1/SQ(d[2])));
                     break;
                 }
-
-
                 TT[I3D(m,n,l)] = MIN(TT[I3D(m,n,l)],Tt);
                 l += ndz;
             }
@@ -1080,7 +1101,9 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
     int nx = model->getNx_pml();
     int ny = model->getNy_pml();
     int nz = model->getNz_pml();
-    T dh = model->getDx();
+    T dx = model->getDx();
+    T dy = model->getDy();
+    T dz = model->getDz();
     T *TT = this->getTT();
     T *lam = this->getLam();
     T *adjsource = this->getAdjsource();
@@ -1101,14 +1124,14 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
             l = nz1;
             for (k=1;k<nz-1;k++){
                     /* assemble equation (3.6) in Leung & Qian (2006) */
-                    ap = -(TT[I3D(m+1,n,l)]-TT[I3D(m,n,l)])/dh;
-                    am = -(TT[I3D(m,n,l)]-TT[I3D(m-1,n,l)])/dh;
+                    ap = -(TT[I3D(m+1,n,l)]-TT[I3D(m,n,l)])/dx;
+                    am = -(TT[I3D(m,n,l)]-TT[I3D(m-1,n,l)])/dx;
 
-                    bp = -(TT[I3D(m,n+1,l)]-TT[I3D(m,n,l)])/dh;
-                    bm = -(TT[I3D(m,n,l)]-TT[I3D(m,n-1,l)])/dh;
+                    bp = -(TT[I3D(m,n+1,l)]-TT[I3D(m,n,l)])/dy;
+                    bm = -(TT[I3D(m,n,l)]-TT[I3D(m,n-1,l)])/dy;
 
-                    cp = -(TT[I3D(m,n,l+1)]-TT[I3D(m,n,l)])/dh;
-                    cm = -(TT[I3D(m,n,l)]-TT[I3D(m,n,l-1)])/dh;
+                    cp = -(TT[I3D(m,n,l+1)]-TT[I3D(m,n,l)])/dz;
+                    cm = -(TT[I3D(m,n,l)]-TT[I3D(m,n,l-1)])/dz;
 
                     app = (ap + ABS(ap))/2.0;
                     apm = (ap - ABS(ap))/2.0;
@@ -1130,8 +1153,8 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
 
 
                     /* Leung & Qian (2006) */
-                    lhs = (app-amm)/dh + (bpp-bmm)/dh + (cpp-cmm)/dh;
-                    rhs = (amp*lam[I3D(m-1,n,l)]-apm*lam[I3D(m+1,n,l)])/dh + (bmp*lam[I3D(m,n-1,l)]-bpm*lam[I3D(m,n+1,l)])/dh + (cmp*lam[I3D(m,n,l-1)]-cpm*lam[I3D(m,n,l+1)])/dh - adjsource[I3D(m,n,l)];
+                    lhs = (app-amm)/dx + (bpp-bmm)/dy + (cpp-cmm)/dz;
+                    rhs = (amp*lam[I3D(m-1,n,l)]-apm*lam[I3D(m+1,n,l)])/dx + (bmp*lam[I3D(m,n-1,l)]-bpm*lam[I3D(m,n+1,l)])/dy + (cmp*lam[I3D(m,n,l-1)]-cpm*lam[I3D(m,n,l+1)])/dz - adjsource[I3D(m,n,l)];
 
                     lamt = rhs*lhs/(SQ(lhs)+EPS_ADJ);
                     lam[I3D(m,n,l)] = MIN(lam[I3D(m,n,l)],lamt);

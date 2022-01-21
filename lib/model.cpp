@@ -5720,6 +5720,810 @@ ModelViscoelastic3D<T>::~ModelViscoelastic3D() {
     free(Rz);
 }
 
+// =============== 2D VTI MODEL CLASS =============== //
+template<typename T>
+ModelVti2D<T>::ModelVti2D(): Model<T>(2) {
+    // Nothing here
+}
+
+template<typename T>
+ModelVti2D<T>::ModelVti2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 1.0, _oz, _fs) {
+    
+    /* Allocate variables */
+    c11 = (T *) calloc(1,1);
+    c13 = (T *) calloc(1,1);
+    c33 = (T *) calloc(1,1);
+    c55 = (T *) calloc(1,1);
+    c11p = (T *) calloc(1,1);
+    c13p = (T *) calloc(1,1);
+    c33p = (T *) calloc(1,1);
+    c55p = (T *) calloc(1,1);
+    R = (T *) calloc(1,1);
+    Rx = (T *) calloc(1,1);
+    Rz = (T *) calloc(1,1);
+
+}
+
+template<typename T>
+ModelVti2D<T>::ModelVti2D(std::string _c11file, std::string _c13file, std::string _c33file, std::string _c55file, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(2) {
+    bool status;
+    int nx, nz;
+    T dx, dz;
+    T ox, oz;
+    c11file = _c11file;
+    c13file = _c13file;
+    c33file = _c33file;
+    c55file = _c55file;
+    Rfile = _Rfile;
+
+    std::shared_ptr<File> Fc11 (new File());
+    status = Fc11->input(c11file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::Error reading from c11 file: ", c11file);
+	    exit(1);
+    }
+    std::shared_ptr<File> Fc13 (new File());
+    status = Fc13->input(c13file.c_str());
+    if(status == FILE_ERR){
+        rs_error("ModelVti2D::Error reading from c13 file: ", c13file);
+    }
+    std::shared_ptr<File> Fc33 (new File());
+    status = Fc33->input(c33file.c_str());
+    if(status == FILE_ERR){
+        rs_error("ModelVti2D::Error reading from c33 file: ", c33file);
+    }
+    std::shared_ptr<File> Fc55 (new File());
+    status = Fc55->input(c55file.c_str());
+    if(status == FILE_ERR){
+        rs_error("ModelVti2D::Error reading from c55 file: ", c55file);
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+        rs_error("ModelVti2D::Error reading from density file: ", Rfile);
+        exit(1);
+    }
+
+    // Compare geometry in the two files
+    if(Fc11->compareGeometry(Fc55) != 0)
+    {
+        rs_error("ModelVti2D::Geometries in c11 and c55 model files do not match.");
+    }
+
+    if(Fc11->compareGeometry(Fc13) != 0)
+    {
+        rs_error("ModelVti2D::Geometries in c11 and c13 model files do not match.");
+    }
+
+    if(Fc11->compareGeometry(Fc33) != 0)
+    {
+        rs_error("ModelVti2D::Geometries in c11 and c33 model files do not match.");
+    }
+
+    if(Fc11->compareGeometry(Frho) != 0)
+    {
+        rs_error("ModelVti2D::Geometries in c11 and Density model files do not match.");
+    }
+
+    if(Fc11->getData_format() != Frho->getData_format())
+    {
+        rs_error("ModelVti2D::Numerical precision mismatch in c11 and Density model files.");
+    }
+    if(Fc11->getData_format() != Fc13->getData_format())
+    {
+        rs_error("ModelVti2D::Numerical precision mismatch in c11 and c13 model files.");
+    }
+    if(Fc11->getData_format() != Fc33->getData_format())
+    {
+        rs_error("ModelVti2D::Numerical precision mismatch in c11 and c33 model files.");
+    }
+    if(Fc11->getData_format() != Fc55->getData_format())
+    {
+        rs_error("ModelVti2D::Numerical precision mismatch in c11 and c55 model files.");
+    }
+    if(Fc11->getData_format() != sizeof(T))
+    {
+        rs_error("ModelVti2D::Numerical precision in c11, c55 and Density model files mismatch with constructor.");
+    }
+ 
+
+    
+    // Read geometry from file
+    nx = Fc11->getN(1);
+    dx = (T) Fc11->getD(1);
+    ox = (T) Fc11->getO(1);
+    nz = Fc11->getN(3);
+    dz = (T) Fc11->getD(3);
+    oz = (T) Fc11->getO(3);
+    
+    // Close files
+    Fc11->close();
+    Fc13->close();
+    Fc33->close();
+    Fc55->close();
+    Frho->close();
+
+    // Store geometry in model class
+    this->setNx(nx);
+    this->setDx(dx);
+    this->setOx(ox);
+
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(_fs);
+
+    
+    /* Allocate variables */
+    c11 = (T *) calloc(1,1);
+    c13 = (T *) calloc(1,1);
+    c33 = (T *) calloc(1,1);
+    c55 = (T *) calloc(1,1);
+    c11p = (T *) calloc(1,1);
+    c13p = (T *) calloc(1,1);
+    c33p = (T *) calloc(1,1);
+    c55p = (T *) calloc(1,1);
+    R = (T *) calloc(1,1);
+    Rx = (T *) calloc(1,1);
+    Rz = (T *) calloc(1,1);
+
+}
+
+template<typename T>
+void ModelVti2D<T>::readModel() {
+    bool status;
+    // Get file names
+    std::string c11file = this->getC11file();
+    std::string c13file = this->getC13file();
+    std::string c33file = this->getC33file();
+    std::string c55file = this->getC55file();
+    std::string Rfile = this->getRfile();
+    // Open files for reading
+    std::shared_ptr<File> Fc11 (new File());
+    status = Fc11->input(c11file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::readModel : Error reading from c11 file: ", c11file);
+    }
+    std::shared_ptr<File> Fc13 (new File());
+    status = Fc13->input(c13file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::readModel : Error reading from c13 file: ", c13file);
+    }
+    std::shared_ptr<File> Fc33 (new File());
+    status = Fc33->input(c33file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::readModel : Error reading from c33 file: ", c33file);
+    }
+    std::shared_ptr<File> Fc55 (new File());
+    status = Fc55->input(c55file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::readModel : Error reading from c55 file: ", c55file);
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::readModel : Error reading from Density file: ", Rfile);
+    }
+
+    // Read models
+    int nx = this->getNx();
+    int nz = this->getNz();
+    
+    /* Reallocate c11, c13, c33, c55  and R */
+    free(c11); free(c13); free(c33); free(c55); free(R);
+    c11 = (T *) calloc(nx*nz,sizeof(T));
+    if(c11 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
+    c13 = (T *) calloc(nx*nz,sizeof(T));
+    if(c13 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
+    c33 = (T *) calloc(nx*nz,sizeof(T));
+    if(c33 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
+    c55 = (T *) calloc(nx*nz,sizeof(T));
+    if(c55 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
+    R = (T *) calloc(nx*nz,sizeof(T));
+    if(R == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
+    this->setRealized(true);
+
+    Fc11->read(c11, nx*nz);
+    Fc11->close();
+
+    Fc13->read(c13, nx*nz);
+    Fc13->close();
+
+    Fc33->read(c33, nx*nz);
+    Fc33->close();
+
+    Fc55->read(c55, nx*nz);
+    Fc55->close();
+
+    Frho->read(R, nx*nz);
+    Frho->close();
+}
+
+template<typename T>
+void ModelVti2D<T>::writeR() {
+    if(!this->getRealized()) {
+        rs_error("ModelVti2D::writeR: Model is not allocated.");
+    }
+    // Get file names
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<File> Frho (new File());
+    Frho->output(Rfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Frho->setN(1,nx);
+    Frho->setN(3,nz);
+    Frho->setD(1,dx);
+    Frho->setD(3,dz);
+    Frho->setO(1,ox);
+    Frho->setO(3,oz);
+    Frho->setType(REGULAR);
+    Frho->setData_format(sizeof(T));
+    Frho->writeHeader();
+    T *Mod = this->getR();
+    Frho->write(Mod, nx*nz, 0);
+    Frho->close();
+}
+
+
+template<typename T>
+void ModelVti2D<T>::writeC11() {
+    if(!this->getRealized()) {
+        rs_error("ModelVti2D::writec11: Model is not allocated.");
+    }
+    // Get file names
+    std::string c11file = this->getC11file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(c11file);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC11();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelVti2D<T>::writeC13() {
+    if(!this->getRealized()) {
+        rs_error("ModelVti2D::writec13: Model is not allocated.");
+    }
+    // Get file names
+    std::string c13file = this->getC13file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(c13file);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC13();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelVti2D<T>::writeC33() {
+    if(!this->getRealized()) {
+        rs_error("ModelVti2D::writec33: Model is not allocated.");
+    }
+    // Get file names
+    std::string c33file = this->getC33file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(c33file);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC33();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelVti2D<T>::writeC55() {
+    if(!this->getRealized()) {
+        rs_error("ModelVti2D::writec55: Model is not allocated.");
+    }
+    // Get file names
+    std::string c55file = this->getC55file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(c55file);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC55();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelVti2D<T>::staggerModels(){
+    if(!this->getRealized()) {
+        rs_error("ModelVti2D::staggerModels: Model is not allocated.");
+    }
+    int ix,iz;
+    int nx, nz, lpml, nx_pml, nz_pml;
+    nx = this->getNx();
+    nz = this->getNz();
+    lpml = this->getLpml();
+    
+    nx_pml = nx + 2*lpml;
+    nz_pml = nz + 2*lpml;
+    
+    Index ind(nx, nz);
+    Index ind_pml(nx_pml, nz_pml);
+    
+    // Reallocate necessary variables 
+    free(c11p); free(c13p); free(c33p); free(c55p); free(Rx); free(Rz);
+    c11p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(c11p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+    c13p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(c13p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+    c33p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(c33p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+    c55p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(c55p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+    Rx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(Rx == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+    Rz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(Rz == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+
+    // Padding
+    this->padmodel2d(Rx, R, nx, nz, lpml);
+    this->padmodel2d(Rz, R, nx, nz, lpml);
+    this->padmodel2d(c11p, c11, nx, nz, lpml);
+    this->padmodel2d(c13p, c13, nx, nz, lpml);
+    this->padmodel2d(c33p, c33, nx, nz, lpml);
+    this->padmodel2d(c55p, c55, nx, nz, lpml);
+    
+    // In case of free surface
+    if(this->getFs()){
+        iz=lpml;
+        for(ix=0; ix<nx_pml; ix++){
+            c13p[ind_pml(ix,iz)] = 0.0;
+            c11p[ind_pml(ix,iz)] = c55p[ind_pml(ix,iz)];
+        }
+    }
+
+    // Staggering using arithmetic average
+    this->staggermodel_x(Rx, nx_pml, 1, nz_pml); 
+    this->staggermodel_z(Rz, nx_pml, 1, nz_pml); 
+    
+    this->staggermodel_z(c55p, nx_pml, 1, nz_pml); 
+    this->staggermodel_x(c55p, nx_pml, 1, nz_pml); 
+
+    // Inverting the density
+    for(ix=0; ix < nx_pml; ix++){
+        for(iz=0; iz < nz_pml; iz++){
+            if(Rx[ind_pml(ix,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+            if(Rz[ind_pml(ix,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+            Rx[ind_pml(ix,iz)] = 1.0/Rx[ind_pml(ix,iz)];
+            Rz[ind_pml(ix,iz)] = 1.0/Rz[ind_pml(ix,iz)];
+        }
+    }
+    
+    // In case of free surface
+    if(this->getFs()){
+        iz=lpml;
+        for(ix=0; ix<nx_pml; ix++){
+            Rx[ind_pml(ix,iz)] *= 2.0;
+        }
+    }
+}
+
+template<typename T>
+void ModelVti2D<T>::createModel() {
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    /* Reallocate c11, c13, c33, c55 and R */
+    free(c11); free(c13); free(c33); free(c55); free(R);
+    c11 = (T *) calloc(nx*nz,sizeof(T));
+    if(c11 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
+    c13 = (T *) calloc(nx*nz,sizeof(T));
+    if(c13 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
+    c33 = (T *) calloc(nx*nz,sizeof(T));
+    if(c33 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
+    c55 = (T *) calloc(nx*nz,sizeof(T));
+    if(c55 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
+    R = (T *) calloc(nx*nz,sizeof(T));
+    if(R == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
+    this->setRealized(true);
+}
+
+template<typename T>
+void ModelVti2D<T>::createPaddedmodel() {
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    /* Reallocate c11p, c13p ,c33p, c55p, Rx, and Rz */
+    free(c11p); free(c13p); free(c33p); free(c55p); free(Rx); free(Rz);
+
+    c11p = (T *) calloc(nx*nz,sizeof(T));
+    if(c11p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+    c13p = (T *) calloc(nx*nz,sizeof(T));
+    if(c13p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+    c33p = (T *) calloc(nx*nz,sizeof(T));
+    if(c33p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+    c55p = (T *) calloc(nx*nz,sizeof(T));
+    if(c55p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+    Rx = (T *) calloc(nx*nz,sizeof(T));
+    if(Rx == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+    Rz = (T *) calloc(nx*nz,sizeof(T));
+    if(Rz == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+}
+
+template<typename T>
+std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getLocal(std::shared_ptr<Data2D<T>> data, T aperture, bool map) {
+
+    std::shared_ptr<ModelVti2D<T>> local;
+    T dx = this->getDx();
+    T ox = this->getOx();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+    size_t size;
+    off_t start;
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize2d(data, aperture, map, &start, &size);
+
+    /* Create local model */
+    local = std::make_shared<ModelVti2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getFs());
+
+    /*Realizing local model */
+    local->createModel();
+
+	/* Copying from big model into local model */
+    T *c11 = local->getC11();
+    T *c13 = local->getC13();
+    T *c33 = local->getC33();
+    T *c55 = local->getC55();
+    T *R = local->getR();
+
+    /* Allocate two traces to read models from file */
+    T *c11trace = (T *) calloc(nx, sizeof(T));
+    if(c11trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *c13trace = (T *) calloc(nx, sizeof(T));
+    if(c13trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *c33trace = (T *) calloc(nx, sizeof(T));
+    if(c33trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *c55trace = (T *) calloc(nx, sizeof(T));
+    if(c55trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> Fc11 (new File());
+    status = Fc11->input(c11file);
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::getLocal : Error reading from c11 file.");
+    }
+    std::shared_ptr<File> Fc13 (new File());
+    status = Fc13->input(c13file);
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::getLocal : Error reading from c13 file.");
+    }
+    std::shared_ptr<File> Fc33 (new File());
+    status = Fc33->input(c33file);
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::getLocal : Error reading from c33 file.");
+    }
+    std::shared_ptr<File> Fc55 (new File());
+    status = Fc55->input(c55file);
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::getLocal : Error reading from c55 file.");
+    }
+
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::getLocal : Error reading from Density file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+    Index l2d(size,nz);
+    Index f2d(nx,nz);
+    for(size_t i1=0; i1<nz; i1++) {
+        fpos = f2d(0, i1)*sizeof(T);
+        Fc11->read(c11trace, nx, fpos);
+        if(Fc11->getFail()) rs_error("ModelVti2D::getLocal: Error reading from c11 file");
+        Fc13->read(c13trace, nx, fpos);
+        if(Fc13->getFail()) rs_error("ModelVti2D::getLocal: Error reading from c13 file");
+        Fc33->read(c33trace, nx, fpos);
+        if(Fc33->getFail()) rs_error("ModelVti2D::getLocal: Error reading from c33 file");
+        Fc55->read(c55trace, nx, fpos);
+        if(Fc55->getFail()) rs_error("ModelVti2D::getLocal: Error reading from c55 file");
+        Frho->read(rhotrace, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelVti2D::getLocal: Error reading from rho file");
+        for(size_t i2=0; i2<size; i2++) {
+            lpos = i + i2;
+            if(lpos < 0) lpos = 0;
+            if(lpos > (nx-1)) lpos = nx - 1;
+            c11[l2d(i2,i1)] = c11trace[lpos];
+            c13[l2d(i2,i1)] = c13trace[lpos];
+            c33[l2d(i2,i1)] = c33trace[lpos];
+            c55[l2d(i2,i1)] = c55trace[lpos];
+            R[l2d(i2,i1)] = rhotrace[lpos];
+        }
+    }
+
+    /* Free traces */
+    free(c11trace);
+    free(c13trace);
+    free(c33trace);
+    free(c55trace);
+    free(rhotrace);
+
+    return local;
+}
+
+template<typename T>
+std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getDomainmodel(std::shared_ptr<Data2D<T>> data, T aperture, bool map, const int d, const int nd0, const int nd1, const int order) {
+    std::shared_ptr<ModelVti2D<T>> local;
+    T dx = this->getDx();
+    T dz = this->getDz();
+    T ox = this->getOx();
+    T oz = this->getOz();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+    size_t size;
+    off_t start;
+    int nxd,nzd;
+    int ix0,iz0;
+    int lpml = this->getLpml();
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize2d(data, aperture, map, &start, &size);
+    (this->getDomain())->setupDomain3D(size+2*lpml,1,nz+2*this->getLpml(),d,nd0,1,nd1,order);
+    nxd = (this->getDomain())->getNx_pad();
+    nzd = (this->getDomain())->getNz_pad();
+    ix0 = (this->getDomain())->getIx0();
+    iz0 = (this->getDomain())->getIz0();
+
+
+    /* Create domain model */
+    local = std::make_shared<ModelVti2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getFs());
+    (local->getDomain())->setupDomain3D(size+2*lpml,1,nz+2*lpml,d,nd0,1,nd1,order);
+
+    /*Realizing local model */
+    local->createModel();
+    local->createPaddedmodel();
+
+    /* Copying from big model into local model */
+    T *c11 = local->getC11();
+    T *c13 = local->getC13();
+    T *c33 = local->getC33();
+    T *c55 = local->getC55();
+    T *c11p = local->getC11p();
+    T *c13p = local->getC13p();
+    T *c33p = local->getC33p();
+    T *c55p = local->getC55p();
+    T *R = local->getR();
+    T *Rx = local->getRx();
+    T *Rz = local->getRz();
+
+    /* Allocate two traces to read models from file */
+    T *c11trace = (T *) calloc(nx, sizeof(T));
+    if(c11trace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
+    T *c13trace = (T *) calloc(nx, sizeof(T));
+    if(c13trace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
+    T *c33trace = (T *) calloc(nx, sizeof(T));
+    if(c33trace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
+    T *c55trace = (T *) calloc(nx, sizeof(T));
+    if(c55trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *c55trace_adv = (T *) calloc(nx, sizeof(T));
+    if(c55trace_adv == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
+    T *rhotrace_adv = (T *) calloc(nx, sizeof(T));
+    if(rhotrace_adv == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> Fc11 (new File());
+    status = Fc11->input(c11file);
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::getDomainmodel : Error reading from c11 file.");
+    }
+    std::shared_ptr<File> Fc13 (new File());
+    status = Fc13->input(c13file);
+    if(status == FILE_ERR){
+       rs_error("ModelVti2D::getDomainmodel : Error reading from c13 file.");
+    }
+    std::shared_ptr<File> Fc33 (new File());
+    status = Fc33->input(c33file);
+    if(status == FILE_ERR){
+       rs_error("ModelVti2D::getDomainmodel : Error reading from c33 file.");
+    }
+    std::shared_ptr<File> Fc55 (new File());
+    status = Fc55->input(c55file);
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::getLocal : Error reading from c55 file.");
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelVti2D::getDomainmodel : Error reading from Density file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+    Index l2d(nxd,nzd);
+    Index f2d(nx,nz);
+    T M1, M2, M3, M4;
+
+    for(size_t i1=0; i1<nzd; i1++) {
+        lpos = iz0 + i1 - lpml;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        Fc11->read(c11trace, nx, fpos);
+        if(Fc11->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c11 file");
+        Fc13->read(c13trace, nx, fpos);
+        if(Fc13->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c13 file");
+        Fc33->read(c33trace, nx, fpos);
+        if(Fc33->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c33 file");
+        Fc55->read(c55trace, nx, fpos);
+        if(Fc55->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c55 file");
+        Frho->read(rhotrace, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from rho file");
+
+        // Read advanced trace
+        lpos = iz0 + i1 - lpml + 1;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        Fc55->read(c55trace_adv, nx, fpos);
+        if(Fc55->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c55 file");
+        Frho->read(rhotrace_adv, nx, fpos);
+        if(Frho->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from rho file");
+        for(size_t i2=0; i2<nxd; i2++) {
+            lpos = i + i2 + ix0 - lpml;
+            if(lpos < 0) lpos = 0;
+            if(lpos > (nx-1)) lpos = nx - 1;
+            c11[l2d(i2,i1)] = c11trace[lpos];
+            c13[l2d(i2,i1)] = c13trace[lpos];
+            c33[l2d(i2,i1)] = c33trace[lpos];
+            c55[l2d(i2,i1)] = c55trace[lpos];
+            R[l2d(i2,i1)] = rhotrace[lpos];
+            c11p[l2d(i2,i1)] = c11trace[lpos];
+            c13p[l2d(i2,i1)] = c13trace[lpos];
+            c33p[l2d(i2,i1)] = c33trace[lpos];
+            if(rhotrace[lpos] <= 0.0) rs_error("ModelVti2D::getDomainmodel: Zero density found.");
+            if(lpos < nx-1){
+               Rx[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace[lpos+1]);
+            }else{
+               Rx[l2d(i2,i1)] = 1.0/(rhotrace[lpos]);
+            }
+            Rz[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace_adv[lpos]);
+
+            M1 = rhotrace[lpos]*c55trace[lpos]*c55trace[lpos];
+            M3 = rhotrace_adv[lpos]*c55trace_adv[lpos]*c55trace_adv[lpos];
+            if(lpos < nx-1){
+               M2 = rhotrace[lpos+1]*c55trace[lpos+1]*c55trace[lpos+1];
+               M4 = rhotrace_adv[lpos+1]*c55trace_adv[lpos+1]*c55trace_adv[lpos+1];
+            }else{
+               M2 = rhotrace[lpos]*c55trace[lpos]*c55trace[lpos];
+               M4 = rhotrace_adv[lpos]*c55trace_adv[lpos]*c55trace_adv[lpos];
+            }
+            c55p[l2d(i2,i1)] = 0.25*(M1+M2+M3+M4);
+        }
+    }
+
+       
+    // In case of free surface
+    if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
+        for(size_t ix=0; ix<nxd; ix++){
+            Rx[l2d(ix,lpml-iz0)] *= 2.0;
+            c11p[l2d(ix,lpml-iz0)] = (c11p[l2d(ix,lpml-iz0)] - c13p[l2d(ix,lpml-iz0)])/2.0;
+            c13p[l2d(ix,lpml-iz0)] = 0.0;
+        }
+    }
+
+
+    /* Free traces */
+    free(c11trace);
+    free(c13trace);
+    free(c33trace);
+    free(c55trace);
+    free(c55trace_adv);
+    free(rhotrace);
+    free(rhotrace_adv);
+    
+    return local;
+}
+
+
+template<typename T>
+ModelVti2D<T>::~ModelVti2D() {
+    free(c11);
+    free(c13);
+    free(c33);
+    free(c55);
+    free(c11p);
+    free(c13p);
+    free(c33p);
+    free(c55p);
+    free(R);
+    free(Rx);
+    free(Rz);
+}
+
+
+
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Model<float>;
@@ -5744,4 +6548,7 @@ template class ModelViscoelastic2D<double>;
 
 template class ModelViscoelastic3D<float>;
 template class ModelViscoelastic3D<double>;
+
+template class ModelVti2D<float>;
+template class ModelVti2D<double>;
 }
