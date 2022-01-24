@@ -3131,7 +3131,7 @@ ModelElastic2D<T>::~ModelElastic2D() {
 
 // =============== 3D ELASTIC MODEL CLASS =============== //
 template<typename T>
-ModelElastic3D<T>::ModelElastic3D(): Model<T>(2) {
+ModelElastic3D<T>::ModelElastic3D(): Model<T>(3) {
     // Nothing here
 }
 
@@ -5730,14 +5730,14 @@ template<typename T>
 ModelVti2D<T>::ModelVti2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 1.0, _oz, _fs) {
     
     /* Allocate variables */
-    c11 = (T *) calloc(1,1);
-    c13 = (T *) calloc(1,1);
-    c33 = (T *) calloc(1,1);
-    c55 = (T *) calloc(1,1);
-    c11p = (T *) calloc(1,1);
-    c13p = (T *) calloc(1,1);
-    c33p = (T *) calloc(1,1);
-    c55p = (T *) calloc(1,1);
+    C11 = (T *) calloc(1,1);
+    C13 = (T *) calloc(1,1);
+    C33 = (T *) calloc(1,1);
+    C55 = (T *) calloc(1,1);
+    C11p = (T *) calloc(1,1);
+    C13p = (T *) calloc(1,1);
+    C33p = (T *) calloc(1,1);
+    C55p = (T *) calloc(1,1);
     R = (T *) calloc(1,1);
     Rx = (T *) calloc(1,1);
     Rz = (T *) calloc(1,1);
@@ -5745,37 +5745,37 @@ ModelVti2D<T>::ModelVti2D(const int _nx, const int _nz, const int _lpml, const T
 }
 
 template<typename T>
-ModelVti2D<T>::ModelVti2D(std::string _c11file, std::string _c13file, std::string _c33file, std::string _c55file, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(2) {
+ModelVti2D<T>::ModelVti2D(std::string _C11file, std::string _C13file, std::string _C33file, std::string _C55file, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(2) {
     bool status;
     int nx, nz;
     T dx, dz;
     T ox, oz;
-    c11file = _c11file;
-    c13file = _c13file;
-    c33file = _c33file;
-    c55file = _c55file;
+    C11file = _C11file;
+    C13file = _C13file;
+    C33file = _C33file;
+    C55file = _C55file;
     Rfile = _Rfile;
 
-    std::shared_ptr<File> Fc11 (new File());
-    status = Fc11->input(c11file.c_str());
+    std::shared_ptr<File> FC11 (new File());
+    status = FC11->input(C11file.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::Error reading from c11 file: ", c11file);
+	    rs_error("ModelVti2D::Error reading from C11 file: ", C11file);
 	    exit(1);
     }
-    std::shared_ptr<File> Fc13 (new File());
-    status = Fc13->input(c13file.c_str());
+    std::shared_ptr<File> FC13 (new File());
+    status = FC13->input(C13file.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelVti2D::Error reading from c13 file: ", c13file);
+        rs_error("ModelVti2D::Error reading from C13 file: ", C13file);
     }
-    std::shared_ptr<File> Fc33 (new File());
-    status = Fc33->input(c33file.c_str());
+    std::shared_ptr<File> FC33 (new File());
+    status = FC33->input(C33file.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelVti2D::Error reading from c33 file: ", c33file);
+        rs_error("ModelVti2D::Error reading from C33 file: ", C33file);
     }
-    std::shared_ptr<File> Fc55 (new File());
-    status = Fc55->input(c55file.c_str());
+    std::shared_ptr<File> FC55 (new File());
+    status = FC55->input(C55file.c_str());
     if(status == FILE_ERR){
-        rs_error("ModelVti2D::Error reading from c55 file: ", c55file);
+        rs_error("ModelVti2D::Error reading from C55 file: ", C55file);
     }
     std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
@@ -5785,62 +5785,62 @@ ModelVti2D<T>::ModelVti2D(std::string _c11file, std::string _c13file, std::strin
     }
 
     // Compare geometry in the two files
-    if(Fc11->compareGeometry(Fc55) != 0)
+    if(FC11->compareGeometry(FC55) != 0)
     {
-        rs_error("ModelVti2D::Geometries in c11 and c55 model files do not match.");
+        rs_error("ModelVti2D::Geometries in C11 and C55 model files do not match.");
     }
 
-    if(Fc11->compareGeometry(Fc13) != 0)
+    if(FC11->compareGeometry(FC13) != 0)
     {
-        rs_error("ModelVti2D::Geometries in c11 and c13 model files do not match.");
+        rs_error("ModelVti2D::Geometries in C11 and C13 model files do not match.");
     }
 
-    if(Fc11->compareGeometry(Fc33) != 0)
+    if(FC11->compareGeometry(FC33) != 0)
     {
-        rs_error("ModelVti2D::Geometries in c11 and c33 model files do not match.");
+        rs_error("ModelVti2D::Geometries in C11 and C33 model files do not match.");
     }
 
-    if(Fc11->compareGeometry(Frho) != 0)
+    if(FC11->compareGeometry(Frho) != 0)
     {
-        rs_error("ModelVti2D::Geometries in c11 and Density model files do not match.");
+        rs_error("ModelVti2D::Geometries in C11 and Density model files do not match.");
     }
 
-    if(Fc11->getData_format() != Frho->getData_format())
+    if(FC11->getData_format() != Frho->getData_format())
     {
-        rs_error("ModelVti2D::Numerical precision mismatch in c11 and Density model files.");
+        rs_error("ModelVti2D::Numerical precision mismatch in C11 and Density model files.");
     }
-    if(Fc11->getData_format() != Fc13->getData_format())
+    if(FC11->getData_format() != FC13->getData_format())
     {
-        rs_error("ModelVti2D::Numerical precision mismatch in c11 and c13 model files.");
+        rs_error("ModelVti2D::Numerical precision mismatch in C11 and C13 model files.");
     }
-    if(Fc11->getData_format() != Fc33->getData_format())
+    if(FC11->getData_format() != FC33->getData_format())
     {
-        rs_error("ModelVti2D::Numerical precision mismatch in c11 and c33 model files.");
+        rs_error("ModelVti2D::Numerical precision mismatch in C11 and C33 model files.");
     }
-    if(Fc11->getData_format() != Fc55->getData_format())
+    if(FC11->getData_format() != FC55->getData_format())
     {
-        rs_error("ModelVti2D::Numerical precision mismatch in c11 and c55 model files.");
+        rs_error("ModelVti2D::Numerical precision mismatch in C11 and C55 model files.");
     }
-    if(Fc11->getData_format() != sizeof(T))
+    if(FC11->getData_format() != sizeof(T))
     {
-        rs_error("ModelVti2D::Numerical precision in c11, c55 and Density model files mismatch with constructor.");
+        rs_error("ModelVti2D::Numerical precision in C11, C55 and Density model files mismatch with constructor.");
     }
  
 
     
     // Read geometry from file
-    nx = Fc11->getN(1);
-    dx = (T) Fc11->getD(1);
-    ox = (T) Fc11->getO(1);
-    nz = Fc11->getN(3);
-    dz = (T) Fc11->getD(3);
-    oz = (T) Fc11->getO(3);
+    nx = FC11->getN(1);
+    dx = (T) FC11->getD(1);
+    ox = (T) FC11->getO(1);
+    nz = FC11->getN(3);
+    dz = (T) FC11->getD(3);
+    oz = (T) FC11->getO(3);
     
     // Close files
-    Fc11->close();
-    Fc13->close();
-    Fc33->close();
-    Fc55->close();
+    FC11->close();
+    FC13->close();
+    FC33->close();
+    FC55->close();
     Frho->close();
 
     // Store geometry in model class
@@ -5857,14 +5857,14 @@ ModelVti2D<T>::ModelVti2D(std::string _c11file, std::string _c13file, std::strin
 
     
     /* Allocate variables */
-    c11 = (T *) calloc(1,1);
-    c13 = (T *) calloc(1,1);
-    c33 = (T *) calloc(1,1);
-    c55 = (T *) calloc(1,1);
-    c11p = (T *) calloc(1,1);
-    c13p = (T *) calloc(1,1);
-    c33p = (T *) calloc(1,1);
-    c55p = (T *) calloc(1,1);
+    C11 = (T *) calloc(1,1);
+    C13 = (T *) calloc(1,1);
+    C33 = (T *) calloc(1,1);
+    C55 = (T *) calloc(1,1);
+    C11p = (T *) calloc(1,1);
+    C13p = (T *) calloc(1,1);
+    C33p = (T *) calloc(1,1);
+    C55p = (T *) calloc(1,1);
     R = (T *) calloc(1,1);
     Rx = (T *) calloc(1,1);
     Rz = (T *) calloc(1,1);
@@ -5875,31 +5875,31 @@ template<typename T>
 void ModelVti2D<T>::readModel() {
     bool status;
     // Get file names
-    std::string c11file = this->getC11file();
-    std::string c13file = this->getC13file();
-    std::string c33file = this->getC33file();
-    std::string c55file = this->getC55file();
+    std::string C11file = this->getC11file();
+    std::string C13file = this->getC13file();
+    std::string C33file = this->getC33file();
+    std::string C55file = this->getC55file();
     std::string Rfile = this->getRfile();
     // Open files for reading
-    std::shared_ptr<File> Fc11 (new File());
-    status = Fc11->input(c11file.c_str());
+    std::shared_ptr<File> FC11 (new File());
+    status = FC11->input(C11file.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::readModel : Error reading from c11 file: ", c11file);
+	    rs_error("ModelVti2D::readModel : Error reading from C11 file: ", C11file);
     }
-    std::shared_ptr<File> Fc13 (new File());
-    status = Fc13->input(c13file.c_str());
+    std::shared_ptr<File> FC13 (new File());
+    status = FC13->input(C13file.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::readModel : Error reading from c13 file: ", c13file);
+	    rs_error("ModelVti2D::readModel : Error reading from C13 file: ", C13file);
     }
-    std::shared_ptr<File> Fc33 (new File());
-    status = Fc33->input(c33file.c_str());
+    std::shared_ptr<File> FC33 (new File());
+    status = FC33->input(C33file.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::readModel : Error reading from c33 file: ", c33file);
+	    rs_error("ModelVti2D::readModel : Error reading from C33 file: ", C33file);
     }
-    std::shared_ptr<File> Fc55 (new File());
-    status = Fc55->input(c55file.c_str());
+    std::shared_ptr<File> FC55 (new File());
+    status = FC55->input(C55file.c_str());
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::readModel : Error reading from c55 file: ", c55file);
+	    rs_error("ModelVti2D::readModel : Error reading from C55 file: ", C55file);
     }
     std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile.c_str());
@@ -5911,31 +5911,31 @@ void ModelVti2D<T>::readModel() {
     int nx = this->getNx();
     int nz = this->getNz();
     
-    /* Reallocate c11, c13, c33, c55  and R */
-    free(c11); free(c13); free(c33); free(c55); free(R);
-    c11 = (T *) calloc(nx*nz,sizeof(T));
-    if(c11 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
-    c13 = (T *) calloc(nx*nz,sizeof(T));
-    if(c13 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
-    c33 = (T *) calloc(nx*nz,sizeof(T));
-    if(c33 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
-    c55 = (T *) calloc(nx*nz,sizeof(T));
-    if(c55 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
+    /* Reallocate C11, C13, C33, C55  and R */
+    free(C11); free(C13); free(C33); free(C55); free(R);
+    C11 = (T *) calloc(nx*nz,sizeof(T));
+    if(C11 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
+    C13 = (T *) calloc(nx*nz,sizeof(T));
+    if(C13 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
+    C33 = (T *) calloc(nx*nz,sizeof(T));
+    if(C33 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
+    C55 = (T *) calloc(nx*nz,sizeof(T));
+    if(C55 == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
     R = (T *) calloc(nx*nz,sizeof(T));
     if(R == NULL) rs_error("ModelVti2D::readModel: Failed to allocate memory.");
     this->setRealized(true);
 
-    Fc11->read(c11, nx*nz);
-    Fc11->close();
+    FC11->read(C11, nx*nz);
+    FC11->close();
 
-    Fc13->read(c13, nx*nz);
-    Fc13->close();
+    FC13->read(C13, nx*nz);
+    FC13->close();
 
-    Fc33->read(c33, nx*nz);
-    Fc33->close();
+    FC33->read(C33, nx*nz);
+    FC33->close();
 
-    Fc55->read(c55, nx*nz);
-    Fc55->close();
+    FC55->read(C55, nx*nz);
+    FC55->close();
 
     Frho->read(R, nx*nz);
     Frho->close();
@@ -5978,13 +5978,13 @@ void ModelVti2D<T>::writeR() {
 template<typename T>
 void ModelVti2D<T>::writeC11() {
     if(!this->getRealized()) {
-        rs_error("ModelVti2D::writec11: Model is not allocated.");
+        rs_error("ModelVti2D::writeC11: Model is not allocated.");
     }
     // Get file names
-    std::string c11file = this->getC11file();
+    std::string C11file = this->getC11file();
     // Open files for writting
     std::shared_ptr<File> F (new File());
-    F->output(c11file);
+    F->output(C11file);
 
     // Write models
     int nx = this->getNx();
@@ -6011,13 +6011,13 @@ void ModelVti2D<T>::writeC11() {
 template<typename T>
 void ModelVti2D<T>::writeC13() {
     if(!this->getRealized()) {
-        rs_error("ModelVti2D::writec13: Model is not allocated.");
+        rs_error("ModelVti2D::writeC13: Model is not allocated.");
     }
     // Get file names
-    std::string c13file = this->getC13file();
+    std::string C13file = this->getC13file();
     // Open files for writting
     std::shared_ptr<File> F (new File());
-    F->output(c13file);
+    F->output(C13file);
 
     // Write models
     int nx = this->getNx();
@@ -6044,13 +6044,13 @@ void ModelVti2D<T>::writeC13() {
 template<typename T>
 void ModelVti2D<T>::writeC33() {
     if(!this->getRealized()) {
-        rs_error("ModelVti2D::writec33: Model is not allocated.");
+        rs_error("ModelVti2D::writeC33: Model is not allocated.");
     }
     // Get file names
-    std::string c33file = this->getC33file();
+    std::string C33file = this->getC33file();
     // Open files for writting
     std::shared_ptr<File> F (new File());
-    F->output(c33file);
+    F->output(C33file);
 
     // Write models
     int nx = this->getNx();
@@ -6077,13 +6077,13 @@ void ModelVti2D<T>::writeC33() {
 template<typename T>
 void ModelVti2D<T>::writeC55() {
     if(!this->getRealized()) {
-        rs_error("ModelVti2D::writec55: Model is not allocated.");
+        rs_error("ModelVti2D::writeC55: Model is not allocated.");
     }
     // Get file names
-    std::string c55file = this->getC55file();
+    std::string C55file = this->getC55file();
     // Open files for writting
     std::shared_ptr<File> F (new File());
-    F->output(c55file);
+    F->output(C55file);
 
     // Write models
     int nx = this->getNx();
@@ -6125,15 +6125,15 @@ void ModelVti2D<T>::staggerModels(){
     Index ind_pml(nx_pml, nz_pml);
     
     // Reallocate necessary variables 
-    free(c11p); free(c13p); free(c33p); free(c55p); free(Rx); free(Rz);
-    c11p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    if(c11p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
-    c13p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    if(c13p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
-    c33p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    if(c33p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
-    c55p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    if(c55p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+    free(C11p); free(C13p); free(C33p); free(C55p); free(Rx); free(Rz);
+    C11p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(C11p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+    C13p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(C13p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+    C33p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(C33p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
+    C55p = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    if(C55p == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
     Rx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
     if(Rx == NULL) rs_error("ModelVti2D::staggerModels: Failed to allocate memory.");
     Rz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
@@ -6142,17 +6142,17 @@ void ModelVti2D<T>::staggerModels(){
     // Padding
     this->padmodel2d(Rx, R, nx, nz, lpml);
     this->padmodel2d(Rz, R, nx, nz, lpml);
-    this->padmodel2d(c11p, c11, nx, nz, lpml);
-    this->padmodel2d(c13p, c13, nx, nz, lpml);
-    this->padmodel2d(c33p, c33, nx, nz, lpml);
-    this->padmodel2d(c55p, c55, nx, nz, lpml);
+    this->padmodel2d(C11p, C11, nx, nz, lpml);
+    this->padmodel2d(C13p, C13, nx, nz, lpml);
+    this->padmodel2d(C33p, C33, nx, nz, lpml);
+    this->padmodel2d(C55p, C55, nx, nz, lpml);
     
     // In case of free surface
     if(this->getFs()){
         iz=lpml;
         for(ix=0; ix<nx_pml; ix++){
-            c13p[ind_pml(ix,iz)] = 0.0;
-            c11p[ind_pml(ix,iz)] = c55p[ind_pml(ix,iz)];
+            C13p[ind_pml(ix,iz)] = 0.0;
+            C11p[ind_pml(ix,iz)] = C55p[ind_pml(ix,iz)];
         }
     }
 
@@ -6160,8 +6160,8 @@ void ModelVti2D<T>::staggerModels(){
     this->staggermodel_x(Rx, nx_pml, 1, nz_pml); 
     this->staggermodel_z(Rz, nx_pml, 1, nz_pml); 
     
-    this->staggermodel_z(c55p, nx_pml, 1, nz_pml); 
-    this->staggermodel_x(c55p, nx_pml, 1, nz_pml); 
+    this->staggermodel_z(C55p, nx_pml, 1, nz_pml); 
+    this->staggermodel_x(C55p, nx_pml, 1, nz_pml); 
 
     // Inverting the density
     for(ix=0; ix < nx_pml; ix++){
@@ -6187,16 +6187,16 @@ void ModelVti2D<T>::createModel() {
     int nx = this->getNx();
     int nz = this->getNz();
 
-    /* Reallocate c11, c13, c33, c55 and R */
-    free(c11); free(c13); free(c33); free(c55); free(R);
-    c11 = (T *) calloc(nx*nz,sizeof(T));
-    if(c11 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
-    c13 = (T *) calloc(nx*nz,sizeof(T));
-    if(c13 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
-    c33 = (T *) calloc(nx*nz,sizeof(T));
-    if(c33 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
-    c55 = (T *) calloc(nx*nz,sizeof(T));
-    if(c55 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
+    /* Reallocate C11, C13, C33, C55 and R */
+    free(C11); free(C13); free(C33); free(C55); free(R);
+    C11 = (T *) calloc(nx*nz,sizeof(T));
+    if(C11 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
+    C13 = (T *) calloc(nx*nz,sizeof(T));
+    if(C13 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
+    C33 = (T *) calloc(nx*nz,sizeof(T));
+    if(C33 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
+    C55 = (T *) calloc(nx*nz,sizeof(T));
+    if(C55 == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
     R = (T *) calloc(nx*nz,sizeof(T));
     if(R == NULL) rs_error("ModelVti2D::createModel: Failed to allocate memory.");
     this->setRealized(true);
@@ -6207,17 +6207,17 @@ void ModelVti2D<T>::createPaddedmodel() {
     int nx = this->getNx();
     int nz = this->getNz();
 
-    /* Reallocate c11p, c13p ,c33p, c55p, Rx, and Rz */
-    free(c11p); free(c13p); free(c33p); free(c55p); free(Rx); free(Rz);
+    /* Reallocate C11p, C13p ,C33p, C55p, Rx, and Rz */
+    free(C11p); free(C13p); free(C33p); free(C55p); free(Rx); free(Rz);
 
-    c11p = (T *) calloc(nx*nz,sizeof(T));
-    if(c11p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
-    c13p = (T *) calloc(nx*nz,sizeof(T));
-    if(c13p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
-    c33p = (T *) calloc(nx*nz,sizeof(T));
-    if(c33p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
-    c55p = (T *) calloc(nx*nz,sizeof(T));
-    if(c55p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+    C11p = (T *) calloc(nx*nz,sizeof(T));
+    if(C11p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+    C13p = (T *) calloc(nx*nz,sizeof(T));
+    if(C13p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+    C33p = (T *) calloc(nx*nz,sizeof(T));
+    if(C33p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
+    C55p = (T *) calloc(nx*nz,sizeof(T));
+    if(C55p == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
     Rx = (T *) calloc(nx*nz,sizeof(T));
     if(Rx == NULL) rs_error("ModelVti2D::createPaddedmodel: Failed to allocate memory.");
     Rz = (T *) calloc(nx*nz,sizeof(T));
@@ -6245,45 +6245,45 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getLocal(std::shared_ptr<Data2D<T>
     local->createModel();
 
 	/* Copying from big model into local model */
-    T *c11 = local->getC11();
-    T *c13 = local->getC13();
-    T *c33 = local->getC33();
-    T *c55 = local->getC55();
+    T *C11 = local->getC11();
+    T *C13 = local->getC13();
+    T *C33 = local->getC33();
+    T *C55 = local->getC55();
     T *R = local->getR();
 
     /* Allocate two traces to read models from file */
-    T *c11trace = (T *) calloc(nx, sizeof(T));
-    if(c11trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
-    T *c13trace = (T *) calloc(nx, sizeof(T));
-    if(c13trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
-    T *c33trace = (T *) calloc(nx, sizeof(T));
-    if(c33trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
-    T *c55trace = (T *) calloc(nx, sizeof(T));
-    if(c55trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *C11trace = (T *) calloc(nx, sizeof(T));
+    if(C11trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *C13trace = (T *) calloc(nx, sizeof(T));
+    if(C13trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *C33trace = (T *) calloc(nx, sizeof(T));
+    if(C33trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *C55trace = (T *) calloc(nx, sizeof(T));
+    if(C55trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
     T *rhotrace = (T *) calloc(nx, sizeof(T));
     if(rhotrace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
 
     // Open files for reading
     bool status;
-    std::shared_ptr<File> Fc11 (new File());
-    status = Fc11->input(c11file);
+    std::shared_ptr<File> FC11 (new File());
+    status = FC11->input(C11file);
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::getLocal : Error reading from c11 file.");
+	    rs_error("ModelVti2D::getLocal : Error reading from C11 file.");
     }
-    std::shared_ptr<File> Fc13 (new File());
-    status = Fc13->input(c13file);
+    std::shared_ptr<File> FC13 (new File());
+    status = FC13->input(C13file);
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::getLocal : Error reading from c13 file.");
+	    rs_error("ModelVti2D::getLocal : Error reading from C13 file.");
     }
-    std::shared_ptr<File> Fc33 (new File());
-    status = Fc33->input(c33file);
+    std::shared_ptr<File> FC33 (new File());
+    status = FC33->input(C33file);
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::getLocal : Error reading from c33 file.");
+	    rs_error("ModelVti2D::getLocal : Error reading from C33 file.");
     }
-    std::shared_ptr<File> Fc55 (new File());
-    status = Fc55->input(c55file);
+    std::shared_ptr<File> FC55 (new File());
+    status = FC55->input(C55file);
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::getLocal : Error reading from c55 file.");
+	    rs_error("ModelVti2D::getLocal : Error reading from C55 file.");
     }
 
     std::shared_ptr<File> Frho (new File());
@@ -6298,33 +6298,33 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getLocal(std::shared_ptr<Data2D<T>
     Index f2d(nx,nz);
     for(size_t i1=0; i1<nz; i1++) {
         fpos = f2d(0, i1)*sizeof(T);
-        Fc11->read(c11trace, nx, fpos);
-        if(Fc11->getFail()) rs_error("ModelVti2D::getLocal: Error reading from c11 file");
-        Fc13->read(c13trace, nx, fpos);
-        if(Fc13->getFail()) rs_error("ModelVti2D::getLocal: Error reading from c13 file");
-        Fc33->read(c33trace, nx, fpos);
-        if(Fc33->getFail()) rs_error("ModelVti2D::getLocal: Error reading from c33 file");
-        Fc55->read(c55trace, nx, fpos);
-        if(Fc55->getFail()) rs_error("ModelVti2D::getLocal: Error reading from c55 file");
+        FC11->read(C11trace, nx, fpos);
+        if(FC11->getFail()) rs_error("ModelVti2D::getLocal: Error reading from C11 file");
+        FC13->read(C13trace, nx, fpos);
+        if(FC13->getFail()) rs_error("ModelVti2D::getLocal: Error reading from C13 file");
+        FC33->read(C33trace, nx, fpos);
+        if(FC33->getFail()) rs_error("ModelVti2D::getLocal: Error reading from C33 file");
+        FC55->read(C55trace, nx, fpos);
+        if(FC55->getFail()) rs_error("ModelVti2D::getLocal: Error reading from C55 file");
         Frho->read(rhotrace, nx, fpos);
         if(Frho->getFail()) rs_error("ModelVti2D::getLocal: Error reading from rho file");
         for(size_t i2=0; i2<size; i2++) {
             lpos = i + i2;
             if(lpos < 0) lpos = 0;
             if(lpos > (nx-1)) lpos = nx - 1;
-            c11[l2d(i2,i1)] = c11trace[lpos];
-            c13[l2d(i2,i1)] = c13trace[lpos];
-            c33[l2d(i2,i1)] = c33trace[lpos];
-            c55[l2d(i2,i1)] = c55trace[lpos];
+            C11[l2d(i2,i1)] = C11trace[lpos];
+            C13[l2d(i2,i1)] = C13trace[lpos];
+            C33[l2d(i2,i1)] = C33trace[lpos];
+            C55[l2d(i2,i1)] = C55trace[lpos];
             R[l2d(i2,i1)] = rhotrace[lpos];
         }
     }
 
     /* Free traces */
-    free(c11trace);
-    free(c13trace);
-    free(c33trace);
-    free(c55trace);
+    free(C11trace);
+    free(C13trace);
+    free(C33trace);
+    free(C55trace);
     free(rhotrace);
 
     return local;
@@ -6363,29 +6363,29 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getDomainmodel(std::shared_ptr<Dat
     local->createPaddedmodel();
 
     /* Copying from big model into local model */
-    T *c11 = local->getC11();
-    T *c13 = local->getC13();
-    T *c33 = local->getC33();
-    T *c55 = local->getC55();
-    T *c11p = local->getC11p();
-    T *c13p = local->getC13p();
-    T *c33p = local->getC33p();
-    T *c55p = local->getC55p();
+    T *C11 = local->getC11();
+    T *C13 = local->getC13();
+    T *C33 = local->getC33();
+    T *C55 = local->getC55();
+    T *C11p = local->getC11p();
+    T *C13p = local->getC13p();
+    T *C33p = local->getC33p();
+    T *C55p = local->getC55p();
     T *R = local->getR();
     T *Rx = local->getRx();
     T *Rz = local->getRz();
 
     /* Allocate two traces to read models from file */
-    T *c11trace = (T *) calloc(nx, sizeof(T));
-    if(c11trace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
-    T *c13trace = (T *) calloc(nx, sizeof(T));
-    if(c13trace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
-    T *c33trace = (T *) calloc(nx, sizeof(T));
-    if(c33trace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
-    T *c55trace = (T *) calloc(nx, sizeof(T));
-    if(c55trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
-    T *c55trace_adv = (T *) calloc(nx, sizeof(T));
-    if(c55trace_adv == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *C11trace = (T *) calloc(nx, sizeof(T));
+    if(C11trace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
+    T *C13trace = (T *) calloc(nx, sizeof(T));
+    if(C13trace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
+    T *C33trace = (T *) calloc(nx, sizeof(T));
+    if(C33trace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
+    T *C55trace = (T *) calloc(nx, sizeof(T));
+    if(C55trace == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
+    T *C55trace_adv = (T *) calloc(nx, sizeof(T));
+    if(C55trace_adv == NULL) rs_error("ModelVti2d::getLocal: Failed to allocate memory.");
     T *rhotrace = (T *) calloc(nx, sizeof(T));
     if(rhotrace == NULL) rs_error("ModelVti2d::getDomainmodel: Failed to allocate memory.");
     T *rhotrace_adv = (T *) calloc(nx, sizeof(T));
@@ -6393,25 +6393,25 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getDomainmodel(std::shared_ptr<Dat
 
     // Open files for reading
     bool status;
-    std::shared_ptr<File> Fc11 (new File());
-    status = Fc11->input(c11file);
+    std::shared_ptr<File> FC11 (new File());
+    status = FC11->input(C11file);
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::getDomainmodel : Error reading from c11 file.");
+	    rs_error("ModelVti2D::getDomainmodel : Error reading from C11 file.");
     }
-    std::shared_ptr<File> Fc13 (new File());
-    status = Fc13->input(c13file);
+    std::shared_ptr<File> FC13 (new File());
+    status = FC13->input(C13file);
     if(status == FILE_ERR){
-       rs_error("ModelVti2D::getDomainmodel : Error reading from c13 file.");
+       rs_error("ModelVti2D::getDomainmodel : Error reading from C13 file.");
     }
-    std::shared_ptr<File> Fc33 (new File());
-    status = Fc33->input(c33file);
+    std::shared_ptr<File> FC33 (new File());
+    status = FC33->input(C33file);
     if(status == FILE_ERR){
-       rs_error("ModelVti2D::getDomainmodel : Error reading from c33 file.");
+       rs_error("ModelVti2D::getDomainmodel : Error reading from C33 file.");
     }
-    std::shared_ptr<File> Fc55 (new File());
-    status = Fc55->input(c55file);
+    std::shared_ptr<File> FC55 (new File());
+    status = FC55->input(C55file);
     if(status == FILE_ERR){
-	    rs_error("ModelVti2D::getLocal : Error reading from c55 file.");
+	    rs_error("ModelVti2D::getLocal : Error reading from C55 file.");
     }
     std::shared_ptr<File> Frho (new File());
     status = Frho->input(Rfile);
@@ -6430,14 +6430,14 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getDomainmodel(std::shared_ptr<Dat
         if(lpos < 0) lpos = 0;
         if(lpos > (nz-1)) lpos = nz - 1;
         fpos = f2d(0, lpos)*sizeof(T);
-        Fc11->read(c11trace, nx, fpos);
-        if(Fc11->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c11 file");
-        Fc13->read(c13trace, nx, fpos);
-        if(Fc13->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c13 file");
-        Fc33->read(c33trace, nx, fpos);
-        if(Fc33->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c33 file");
-        Fc55->read(c55trace, nx, fpos);
-        if(Fc55->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c55 file");
+        FC11->read(C11trace, nx, fpos);
+        if(FC11->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from C11 file");
+        FC13->read(C13trace, nx, fpos);
+        if(FC13->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from C13 file");
+        FC33->read(C33trace, nx, fpos);
+        if(FC33->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from C33 file");
+        FC55->read(C55trace, nx, fpos);
+        if(FC55->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from C55 file");
         Frho->read(rhotrace, nx, fpos);
         if(Frho->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from rho file");
 
@@ -6446,22 +6446,22 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getDomainmodel(std::shared_ptr<Dat
         if(lpos < 0) lpos = 0;
         if(lpos > (nz-1)) lpos = nz - 1;
         fpos = f2d(0, lpos)*sizeof(T);
-        Fc55->read(c55trace_adv, nx, fpos);
-        if(Fc55->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from c55 file");
+        FC55->read(C55trace_adv, nx, fpos);
+        if(FC55->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from C55 file");
         Frho->read(rhotrace_adv, nx, fpos);
         if(Frho->getFail()) rs_error("ModelVti2D::getDomainmodel: Error reading from rho file");
         for(size_t i2=0; i2<nxd; i2++) {
             lpos = i + i2 + ix0 - lpml;
             if(lpos < 0) lpos = 0;
             if(lpos > (nx-1)) lpos = nx - 1;
-            c11[l2d(i2,i1)] = c11trace[lpos];
-            c13[l2d(i2,i1)] = c13trace[lpos];
-            c33[l2d(i2,i1)] = c33trace[lpos];
-            c55[l2d(i2,i1)] = c55trace[lpos];
+            C11[l2d(i2,i1)] = C11trace[lpos];
+            C13[l2d(i2,i1)] = C13trace[lpos];
+            C33[l2d(i2,i1)] = C33trace[lpos];
+            C55[l2d(i2,i1)] = C55trace[lpos];
             R[l2d(i2,i1)] = rhotrace[lpos];
-            c11p[l2d(i2,i1)] = c11trace[lpos];
-            c13p[l2d(i2,i1)] = c13trace[lpos];
-            c33p[l2d(i2,i1)] = c33trace[lpos];
+            C11p[l2d(i2,i1)] = C11trace[lpos];
+            C13p[l2d(i2,i1)] = C13trace[lpos];
+            C33p[l2d(i2,i1)] = C33trace[lpos];
             if(rhotrace[lpos] <= 0.0) rs_error("ModelVti2D::getDomainmodel: Zero density found.");
             if(lpos < nx-1){
                Rx[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace[lpos+1]);
@@ -6470,16 +6470,16 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getDomainmodel(std::shared_ptr<Dat
             }
             Rz[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace_adv[lpos]);
 
-            M1 = rhotrace[lpos]*c55trace[lpos]*c55trace[lpos];
-            M3 = rhotrace_adv[lpos]*c55trace_adv[lpos]*c55trace_adv[lpos];
+            M1 = rhotrace[lpos]*C55trace[lpos]*C55trace[lpos];
+            M3 = rhotrace_adv[lpos]*C55trace_adv[lpos]*C55trace_adv[lpos];
             if(lpos < nx-1){
-               M2 = rhotrace[lpos+1]*c55trace[lpos+1]*c55trace[lpos+1];
-               M4 = rhotrace_adv[lpos+1]*c55trace_adv[lpos+1]*c55trace_adv[lpos+1];
+               M2 = rhotrace[lpos+1]*C55trace[lpos+1]*C55trace[lpos+1];
+               M4 = rhotrace_adv[lpos+1]*C55trace_adv[lpos+1]*C55trace_adv[lpos+1];
             }else{
-               M2 = rhotrace[lpos]*c55trace[lpos]*c55trace[lpos];
-               M4 = rhotrace_adv[lpos]*c55trace_adv[lpos]*c55trace_adv[lpos];
+               M2 = rhotrace[lpos]*C55trace[lpos]*C55trace[lpos];
+               M4 = rhotrace_adv[lpos]*C55trace_adv[lpos]*C55trace_adv[lpos];
             }
-            c55p[l2d(i2,i1)] = 0.25*(M1+M2+M3+M4);
+            C55p[l2d(i2,i1)] = 0.25*(M1+M2+M3+M4);
         }
     }
 
@@ -6488,18 +6488,18 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getDomainmodel(std::shared_ptr<Dat
     if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
         for(size_t ix=0; ix<nxd; ix++){
             Rx[l2d(ix,lpml-iz0)] *= 2.0;
-            c11p[l2d(ix,lpml-iz0)] = (c11p[l2d(ix,lpml-iz0)] - c13p[l2d(ix,lpml-iz0)])/2.0;
-            c13p[l2d(ix,lpml-iz0)] = 0.0;
+            C11p[l2d(ix,lpml-iz0)] = (C11p[l2d(ix,lpml-iz0)] - C13p[l2d(ix,lpml-iz0)])/2.0;
+            C13p[l2d(ix,lpml-iz0)] = 0.0;
         }
     }
 
 
     /* Free traces */
-    free(c11trace);
-    free(c13trace);
-    free(c33trace);
-    free(c55trace);
-    free(c55trace_adv);
+    free(C11trace);
+    free(C13trace);
+    free(C33trace);
+    free(C55trace);
+    free(C55trace_adv);
     free(rhotrace);
     free(rhotrace_adv);
     
@@ -6509,16 +6509,1466 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getDomainmodel(std::shared_ptr<Dat
 
 template<typename T>
 ModelVti2D<T>::~ModelVti2D() {
-    free(c11);
-    free(c13);
-    free(c33);
-    free(c55);
-    free(c11p);
-    free(c13p);
-    free(c33p);
-    free(c55p);
+    free(C11);
+    free(C13);
+    free(C33);
+    free(C55);
+    free(C11p);
+    free(C13p);
+    free(C33p);
+    free(C55p);
     free(R);
     free(Rx);
+    free(Rz);
+}
+
+// =============== 3D ORTHOROMBIC MODEL CLASS =============== //
+template<typename T>
+ModelOrtho3D<T>::ModelOrtho3D(): Model<T>(3) {
+    // Nothing here
+}
+
+template<typename T>
+ModelOrtho3D<T>::ModelOrtho3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const bool _fs): Model<T>(3, _nx, _ny, _nz, _lpml, _dx, _dy, _dz, _ox, _oy, _oz, _fs) {
+    
+    /* Allocate variables */
+    C11 = (T *) calloc(1,1);
+    C12 = (T *) calloc(1,1);
+    C13 = (T *) calloc(1,1);
+    C22 = (T *) calloc(1,1);
+    C23 = (T *) calloc(1,1);
+    C33 = (T *) calloc(1,1);
+    C44 = (T *) calloc(1,1);
+    C55 = (T *) calloc(1,1);
+    C66 = (T *) calloc(1,1);
+    R = (T *) calloc(1,1);
+    C11p = (T *) calloc(1,1);
+    C12p = (T *) calloc(1,1);
+    C13p = (T *) calloc(1,1);
+    C22p = (T *) calloc(1,1);
+    C23p = (T *) calloc(1,1);
+    C33p = (T *) calloc(1,1);
+    C44p = (T *) calloc(1,1);
+    C55p = (T *) calloc(1,1);
+    C66p = (T *) calloc(1,1);
+    Rx = (T *) calloc(1,1);
+    Ry = (T *) calloc(1,1);
+    Rz = (T *) calloc(1,1);
+}
+
+template<typename T>
+ModelOrtho3D<T>::ModelOrtho3D(std::string _C11file, std::string _C12file, std::string _C13file, std::string _C22file, std::string _C23file, std::string _C33file, std::string _C44file, std::string _C55file, std::string _C66file, std::string _Rfile, const int _lpml, const bool _fs): Model<T>(3) {
+    bool status;
+    int nx, ny, nz;
+    T dx, dy, dz;
+    T ox, oy, oz;
+    C11file = _C11file;
+    C12file = _C12file;
+    C13file = _C13file;
+    C22file = _C22file;
+    C23file = _C23file;
+    C33file = _C33file;
+    C44file = _C44file;
+    C55file = _C55file;
+    C66file = _C66file;
+    Rfile = _Rfile;
+
+    std::shared_ptr<File> Fc11 (new File());
+    status = Fc11->input(C11file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::Error reading from C11 file:  ", _C11file);
+    }
+    std::shared_ptr<File> Fc12 (new File());
+    status = Fc12->input(C12file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::Error reading from C12 file:  ", _C12file);
+    }
+    std::shared_ptr<File> Fc13 (new File());
+    status = Fc13->input(C13file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::Error reading from C13 file:  ", _C13file);
+    }
+    std::shared_ptr<File> Fc22 (new File());
+    status = Fc22->input(C22file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::Error reading from C22 file:  ", _C22file);
+    }
+    std::shared_ptr<File> Fc23 (new File());
+    status = Fc23->input(C23file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::Error reading from C23 file:  ", _C23file);
+    }
+    std::shared_ptr<File> Fc33 (new File());
+    status = Fc33->input(C33file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::Error reading from C33 file:  ", _C33file);
+    }
+    std::shared_ptr<File> Fc44 (new File());
+    status = Fc44->input(C44file.c_str());
+    if(status == FILE_ERR){
+        rs_error("ModelOrtho3D::Error reading from C44 file: ", _C44file);
+    }
+    std::shared_ptr<File> Fc55 (new File());
+    status = Fc55->input(C55file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::Error reading from C55 file:  ", _C55file);
+    }
+    std::shared_ptr<File> Fc66 (new File());
+    status = Fc66->input(C66file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::Error reading from C66 file:  ", _C66file);
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+        rs_error("ModelOrtho3D::Error reading from density file: ", _Rfile);
+    }
+
+    // Compare geometry in the two files
+    if(Fc11->compareGeometry(Fc12) != 0)
+    {
+        rs_error("ModelOrtho3D::Geometries in C11 and C12 model files do not match.");
+    }
+    // Compare geometry in the two files
+    if(Fc11->compareGeometry(Fc13) != 0)
+    {
+        rs_error("ModelOrtho3D::Geometries in C11 and C13 model files do not match.");
+    }
+    // Compare geometry in the two files
+    if(Fc11->compareGeometry(Fc22) != 0)
+    {
+        rs_error("ModelOrtho3D::Geometries in C11 and C22 model files do not match.");
+    }
+    // Compare geometry in the two files
+    if(Fc11->compareGeometry(Fc23) != 0)
+    {
+        rs_error("ModelOrtho3D::Geometries in C11 and C23 model files do not match.");
+    }
+    // Compare geometry in the two files
+    if(Fc11->compareGeometry(Fc33) != 0)
+    {
+        rs_error("ModelOrtho3D::Geometries in C11 and C33 model files do not match.");
+    }
+    // Compare geometry in the two files
+    if(Fc11->compareGeometry(Fc44) != 0)
+    {
+        rs_error("ModelOrtho3D::Geometries in C11 and C44 model files do not match.");
+    }
+    // Compare geometry in the two files
+    if(Fc11->compareGeometry(Fc55) != 0)
+    {
+        rs_error("ModelOrtho3D::Geometries in C11 and C55 model files do not match.");
+    }
+    // Compare geometry in the two files
+    if(Fc11->compareGeometry(Fc66) != 0)
+    {
+        rs_error("ModelOrtho3D::Geometries in C11 and C66 model files do not match.");
+    }
+    if(Fc11->compareGeometry(Frho) != 0)
+    {
+        rs_error("ModelOrtho3D::Geometries in C11 and Density model files do not match.");
+    }
+
+    if(Fc11->getData_format() != Frho->getData_format())
+    {
+        rs_error("ModelOrtho3D::Numerical precision mismatch in C11 and Density model files.");
+    }
+    if(Fc11->getData_format() != Fc12->getData_format())
+    {
+        rs_error("ModelOrtho3D::Numerical precision mismatch in C11 and C12 model files.");
+    }
+    if(Fc11->getData_format() != Fc13->getData_format())
+    {
+        rs_error("ModelOrtho3D::Numerical precision mismatch in C11 and C13 model files.");
+    }
+    if(Fc11->getData_format() != Fc23->getData_format())
+    {
+        rs_error("ModelOrtho3D::Numerical precision mismatch in C11 and C23 model files.");
+    }
+    if(Fc11->getData_format() != Fc33->getData_format())
+    {
+        rs_error("ModelOrtho3D::Numerical precision mismatch in C11 and C33 model files.");
+    }
+    if(Fc11->getData_format() != Fc44->getData_format())
+    {
+        rs_error("ModelOrtho3D::Numerical precision mismatch in C11 and C44 model files.");
+    }
+    if(Fc11->getData_format() != Fc55->getData_format())
+    {
+        rs_error("ModelOrtho3D::Numerical precision mismatch in C11 and C55 model files.");
+    }
+    if(Fc11->getData_format() != Fc66->getData_format())
+    {
+        rs_error("ModelOrtho3D::Numerical precision mismatch in C11 and C66 model files.");
+    }
+    if(Fc11->getData_format() != sizeof(T))
+    {
+        rs_error("ModelOrtho3D::Numerical precision in C11, C44 and Density model files mismatch with constructor.");
+    }
+
+    // Read geometry from file
+    nx = Fc11->getN(1);
+    dx = (T) Fc11->getD(1);
+    ox = (T) Fc11->getO(1);
+    ny = Fc11->getN(2);
+    dy = (T) Fc11->getD(2);
+    oy = (T) Fc11->getO(2);
+    nz = Fc11->getN(3);
+    dz = (T) Fc11->getD(3);
+    oz = (T) Fc11->getO(3);
+    
+    // Close files
+    Fc11->close();
+    Fc12->close();
+    Fc13->close();
+    Fc22->close();
+    Fc23->close();
+    Fc33->close();
+    Fc44->close();
+    Fc55->close();
+    Fc66->close();
+    Frho->close();
+
+    // Store geometry in model class
+    this->setNx(nx);
+    this->setDx(dx);
+    this->setOx(ox);
+
+    this->setNy(ny);
+    this->setDy(dy);
+    this->setOy(oy);
+
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(_fs);
+
+    /* Allocate variables */
+    C11 = (T *) calloc(1,1);
+    C12 = (T *) calloc(1,1);
+    C13 = (T *) calloc(1,1);
+    C22 = (T *) calloc(1,1);
+    C23 = (T *) calloc(1,1);
+    C33 = (T *) calloc(1,1);
+    C44 = (T *) calloc(1,1);
+    C55 = (T *) calloc(1,1);
+    C66 = (T *) calloc(1,1);
+    R = (T *) calloc(1,1);
+    C11p = (T *) calloc(1,1);
+    C12p = (T *) calloc(1,1);
+    C13p = (T *) calloc(1,1);
+    C22p = (T *) calloc(1,1);
+    C23p = (T *) calloc(1,1);
+    C33p = (T *) calloc(1,1);
+    C44p = (T *) calloc(1,1);
+    C55p = (T *) calloc(1,1);
+    C66p = (T *) calloc(1,1);
+    Rx = (T *) calloc(1,1);
+    Ry = (T *) calloc(1,1);
+    Rz = (T *) calloc(1,1);
+}
+
+template<typename T>
+void ModelOrtho3D<T>::readModel() {
+    bool status;
+    // Get file names
+    std::string C11file = this->getC11file();
+    std::string C12file = this->getC12file();
+    std::string C13file = this->getC13file();
+    std::string C22file = this->getC22file();
+    std::string C23file = this->getC23file();
+    std::string C33file = this->getC33file();
+    std::string C44file = this->getC44file();
+    std::string C55file = this->getC55file();
+    std::string C66file = this->getC66file();
+    std::string Rfile = this->getRfile();
+    // Open files for reading
+    std::shared_ptr<File> Fc11 (new File());
+    status = Fc11->input(C11file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from C11 file: ", C11file);
+    }
+    std::shared_ptr<File> Fc12 (new File());
+    status = Fc12->input(C12file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from C12 file: ", C12file);
+    }
+    std::shared_ptr<File> Fc13 (new File());
+    status = Fc13->input(C13file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from C13 file: ", C13file);
+    }
+    std::shared_ptr<File> Fc22 (new File());
+    status = Fc22->input(C22file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from C22 file: ", C22file);
+    }
+    std::shared_ptr<File> Fc23 (new File());
+    status = Fc23->input(C23file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from C23 file: ", C23file);
+    }
+    std::shared_ptr<File> Fc33 (new File());
+    status = Fc33->input(C33file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from C33 file: ", C33file);
+    }
+    std::shared_ptr<File> Fc44 (new File());
+    status = Fc44->input(C44file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from C44 file: ", C44file);
+    }
+    std::shared_ptr<File> Fc55 (new File());
+    status = Fc55->input(C55file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from C55 file: ", C55file);
+    }
+    std::shared_ptr<File> Fc66 (new File());
+    status = Fc66->input(C66file.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from C66 file: ", C66file);
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::readModel : Error reading from Density file: ", Rfile);
+    }
+
+    // Read models
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    /* Reallocate C11, C12, C13, C22, C23, C44, C55, C66 and R */
+    free(C11); free(C12); free(C13); free(C22); free(C23); free(C33); free(C44); free(C55); free(C66); free(R);
+    C11 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C11 == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    C12 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C12 == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    C13 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C13 == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    C22 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C22 == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    C23 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C23 == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    C33 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C33 == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    C44 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C44 == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    C55 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C55 == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    C66 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C66 == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    R = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(R == NULL) rs_error("ModelOrtho3D::readModel: Failed to allocate memory.");
+    this->setRealized(true);
+
+    Fc11->read(C11, nx*ny*nz);
+    Fc11->close();
+
+    Fc12->read(C12, nx*ny*nz);
+    Fc12->close();
+
+    Fc13->read(C13, nx*ny*nz);
+    Fc13->close();
+
+    Fc22->read(C22, nx*ny*nz);
+    Fc22->close();
+
+    Fc23->read(C23, nx*ny*nz);
+    Fc23->close();
+
+    Fc33->read(C33, nx*ny*nz);
+    Fc33->close();
+
+    Fc44->read(C44, nx*ny*nz);
+    Fc44->close();
+
+    Fc55->read(C55, nx*ny*nz);
+    Fc55->close();
+
+    Fc66->read(C66, nx*ny*nz);
+    Fc66->close();
+
+    Frho->read(R, nx*ny*nz);
+    Frho->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeC11() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeC11: Model is not allocated.");
+    }
+    // Get file names
+    std::string C11file = this->getC11file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(C11file.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(2,ny);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(2,dy);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(2,oy);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC11();
+    F->write(Mod, nx*ny*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeC12() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeC12: Model is not allocated.");
+    }
+    // Get file names
+    std::string C12file = this->getC12file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(C12file.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(2,ny);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(2,dy);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(2,oy);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC12();
+    F->write(Mod, nx*ny*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeC13() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeC13: Model is not allocated.");
+    }
+    // Get file names
+    std::string C13file = this->getC13file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(C13file.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(2,ny);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(2,dy);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(2,oy);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC13();
+    F->write(Mod, nx*ny*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeC22() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeC22: Model is not allocated.");
+    }
+    // Get file names
+    std::string C22file = this->getC22file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(C22file.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(2,ny);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(2,dy);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(2,oy);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC22();
+    F->write(Mod, nx*ny*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeC23() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeC23: Model is not allocated.");
+    }
+    // Get file names
+    std::string C23file = this->getC23file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(C23file.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(2,ny);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(2,dy);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(2,oy);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC23();
+    F->write(Mod, nx*ny*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeC33() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeC33: Model is not allocated.");
+    }
+    // Get file names
+    std::string C33file = this->getC33file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(C33file.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(2,ny);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(2,dy);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(2,oy);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC33();
+    F->write(Mod, nx*ny*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeC44() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeC44: Model is not allocated.");
+    }
+    // Get file names
+    std::string C44file = this->getC44file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(C44file.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(2,ny);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(2,dy);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(2,oy);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC44();
+    F->write(Mod, nx*ny*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeC55() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeC55: Model is not allocated.");
+    }
+    // Get file names
+    std::string C55file = this->getC55file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(C55file.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(2,ny);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(2,dy);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(2,oy);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC55();
+    F->write(Mod, nx*ny*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeC66() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeC66: Model is not allocated.");
+    }
+    // Get file names
+    std::string C66file = this->getC66file();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(C66file.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(2,ny);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(2,dy);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(2,oy);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getC66();
+    F->write(Mod, nx*ny*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::writeR() {
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::writeR: Model is not allocated.");
+    }
+    // Get file names
+    std::string Rfile = this->getRfile();
+    // Open files for writting
+    std::shared_ptr<File> Frho (new File());
+    Frho->output(Rfile.c_str());
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int ny = this->getNy();
+    T dy = this->getDy();
+    T oy = this->getOy();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    Frho->setN(1,nx);
+    Frho->setN(2,ny);
+    Frho->setN(3,nz);
+    Frho->setD(1,dx);
+    Frho->setD(2,dy);
+    Frho->setD(3,dz);
+    Frho->setO(1,ox);
+    Frho->setO(2,oy);
+    Frho->setO(3,oz);
+    Frho->setType(REGULAR);
+    Frho->setData_format(sizeof(T));
+    Frho->writeHeader();
+    T *Mod = this->getR();
+    Frho->write(Mod, nx*ny*nz, 0);
+    Frho->close();
+}
+
+template<typename T>
+void ModelOrtho3D<T>::staggerModels(){
+    if(!this->getRealized()) {
+        rs_error("ModelOrtho3D::staggerModels: Model is not allocated.");
+    }
+    int ix,iy,iz;
+    int nx, ny, nz, lpml, nx_pml, ny_pml, nz_pml;
+    nx = this->getNx();
+    ny = this->getNy();
+    nz = this->getNz();
+    lpml = this->getLpml();
+    
+    nx_pml = nx + 2*lpml;
+    ny_pml = ny + 2*lpml;
+    nz_pml = nz + 2*lpml;
+    
+    Index ind_pml(nx_pml, ny_pml, nz_pml);
+
+    // Reallocate necessary variables 
+    free(C11p); free(C12p); free(C13p); free(C22p); free(C23p); free(C33p); free(C44p); free(C55p); free(C66p); 
+    free(Rx); free(Ry); free(Rz);
+    C11 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    C12 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    C13 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    C22 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    C23 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    C33 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    C55 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    C44 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    C66 = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Rx = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Ry = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    Rz = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
+    
+    // Padding
+    this->padmodel3d(Rx, R, nx, ny, nz, lpml);
+    this->padmodel3d(Ry, R, nx, ny, nz, lpml);
+    this->padmodel3d(Rz, R, nx, ny, nz, lpml);
+    this->padmodel3d(C11p, C11, nx, ny, nz, lpml);
+    this->padmodel3d(C12p, C12, nx, ny, nz, lpml);
+    this->padmodel3d(C13p, C13, nx, ny, nz, lpml);
+    this->padmodel3d(C22p, C22, nx, ny, nz, lpml);
+    this->padmodel3d(C23p, C23, nx, ny, nz, lpml);
+    this->padmodel3d(C33p, C33, nx, ny, nz, lpml);
+    this->padmodel3d(C44p, C44, nx, ny, nz, lpml);
+    this->padmodel3d(C55p, C55, nx, ny, nz, lpml);
+    this->padmodel3d(C66p, C66, nx, ny, nz, lpml);
+    
+    // In case of free surface
+    if(this->getFs()){
+        iz=lpml;
+        for(ix=0; ix<nx_pml; ix++){
+            for(iy=0; iy < ny_pml; iy++){
+                C11p[ind_pml(ix,iy,iz)] = C12p[ind_pml(ix,iy,iz)] + C66p[ind_pml(ix,iy,iz)];
+                C22p[ind_pml(ix,iy,iz)] = C12p[ind_pml(ix,iy,iz)] + C66p[ind_pml(ix,iy,iz)];
+                C66p[ind_pml(ix,iy,iz)] *= 0.5;
+            }
+        }
+    }
+
+
+    // Staggering using arithmetic average
+    this->staggermodel_x(Rx, nx_pml, ny_pml, nz_pml);
+    this->staggermodel_y(Ry, nx_pml, ny_pml, nz_pml);
+    this->staggermodel_z(Rz, nx_pml, ny_pml, nz_pml);
+
+    this->staggermodel_x(C55, nx_pml, ny_pml, nz_pml);
+    this->staggermodel_z(C55, nx_pml, ny_pml, nz_pml);
+
+    this->staggermodel_y(C44, nx_pml, ny_pml, nz_pml);
+    this->staggermodel_z(C44, nx_pml, ny_pml, nz_pml);
+
+    this->staggermodel_x(C66, nx_pml, ny_pml, nz_pml);
+    this->staggermodel_y(C66, nx_pml, ny_pml, nz_pml);
+
+    // Inverting the density
+    for(ix=0; ix < nx_pml; ix++){
+        for(iy=0; iy < ny_pml; iy++){
+            for(iz=0; iz < nz_pml; iz++){
+                if(Rx[ind_pml(ix,iy,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+                if(Ry[ind_pml(ix,iy,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+                if(Rz[ind_pml(ix,iy,iz)] == 0.0) rs_error("staggerModels: Zero density found.");
+                Rx[ind_pml(ix,iy,iz)] = 1.0/Rx[ind_pml(ix,iy,iz)];
+                Ry[ind_pml(ix,iy,iz)] = 1.0/Ry[ind_pml(ix,iy,iz)];
+                Rz[ind_pml(ix,iy,iz)] = 1.0/Rz[ind_pml(ix,iy,iz)];
+            }
+        }
+    }
+
+    
+    // In case of free surface
+    if(this->getFs()){
+        for(ix=0; ix<nx_pml; ix++){
+            for(iy=0; iy<ny_pml; iy++){
+                Rx[ind_pml(ix,iy,lpml)] *= 2.0;
+                Ry[ind_pml(ix,iy,lpml)] *= 2.0;
+            }
+        }
+    }
+}
+
+template<typename T>
+void ModelOrtho3D<T>::createModel() {
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    /* Reallocate Stiffnesses and R */
+    free(C11); free(C12); free(C13); free(C22); free(C23); free(C33); free(C44); free(C55); free(C66); free(R);
+    C11 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C11 == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C12 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C12 == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C13 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C13 == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C22 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C22 == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C23 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C23 == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C33 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C33 == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C44 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C44 == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C55 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C55 == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C66 = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C66 == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    R = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(R == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    this->setRealized(true);
+}
+
+template<typename T>
+void ModelOrtho3D<T>::createPaddedmodel() {
+    int nx = this->getNx();
+    int ny = this->getNy();
+    int nz = this->getNz();
+
+    /* Reallocate L Rx, and Rz */
+    free(C11p); free(C12p); free(C13p); free(C22p); free(C23p); free(C33p); free(C44p); free(C55p); free(C66p); 
+    free(Rx); free(Ry); free(Rz);
+    C11p = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C11p == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C12p = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C12p == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C13p = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C13p == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C22p = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C22p == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C23p = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C23p == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C33p = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C33p == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C44p = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C44p == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C55p = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C55p == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+    C66p = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(C66p == NULL) rs_error("ModelOrtho3D::createModel: Failed to allocate memory.");
+
+    Rx = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Rx == NULL) rs_error("ModelOrtho3D::createPaddedmodel: Failed to allocate memory.");
+    Ry = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Ry == NULL) rs_error("ModelOrtho3D::createPaddedmodel: Failed to allocate memory.");
+    Rz = (T *) calloc(nx*ny*nz,sizeof(T));
+    if(Rz == NULL) rs_error("ModelOrtho3D::createPaddedmodel: Failed to allocate memory.");
+}
+
+template<typename T>
+std::shared_ptr<ModelOrtho3D<T>> ModelOrtho3D<T>::getLocal(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map) {
+    std::shared_ptr<ModelOrtho3D<T>> local;
+    T dx = this->getDx();
+    T dy = this->getDy();
+    T ox = this->getOx();
+    T oy = this->getOy();
+    size_t nx = this->getNx();
+    size_t ny = this->getNy();
+    size_t nz = this->getNz();
+    size_t size_x;
+    off_t start_x;
+    size_t size_y;
+    off_t start_y;
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize3d(data, aperture_x, aperture_y, map, &start_x, &size_x, &start_y, &size_y);
+
+    double oxl, oyl; 
+    oxl = (ox + start_x*dx);
+    oyl = (oy + start_y*dy);
+
+    /* Create local model */
+    local = std::make_shared<ModelOrtho3D<T>>(size_x, size_y, nz, this->getLpml(), dx, dy, this->getDz(), oxl, oyl, this->getOz(), this->getFs());
+
+    /*Realizing local model */
+    local->createModel();
+
+	/* Copying from big model into local model */
+    T *C11 = local->getC11();
+    T *C12 = local->getC12();
+    T *C13 = local->getC13();
+    T *C22 = local->getC22();
+    T *C23 = local->getC23();
+    T *C33 = local->getC33();
+    T *C44 = local->getC44();
+    T *C55 = local->getC55();
+    T *C66 = local->getC66();
+    T *R = local->getR();
+
+    /* Allocate two traces to read models from file */
+    T *c11trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c11trace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+    T *c12trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c12trace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+    T *c13trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c13trace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+    T *c22trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c22trace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+    T *c23trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c23trace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+    T *c33trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c33trace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+    T *c44trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c44trace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+    T *c55trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c55trace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+    T *c66trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c66trace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx*ny, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelOrtho3D::getLocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> Fc11 (new File());
+    status = Fc11->input(C11file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getLocal : Error reading from C11 file.");
+    }
+    std::shared_ptr<File> Fc12 (new File());
+    status = Fc12->input(C12file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getLocal : Error reading from C12 file.");
+    }
+    std::shared_ptr<File> Fc13 (new File());
+    status = Fc13->input(C13file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getLocal : Error reading from C13 file.");
+    }
+    std::shared_ptr<File> Fc22 (new File());
+    status = Fc22->input(C22file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getLocal : Error reading from C22 file.");
+    }
+    std::shared_ptr<File> Fc23 (new File());
+    status = Fc23->input(C23file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getLocal : Error reading from C23 file.");
+    }
+    std::shared_ptr<File> Fc33 (new File());
+    status = Fc33->input(C33file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getLocal : Error reading from C33 file.");
+    }
+    std::shared_ptr<File> Fc44 (new File());
+    status = Fc44->input(C44file);
+    if(status == FILE_ERR){
+        rs_error("ModelOrtho3D::getLocal : Error reading from C44 file.");
+    }
+    std::shared_ptr<File> Fc55 (new File());
+    status = Fc55->input(C55file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getLocal : Error reading from C55 file.");
+    }
+    std::shared_ptr<File> Fc66 (new File());
+    status = Fc66->input(C66file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getLocal : Error reading from C66 file.");
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getLocal : Error reading from Density file.");
+    }
+
+    off_t i = start_x;
+    off_t j = start_y;
+    off_t lpos_x, lpos_y, fpos;
+    Index l3d(size_x, size_y, nz);
+    Index f3d(nx, ny, nz);
+    Index l2d(nx, ny);
+    for(size_t i1=0; i1<nz; i1++) {
+        fpos = f3d(0, 0, i1)*sizeof(T);
+        Fc11->read(c11trace, nx*ny, fpos);
+        if(Fc11->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from c11 file");
+        Fc12->read(c12trace, nx*ny, fpos);
+        if(Fc12->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from c12 file");
+        Fc13->read(c13trace, nx*ny, fpos);
+        if(Fc13->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from c13 file");
+        Fc22->read(c22trace, nx*ny, fpos);
+        if(Fc22->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from c22 file");
+        Fc23->read(c23trace, nx*ny, fpos);
+        if(Fc23->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from c23 file");
+        Fc33->read(c33trace, nx*ny, fpos);
+        if(Fc33->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from c33 file");
+        Fc44->read(c44trace, nx*ny, fpos);
+        if(Fc44->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from c44 file");
+        Fc55->read(c55trace, nx*ny, fpos);
+        if(Fc55->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from c55 file");
+        Fc66->read(c66trace, nx*ny, fpos);
+        if(Fc66->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from c66 file");
+        Frho->read(rhotrace, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelOrtho3D::getLocal: Error reading from rho file");
+        for(size_t i3=0; i3<size_y; i3++) {
+            lpos_y = j + i3;
+            if(lpos_y < 0) lpos_y = 0;
+            if(lpos_y > (ny-1)) lpos_y = ny - 1;
+            for(size_t i2=0; i2<size_x; i2++) {
+                lpos_x = i + i2;
+                if(lpos_x < 0) lpos_x = 0;
+                if(lpos_x > (nx-1)) lpos_x = nx - 1;
+                C11[l3d(i2,i3,i1)] = c11trace[l2d(lpos_x, lpos_y)];
+                C12[l3d(i2,i3,i1)] = c12trace[l2d(lpos_x, lpos_y)];
+                C13[l3d(i2,i3,i1)] = c13trace[l2d(lpos_x, lpos_y)];
+                C22[l3d(i2,i3,i1)] = c22trace[l2d(lpos_x, lpos_y)];
+                C23[l3d(i2,i3,i1)] = c23trace[l2d(lpos_x, lpos_y)];
+                C33[l3d(i2,i3,i1)] = c33trace[l2d(lpos_x, lpos_y)];
+                C44[l3d(i2,i3,i1)] = c44trace[l2d(lpos_x, lpos_y)];
+                C55[l3d(i2,i3,i1)] = c55trace[l2d(lpos_x, lpos_y)];
+                C66[l3d(i2,i3,i1)] = c66trace[l2d(lpos_x, lpos_y)];
+                R[l3d(i2,i3,i1)] = rhotrace[l2d(lpos_x, lpos_y)];
+            }
+        }
+    }
+
+    /* Free traces */
+    free(c11trace);
+    free(c12trace);
+    free(c13trace);
+    free(c22trace);
+    free(c23trace);
+    free(c33trace);
+    free(c44trace);
+    free(c55trace);
+    free(c66trace);
+    free(rhotrace);
+
+    return local;
+}
+
+template<typename T>
+std::shared_ptr<ModelOrtho3D<T>> ModelOrtho3D<T>::getDomainmodel(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map, const int d, const int nd0, const int nd1, const int nd2, const int order) {
+
+    std::shared_ptr<ModelOrtho3D<T>> local;
+    T dx = this->getDx();
+    T dy = this->getDy();
+    T dz = this->getDz();
+    T ox = this->getOx();
+    T oy = this->getOy();
+    T oz = this->getOz();
+    size_t nx = this->getNx();
+    size_t ny = this->getNy();
+    size_t nz = this->getNz();
+    size_t size_x;
+    off_t start_x;
+    size_t size_y;
+    off_t start_y;
+    int nxd,nyd,nzd;
+    int ix0,iy0,iz0;
+    int lpml = this->getLpml();
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize3d(data, aperture_x, aperture_y, map, &start_x, &size_x, &start_y, &size_y);
+    (this->getDomain())->setupDomain3D(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd0,nd1,nd2,order);
+
+    nxd = (this->getDomain())->getNx_pad();
+    nyd = (this->getDomain())->getNy_pad();
+    nzd = (this->getDomain())->getNz_pad();
+    ix0 = (this->getDomain())->getIx0();
+    iy0 = (this->getDomain())->getIy0();
+    iz0 = (this->getDomain())->getIz0();
+
+    T oxl, oyl, ozl; 
+    oxl = (ox + (start_x+ix0-lpml)*dx);
+    oyl = (oy + (start_y+iy0-lpml)*dy);
+    ozl = (oz + (iz0-lpml)*dz);
+
+    /* Create local model */
+    local = std::make_shared<ModelOrtho3D<T>>(nxd, nyd, nzd, lpml, dx, dy, dz, oxl, oyl, ozl, this->getFs());
+    (local->getDomain())->setupDomain3D(size_x+2*lpml,size_y+2*lpml,nz+2*lpml,d,nd0,nd1,nd2,order);
+
+    /*Realizing local model */
+    local->createModel();
+    local->createPaddedmodel();
+
+	/* Copying from big model into local model */
+    T *C11 = local->getC11();
+    T *C12 = local->getC12();
+    T *C13 = local->getC13();
+    T *C22 = local->getC22();
+    T *C23 = local->getC23();
+    T *C33 = local->getC33();
+    T *C44 = local->getC44();
+    T *C55 = local->getC55();
+    T *C66 = local->getC66();
+
+    T *R = local->getR();
+    T *C11p = local->getC11p();
+    T *C12p = local->getC12p();
+    T *C13p = local->getC13p();
+    T *C22p = local->getC22p();
+    T *C23p = local->getC23p();
+    T *C33p = local->getC33p();
+    T *C44p = local->getC44p();
+    T *C55p = local->getC55p();
+    T *C66p = local->getC66p();
+    T *Rx = local->getRx();
+    T *Ry = local->getRy();
+    T *Rz = local->getRz();
+
+    /* Allocate two traces to read models from file */
+    T *c11trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c11trace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c12trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c12trace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c13trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c13trace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c22trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c22trace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c23trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c23trace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c33trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c33trace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c44trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c44trace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c44trace_adv = (T *) calloc(nx*ny, sizeof(T));
+    if(c44trace_adv == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c55trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c55trace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c55trace_adv = (T *) calloc(nx*ny, sizeof(T));
+    if(c55trace_adv == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *c66trace = (T *) calloc(nx*ny, sizeof(T));
+    if(c66trace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *rhotrace = (T *) calloc(nx*ny, sizeof(T));
+    if(rhotrace == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+    T *rhotrace_adv = (T *) calloc(nx*ny, sizeof(T));
+    if(rhotrace_adv == NULL) rs_error("ModelOrtho3D::getDomainmodel: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> Fc11 (new File());
+    status = Fc11->input(C11file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from C11 file.");
+    }
+    std::shared_ptr<File> Fc12 (new File());
+    status = Fc12->input(C12file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from C12 file.");
+    }
+    std::shared_ptr<File> Fc13 (new File());
+    status = Fc13->input(C13file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from C13 file.");
+    }
+    std::shared_ptr<File> Fc22 (new File());
+    status = Fc22->input(C22file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from C22 file.");
+    }
+    std::shared_ptr<File> Fc23 (new File());
+    status = Fc23->input(C23file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from C23 file.");
+    }
+    std::shared_ptr<File> Fc33 (new File());
+    status = Fc33->input(C33file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from C33 file.");
+    }
+    std::shared_ptr<File> Fc44 (new File());
+    status = Fc44->input(C44file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from C44 file.");
+    }
+    std::shared_ptr<File> Fc55 (new File());
+    status = Fc55->input(C55file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from C55 file.");
+    }
+    std::shared_ptr<File> Fc66 (new File());
+    status = Fc66->input(C66file);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from C66 file.");
+    }
+    std::shared_ptr<File> Frho (new File());
+    status = Frho->input(Rfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelOrtho3D::getDomainmodel : Error reading from Density file.");
+    }
+
+    off_t i = start_x;
+    off_t j = start_y;
+    off_t lpos_x, lpos_y, lpos_z, fpos;
+    Index l3d(nxd, nyd, nzd);
+    Index f3d(nx, ny, nz);
+    Index l2d(nx, ny);
+    for(size_t i1=0; i1<nzd; i1++) {
+        lpos_z = iz0 + i1 - lpml;
+        if(lpos_z < 0) lpos_z = 0;
+        if(lpos_z > (nz-1)) lpos_z = nz - 1;
+        fpos = f3d(0, 0, lpos_z)*sizeof(T);
+        Fc11->read(c11trace, nx*ny, fpos);
+        if(Fc11->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c11 file");
+        Fc12->read(c12trace, nx*ny, fpos);
+        if(Fc12->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c12 file");
+        Fc13->read(c13trace, nx*ny, fpos);
+        if(Fc13->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c13 file");
+        Fc22->read(c22trace, nx*ny, fpos);
+        if(Fc22->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c22 file");
+        Fc23->read(c23trace, nx*ny, fpos);
+        if(Fc23->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c23 file");
+        Fc33->read(c33trace, nx*ny, fpos);
+        if(Fc33->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c33 file");
+        Fc44->read(c44trace, nx*ny, fpos);
+        if(Fc44->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c44 file");
+        Fc55->read(c55trace, nx*ny, fpos);
+        if(Fc55->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c55 file");
+        Fc66->read(c66trace, nx*ny, fpos);
+        if(Fc66->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c66 file");
+        Frho->read(rhotrace, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from rho file");
+
+        lpos_z = iz0 + i1 - lpml + 1;
+        if(lpos_z < 0) lpos_z = 0;
+        if(lpos_z > (nz-1)) lpos_z = nz - 1;
+        fpos = f3d(0, 0, lpos_z)*sizeof(T);
+
+        Fc44->read(c44trace_adv, nx*ny, fpos);
+        Fc55->read(c55trace_adv, nx*ny, fpos);
+        if(Fc55->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from c55 file");
+        Frho->read(rhotrace_adv, nx*ny, fpos);
+        if(Frho->getFail()) rs_error("ModelOrtho3D::getDomainmodel: Error reading from rho file");
+
+        T M1, M2, M3, M4, M5, M6, M7;
+        for(size_t i3=0; i3<nyd; i3++) {
+            lpos_y = j + i3 + iy0 - lpml;
+                if(lpos_y < 0) lpos_y = 0;
+                if(lpos_y > (ny-1)) lpos_y = ny - 1;
+            for(size_t i2=0; i2<nxd; i2++) {
+                lpos_x = i + i2 + ix0 - lpml;
+                if(lpos_x < 0) lpos_x = 0;
+                if(lpos_x > (nx-1)) lpos_x = nx - 1;
+                C11[l3d(i2,i3,i1)] = c11trace[l2d(lpos_x, lpos_y)];
+                C12[l3d(i2,i3,i1)] = c12trace[l2d(lpos_x, lpos_y)];
+                C13[l3d(i2,i3,i1)] = c13trace[l2d(lpos_x, lpos_y)];
+                C22[l3d(i2,i3,i1)] = c22trace[l2d(lpos_x, lpos_y)];
+                C23[l3d(i2,i3,i1)] = c23trace[l2d(lpos_x, lpos_y)];
+                C33[l3d(i2,i3,i1)] = c33trace[l2d(lpos_x, lpos_y)];
+                C44[l3d(i2,i3,i1)] = c44trace[l2d(lpos_x, lpos_y)];
+                C55[l3d(i2,i3,i1)] = c55trace[l2d(lpos_x, lpos_y)];
+                C66[l3d(i2,i3,i1)] = c66trace[l2d(lpos_x, lpos_y)];
+                R[l3d(i2,i3,i1)] = rhotrace[l2d(lpos_x, lpos_y)];
+                C11p[l3d(i2,i3,i1)] = c11trace[l2d(lpos_x, lpos_y)];
+                C12p[l3d(i2,i3,i1)] = c12trace[l2d(lpos_x, lpos_y)];
+                C13p[l3d(i2,i3,i1)] = c13trace[l2d(lpos_x, lpos_y)];
+                C22p[l3d(i2,i3,i1)] = c22trace[l2d(lpos_x, lpos_y)];
+                C23p[l3d(i2,i3,i1)] = c23trace[l2d(lpos_x, lpos_y)];
+                C33p[l3d(i2,i3,i1)] = c33trace[l2d(lpos_x, lpos_y)];
+
+                if(rhotrace[l2d(lpos_x, lpos_y)] <= 0.0) rs_error("ModelOrtho3D::getDomainmodel: Zero density found.");
+
+                if(lpos_x < nx-1){
+                    Rx[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x+1, lpos_y)]);
+                }else{
+                    Rx[l3d(i2,i3,i1)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                }
+                if(lpos_y < ny-1){
+                    Ry[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace[l2d(lpos_x, lpos_y+1)]);
+                }else{
+                    Ry[l3d(i2,i3,i1)] = 1.0/(rhotrace[l2d(lpos_x, lpos_y)]);
+                }
+                Rz[l3d(i2,i3,i1)] = 2.0/(rhotrace[l2d(lpos_x, lpos_y)] + rhotrace_adv[l2d(lpos_x, lpos_y)]);
+
+                M1 = c55trace[l2d(lpos_x, lpos_y)];
+                M5 = c55trace_adv[l2d(lpos_x, lpos_y)];
+                if(lpos_x < nx-1){
+                   M2 = c55trace[l2d(lpos_x+1, lpos_y)];
+                   M6 = c55trace_adv[l2d(lpos_x+1, lpos_y)];
+                }else{
+                   M2 = c55trace[l2d(lpos_x, lpos_y)];
+                   M6 = c55trace_adv[l2d(lpos_x, lpos_y)];
+                }
+                C55p[l3d(i2,i3,i1)] = 0.25*(M1+M2+M5+M6);
+
+                M1 = c44trace[l2d(lpos_x, lpos_y)];
+                M5 = c44trace_adv[l2d(lpos_x, lpos_y)];
+                if(lpos_y < ny-1){
+                    M3 = c44trace[l2d(lpos_x, lpos_y+1)];
+                    M7 = c44trace_adv[l2d(lpos_x, lpos_y+1)];
+                }else{
+                    M3 = c44trace[l2d(lpos_x, lpos_y)];
+                    M7 = c44trace_adv[l2d(lpos_x, lpos_y)];
+                }
+                C44p[l3d(i2,i3,i1)] = 0.25*(M1+M3+M5+M7);
+
+                M1 = c66trace[l2d(lpos_x, lpos_y)];
+                if(lpos_x < nx-1){
+                    M2 = c66trace[l2d(lpos_x+1, lpos_y)];
+                    if(lpos_y < ny-1){
+                        M4 = c66trace[l2d(lpos_x+1, lpos_y+1)];
+                    }else{
+                        M4 = c66trace[l2d(lpos_x+1, lpos_y)];
+                    }
+                }else{
+                    M2 = c66trace[l2d(lpos_x, lpos_y)];
+                    if(lpos_y < ny-1){
+                        M4 = c66trace[l2d(lpos_x, lpos_y+1)];
+                    }else{
+                        M4 = c66trace[l2d(lpos_x, lpos_y)];
+                    }
+                }
+                if(lpos_y < ny-1){
+                    M3 = c66trace[l2d(lpos_x, lpos_y+1)];
+                }else{
+                    M3 = c66trace[l2d(lpos_x, lpos_y)];
+                }
+                C66p[l3d(i2,i3,i1)] = 0.25*(M1+M2+M3+M4);
+            }
+        }
+    }
+
+    if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
+        for(size_t ix=0; ix<nxd; ix++){
+            for(size_t iy=0; iy<nyd; iy++){
+                Rx[l3d(ix,iy,lpml-iz0)] *= 2.0;
+                Ry[l3d(ix,iy,lpml-iz0)] *= 2.0;
+                C11p[l3d(ix,iy,lpml-iz0)] = C12p[l3d(ix,iy,lpml-iz0)]+C66p[l3d(ix,iy,lpml-iz0)];
+                C22p[l3d(ix,iy,lpml-iz0)] = C12p[l3d(ix,iy,lpml-iz0)]+C66p[l3d(ix,iy,lpml-iz0)];
+                C66p[l3d(ix,iy,lpml-iz0)] *= 0.5;
+            }
+        }
+    }
+
+    /* Free traces */
+    free(c11trace);
+    free(c12trace);
+    free(c13trace);
+    free(c22trace);
+    free(c23trace);
+    free(c33trace);
+    free(c44trace);
+    free(c44trace_adv);
+    free(c55trace);
+    free(c55trace_adv);
+    free(c66trace);
+    free(rhotrace);
+    free(rhotrace_adv);
+
+    return local;
+}
+
+template<typename T>
+ModelOrtho3D<T>::~ModelOrtho3D() {
+    free(C11);
+    free(C12);
+    free(C13);
+    free(C22);
+    free(C23);
+    free(C33);
+    free(C44);
+    free(C55);
+    free(C66);
+    free(C11p);
+    free(C12p);
+    free(C13p);
+    free(C22p);
+    free(C23p);
+    free(C33p);
+    free(C44p);
+    free(C55p);
+    free(C66p);
+    free(R);
+    free(Rx);
+    free(Ry);
     free(Rz);
 }
 
@@ -6551,4 +8001,7 @@ template class ModelViscoelastic3D<double>;
 
 template class ModelVti2D<float>;
 template class ModelVti2D<double>;
+
+template class ModelOrtho3D<float>;
+template class ModelOrtho3D<double>;
 }

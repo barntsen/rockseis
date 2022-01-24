@@ -1610,7 +1610,405 @@ ModellingViscoelastic3D<T>::~ModellingViscoelastic3D() {
     // Nothing here
 }
 
+// =============== ELASTIC 2D MODELLING CLASS =============== //
+template<typename T>
+ModellingVti2D<T>::ModellingVti2D(){
+    sourceset = false;
+    modelset = false;
+    recPset = false;
+    recVxset = false;
+    recVzset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapVxset = false;
+    snapVzset = false;
+}
 
+template<typename T>
+ModellingVti2D<T>::ModellingVti2D(std::shared_ptr<ModelVti2D<T>> _model,std::shared_ptr<Data2D<T>> _source, int order, int snapinc):Modelling<T>(order, snapinc){
+    source = _source;
+    model = _model;
+    sourceset = true;
+    modelset = true;
+    recPset = false;
+    recVxset = false;
+    recVzset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapVxset = false;
+    snapVzset = false;
+}
+
+template<typename T>
+T ModellingVti2D<T>::getVpmax(){
+    T *c11 = model->getC11();
+    T *c33 = model->getC33();
+    T *rho = model->getRx();
+    // Find maximum Vp
+    T Vpmax;
+    T Vp1;
+    T Vp2;
+    T Vp;
+    Vp1=sqrt(c11[0]*rho[0]);
+    Vp2=sqrt(c33[0]*rho[0]);
+    Vpmax = MAX(Vp1,Vp2);
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        Vp1=sqrt(c11[i]*rho[i]);
+        Vp2=sqrt(c33[i]*rho[i]);
+        Vp = MAX(Vp1,Vp2);
+        if(Vp > Vpmax){
+            Vpmax = Vp;
+        }
+    }
+    return Vpmax;
+}
+
+template<typename T>
+bool ModellingVti2D<T>::checkStability(){
+    T Vpmax = this->getVpmax();
+    T dx = model->getDx();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
+int ModellingVti2D<T>::run(){
+   int result = MOD_ERR;
+   int nt;
+   T dt;
+   T ot;
+
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
+
+   if(!this->checkStability()) rs_error("ModellingVti2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+   this->createLog(this->getLogfile());
+
+   // Create the classes 
+   std::shared_ptr<WavesVti2D<T>> waves (new WavesVti2D<T>(model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
+
+   // Set PML constants
+   (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+   (waves->getPml())->setSmax(SMAX);
+   (waves->getPml())->computeABC();
+
+   // Create snapshots
+   std::shared_ptr<Snapshot2D<T>> Psnap;
+   std::shared_ptr<Snapshot2D<T>> Vxsnap;
+   std::shared_ptr<Snapshot2D<T>> Vzsnap;
+   if(this->snapPset){ 
+      Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+      Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
+      Psnap->setData(waves->getSxx(), 0); //Set Stress as first field 
+      Psnap->setData(waves->getSzz(), 1); //Set Stress as second field
+   }
+   if(this->snapVxset){ 
+      Vxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+      Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
+      Vxsnap->setData(waves->getVx(), 0); //Set Vx as field to snap
+   }
+   if(this->snapVzset){ 
+      Vzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+      Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
+      Vzsnap->setData(waves->getVz(), 0); //Set Vz as field to snap
+   }
+
+   this->writeLog("Running 2D Vti modelling.");
+   // Loop over time
+   for(int it=0; it < nt; it++)
+   {
+      // Time stepping
+      waves->forwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
+      waves->forwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+      }
+
+      // Inserting source 
+      waves->insertSource(model, source, SMAP, it);
+
+      // Recording data 
+      if(this->recPset){
+         waves->recordData(model,this->recP, GMAP, it);
+      }
+
+      // Recording data (Vx)
+      if(this->recVxset){
+         waves->recordData(model,this->recVx, GMAP, it);
+      }
+
+      // Recording data (Vz)
+      if(this->recVzset){
+         waves->recordData(model,this->recVz, GMAP, it);
+      }
+
+      //Writting out results to snapshot file
+      if(this->snapPset){ 
+         Psnap->writeSnap(it);
+      }
+
+      if(this->snapVxset){ 
+         Vxsnap->writeSnap(it);
+      }
+
+      if(this->snapVzset){ 
+         Vzsnap->writeSnap(it);
+      }
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }	
+
+   this->writeLog("Modelling is complete.");
+   result=MOD_OK;
+   return result;
+}
+
+
+template<typename T>
+ModellingVti2D<T>::~ModellingVti2D() {
+    // Nothing here
+}
+
+// =============== ORTHOROMBIC 3D MODELLING CLASS =============== //
+template<typename T>
+ModellingOrtho3D<T>::ModellingOrtho3D(){
+    sourceset = false;
+    modelset = false;
+    recPset = false;
+    recVxset = false;
+    recVyset = false;
+    recVzset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSyyset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapSyzset = false;
+    snapSxyset = false;
+    snapVxset = false;
+    snapVyset = false;
+    snapVzset = false;
+}
+
+template<typename T>
+ModellingOrtho3D<T>::ModellingOrtho3D(std::shared_ptr<ModelOrtho3D<T>> _model,std::shared_ptr<Data3D<T>> _source, int order, int snapinc):Modelling<T>(order, snapinc){
+    source = _source;
+    model = _model;
+    sourceset = true;
+    modelset = true;
+    recPset = false;
+    recVxset = false;
+    recVyset = false;
+    recVzset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSyyset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapSyzset = false;
+    snapSxyset = false;
+    snapVxset = false;
+    snapVyset = false;
+    snapVzset = false;
+}
+
+template<typename T>
+T ModellingOrtho3D<T>::getVpmax(){
+    T *c11 = model->getC11();
+    T *c22 = model->getC22();
+    T *c33 = model->getC33();
+    T *rho = model->getRx();
+    // Find maximum Vp
+    T Vpmax;
+    T Vp1;
+    T Vp2;
+    T Vp3;
+    T Vp;
+    Vp1=sqrt(c11[0]*rho[0]);
+    Vp2=sqrt(c22[0]*rho[0]);
+    Vp3=sqrt(c33[0]*rho[0]);
+    Vpmax = MAX(Vp1,MAX(Vp2,Vp3));
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        Vp1=sqrt(c11[i]*rho[i]);
+        Vp2=sqrt(c22[i]*rho[i]);
+        Vp3=sqrt(c33[i]*rho[i]);
+        Vp = MAX(Vp1,MAX(Vp2,Vp3));
+        if(Vp > Vpmax){
+            Vpmax = Vp;
+        }
+    }
+    return Vpmax;
+}
+
+template<typename T>
+bool ModellingOrtho3D<T>::checkStability(){
+    T Vpmax = this->getVpmax();
+    T dx = model->getDx();
+    T dy = model->getDy();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dy*dy))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
+int ModellingOrtho3D<T>::run(){
+   int result = MOD_ERR;
+   int nt;
+   T dt;
+   T ot;
+
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
+
+   if(!this->checkStability()) rs_error("ModellingOrtho3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+
+   // Create the classes 
+   std::shared_ptr<WavesOrtho3D<T>> waves (new WavesOrtho3D<T>(model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
+
+   // Set PML constants
+   (waves->getPml())->setSmax(-this->getVpmax()*4*log(1e-6)/(2*waves->getLpml()*waves->getDx()));
+   (waves->getPml())->setSmax(SMAX);
+   (waves->getPml())->computeABC();
+
+   // Create log file
+   this->createLog(this->getLogfile());
+
+   // Create snapshots
+   std::shared_ptr<Snapshot3D<T>> Psnap;
+   std::shared_ptr<Snapshot3D<T>> Vxsnap;
+   std::shared_ptr<Snapshot3D<T>> Vysnap;
+   std::shared_ptr<Snapshot3D<T>> Vzsnap;
+   if(this->snapPset){ 
+      Psnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
+      Psnap->setData(waves->getSxx(), 0); //Set Stress as first field 
+      Psnap->setData(waves->getSyy(), 1); //Set Stress as second field 
+      Psnap->setData(waves->getSzz(), 2); //Set Stress as third field
+   }
+   if(this->snapVxset){ 
+      Vxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
+      Vxsnap->setData(waves->getVx(), 0); //Set Vx as field to snap
+   }
+   if(this->snapVyset){ 
+      Vysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Vysnap->openSnap(this->snapVy, 'w'); // Create a new snapshot file
+      Vysnap->setData(waves->getVy(), 0); //Set Vy as field to snap
+   }
+   if(this->snapVzset){ 
+      Vzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+      Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
+      Vzsnap->setData(waves->getVz(), 0); //Set Vz as field to snap
+   }
+
+   this->writeLog("Running 3D Ortho modelling.");
+   // Loop over time
+   for(int it=0; it < nt; it++)
+   {
+         // Time stepping velocity
+      waves->forwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVy());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
+         // Time stepping stress
+      waves->forwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSyy());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+         (model->getDomain())->shareEdges3D(waves->getSyz());
+         (model->getDomain())->shareEdges3D(waves->getSxy());
+      }
+
+      // Inserting source 
+      waves->insertSource(model, source, SMAP, it);
+
+      // Recording data 
+      if(this->recPset){
+         waves->recordData(model, this->recP, GMAP, it);
+      }
+
+      // Recording data (Vx)
+      if(this->recVxset){
+         waves->recordData(model, this->recVx, GMAP, it);
+      }
+
+      // Recording data (Vy)
+      if(this->recVyset){
+         waves->recordData(model, this->recVy, GMAP, it);
+      }
+
+      // Recording data (Vz)
+      if(this->recVzset){
+         waves->recordData(model, this->recVz, GMAP, it);
+      }
+
+      //Writting out results to snapshot file
+      if(this->snapPset){ 
+         Psnap->writeSnap(it);
+      }
+
+      if(this->snapVxset){ 
+         Vxsnap->writeSnap(it);
+      }
+
+      if(this->snapVyset){ 
+         Vysnap->writeSnap(it);
+      }
+
+      if(this->snapVzset){ 
+         Vzsnap->writeSnap(it);
+      }
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }	
+
+   this->writeLog("Modelling is complete.");
+   result=MOD_OK;
+   return result;
+}
+
+
+template<typename T>
+ModellingOrtho3D<T>::~ModellingOrtho3D() {
+    // Nothing here
+}
 
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
@@ -1636,5 +2034,10 @@ template class ModellingViscoelastic2D<double>;
 template class ModellingViscoelastic3D<float>;
 template class ModellingViscoelastic3D<double>;
 
+template class ModellingVti2D<float>;
+template class ModellingVti2D<double>;
+
+template class ModellingOrtho3D<float>;
+template class ModellingOrtho3D<double>;
 
 }

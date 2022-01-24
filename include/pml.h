@@ -12,7 +12,7 @@
 //#define KMAX 2
 
 #define AMAX 0
-#define KMAX 1
+#define KMAX 2
 #define SMAX 1200
 
 #define LEFTPML 0

@@ -22,6 +22,8 @@
 #define GMAP 1
 #define SMAP 0
 
+#define MAX(a,b) ((a)>(b) ? (a):(b))
+
 namespace rockseis {
 
 // =============== ABSTRACT MODELLING CLASS =============== //
@@ -389,6 +391,91 @@ private:
     std::string snapP, snapSxx, snapSyy, snapSzz, snapSyz, snapSxz, snapSxy, snapVx, snapVy, snapVz;
     bool snapPset, snapSxxset, snapSyyset, snapSzzset, snapSxzset, snapSyzset, snapSxyset, snapVxset, snapVyset, snapVzset;
 };
+
+/** The 2D Vti Modelling class
+ *
+ */
+template<typename T>
+class ModellingVti2D: public Modelling<T> {
+public:
+    ModellingVti2D();					///< Constructor
+    ModellingVti2D(std::shared_ptr<ModelVti2D<T>> model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs modelling
+    void setModel(std::shared_ptr<ModelVti2D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
+    void setRecP(std::shared_ptr<Data2D<T>> _recP) { recP = _recP; recPset = true; }
+    void setRecVx(std::shared_ptr<Data2D<T>> _recVx) { recVx = _recVx; recVxset = true; }
+    void setRecVz(std::shared_ptr<Data2D<T>> _recVz) { recVz = _recVz; recVzset = true; }
+
+    void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
+    void setSnapSxx(std::string _snapSxx) { snapSxx = _snapSxx; snapSxxset = true; }
+    void setSnapSzz(std::string _snapSzz) { snapSzz = _snapSzz; snapSzzset = true; }
+    void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
+    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
+    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
+
+    ~ModellingVti2D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelVti2D<T>> model;
+    std::shared_ptr<Data2D<T>> source;
+    std::shared_ptr<Data2D<T>> recP;
+    std::shared_ptr<Data2D<T>> recVx;
+    std::shared_ptr<Data2D<T>> recVz;
+    bool modelset;
+    bool sourceset;
+    bool recPset, recVxset, recVzset;
+    std::string snapP, snapSxx, snapSzz, snapSxz, snapVx, snapVz;
+    bool snapPset, snapSxxset, snapSzzset, snapSxzset, snapVxset, snapVzset;
+};
+
+/** The 3D Orthorombic Modelling class
+ *
+ */
+template<typename T>
+class ModellingOrtho3D: public Modelling<T> {
+public:
+    ModellingOrtho3D();					///< Constructor
+    ModellingOrtho3D(std::shared_ptr<ModelOrtho3D<T>> model, std::shared_ptr<Data3D<T>> source, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs modelling
+    void setModel(std::shared_ptr<ModelOrtho3D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
+    void setRecP(std::shared_ptr<Data3D<T>> _recP) { recP = _recP; recPset = true; }
+    void setRecVx(std::shared_ptr<Data3D<T>> _recVx) { recVx = _recVx; recVxset = true; }
+    void setRecVy(std::shared_ptr<Data3D<T>> _recVy) { recVy = _recVy; recVyset = true; }
+    void setRecVz(std::shared_ptr<Data3D<T>> _recVz) { recVz = _recVz; recVzset = true; }
+
+    void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
+    void setSnapSxx(std::string _snapSxx) { snapSxx = _snapSxx; snapSxxset = true; }
+    void setSnapSyy(std::string _snapSyy) { snapSyy = _snapSyy; snapSyyset = true; }
+    void setSnapSzz(std::string _snapSzz) { snapSzz = _snapSzz; snapSzzset = true; }
+    void setSnapSyz(std::string _snapSyz) { snapSyz = _snapSyz; snapSyzset = true; }
+    void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
+    void setSnapSxy(std::string _snapSxy) { snapSxy = _snapSxy; snapSxyset = true; }
+    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
+    void setSnapVy(std::string _snapVy) { snapVy = _snapVy; snapVyset = true; }
+    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
+
+    ~ModellingOrtho3D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelOrtho3D<T>> model;
+    std::shared_ptr<Data3D<T>> source;
+    std::shared_ptr<Data3D<T>> recP;
+    std::shared_ptr<Data3D<T>> recVx;
+    std::shared_ptr<Data3D<T>> recVy;
+    std::shared_ptr<Data3D<T>> recVz;
+    bool modelset;
+    bool sourceset;
+    bool recPset, recVxset, recVyset, recVzset;
+    std::string snapP, snapSxx, snapSyy, snapSzz, snapSyz, snapSxz, snapSxy, snapVx, snapVy, snapVz;
+    bool snapPset, snapSxxset, snapSyyset, snapSzzset, snapSxzset, snapSyzset, snapSxyset, snapVxset, snapVyset, snapVzset;
+};
+
 
 
 }
