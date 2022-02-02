@@ -54,7 +54,8 @@ public:
     /** Compute A,B and C constants. 
      * Uses Amax, Kmax and Smax to compute the PML variables.
     * */
-    void computeABC();
+    void computeABC(int sign);
+    void computeABC() { this->computeABC(1); }
     
     // Left, top and front constants 
     T *A_ltf; // Non-staggered

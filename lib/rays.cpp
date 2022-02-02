@@ -1,7 +1,7 @@
 // Include statements
 #include "rays.h"
 
-#define I2D(i,j) ((i)*nx + (j)) 
+#define I2D(i,j) ((j)*nx + (i)) 
 #define I3D(i,j,k) ((k)*nx*ny+(j)*nx + (i)) 
 #define S(i) (1.0/Vp[i]) 
 
@@ -179,17 +179,15 @@ RaysAcoustic2D<T>::~RaysAcoustic2D() {
 }
 
 template<typename T>
-void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy)
+void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int nz1, int nz2, int ndz)
 { 
 /*------------------------------------------------------------------------
  *  Solve eikonal equation by fast sweeping method according to Zhao (2004)
  *
- *  D. Koehn
- *  Kiel, 09/12/2015
  *  ----------------------------------------------------------------------*/
 
     int nx = model->getNx_pml();
-    int ny = model->getNz_pml();
+    int nz = model->getNz_pml();
     T dx = model->getDx();
     T dz = model->getDz();
     T *TT = this->getTT();
@@ -197,92 +195,39 @@ void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
 
     /* local variables */
     int i, j, h, k;
-    T a, b, Tt;
-
+    T a, b, Tta, Ttb, Tt;
 
     /* sweep over FD-grid */
-    h = nx1;
-    for (i=0;i<nx;i++){
-        k = ny1;
-        for (j=0;j<ny;j++){	
+    h = nz1;
+    for (j=0;j<nz;j++){	
+       k = nx1;
+       for (i=0;i<nx;i++){
+          b = 0 == k ? TT[I2D(1,h)] : ((nx - 1) == k) ? TT[I2D(nx-2,h)] : MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
+          a = 0 == h ? TT[I2D(k,1)] : ((nz - 1) == h) ? TT[I2D(k,nz-2)] : MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
 
-            /* model interior */
-            if((h>0)&&(h<nx-1)&&(k>0)&&(k<ny-1)){
-                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
-                b = MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
-            }
+          /* calculate solution */
+          Tta = a + S(I2D(k,h))*dz;
+          Ttb = b + S(I2D(k,h))*dx;
+          if(Tta <= b){
+             Tt = Tta;
+          }else if (Ttb <= a){
+             Tt = Ttb;
+          }else{
+             Tt = (a/SQ(dz) + b/SQ(dx) + sqrt((SQ(dx)+SQ(dz))*SQ(S(I2D(k,h))) - SQ(a-b))/(dx*dz))/(SQ(1./dx)+SQ(1./dz));
+          }
+          TT[I2D(k,h)] = MIN(TT[I2D(k,h)],Tt);
 
-            /* model borders */
-            /* left */
-            if((h==0)&&(k>0)&&(k<ny-1)){
-                a = MIN(TT[I2D(k,h)],TT[I2D(k,h+1)]);
-                b = MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
-            }
-
-            /* right */
-            if((h==nx-1)&&(k>0)&&(k<ny-1)){
-                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h)]);
-                b = MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
-            }
-
-            /* top */
-            if((k==0)&&(h>0)&&(h<nx-1)){
-                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
-                b = MIN(TT[I2D(k,h)],TT[I2D(k+1,h)]);
-            }
-
-            /* bottom */
-            if((k==ny-1)&&(h>0)&&(h<nx-1)){
-                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
-                b = MIN(TT[I2D(k-1,h)],TT[I2D(k,h)]);
-            }
-
-            /* model corners */
-            /* upper-left */
-            if((h==0)&&(k==0)){
-                a = MIN(TT[I2D(k,h)],TT[I2D(k,h+1)]);
-                b = MIN(TT[I2D(k,h)],TT[I2D(k+1,h)]);
-            }
-
-            /* lower-left */
-            if((h==0)&&(k==ny-1)){
-                a = MIN(TT[I2D(k,h)],TT[I2D(k,h+1)]);
-                b = MIN(TT[I2D(k-1,h)],TT[I2D(k,h)]);
-            }
-
-            /* lower-right */
-            if((h==nx-1)&&(k==ny-1)){
-                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h)]);
-                b = MIN(TT[I2D(k-1,h)],TT[I2D(k,h)]);
-            }
-
-            /* upper-right */
-            if((h==nx-1)&&(k==0)){
-                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h)]);
-                b = MIN(TT[I2D(k,h)],TT[I2D(k+1,h)]);
-            }
-
-
-            /* calculate solution */
-            if((ABS(a-b)>=(S(I2D(k,h))*dx)) || (ABS(a-b)>=(S(I2D(k,h))*dz))){
-               Tt = MIN(a + S(I2D(k,h))*dz, b + S(I2D(k,h))*dx);
-            }else{
-                Tt = (a*SQ(dx) + b*SQ(dz) + dx*dz*sqrt((SQ(dx)+SQ(dz))*SQ(S(I2D(k,h))) - SQ(a-b)))/(SQ(dx)+SQ(dz));
-            }
-
-            TT[I2D(k,h)] = MIN(TT[I2D(k,h)],Tt);
-
-            k += ndy;
-        }
-        h += ndx;
+          k += ndx;
+       }
+       h += ndz;
     }
 }
 
 template<typename T>
-void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy)
+void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int nz1, int nz2, int ndz)
 {
     int nx = model->getNx_pml();
-    int ny = model->getNz_pml();
+    int nz = model->getNz_pml();
     T dx = model->getDx();
     T dz = model->getDz();
     T *TT = this->getTT();
@@ -297,39 +242,39 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
     T lhs, rhs, lamt;
 
     /* sweep over FD-grid */
-    h = nx1;
+    k = nx1;
     for (i=1;i<nx-1;i++){
-        k = ny1;
-        for (j=1;j<ny-1;j++){
-                /* assemble equation (3.6) in Leung & Qian (2006) */
-                ap = -(TT[I2D(k,h+1)]-TT[I2D(k,h)])/dz;
-                am = -(TT[I2D(k,h)]-TT[I2D(k,h-1)])/dz;
+       h = nz1;
+       for (j=1;j<nz-1;j++){
+          /* assemble equation (3.6) in Leung & Qian (2006) */
+          ap = -(TT[I2D(k,h+1)]-TT[I2D(k,h)])/dz;
+          am = -(TT[I2D(k,h)]-TT[I2D(k,h-1)])/dz;
 
-                bp = -(TT[I2D(k+1,h)]-TT[I2D(k,h)])/dx;
-                bm = -(TT[I2D(k,h)]-TT[I2D(k-1,h)])/dx;
+          bp = -(TT[I2D(k+1,h)]-TT[I2D(k,h)])/dx;
+          bm = -(TT[I2D(k,h)]-TT[I2D(k-1,h)])/dx;
 
-                app = (ap + ABS(ap))/2.0;
-                apm = (ap - ABS(ap))/2.0;
+          app = (ap + ABS(ap))/2.0;
+          apm = (ap - ABS(ap))/2.0;
 
-                amp = (am + ABS(am))/2.0;
-                amm = (am - ABS(am))/2.0;
+          amp = (am + ABS(am))/2.0;
+          amm = (am - ABS(am))/2.0;
 
-                bpp = (bp + ABS(bp))/2.0;
-                bpm = (bp - ABS(bp))/2.0;
+          bpp = (bp + ABS(bp))/2.0;
+          bpm = (bp - ABS(bp))/2.0;
 
-                bmp = (bm + ABS(bm))/2.0;
-                bmm = (bm - ABS(bm))/2.0;
+          bmp = (bm + ABS(bm))/2.0;
+          bmm = (bm - ABS(bm))/2.0;
 
 
-                /* Leung & Qian (2006) */
-                lhs = (app-amm)/dz + (bpp-bmm)/dx;
-                rhs = (amp*lam[I2D(k,h-1)]-apm*lam[I2D(k,h+1)])/dz + (bmp*lam[I2D(k-1,h)]-bpm*lam[I2D(k+1,h)])/dx - adjsource[I2D(k,h)];
-                //
-                lamt = rhs*lhs/(SQ(lhs)+EPS_ADJ);
-                lam[I2D(k,h)] = MIN(lam[I2D(k,h)],lamt);
-            k += ndy;
-        }
-        h += ndx;
+          /* Leung & Qian (2006) */
+          lhs = (app-amm)/dz + (bpp-bmm)/dx;
+          rhs = (amp*lam[I2D(k,h-1)]-apm*lam[I2D(k,h+1)])/dz + (bmp*lam[I2D(k-1,h)]-bpm*lam[I2D(k+1,h)])/dx - adjsource[I2D(k,h)];
+          //
+          lamt = rhs*lhs/(SQ(lhs)+EPS_ADJ);
+          lam[I2D(k,h)] = MIN(lam[I2D(k,h)],lamt);
+          h += ndz;
+       }
+       k += ndx;
     }
 }
 
@@ -1083,7 +1028,7 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
                     if(Tt <= a[1]) break;
                     Tt = (a[0]*SQ(d[1]) + a[1]*SQ(d[0]) + d[0]*d[1]*sqrt((SQ(d[0])+SQ(d[1]))*SQ(slo) - SQ(a[0]-a[1])))/(SQ(d[0])+SQ(d[1]));
                     if(Tt <= a[2]) break;
-                    Tt =( (2*a[0]/SQ(d[0])) + (2*a[1]/SQ(d[1])) + (2*a[2]/SQ(d[2])) + sqrt( (4*SQ(a[0]/SQ(d[0]) + a[1]/SQ(d[1]) + a[2]/SQ(d[2]))) - 4*(1/SQ(d[0]) + 1/SQ(d[1]) + 1/SQ(d[2]))*(SQ(a[0])/SQ(d[0]) + SQ(a[1])/SQ(d[1]) + SQ(a[2])/SQ(d[2]) - SQ(slo)))) / (2*(1/SQ(d[0]) + 1/SQ(d[1]) + 1/SQ(d[2])));
+                    Tt =( (2*a[0]/SQ(d[0])) + (2*a[1]/SQ(d[1])) + (2*a[2]/SQ(d[2])) + sqrt( (4*SQ(a[0]/SQ(d[0]) + a[1]/SQ(d[1]) + a[2]/SQ(d[2]))) - 4*(1./SQ(d[0]) + 1./SQ(d[1]) + 1./SQ(d[2]))*(SQ(a[0]/d[0]) + SQ(a[1]/d[1]) + SQ(a[2]/d[2]) - SQ(slo)))) / (2.*(1./SQ(d[0]) + 1./SQ(d[1]) + 1./SQ(d[2])));
                     break;
                 }
                 TT[I3D(m,n,l)] = MIN(TT[I3D(m,n,l)],Tt);
@@ -1184,7 +1129,7 @@ void RaysAcoustic3D<T>::solve()
     T lnorm1 = 10.0 * tmax;
 
     /* apply fast sweeping method to solve the eikonal equation */
-    while(lnorm1>=TTNORM){
+    while((lnorm1>=TTNORM) && (iter < MAXITER)){
 
         /* save old TT values */
         for (i=0; i<nx*ny*nz; i++){

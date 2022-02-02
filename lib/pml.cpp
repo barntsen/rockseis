@@ -76,7 +76,7 @@ Pml<T>::Pml(const int _Lpml, const T _dt) {
 
 
 template<typename T>
-void Pml<T>::computeABC()
+void Pml<T>::computeABC(int sign)
 {
     T func, a, k, s;
     int i;
@@ -93,7 +93,7 @@ void Pml<T>::computeABC()
         A_ltf[i] = (s*(1.-B_ltf[i]))/(k*(k*a + s));
 
         /* Staggered */
-        func = (T) (Lpml - i - 0.5)/Lpml;
+        func = (T) (Lpml - i - sign*0.5)/Lpml;
         func = pow(func,3); 
         a = Amax*func;
         k = 1. + (Kmax-1)*func;
@@ -114,7 +114,7 @@ void Pml<T>::computeABC()
         A_rbb[i] = (s*(1.-B_rbb[i]))/(k*(k*a + s));
 
         /* Staggered */
-        func = (T) (i + 1.0 + 0.5)/Lpml;
+        func = (T) (i + 1.0 + sign*0.5)/Lpml;
         func = pow(func,3); 
         a = Amax*func;
         k = 1. + (Kmax-1)*func;

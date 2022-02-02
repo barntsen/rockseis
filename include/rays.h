@@ -29,7 +29,7 @@
 
 #define TMAX 99.0
 #define MINITER 0
-#define MAXITER 30
+#define MAXITER 60
 
 namespace rockseis {
 

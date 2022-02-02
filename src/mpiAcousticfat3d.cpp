@@ -84,7 +84,11 @@ int main(int argc, char** argv) {
 
     // Test for problematic model sampling
     if(gmodel->getDx() != gmodel->getDz()){
-        rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dz).");
+        //rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dz).");
+    }
+
+    if(gmodel->getDx() != gmodel->getDy()){
+        //rs_error("Input model has different dx and dy values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dy).");
     }
 
     // Create an interpolation class
