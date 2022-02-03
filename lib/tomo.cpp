@@ -235,12 +235,7 @@ void TomoAcoustic2D<T>::runGrad() {
     Sort->setDatafile(Trecordfile);
 	
     // Create a global model class
-	std::shared_ptr<rockseis::ModelEikonal2D<T>> gmodel (new rockseis::ModelEikonal2D<T>(Vpfile, this->getLpml()));
-
-     // Test for problematic model sampling
-    if(gmodel->getDx() != gmodel->getDz()){
-        rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dz).");
-    }
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> gmodel (new rockseis::ModelEikonal2D<T>(Vpfile, this->getLpml()));
 
     // Create a file to output data misfit values
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
@@ -1197,11 +1192,6 @@ void TomoAcoustic3D<T>::runGrad() {
     // Create a global model class
 	std::shared_ptr<rockseis::ModelEikonal3D<T>> gmodel (new rockseis::ModelEikonal3D<T>(Vpfile, this->getLpml()));
 
-     // Test for problematic model sampling
-    if(gmodel->getDx() != gmodel->getDy() || gmodel->getDx() != gmodel->getDz()){
-        rs_error("Input model has different dx, dy and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dy = dz).");
-    }
-
     // Create a file to output data misfit values
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
 
@@ -1282,7 +1272,7 @@ void TomoAcoustic3D<T>::runGrad() {
                 Tobs3D = Sort->get3DGather(work.id);
                 size_t ntr = Tobs3D->getNtrace();
 
-                lmodel = gmodel->getLocal(Tobs3D, -1.0*gmodel->getDx(), -1.0*gmodel->getDx(), SMAP);
+                lmodel = gmodel->getLocal(Tobs3D, -1.0*gmodel->getDx(), -1.0*gmodel->getDy(), SMAP);
                 lmodel->Expand();
 
                 //Create source 
