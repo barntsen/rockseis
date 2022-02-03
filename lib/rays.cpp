@@ -4,6 +4,7 @@
 #define I2D(i,j) ((j)*nx + (i)) 
 #define I3D(i,j,k) ((k)*nx*ny+(j)*nx + (i)) 
 #define S(i) (1.0/Vp[i]) 
+#define SWAPF(a,b,t) t = b; b = a; a = t;
 
 namespace rockseis {
 
@@ -800,21 +801,19 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
     size_t nx = model->getNx_pml();
     size_t ny = model->getNy_pml();
     size_t nz = model->getNz_pml();
+    T dx = model->getDx();
+    T dy = model->getDy();
+    T dz = model->getDz();
     T *TT = this->getTT();
     T *Vp = model->getL();
 
     /* local variables */
     size_t i, j, k, m, n, l;
     T a[3], d[3];
-    a[0] = 0.0;
-    a[1] = 0.0;
-    a[2] = 0.0;
-    d[0] = model->getDx();
-    d[1] = model->getDy();
-    d[2] = model->getDz();
     T Tt;
 
     T slo;
+    T swap;
 
     /* sweep over FD-grid */
     m = nx1;
@@ -823,213 +822,49 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
         for (j=0;j<ny;j++){	
             l = nz1;
             for (k=0;k<nz;k++){	
+                a[0] = (0 == m) ? TT[I3D(1,n,l)] : ((nx - 1) == m) ? TT[I3D(nx-2,n,l)] :
+                    MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
 
-                /* model interior */
-                if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
-                }
+                a[1] = (0 == n) ? TT[I3D(m,1,l)] : ((ny - 1) == n) ? TT[I3D(m,ny-2,l)] :
+                    MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
 
-             
-                /* model borders */
-                /* left */
-                if((m==0)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* right */
-                if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* top */
-                if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l==0)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* bottom */
-                if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
-                }
-
-
-                /* front */
-                if((m>0)&&(m<nx-1)&&(n==0)&&(l>0)&&(l<nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* back */
-                if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
-                }
-
-
-                /* model edges */
-                /* upper-front */
-                if((m>0)&&(m<nx-1)&&(n==0)&&(l==0)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* upper-back */
-                if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l==0)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* lower-front */
-                if((m>0)&&(m<nx-1)&&(n==0)&&(l==nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
-                }
-
-                /* lower-back */
-                if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l==nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
-                }
-
-                /* left-front */
-                if((m==0)&&(n==0)&&(l>0)&&(l<nz-1)){
-                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* left-back */
-                if((m==0)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* right-front */
-                if((m==nx-1)&&(n==0)&&(l>0)&&(l<nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* right-back */
-                if((m==nx-1)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* upper-left */
-                if((m==0)&&(n>0)&&(n<ny-1)&&(l==0)){
-                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
-                }
-
-                 /* upper-right */
-                if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l==0)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* lower-left */
-                if((m==0)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
-                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
-                }
-
-                 /* lower-right */
-                if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
-                }
-
-                /* model corners */
-                /* upper-left-front */
-                if((m==0)&&(n==0)&&(l==0)){
-                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* upper-left-back */
-                if((m==0)&&(n==ny-1)&&(l==0)){
-                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* upper-right-front */
-                if((m==nx-1)&&(n==0)&&(l==0)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* upper-right-back */
-                if((m==nx-1)&&(n==ny-1)&&(l==0)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
-                }
-
-                /* lower-left-front */
-                if((m==0)&&(n==0)&&(l==nz-1)){
-                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
-                }
-
-                /* lower-left-back */
-                if((m==0)&&(n==ny-1)&&(l==nz-1)){
-                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
-                }
-
-                /* lower-right-front */
-                if((m==nx-1)&&(n==0)&&(l==nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
-                }
-
-                /* lower-right-back */
-                if((m==nx-1)&&(n==ny-1)&&(l==nz-1)){
-                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
-                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
-                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
-                }
+                a[2] = (0 == l) ? TT[I3D(m,n,1)] : ((nz - 1) == l) ? TT[I3D(m,n,nz-2)] :
+                    MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
 
 
                 /* calculate solution */
-                this->bubble_sort(a,d,3);
-                while(1){
-                    slo = S(I3D(m,n,l));
-                    Tt = a[0] + slo*d[0];
-                    if(Tt <= a[1]) break;
-                    Tt = (a[0]*SQ(d[1]) + a[1]*SQ(d[0]) + d[0]*d[1]*sqrt((SQ(d[0])+SQ(d[1]))*SQ(slo) - SQ(a[0]-a[1])))/(SQ(d[0])+SQ(d[1]));
-                    if(Tt <= a[2]) break;
-                    Tt =( (2*a[0]/SQ(d[0])) + (2*a[1]/SQ(d[1])) + (2*a[2]/SQ(d[2])) + sqrt( (4*SQ(a[0]/SQ(d[0]) + a[1]/SQ(d[1]) + a[2]/SQ(d[2]))) - 4*(1./SQ(d[0]) + 1./SQ(d[1]) + 1./SQ(d[2]))*(SQ(a[0]/d[0]) + SQ(a[1]/d[1]) + SQ(a[2]/d[2]) - SQ(slo)))) / (2.*(1./SQ(d[0]) + 1./SQ(d[1]) + 1./SQ(d[2])));
-                    break;
+                slo = S(I3D(m,n,l));
+                d[0] = dx;
+                d[1] = dy;
+                d[2] = dz;
+                if (a[0] > a[2]) {
+                    SWAPF (a[0], a[2], swap)
+                    SWAPF (d[0], d[2], swap)
+                }
+                if (a[0] > a[1]) {
+                    SWAPF (a[0], a[1], swap)
+                    SWAPF (d[0], d[1], swap)
+                }
+                if (a[1] > a[2]) {
+                    SWAPF (a[1], a[2], swap)
+                    SWAPF (d[1], d[2], swap)
+                }
+
+                Tt = a[0] + d[0]*slo;
+                if(Tt > a[1]){
+                    Tt = (d[0] * d[1] * sqrt ((SQ(d[0]) + SQ(d[1])) * slo * slo - (a[0] - a[1]) * (a[0] - a[1])) +
+                            a[0] * SQ(d[1]) + a[1] * SQ(d[0])) / (SQ(d[0]) + SQ(d[1]));
+                    if(Tt > a[2]){
+                        Tt = (d[0] * d[1] * d[2] * sqrt ((SQ(d[1]) * SQ(d[2]) + SQ(d[0]) * SQ(d[2]) + SQ(d[0]) * SQ(d[1])) * slo * slo
+                                    + 2.0 * SQ(d[2]) * a[0] * a[1]
+                                    + 2.0 * SQ(d[1]) * a[0] * a[2]
+                                    + 2.0 * SQ(d[0]) * a[1] * a[2]
+                                    - (SQ(d[2]) + SQ(d[1])) * a[0] * a[0]
+                                    - (SQ(d[2]) + SQ(d[0])) * a[1] * a[1]
+                                    - (SQ(d[1]) + SQ(d[0])) * a[2] * a[2])
+                                + SQ(d[0]) * SQ(d[1]) * a[2] + SQ(d[0]) * SQ(d[2]) * a[1] + SQ(d[1]) * SQ(d[2]) * a[0])
+                            / (SQ(d[1]) * SQ(d[2]) + SQ(d[0]) * SQ(d[2]) + SQ(d[0]) * SQ(d[1]));
+                    }
                 }
                 TT[I3D(m,n,l)] = MIN(TT[I3D(m,n,l)],Tt);
                 l += ndz;
@@ -1129,7 +964,7 @@ void RaysAcoustic3D<T>::solve()
     T lnorm1 = 10.0 * tmax;
 
     /* apply fast sweeping method to solve the eikonal equation */
-    while((lnorm1>=TTNORM) && (iter < MAXITER)){
+    while((lnorm1>=TTNORM)){
 
         /* save old TT values */
         for (i=0; i<nx*ny*nz; i++){
@@ -1137,12 +972,12 @@ void RaysAcoustic3D<T>::solve()
         }
 
         sweep(0, nx-1, 1,  0, ny-1, 1,  0, nz-1, 1);
-        sweep(nx-1, 0, -1,  0, ny-1, 1,  0, nz-1, 1);
-        sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
-        sweep(nx-1, 0, -1,  ny-1, 0, -1,  0, nz-1, 1);
         sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
-        sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
+        sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
         sweep(0, nx-1, 1,  ny-1, 0, -1,  nz-1, 0, -1);
+        sweep(nx-1, 0, -1,  0, ny-1, 1,  0, nz-1, 1);
+        sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
+        sweep(nx-1, 0, -1,  ny-1, 0, -1,  0, nz-1, 1);
         sweep(nx-1, 0, -1,  ny-1, 0, -1,  nz-1, 0, -1);
 
         /* calculate l1 norm of TT - TTold */
