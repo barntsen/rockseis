@@ -34,6 +34,8 @@
 #define ks3D(i,j,k) ((k)*nxs*nys + (j)*nxs + (i))
 #define kr3D(i,j,k) ((k)*nxr*nyr + (j)*nxr + (i))
 
+#define MAX(a,b) ((a)>(b) ? (a):(b))
+
 namespace rockseis {
 
 // =============== ENUMS =============== //
@@ -224,6 +226,43 @@ private:
     bool dataUxset, dataUyset, dataUzset;
 };
 
+/** The 2D Vti Rtm class
+ *
+ */
+template<typename T>
+class RtmVti2D: public Rtm<T> {
+public:
+    RtmVti2D();					///< Constructor
+    RtmVti2D(std::shared_ptr<ModelVti2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataP, std::shared_ptr<Data2D<T>> dataVx, std::shared_ptr<Data2D<T>> dataVz, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs rtm with full snapshoting using velocity
+    int run_optimal(); ///< Runs rtm with optimal checkpointing velocity
+    void setModel(std::shared_ptr<ModelVti2D<T>> _model) { model = _model; modelset = true; }
+    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
+    void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
+    void setDataVx(std::shared_ptr<Data2D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
+    void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setVpgrad(std::shared_ptr<Image2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
+    void setVsgrad(std::shared_ptr<Image2D<T>> _simage) { simage = _simage; simageset = true; }
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
+    void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesVti2D<T>> waves_bw, std::shared_ptr<ModelVti2D<T>> model, int it);
+    void crossCorr(std::shared_ptr<WavesVti2D<T>> waves_fw, std::shared_ptr<WavesVti2D<T>> waves_bw, std::shared_ptr<ModelVti2D<T>> model, int it);
+    ~RtmVti2D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelVti2D<T>> model;
+    std::shared_ptr<Image2D<T>> pimage;
+    std::shared_ptr<Image2D<T>> simage;
+    std::shared_ptr<Data2D<T>> source;
+    std::shared_ptr<Data2D<T>> dataP;
+    std::shared_ptr<Data2D<T>> dataVx;
+    std::shared_ptr<Data2D<T>> dataVz;
+    bool modelset;
+    bool pimageset;
+    bool simageset;
+    bool sourceset;
+    bool dataPset, dataVxset, dataVzset;
+};
 
 }
 #endif //RTM_H

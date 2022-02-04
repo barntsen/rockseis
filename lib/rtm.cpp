@@ -1862,6 +1862,583 @@ RtmElastic3D<T>::~RtmElastic3D() {
     // Nothing here
 }
 
+// =============== VTI 2D RTM CLASS =============== //
+
+template<typename T>
+RtmVti2D<T>::RtmVti2D(){
+   sourceset = false;
+   modelset = false;
+   pimageset = false;
+   simageset = false;
+   dataPset = false;
+   dataVxset = false;
+   dataVzset = false;
+
+}
+
+template<typename T>
+RtmVti2D<T>::RtmVti2D(std::shared_ptr<ModelVti2D<T>> _model, std::shared_ptr<Data2D<T>> _source, std::shared_ptr<Data2D<T>> _dataP, std::shared_ptr<Data2D<T>> _dataVx, std::shared_ptr<Data2D<T>> _dataVz, int order, int snapinc):Rtm<T>(order, snapinc){
+   source = _source;
+   dataP = _dataP;
+   dataVx = _dataVx;
+   dataVz = _dataVz;
+   model = _model;
+   sourceset = true;
+   modelset = true;
+   dataPset = true;
+   dataVxset = true;
+   dataVzset = true;
+   pimageset = false;
+   simageset = false;
+}
+template<typename T>
+T RtmVti2D<T>::getVpmax(){
+    T *c11 = model->getC11();
+    T *c33 = model->getC33();
+    T *rho = model->getRx();
+    // Find maximum Vp
+    T Vpmax;
+    T Vp1;
+    T Vp2;
+    T Vp;
+    Vp1=sqrt(c11[0]*rho[0]);
+    Vp2=sqrt(c33[0]*rho[0]);
+    Vpmax = MAX(Vp1,Vp2);
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        Vp1=sqrt(c11[i]*rho[i]);
+        Vp2=sqrt(c33[i]*rho[i]);
+        Vp = MAX(Vp1,Vp2);
+        if(Vp > Vpmax){
+            Vpmax = Vp;
+        }
+    }
+    return Vpmax;
+}
+
+template<typename T>
+bool RtmVti2D<T>::checkStability(){
+    T Vpmax = this->getVpmax();
+    T dx = model->getDx();
+    T dz = model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
+void RtmVti2D<T>::crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesVti2D<T>> waves_bw, std::shared_ptr<ModelVti2D<T>> model, int it)
+{
+   if(!pimageset && !simageset) rs_error("RtmVti2D<T>::crossCorr: No gradient set for computation.");
+   int ix, iz, ihx, ihz;
+   bool domdec = waves_bw->getDomdec();
+   int padr = waves_bw->getLpml();
+   T* rsxx = waves_bw->getSxx();
+   T* rszz = waves_bw->getSzz();
+   T* rsxz = waves_bw->getSxz();
+
+   T *pimagedata = NULL; 
+   T *simagedata = NULL;
+   T msxx=0, mszz=0;
+   T mrxz1=0, mrxz2=0, mrxz3=0, mrxz4=0; 
+   T msxz1=0, msxz2=0, msxz3=0, msxz4=0;
+   int nx;
+   int nz;
+   int nhx,nhz; 
+   int hx, hz;
+   T dx;
+   T dz;
+
+   if(pimageset){
+      nhx = pimage->getNhx();
+      nhz = pimage->getNhz();
+      if(!pimage->getAllocated()){
+         pimage->allocateImage();
+      }
+      pimagedata = pimage->getImagedata();
+   }
+   if(simageset){
+      nhx = simage->getNhx();
+      nhz = simage->getNhz();
+      if(!simage->getAllocated()){
+         simage->allocateImage();
+      }
+      simagedata = simage->getImagedata();
+   }
+
+   // Getting sizes
+   nx = waves_bw->getNx();
+   nz = waves_bw->getNz();
+   dx = waves_bw->getDx(); 
+   dz = waves_bw->getDz(); 
+   int nxs;
+   int nxr;
+   // Check for domain decomposition
+   if(domdec){
+      nxs = nx;
+      nxr = nx;
+      pads = 0;
+      padr = 0;
+   }else{
+      nxs = nx+2*pads;
+      nxr = nx+2*padr;
+   }
+
+   for (ihx=0; ihx<nhx; ihx++){
+      hx= -(nhx-1)/2 + ihx;
+      for (ihz=0; ihz<nhz; ihz++){
+         hz= -(nhz-1)/2 + ihz;
+         for (ix=1; ix<nx-1; ix++){
+            if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
+            {
+               for (iz=1; iz<nz-1; iz++){
+                  if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
+                  {
+                     msxx = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx;
+                     mszz = (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz;
+
+                     if(pimageset || simageset){
+                        pimagedata[ki2D(ix,iz,ihx,ihz)] -= (msxx + mszz) * (rsxx[kr2D(ix+hx+padr, iz+hz+padr)] + rszz[kr2D(ix+hx+padr, iz+hz+padr)]); 
+                     }
+
+                     if(simageset){
+                        msxz1 = (wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz + (wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
+                        msxz2 = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz + (wsz[ks2D(ix-hx+pads+1, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dx;  
+                        msxz3 = (wsx[ks2D(ix-hx+pads-1, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dz + (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx; 
+                        msxz4 = (wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz + (wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx; 
+
+                        mrxz1 = rsxz[kr2D(ix+hx+padr-1, iz+hx+padr-1)];
+                        mrxz2 = rsxz[kr2D(ix+hx+padr, iz+hx+padr-1)];
+                        mrxz3 = rsxz[kr2D(ix+hx+padr-1, iz+hx+padr)];
+                        mrxz4 = rsxz[kr2D(ix+hx+padr, iz+hx+padr)];
+                        simagedata[ki2D(ix,iz,ihx,ihz)] += (2.0)*(msxx*rszz[kr2D(ix+hx+padr, iz+hz+padr)] + mszz*rsxx[kr2D(ix+hx+padr, iz+hz+padr)]) - 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4);
+                     }
+                  }
+               }
+            }
+         }	
+      }
+   }
+}
+
+template<typename T>
+void RtmVti2D<T>::crossCorr(std::shared_ptr<WavesVti2D<T>> waves_fw, std::shared_ptr<WavesVti2D<T>> waves_bw, std::shared_ptr<ModelVti2D<T>> model, int it)
+{
+   if(!pimageset && !simageset) rs_error("RtmVti2D<T>::crossCorr: No gradient set for computation.");
+   int ix, iz, ihx, ihz;
+   bool domdec = waves_bw->getDomdec();
+   int pads = waves_fw->getLpml();
+   int padr = waves_bw->getLpml();
+   T* rsxx = waves_bw->getSxx();
+   T* rszz = waves_bw->getSzz();
+   T* rsxz = waves_bw->getSxz();
+
+   T* wsx = waves_fw->getVx();
+   T* wsz = waves_fw->getVz();
+
+   T *pimagedata = NULL; 
+   T *simagedata = NULL;
+   T msxx=0, mszz=0;
+   T mrxz1=0, mrxz2=0, mrxz3=0, mrxz4=0; 
+   T msxz1=0, msxz2=0, msxz3=0, msxz4=0;
+   int nx;
+   int nz;
+   int nhx,nhz; 
+   int hx, hz;
+   T dx;
+   T dz;
+
+   if(pimageset){
+      nhx = pimage->getNhx();
+      nhz = pimage->getNhz();
+      if(!pimage->getAllocated()){
+         pimage->allocateImage();
+      }
+      pimagedata = pimage->getImagedata();
+   }
+   if(simageset){
+      nhx = pimage->getNhx();
+      nhz = pimage->getNhz();
+      if(!simage->getAllocated()){
+         simage->allocateImage();
+      }
+      simagedata = simage->getImagedata();
+   }
+
+   // Getting sizes
+   nx = waves_bw->getNx();
+   nz = waves_bw->getNz();
+   dx = waves_bw->getDx(); 
+   dz = waves_bw->getDz(); 
+   int nxs;
+   int nxr;
+   // Check for domain decomposition
+   if(domdec){
+      nxs = nx;
+      nxr = nx;
+      pads = 0;
+      padr = 0;
+   }else{
+      nxs = nx+2*pads;
+      nxr = nx+2*padr;
+   }
+
+   for (ihx=0; ihx<nhx; ihx++){
+      hx= -(nhx-1)/2 + ihx;
+      for (ihz=0; ihz<nhz; ihz++){
+         hz= -(nhz-1)/2 + ihz;
+         for (ix=1; ix<nx-1; ix++){
+            if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
+            {
+               for (iz=1; iz<nz-1; iz++){
+                  if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1))
+                  {
+                     msxx = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx;
+                     mszz = (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz;
+
+                     if(pimageset || simageset){
+                        pimagedata[ki2D(ix,iz,ihx,ihz)] -= (msxx + mszz) * (rsxx[kr2D(ix+hx+padr, iz+hz+padr)] + rszz[kr2D(ix+hx+padr, iz+hz+padr)]); 
+                     }
+
+                     if(simageset){
+                        msxz1 = (wsx[ks2D(ix-hx+pads-1, iz-hz+pads)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dz + (wsz[ks2D(ix-hx+pads, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads-1)])/dx;
+                        msxz2 = (wsx[ks2D(ix-hx+pads, iz-hz+pads)] - wsx[ks2D(ix-hx+pads, iz-hz+pads-1)])/dz + (wsz[ks2D(ix-hx+pads+1, iz-hz+pads-1)] - wsz[ks2D(ix-hx+pads, iz-hz+pads-1)])/dx;  
+                        msxz3 = (wsx[ks2D(ix-hx+pads-1, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads-1, iz-hz+pads)])/dz + (wsz[ks2D(ix-hx+pads, iz-hz+pads)] - wsz[ks2D(ix-hx+pads-1, iz-hz+pads)])/dx; 
+                        msxz4 = (wsx[ks2D(ix-hx+pads, iz-hz+pads+1)] - wsx[ks2D(ix-hx+pads, iz-hz+pads)])/dz + (wsz[ks2D(ix-hx+pads+1, iz-hz+pads)] - wsz[ks2D(ix-hx+pads, iz-hz+pads)])/dx; 
+
+                        mrxz1 = rsxz[kr2D(ix+hx+padr-1, iz+hx+padr-1)];
+                        mrxz2 = rsxz[kr2D(ix+hx+padr, iz+hx+padr-1)];
+                        mrxz3 = rsxz[kr2D(ix+hx+padr-1, iz+hx+padr)];
+                        mrxz4 = rsxz[kr2D(ix+hx+padr, iz+hx+padr)];
+                        simagedata[ki2D(ix,iz,ihx,ihz)] += (2.0)*(msxx*rszz[kr2D(ix+hx+padr, iz+hz+padr)] + mszz*rsxx[kr2D(ix+hx+padr, iz+hz+padr)]) - 0.25*(msxz1*mrxz1 + msxz2*mrxz2 + msxz3*mrxz3 + msxz4*mrxz4);
+                     }
+                  }
+               }
+            }
+         }	
+      }
+   }	
+}
+
+template<typename T>
+int RtmVti2D<T>::run(){
+   int result = RTM_ERR;
+   if(!pimageset && !simageset) {
+      rs_warning("RtmVti2D::run: No image set");
+      return result;
+   }
+   int nt;
+   T dt;
+   T ot;
+
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
+
+   // Create log file
+   this->createLog(this->getLogfile());
+
+   // Create the classes 
+   std::shared_ptr<WavesVti2D<T>> waves (new WavesVti2D<T>(model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), 1, waves->getNz_pml(), waves->getDx(), 1.0, waves->getDz(), this->getOrder()));
+
+   if(!this->checkStability()) rs_error("RtmVti2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+   (waves->getPml())->setSmax(SMAX);
+   (waves->getPml())->computeABC();
+
+   // Create snapshots
+   std::shared_ptr<Snapshot2D<T>> Vxsnap;
+   Vxsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+   Vxsnap->openSnap(this->getSnapfile() + "-ux", 'w'); // Create a new snapshot file
+   Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
+
+   std::shared_ptr<Snapshot2D<T>> Vzsnap;
+   Vzsnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+   Vzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
+   Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
+
+   this->writeLog("Running 2D Vti reverse-time migration with full checkpointing.");
+   this->writeLog("Doing forward Loop.");
+   // Loop over forward time
+   for(int it=0; it < nt; it++)
+   {
+      //Writting out results to snapshot files
+      Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
+      Vxsnap->writeSnap(it);
+
+      Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
+      Vzsnap->writeSnap(it);
+
+
+      // Time stepping velocity
+      waves->forwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
+
+      // Time stepping stress
+      waves->forwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+      }
+
+      // Inserting force source 
+      waves->insertSource(model, source, SMAP, it);
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }//End of forward loop
+
+
+   //Close snapshot file
+   Vxsnap->closeSnap();
+   Vzsnap->closeSnap();
+
+   // Reset waves
+   waves.reset();
+   waves  = std::make_shared<WavesVti2D<T>>(model, nt, dt, ot);
+   (waves->getPml())->setSmax(SMAX);
+   (waves->getPml())->computeABC();
+
+   // Create image
+   if(this->pimageset) pimage->allocateImage();
+   if(this->simageset) simage->allocateImage();
+
+   Vxsnap->openSnap(this->getSnapfile() + "-ux", 'r');
+   Vxsnap->allocSnap(0);
+
+   Vzsnap->openSnap(this->getSnapfile() + "-uz", 'r');
+   Vzsnap->allocSnap(0);
+
+   this->writeLog("\nDoing reverse-time Loop.");
+   // Loop over reverse time
+   for(int it=0; it < nt; it++)
+   {
+
+      // Time stepping 
+      waves->backwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
+
+      // Time stepping 
+      waves->backwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+      }
+
+      // Inserting data
+      waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
+      waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
+      waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
+
+      //Read forward snapshot
+      Vxsnap->readSnap(nt - 1 - it);
+      Vzsnap->readSnap(nt - 1 - it);
+
+      // Do Crosscorrelation
+      crossCorr(Vxsnap->getData(0), Vzsnap->getData(0), 0, waves, model, (nt - 1 - it));
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }
+   this->writeLog("\nGradient computation completed.");
+
+   //Remove snapshot file
+   Vxsnap->removeSnap();
+   Vzsnap->removeSnap();
+
+   result=RTM_OK;
+   return result;
+}
+
+template<typename T>
+int RtmVti2D<T>::run_optimal(){
+   int result = RTM_ERR;
+   if(!pimageset && !simageset) {
+      rs_warning("RtmVti2D::run: No image set");
+      return result;
+   }
+   int nt;
+   T dt;
+   T ot;
+
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
+
+   this->createLog(this->getLogfile());
+
+   // Create the classes 
+   std::shared_ptr<WavesVti2D<T>> waves_fw (new WavesVti2D<T>(model, nt, dt, ot));
+   std::shared_ptr<WavesVti2D<T>> waves_bw (new WavesVti2D<T>(model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
+   std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
+   revolve_action whatodo;
+   int oldcapo,capo;
+   capo = 0;
+
+   // Set CFS PML parameters
+   (waves_fw->getPml())->setSmax(SMAX);
+   (waves_fw->getPml())->computeABC();
+   (waves_bw->getPml())->setSmax(SMAX);
+   (waves_bw->getPml())->computeABC();
+
+   // Create checkpoint file
+   optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
+
+   // Create image
+   if(this->pimageset) pimage->allocateImage();
+   if(this->simageset) simage->allocateImage();
+
+   this->writeLog("Running 2D Vti reverse-time migration with optimal checkpointing.");
+   this->writeLog("Doing forward Loop.");
+   bool reverse = false;
+   // Loop over forward time
+   do
+   {
+      oldcapo=optimal->getCapo();
+      whatodo = optimal->revolve();
+      capo = optimal->getCapo();
+      if (whatodo == advance)
+      {
+         for(int it=oldcapo; it < capo; it++)
+         {
+
+            // Time stepping velocity
+            waves_fw->forwardstepVelocity(model, der);
+            if((model->getDomain()->getStatus())){
+               (model->getDomain())->shareEdges3D(waves_fw->getVx());
+               (model->getDomain())->shareEdges3D(waves_fw->getVz());
+            }
+
+            // Time stepping stress
+            waves_fw->forwardstepStress(model, der);
+            if((model->getDomain()->getStatus())){
+               (model->getDomain())->shareEdges3D(waves_fw->getSxx());
+               (model->getDomain())->shareEdges3D(waves_fw->getSzz());
+               (model->getDomain())->shareEdges3D(waves_fw->getSxz());
+            }
+
+            // Inserting source 
+            waves_fw->insertSource(model, source, SMAP, it);
+
+            if(!reverse){
+               // Output progress to logfile
+               this->writeProgress(it, nt-1, 20, 48);
+            }
+         }
+
+      }
+      if (whatodo == firsturn)
+      {
+
+         // Time stepping velocity
+         waves_fw->forwardstepVelocity(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_fw->getVx());
+            (model->getDomain())->shareEdges3D(waves_fw->getVz());
+         }
+
+         // Time stepping stess
+         waves_fw->forwardstepStress(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_fw->getSxx());
+            (model->getDomain())->shareEdges3D(waves_fw->getSzz());
+            (model->getDomain())->shareEdges3D(waves_fw->getSxz());
+         }
+
+         // Inserting  source 
+         waves_fw->insertSource(model, source, SMAP, capo);
+
+         // Inserting data
+         waves_bw->insertSource(model, dataP, GMAP, capo);
+         waves_bw->insertSource(model, dataVx, GMAP, capo);
+         waves_bw->insertSource(model, dataVz, GMAP, capo);
+
+         // Do Crosscorrelation 
+         crossCorr(waves_fw, waves_bw, model, capo);
+
+         // Output progress to logfile
+         this->writeProgress(capo, nt-1, 20, 48);
+
+         //Close checkpoint file for w and reopen for rw
+         optimal->closeCheck();
+         optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+         reverse = true;
+         // Output progress to logfile
+         this->writeLog("\nDoing reverse-time Loop.");
+         this->writeProgress(0, nt-1, 20, 48);
+      }
+      if (whatodo == youturn)
+      {
+
+         // Time stepping velocity
+         waves_bw->backwardstepVelocity(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_bw->getVx());
+            (model->getDomain())->shareEdges3D(waves_bw->getVz());
+         }
+         // Time stepping stress
+         waves_bw->backwardstepStress(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_bw->getSxx());
+            (model->getDomain())->shareEdges3D(waves_bw->getSzz());
+            (model->getDomain())->shareEdges3D(waves_bw->getSxz());
+         }
+
+         // Inserting data
+         waves_bw->insertSource(model, dataP, GMAP, capo);
+         waves_bw->insertSource(model, dataVx, GMAP, capo);
+         waves_bw->insertSource(model, dataVz, GMAP, capo);
+
+         // Do Crosscorrelation
+         crossCorr(waves_fw, waves_bw, model, capo);
+
+         // Output progress to logfile
+         this->writeProgress(nt-1-capo, nt-1, 20, 48);
+      }
+      if (whatodo == takeshot)
+      {
+         optimal->writeCheck(waves_fw);
+      }
+      if (whatodo == restore)
+      {
+         optimal->readCheck(waves_fw);
+      }
+
+      if(whatodo == error){
+         std::cerr << "Error!" << std::endl;
+      }
+
+   } while((whatodo != terminate) && (whatodo != error));
+   this->writeLog("\nGradient computation completed.");
+
+   //Remove snapshot file
+   optimal->removeCheck();
+
+   result=RTM_OK;
+   return result;
+}
+
+template<typename T>
+RtmVti2D<T>::~RtmVti2D() {
+   // Nothing here
+}
+
+
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Rtm<float>;
 template class Rtm<double>;
@@ -1874,5 +2451,9 @@ template class RtmElastic2D<float>;
 template class RtmElastic2D<double>;
 template class RtmElastic3D<float>;
 template class RtmElastic3D<double>;
+
+
+template class RtmVti2D<float>;
+template class RtmVti2D<double>;
 
 }
