@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
          PRINT_DOC(        Vxsnap = "false";);
          PRINT_DOC(        Vzsnap = "false";);
          PRINT_DOC();
-         PRINT_DOC(# Files);
+         PRINT_DOC(# Input Files);
          PRINT_DOC(        C11 = "c11.rss";);
          PRINT_DOC(        C13 = "c13.rss";);
          PRINT_DOC(        C33 = "c33.rss";);
@@ -58,6 +58,8 @@ int main(int argc, char** argv) {
          PRINT_DOC(        Rho = "Rho2d.rss";);
          PRINT_DOC(        Wavelet = "Wav2d.rss";);
          PRINT_DOC(        Survey = "2DSurvey.rss";);
+         PRINT_DOC();
+         PRINT_DOC(# Output Files);
          PRINT_DOC(        Precordfile = "Pshot.rss";);
          PRINT_DOC(        Vxrecordfile = "Vxshot.rss";);
          PRINT_DOC(        Vzrecordfile = "Vzshot.rss";);

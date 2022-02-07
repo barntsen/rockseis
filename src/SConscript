@@ -204,6 +204,9 @@ if(env['MPI']):
     mpiElasticrtm3d = mpi.Program(prefix + 'mpiElasticrtm3d','mpiElasticrtm3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
     mpi.Install('../bin/',mpiElasticrtm3d)
 
+    mpiVtirtm2d = mpi.Program(prefix + 'mpiVtirtm2d','mpiVtirtm2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
+    mpi.Install('../bin/',mpiVtirtm2d)
+
     mpiAcousticttable2d = mpi.Program(prefix + 'mpiAcousticttable2d','mpiAcousticttable2d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'ttable', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'fft', 'kdtree'])
     mpi.Install('../bin/',mpiAcousticttable2d)
 

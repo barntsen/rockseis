@@ -24,6 +24,7 @@ public:
     Image2D(std::string imagefile, std::shared_ptr<ModelAcoustic2D<T>> model, int nhx, int nhz); 	///< Constructor
     Image2D(std::string imagefile, std::shared_ptr<ModelElastic2D<T>> model, int nhx, int nhz); 	///< Constructor
     Image2D(std::string imagefile, std::shared_ptr<ModelViscoelastic2D<T>> model, int nhx, int nhz); 	///< Constructor
+    Image2D(std::string imagefile, std::shared_ptr<ModelVti2D<T>> model, int nhx, int nhz); 	///< Constructor
     Image2D(const int _nx, const int _nz, const int _nhx, const int _nhz, const T _dx, const T _dz, const T _ox, const T _oz);	///< Constructor
     ~Image2D();       	///< Destructor
 

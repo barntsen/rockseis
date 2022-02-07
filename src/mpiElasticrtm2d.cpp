@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
             PRINT_DOC();
 			PRINT_DOC(# Files);
 			PRINT_DOC(Vp = "Vp2d.rss";);
-			PRINT_DOC(Vp = "Vs2d.rss";);
+			PRINT_DOC(Vs = "Vs2d.rss";);
 			PRINT_DOC(Rho = "Rho2d.rss";);
 			PRINT_DOC(Wavelet = "Wav2d.rss";);
 			PRINT_DOC(Pimagefile = "Pimage2d.rss";);

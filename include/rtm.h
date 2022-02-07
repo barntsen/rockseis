@@ -241,8 +241,8 @@ public:
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
     void setDataVx(std::shared_ptr<Data2D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
     void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
-    void setVpgrad(std::shared_ptr<Image2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
-    void setVsgrad(std::shared_ptr<Image2D<T>> _simage) { simage = _simage; simageset = true; }
+    void setPimage(std::shared_ptr<Image2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
+    void setSimage(std::shared_ptr<Image2D<T>> _simage) { simage = _simage; simageset = true; }
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesVti2D<T>> waves_bw, std::shared_ptr<ModelVti2D<T>> model, int it);
