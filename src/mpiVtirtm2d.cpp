@@ -299,6 +299,9 @@ int main(int argc, char** argv) {
             Sort->setDatafile(Vzrecordfile);
             Vzdata2D = Sort->get2DGather(work.id);
 
+            Sort->setDatafile(Precordfile);
+            Pdata2D = Sort->get2DGather(work.id);
+
             if(mpi.getDomainrank() == 0){
                // create and write empty gradfiles, with the size of the local model
                lmodel = gmodel->getLocal(Vxdata2D, apertx, SMAP);
@@ -320,14 +323,12 @@ int main(int argc, char** argv) {
                mpi.barrier();
             }
 
-
             lmodel = gmodel->getDomainmodel(Vxdata2D, apertx, SMAP, mpi.getDomainrank(), ndomain0, ndomain1, order);
             (lmodel->getDomain())->setMpi(&mpi);
 
             // Read wavelet data, set shot coordinates and make a map
             source->read();
             source->copyCoords(Vxdata2D);
-            source->makeMap(lmodel->getGeom(), SMAP);
 
             //Setting sourcetype 
             switch(stype){
@@ -344,13 +345,13 @@ int main(int argc, char** argv) {
                   rs_error("Unknown source type: ", std::to_string(stype));
                   break;
             }
+            source->makeMap(lmodel->getGeom(), SMAP);
 
             // Interpolate shot
             Pdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
             interp->interp(Pdata2D, Pdata2Di);
             Pdata2Di->setField(rockseis::PRESSURE);
             Pdata2Di->makeMap(lmodel->getGeom(), GMAP);
-
 
             Vxdata2Di = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
             interp->interp(Vxdata2D, Vxdata2Di);
@@ -375,14 +376,15 @@ int main(int argc, char** argv) {
             }
 
             // Setting Snapshot file 
-            rtm->setSnapfile(Snapfile + "-" + std::to_string(work.id));
+            rtm->setSnapfile(Snapfile + "-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
 
             // Setting Snapshot parameters
             rtm->setNcheck(nsnaps);
             rtm->setIncore(incore);
 
             // Set logfile
-            rtm->setLogfile("log.txt-" + std::to_string(work.id));
+            rtm->setLogfile("log.txt-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
+
 
             switch(checkpoint){
                case rockseis::FULL:
@@ -397,7 +399,7 @@ int main(int argc, char** argv) {
 
             // Output image
 
-if(Pimaging){
+            if(Pimaging){
                pimage->stackImage_parallel(Pimagefile + "-" + std::to_string(work.id),(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(2));
             }
             if(Simaging){
@@ -408,6 +410,8 @@ if(Pimaging){
             mpi.barrier();
 
             // Reset all classes
+            Pdata2D.reset();
+            Pdata2D.reset();
             Vxdata2D.reset();
             Vxdata2Di.reset();
             Vzdata2D.reset();
