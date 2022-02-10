@@ -989,6 +989,40 @@ Image3D<T>::Image3D(std::string _imagefile, std::shared_ptr<ModelElastic3D<T>> m
 }
 
 template<typename T>
+Image3D<T>::Image3D(std::string _imagefile, std::shared_ptr<ModelOrtho3D<T>> model, int nhx, int nhy, int nhz): Model<T>(3)
+{
+   long int _nx, _ny, _nz;
+   T _dx, _dy, _dz; 
+   T _ox, _oy, _oz; 
+
+   _nx=model->getNx();
+   _ny=model->getNy();
+   _nz=model->getNz();
+   _dx=model->getDx();
+   _dy=model->getDy();
+   _dz=model->getDz();
+   _ox=model->getOx();
+   _oy=model->getOy();
+   _oz=model->getOz();
+
+   this->setNx(_nx);
+   this->setNy(_ny);
+   this->setNz(_nz);
+   this->setDx(_dx);
+   this->setDy(_dy);
+   this->setDz(_dz);
+   this->setOx(_ox);
+   this->setOy(_oy);
+   this->setOz(_oz);
+   this->setNhx(nhx);
+   this->setNhy(nhy);
+   this->setNhz(nhz);
+   imagefile = _imagefile;
+   allocated = false;
+   incore = false;
+}
+
+template<typename T>
 Image3D<T>::Image3D(const int _nx, const int _ny, const int _nz, const int _nhx, const int _nhy, const int _nhz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz)
 {
    this->setNx(_nx);

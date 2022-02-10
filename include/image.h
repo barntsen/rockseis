@@ -74,6 +74,7 @@ public:
     Image3D(std::string imagefile, std::shared_ptr<ModelEikonal3D<T>> model, int nhx, int nhy, int nhz); 	///< Constructor
     Image3D(std::string imagefile, std::shared_ptr<ModelAcoustic3D<T>> model, int nhx, int nhy, int nhz); 	///< Constructor
     Image3D(std::string imagefile, std::shared_ptr<ModelElastic3D<T>> model, int nhx, int nhy, int nhz); 	///< Constructor
+    Image3D(std::string imagefile, std::shared_ptr<ModelOrtho3D<T>> model, int nhx, int nhy, int nhz); 	///< Constructor
     Image3D(const int _nx, const int _ny, const int _nz, const int _nhx, const int _nhy, const int _nhz, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz); ///< Constructor
     ~Image3D();       	///< Destructor
 

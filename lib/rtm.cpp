@@ -1356,6 +1356,7 @@ RtmElastic2D<T>::~RtmElastic2D() {
 template<typename T>
 RtmElastic3D<T>::RtmElastic3D(){
    sourceset = false;
+   dataPset = false;
    dataVxset = false;
    dataVyset = false;
    dataVzset = false;
@@ -1365,14 +1366,16 @@ RtmElastic3D<T>::RtmElastic3D(){
 }
 
 template<typename T>
-RtmElastic3D<T>::RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> _model, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _dataVx, std::shared_ptr<Data3D<T>> _dataVy, std::shared_ptr<Data3D<T>> _dataVz, int order, int snapinc):Rtm<T>(order, snapinc){
+RtmElastic3D<T>::RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> _model, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _dataP, std::shared_ptr<Data3D<T>> _dataVx, std::shared_ptr<Data3D<T>> _dataVy, std::shared_ptr<Data3D<T>> _dataVz, int order, int snapinc):Rtm<T>(order, snapinc){
    source = _source;
+   dataP = _dataP;
    dataVx = _dataVx;
    dataVy = _dataVy;
    dataVz = _dataVz;
    model = _model;
    sourceset = true;
    modelset = true;
+   dataPset = true;
    dataVxset = true;
    dataVyset = true;
    dataVzset = true;
@@ -1858,6 +1861,7 @@ int RtmElastic3D<T>::run(){
       }
 
       // Inserting residuals
+      waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
       waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
       waves->insertSource(model, dataVy, GMAP, (nt - 1 - it));
       waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
@@ -1997,6 +2001,7 @@ int RtmElastic3D<T>::run_optimal(){
 
 
          // Inserting residuals
+         waves_bw->insertSource(model, dataP, GMAP, capo);
          waves_bw->insertSource(model, dataVx, GMAP, capo);
          waves_bw->insertSource(model, dataVy, GMAP, capo);
          waves_bw->insertSource(model, dataVz, GMAP, capo);
@@ -2037,6 +2042,7 @@ int RtmElastic3D<T>::run_optimal(){
          }
 
          // Inserting residuals
+         waves_bw->insertSource(model, dataP, GMAP, capo);
          waves_bw->insertSource(model, dataVx, GMAP, capo);
          waves_bw->insertSource(model, dataVy, GMAP, capo);
          waves_bw->insertSource(model, dataVz, GMAP, capo);
@@ -2652,6 +2658,752 @@ RtmVti2D<T>::~RtmVti2D() {
    // Nothing here
 }
 
+// =============== ORTHOROMBIC 3D RTM CLASS =============== //
+
+template<typename T>
+RtmOrtho3D<T>::RtmOrtho3D(){
+   sourceset = false;
+   dataPset = false;
+   dataVxset = false;
+   dataVyset = false;
+   dataVzset = false;
+   modelset = false;
+   pimageset = false;
+   simageset = false;
+}
+
+template<typename T>
+RtmOrtho3D<T>::RtmOrtho3D(std::shared_ptr<ModelOrtho3D<T>> _model, std::shared_ptr<Data3D<T>> _source, std::shared_ptr<Data3D<T>> _dataP, std::shared_ptr<Data3D<T>> _dataVx, std::shared_ptr<Data3D<T>> _dataVy, std::shared_ptr<Data3D<T>> _dataVz, int order, int snapinc):Rtm<T>(order, snapinc){
+   source = _source;
+   dataP = _dataP;
+   dataVx = _dataVx;
+   dataVy = _dataVy;
+   dataVz = _dataVz;
+   model = _model;
+   sourceset = true;
+   modelset = true;
+   dataPset = true;
+   dataVxset = true;
+   dataVyset = true;
+   dataVzset = true;
+   pimageset = false;
+   simageset = false;
+}
+
+template<typename T>
+T RtmOrtho3D<T>::getVpmax(){
+    T *c11 = model->getC11();
+    T *c22 = model->getC11();
+    T *c33 = model->getC33();
+    T *rho = model->getRx();
+    // Find maximum Vp
+    T Vpmax;
+    T Vp1;
+    T Vp2;
+    T Vp3;
+    T Vp;
+    Vp1=sqrt(c11[0]*rho[0]);
+    Vp2=sqrt(c22[0]*rho[0]);
+    Vp3=sqrt(c33[0]*rho[0]);
+    Vpmax = MAX(MAX(Vp1,Vp2),Vp3);
+    size_t n=model->getNx()*model->getNz();
+    for(size_t i=1; i<n; i++){
+        Vp1=sqrt(c11[i]*rho[i]);
+        Vp2=sqrt(c22[i]*rho[i]);
+        Vp3=sqrt(c33[i]*rho[i]);
+        Vp = MAX(MAX(Vp1,Vp2),Vp3);
+        if(Vp > Vpmax){
+            Vpmax = Vp;
+        }
+    }
+    return Vpmax;
+}
+
+
+template<typename T>
+bool RtmOrtho3D<T>::checkStability(){
+   T Vpmax = this->getVpmax();
+   T dx = model->getDx();
+   T dy = model->getDy();
+   T dz = model->getDz();
+   T dt = source->getDt();
+   T dt_stab;
+   dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dy*dy))+(1/(dz*dz)))*Vpmax); 
+   if(dt < dt_stab){
+      return true;
+   }else{
+      rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+      return false;
+   }
+}
+
+
+template<typename T>
+void RtmOrtho3D<T>::crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesOrtho3D<T>> waves_bw, std::shared_ptr<ModelOrtho3D<T>> model, int it)
+{
+   if(!pimageset && !simageset) rs_error("RtmOrtho3D<T>::crossCorr: No gradient set for computation.");
+   int ix, iy, iz, ihx, ihy, ihz;
+
+   int padr = waves_bw->getLpml();
+   T* rsxx = waves_bw->getSxx();
+   T* rsyy = waves_bw->getSyy();
+   T* rszz = waves_bw->getSzz();
+   T* rsyz = waves_bw->getSyz();
+   T* rsxz = waves_bw->getSxz();
+   T* rsxy = waves_bw->getSxy();
+
+   T *pimagedata = NULL; 
+   T *simagedata = NULL;
+
+   T msxx=0, msyy=0, mszz=0, msyz=0, msxz=0, msxy=0;
+   int nx;
+   int ny;
+   int nz;
+   T dx;
+   T dy;
+   T dz;
+   int nhx, nhy, nhz;
+
+
+   if(pimageset){
+      nhx = pimage->getNhx();
+      nhy = pimage->getNhy();
+      nhz = pimage->getNhz();
+      if(!pimage->getAllocated()){
+         pimage->allocateImage();
+      }
+      pimagedata = pimage->getImagedata();
+   }
+   if(simageset){
+      nhx = pimage->getNhx();
+      nhy = pimage->getNhy();
+      nhz = pimage->getNhz();
+      if(!simage->getAllocated()){
+         simage->allocateImage();
+      }
+      simagedata = simage->getImagedata();
+   }
+
+   // Getting sizes
+   nx = waves_bw->getNx();
+   ny = waves_bw->getNy();
+   nz = waves_bw->getNz();
+   dx = waves_bw->getDx(); 
+   dy = waves_bw->getDy(); 
+   dz = waves_bw->getDz(); 
+
+   int nxs = nx + 2*pads;
+   int nxr = nx + 2*padr;
+   int nys = ny + 2*pads;
+   int nyr = ny + 2*padr;
+   int hx, hy, hz;
+
+   for (ihx=0; ihx<nhx; ihx++){
+      hx= -(nhx-1)/2 + ihx;
+      for (ihy=0; ihy<nhy; ihy++){
+         hy= -(nhy-1)/2 + ihy;
+         for (ihz=0; ihz<nhz; ihz++){
+            hz= -(nhz-1)/2 + ihz;
+            for (ix=1; ix<nx-1; ix++){
+               if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
+                  for (iy=1; iy<ny-1; iy++){
+                     if( ((iy-hy) >= 1) && ((iy-hy) < ny-1) && ((iy+hy) >= 1) && ((iy+hy) < ny-1))
+                        for (iz=1; iz<nz-1; iz++){
+                           if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1)){
+                              msxx = (wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dx;
+                              msyy = (wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dy;
+                              mszz = (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dz;
+
+                              if(pimageset){
+                                 pimagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= (msxx + msyy + mszz) * (rsxx[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)] + rsyy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)] + rszz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)]);
+                              }
+
+                              if(simageset){
+                                 // MSYZ
+                                 msyz = (wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz-1)])/dz;
+                                 msyz += (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)] - wsz[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz-1)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msyz*rsyz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msyz = (wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dz;
+                                 msyz += (wsz[ks3D(ix+pads-hx, iy+pads-hy+1, iz+pads-hz-1)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msyz*rsyz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msyz = (wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz+1)] - wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dz;
+                                 msyz += (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsz[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msyz*rsyz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msyz = (wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz+1)] - wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dz;
+                                 msyz += (wsz[ks3D(ix+pads-hx, iy+pads-hy+1, iz+pads-hz)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msyz*rsyz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 // MSXZ
+                                 msxz = (wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz-1)])/dz;
+                                 msxz += (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)] - wsz[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz-1)])/dx;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxz*rsxz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxz = (wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dz;
+                                 msxz += (wsz[ks3D(ix+pads-hx+1, iy+pads-hy, iz+pads-hz-1)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dx;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxz*rsxz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxz = (wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz+1)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dz;
+                                 msxz += (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsz[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dx;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxz*rsxz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxz = (wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz+1)] - wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dz;
+                                 msxz += (wsz[ks3D(ix+pads-hx+1, iy+pads-hy, iz+pads-hz)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dx;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxz*rsxz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+
+                                 // MSXY
+                                 msxy = (wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)] - wsy[ks3D(ix+pads-hx-1, iy+pads-hy-1, iz+pads-hz)])/dx;
+                                 msxy += (wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy-1, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxy*rsxy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxy = (wsy[ks3D(ix+pads-hx+1, iy+pads-hy-1, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dx;
+                                 msxy += (wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxy*rsxy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxy = (wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsy[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dx;
+                                 msxy += (wsx[ks3D(ix+pads-hx-1, iy+pads-hy+1, iz+pads-hz)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxy*rsxy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxy = (wsy[ks3D(ix+pads-hx+1, iy+pads-hy, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dx;
+                                 msxy += (wsx[ks3D(ix+pads-hx, iy+pads-hy+1, iz+pads-hz)] - wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxy*rsxy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                              }
+                              if(simageset){
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= (2.0*msxx*rsxx[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)] + 2.0*msyy*rsyy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)] + 2.0*mszz*rszz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)]);
+                              }
+
+
+                           }
+                        }
+                  }	
+            }
+         }
+      }
+   }
+}
+
+template<typename T>
+void RtmOrtho3D<T>::crossCorr(std::shared_ptr<WavesOrtho3D<T>> waves_fw, std::shared_ptr<WavesOrtho3D<T>> waves_bw, std::shared_ptr<ModelOrtho3D<T>> model, int it)
+{
+   if(!pimageset && !simageset) rs_error("RtmOrtho3D<T>::crossCorr: No gradient set for computation.");
+   int ix, iy, iz, ihx, ihy, ihz;
+
+   bool domdec = waves_bw->getDomdec();
+   int pads = waves_fw->getLpml();
+   int padr = waves_bw->getLpml();
+   T* wsx = waves_fw->getVx();
+   T* wsy = waves_fw->getVy();
+   T* wsz = waves_fw->getVz();
+   T* rsxx = waves_bw->getSxx();
+   T* rsyy = waves_bw->getSyy();
+   T* rszz = waves_bw->getSzz();
+   T* rsyz = waves_bw->getSyz();
+   T* rsxz = waves_bw->getSxz();
+   T* rsxy = waves_bw->getSxy();
+
+   T *pimagedata = NULL; 
+   T *simagedata = NULL;
+
+   T msxx=0, msyy=0, mszz=0, msyz=0, msxz=0, msxy=0;
+   int nx;
+   int ny;
+   int nz;
+   T dx;
+   T dy;
+   T dz;
+   int nhx, nhy, nhz;
+
+   if(pimageset){
+      nhx = pimage->getNhx();
+      nhy = pimage->getNhy();
+      nhz = pimage->getNhz();
+      if(!pimage->getAllocated()){
+         pimage->allocateImage();
+      }
+      pimagedata = pimage->getImagedata();
+   }
+   if(simageset){
+      nhx = pimage->getNhx();
+      nhy = pimage->getNhy();
+      nhz = pimage->getNhz();
+      if(!simage->getAllocated()){
+         simage->allocateImage();
+      }
+      simagedata = simage->getImagedata();
+   }
+
+   // Getting sizes
+   nx = waves_bw->getNx();
+   ny = waves_bw->getNy();
+   nz = waves_bw->getNz();
+   dx = waves_bw->getDx(); 
+   dy = waves_bw->getDy(); 
+   dz = waves_bw->getDz(); 
+
+   int nxs;
+   int nxr;
+   int nys;
+   int nyr;
+   // Check for domain decomposition
+   if(domdec){
+      nxs = nx;
+      nxr = nx;
+      nys = ny;
+      nyr = ny;
+      pads = 0;
+      padr = 0;
+   }else{
+      nxs = nx+2*pads;
+      nxr = nx+2*padr;
+      nys = ny+2*pads;
+      nyr = ny+2*padr;
+   }
+   int hx, hy, hz;
+
+   for (ihx=0; ihx<nhx; ihx++){
+      hx= -(nhx-1)/2 + ihx;
+      for (ihy=0; ihy<nhy; ihy++){
+         hy= -(nhy-1)/2 + ihy;
+         for (ihz=0; ihz<nhz; ihz++){
+            hz= -(nhz-1)/2 + ihz;
+            for (ix=1; ix<nx-1; ix++){
+               if( ((ix-hx) >= 1) && ((ix-hx) < nx-1) && ((ix+hx) >= 1) && ((ix+hx) < nx-1))
+                  for (iy=1; iy<ny-1; iy++){
+                     if( ((iy-hy) >= 1) && ((iy-hy) < ny-1) && ((iy+hy) >= 1) && ((iy+hy) < ny-1))
+                        for (iz=1; iz<nz-1; iz++){
+                           if( ((iz-hz) >= 1) && ((iz-hz) < nz-1) && ((iz+hz) >= 1) && ((iz+hz) < nz-1)){
+                              msxx = (wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dx;
+                              msyy = (wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dy;
+                              mszz = (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dz;
+
+                              if(pimageset){
+                                 pimagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= (msxx + msyy + mszz) * (rsxx[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)] + rsyy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)] + rszz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)]);
+                              }
+
+                              if(simageset){
+                                 // MSYZ
+                                 msyz = (wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz-1)])/dz;
+                                 msyz += (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)] - wsz[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz-1)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msyz*rsyz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msyz = (wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dz;
+                                 msyz += (wsz[ks3D(ix+pads-hx, iy+pads-hy+1, iz+pads-hz-1)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msyz*rsyz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msyz = (wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz+1)] - wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dz;
+                                 msyz += (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsz[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msyz*rsyz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msyz = (wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz+1)] - wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dz;
+                                 msyz += (wsz[ks3D(ix+pads-hx, iy+pads-hy+1, iz+pads-hz)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msyz*rsyz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 // MSXZ
+                                 msxz = (wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz-1)])/dz;
+                                 msxz += (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)] - wsz[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz-1)])/dx;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxz*rsxz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxz = (wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dz;
+                                 msxz += (wsz[ks3D(ix+pads-hx+1, iy+pads-hy, iz+pads-hz-1)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz-1)])/dx;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxz*rsxz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxz = (wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz+1)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dz;
+                                 msxz += (wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsz[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dx;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxz*rsxz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxz = (wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz+1)] - wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dz;
+                                 msxz += (wsz[ks3D(ix+pads-hx+1, iy+pads-hy, iz+pads-hz)] - wsz[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dx;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxz*rsxz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+
+                                 // MSXY
+                                 msxy = (wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)] - wsy[ks3D(ix+pads-hx-1, iy+pads-hy-1, iz+pads-hz)])/dx;
+                                 msxy += (wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy-1, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxy*rsxy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxy = (wsy[ks3D(ix+pads-hx+1, iy+pads-hy-1, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dx;
+                                 msxy += (wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsx[ks3D(ix+pads-hx, iy+pads-hy-1, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxy*rsxy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxy = (wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)] - wsy[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dx;
+                                 msxy += (wsx[ks3D(ix+pads-hx-1, iy+pads-hy+1, iz+pads-hz)] - wsx[ks3D(ix+pads-hx-1, iy+pads-hy, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxy*rsxy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                                 msxy = (wsy[ks3D(ix+pads-hx+1, iy+pads-hy, iz+pads-hz)] - wsy[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dx;
+                                 msxy += (wsx[ks3D(ix+pads-hx, iy+pads-hy+1, iz+pads-hz)] - wsx[ks3D(ix+pads-hx, iy+pads-hy, iz+pads-hz)])/dy;
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= 0.25*msxy*rsxy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)];
+
+                              }
+                              if(simageset){
+                                 simagedata[ki3D(ix,iy,iz,ihx,ihy,ihz)] -= (2.0*msxx*rsxx[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)] + 2.0*msyy*rsyy[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)] + 2.0*mszz*rszz[kr3D(ix+padr+hx, iy+padr+hy, iz+padr+hz)]);
+                              }
+
+                           }
+                        }	
+                  }
+            }
+         }
+      }
+   }
+}
+
+template<typename T>
+int RtmOrtho3D<T>::run(){
+   int result = RTM_ERR;
+   if(!pimageset && !simageset) {
+      rs_warning("RtmOrtho3D::run: No image set");
+      return result;
+   }
+   int nt;
+   T dt;
+   T ot;
+
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
+
+   // Create log file
+   this->createLog(this->getLogfile());
+
+   // Create the classes 
+   std::shared_ptr<WavesOrtho3D<T>> waves (new WavesOrtho3D<T>(model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(waves->getNx_pml(), waves->getNy_pml(), waves->getNz_pml(), waves->getDx(), waves->getDy(), waves->getDz(), this->getOrder()));
+
+   if(!this->checkStability()) rs_error("RtmOrtho3D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+   (waves->getPml())->setSmax(SMAX);
+   (waves->getPml())->computeABC();
+
+   // Create snapshots
+   std::shared_ptr<Snapshot3D<T>> Vxsnap;
+   Vxsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+   Vxsnap->openSnap(this->getSnapfile() + "-ux", 'w'); // Create a new snapshot file
+   Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
+
+   std::shared_ptr<Snapshot3D<T>> Vysnap;
+   Vysnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+   Vysnap->openSnap(this->getSnapfile() + "-uy", 'w'); // Create a new snapshot file
+   Vysnap->setData(waves->getVy(), 0); //Set Vy as snap field
+
+   std::shared_ptr<Snapshot3D<T>> Vzsnap;
+   Vzsnap = std::make_shared<Snapshot3D<T>>(waves, this->getSnapinc());
+   Vzsnap->openSnap(this->getSnapfile() + "-uz", 'w'); // Create a new snapshot file
+   Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
+
+   this->writeLog("Running 3D Ortho full-waveform inversion gradient with full checkpointing.");
+   this->writeLog("Doing forward Loop.");
+   // Loop over forward time
+   for(int it=0; it < nt; it++)
+   {
+      //Writting out results to snapshot files
+      Vxsnap->setData(waves->getVx(), 0); //Set Vx as snap field
+      Vxsnap->writeSnap(it);
+
+      Vysnap->setData(waves->getVy(), 0); //Set Vy as snap field
+      Vysnap->writeSnap(it);
+
+      Vzsnap->setData(waves->getVz(), 0); //Set Vz as snap field
+      Vzsnap->writeSnap(it);
+
+      // Time stepping velocity
+      waves->forwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVy());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
+
+      // Time stepping stress
+      waves->forwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSyy());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+         (model->getDomain())->shareEdges3D(waves->getSyz());
+         (model->getDomain())->shareEdges3D(waves->getSxy());
+      }
+
+      // Inserting source 
+      waves->insertSource(model, source, SMAP, it);
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }//End of forward loop
+
+
+   //Close snapshot file
+   Vxsnap->closeSnap();
+   Vysnap->closeSnap();
+   Vzsnap->closeSnap();
+
+   // Reset waves
+   waves.reset();
+   waves  = std::make_shared<WavesOrtho3D<T>>(model, nt, dt, ot);
+   (waves->getPml())->setSmax(SMAX);
+   (waves->getPml())->computeABC();
+
+   // Create image
+   if(this->pimageset) pimage->allocateImage();
+   if(this->simageset) simage->allocateImage();
+
+   Vxsnap->openSnap(this->getSnapfile() + "-ux", 'r');
+   Vxsnap->allocSnap(0);
+
+   Vysnap->openSnap(this->getSnapfile() + "-uy", 'r');
+   Vysnap->allocSnap(0);
+
+   Vzsnap->openSnap(this->getSnapfile() + "-uz", 'r');
+   Vzsnap->allocSnap(0);
+
+   this->writeLog("\nDoing reverse-time Loop.");
+   // Loop over reverse time
+   for(int it=0; it < nt; it++)
+   {
+
+      // Time stepping velocity
+      waves->backwardstepVelocity(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getVx());
+         (model->getDomain())->shareEdges3D(waves->getVy());
+         (model->getDomain())->shareEdges3D(waves->getVz());
+      }
+      // Time stepping stress
+      waves->backwardstepStress(model, der);
+      if((model->getDomain()->getStatus())){
+         (model->getDomain())->shareEdges3D(waves->getSxx());
+         (model->getDomain())->shareEdges3D(waves->getSyy());
+         (model->getDomain())->shareEdges3D(waves->getSzz());
+         (model->getDomain())->shareEdges3D(waves->getSxz());
+         (model->getDomain())->shareEdges3D(waves->getSyz());
+         (model->getDomain())->shareEdges3D(waves->getSxy());
+      }
+
+      // Inserting residuals
+      waves->insertSource(model, dataP, GMAP, (nt - 1 - it));
+      waves->insertSource(model, dataVx, GMAP, (nt - 1 - it));
+      waves->insertSource(model, dataVy, GMAP, (nt - 1 - it));
+      waves->insertSource(model, dataVz, GMAP, (nt - 1 - it));
+
+      //Read forward snapshot
+      Vxsnap->readSnap(nt - 1 - it);
+      Vysnap->readSnap(nt - 1 - it);
+      Vzsnap->readSnap(nt - 1 - it);
+
+      // Do Crosscorrelation
+      if((((nt - 1 - it)-Vxsnap->getEnddiff()) % Vxsnap->getSnapinc()) == 0){
+         crossCorr(Vxsnap->getData(0), Vysnap->getData(0), Vzsnap->getData(0), 0, waves, model, (nt - 1 - it));
+      }
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }
+   this->writeLog("\nGradient computation completed.");
+   // End of reverse loop
+
+
+   //Remove snapshot file
+   Vxsnap->removeSnap();
+   Vysnap->removeSnap();
+   Vzsnap->removeSnap();
+
+   result=RTM_OK;
+   return result;
+}
+
+template<typename T>
+int RtmOrtho3D<T>::run_optimal(){
+   int result = RTM_ERR;
+   if(!pimageset && !simageset) {
+      rs_warning("RtmOrtho3D::run: No image set");
+      return result;
+   }
+   int nt;
+   T dt;
+   T ot;
+
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
+
+   // Create log file
+   this->createLog(this->getLogfile());
+
+   // Create the classes 
+   std::shared_ptr<WavesOrtho3D<T>> waves_fw (new WavesOrtho3D<T>(model, nt, dt, ot));
+   std::shared_ptr<WavesOrtho3D<T>> waves_bw (new WavesOrtho3D<T>(model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), waves_fw->getNy_pml(), waves_fw->getNz_pml(), waves_fw->getDx(), waves_fw->getDy(), waves_fw->getDz(), this->getOrder()));
+   std::shared_ptr<Revolve<T>> optimal (new Revolve<T>(nt, this->getNcheck(), this->getIncore()));
+   revolve_action whatodo;
+   int oldcapo,capo;
+   capo = 0;
+
+   // Set CFS PML parameters
+   (waves_fw->getPml())->setSmax(SMAX);
+   (waves_fw->getPml())->computeABC();
+   (waves_bw->getPml())->setSmax(SMAX);
+   (waves_bw->getPml())->computeABC();
+
+   // Create checkpoint file
+   optimal->openCheck(this->getSnapfile(), waves_fw, 'w');
+
+   // Create image
+   if(this->pimageset) pimage->allocateImage();
+   if(this->simageset) simage->allocateImage();
+
+   this->writeLog("Running 3D Ortho full-waveform inversion gradient with optimal checkpointing.");
+   this->writeLog("Doing forward Loop.");
+   bool reverse = false;
+   // Loop over forward time
+   do
+   {
+      oldcapo=optimal->getCapo();
+      whatodo = optimal->revolve();
+      capo = optimal->getCapo();
+      if (whatodo == advance)
+      {
+         for(int it=oldcapo; it < capo; it++)
+         {
+
+            // Time stepping velocity
+            waves_fw->forwardstepVelocity(model, der);
+            if((model->getDomain()->getStatus())){
+               (model->getDomain())->shareEdges3D(waves_fw->getVx());
+               (model->getDomain())->shareEdges3D(waves_fw->getVy());
+               (model->getDomain())->shareEdges3D(waves_fw->getVz());
+            }
+
+            // Time stepping stress
+            waves_fw->forwardstepStress(model, der);
+            if((model->getDomain()->getStatus())){
+               (model->getDomain())->shareEdges3D(waves_fw->getSxx());
+               (model->getDomain())->shareEdges3D(waves_fw->getSyy());
+               (model->getDomain())->shareEdges3D(waves_fw->getSzz());
+               (model->getDomain())->shareEdges3D(waves_fw->getSxz());
+               (model->getDomain())->shareEdges3D(waves_fw->getSyz());
+               (model->getDomain())->shareEdges3D(waves_fw->getSxy());
+            }
+
+            // Inserting source 
+            waves_fw->insertSource(model, source, SMAP, it);
+
+            if(!reverse){
+               // Output progress to logfile
+               this->writeProgress(it, nt-1, 20, 48);
+            }
+         }
+      }
+      if (whatodo == firsturn)
+      {
+
+         // Time stepping velocity
+         waves_fw->forwardstepVelocity(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_fw->getVx());
+            (model->getDomain())->shareEdges3D(waves_fw->getVy());
+            (model->getDomain())->shareEdges3D(waves_fw->getVz());
+         }
+
+         // Time stepping stress
+         waves_fw->forwardstepStress(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_fw->getSxx());
+            (model->getDomain())->shareEdges3D(waves_fw->getSyy());
+            (model->getDomain())->shareEdges3D(waves_fw->getSzz());
+            (model->getDomain())->shareEdges3D(waves_fw->getSxz());
+            (model->getDomain())->shareEdges3D(waves_fw->getSyz());
+            (model->getDomain())->shareEdges3D(waves_fw->getSxy());
+         }
+
+         // Inserting source 
+         waves_fw->insertSource(model, source, SMAP, capo);
+
+
+         // Inserting residuals
+         waves_bw->insertSource(model, dataP, GMAP, capo);
+         waves_bw->insertSource(model, dataVx, GMAP, capo);
+         waves_bw->insertSource(model, dataVy, GMAP, capo);
+         waves_bw->insertSource(model, dataVz, GMAP, capo);
+
+         // Do Crosscorrelation 
+         crossCorr(waves_fw, waves_bw, model, capo);
+
+         // Output progress to logfile
+         this->writeProgress(capo, nt-1, 20, 48);
+
+         //Close checkpoint file for w and reopen for rw
+         optimal->closeCheck();
+         optimal->openCheck(this->getSnapfile(), waves_fw, 'a');
+         reverse = true;
+         // Output progress to logfile
+         this->writeLog("\nDoing reverse-time Loop.");
+         this->writeProgress(0, nt-1, 20, 48);
+      }
+      if (whatodo == youturn)
+      {
+         // Time stepping velocity
+         waves_bw->backwardstepVelocity(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_bw->getVx());
+            (model->getDomain())->shareEdges3D(waves_bw->getVy());
+            (model->getDomain())->shareEdges3D(waves_bw->getVz());
+         }
+
+         // Time stepping stress
+         waves_bw->backwardstepStress(model, der);
+         if((model->getDomain()->getStatus())){
+            (model->getDomain())->shareEdges3D(waves_bw->getSxx());
+            (model->getDomain())->shareEdges3D(waves_bw->getSyy());
+            (model->getDomain())->shareEdges3D(waves_bw->getSzz());
+            (model->getDomain())->shareEdges3D(waves_bw->getSxz());
+            (model->getDomain())->shareEdges3D(waves_bw->getSyz());
+            (model->getDomain())->shareEdges3D(waves_bw->getSxy());
+         }
+
+         // Inserting residuals
+         waves_bw->insertSource(model, dataP, GMAP, capo);
+         waves_bw->insertSource(model, dataVx, GMAP, capo);
+         waves_bw->insertSource(model, dataVy, GMAP, capo);
+         waves_bw->insertSource(model, dataVz, GMAP, capo);
+
+         // Do Crosscorrelation
+         crossCorr(waves_fw, waves_bw, model, capo);
+
+         // Output progress to logfile
+         this->writeProgress(nt-1-capo, nt-1, 20, 48);
+      }
+      if (whatodo == takeshot)
+      {
+         optimal->writeCheck(waves_fw);
+      }
+      if (whatodo == restore)
+      {
+         optimal->readCheck(waves_fw);
+      }
+
+      if(whatodo == error){
+         std::cerr << "Error!" << std::endl;
+      }
+
+   } while((whatodo != terminate) && (whatodo != error));
+   this->writeLog("\nGradient computation completed.");
+
+   //Remove snapshot file
+   optimal->removeCheck();
+
+   result=RTM_OK;
+   return result;
+}
+
+template<typename T>
+RtmOrtho3D<T>::~RtmOrtho3D() {
+   // Nothing here
+}
+
+
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Rtm<float>;
@@ -2669,5 +3421,7 @@ template class RtmElastic3D<double>;
 
 template class RtmVti2D<float>;
 template class RtmVti2D<double>;
+template class RtmOrtho3D<float>;
+template class RtmOrtho3D<double>;
 
 }

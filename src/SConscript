@@ -207,6 +207,9 @@ if(env['MPI']):
     mpiVtirtm2d = mpi.Program(prefix + 'mpiVtirtm2d','mpiVtirtm2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
     mpi.Install('../bin/',mpiVtirtm2d)
 
+    mpiOrthortm3d = mpi.Program(prefix + 'mpiOrthortm3d','mpiOrthortm3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
+    mpi.Install('../bin/',mpiOrthortm3d)
+
     mpiAcousticttable2d = mpi.Program(prefix + 'mpiAcousticttable2d','mpiAcousticttable2d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'ttable', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'fft', 'kdtree'])
     mpi.Install('../bin/',mpiAcousticttable2d)
 

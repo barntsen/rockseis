@@ -60,8 +60,15 @@ int main(int argc, char** argv) {
          PRINT_DOC(Sgather = "false"; # If surface gathers are to be output);
          PRINT_DOC();
          PRINT_DOC(# Input files);
-         PRINT_DOC(Vp = "Vp3d.rss";);
-         PRINT_DOC(Vp = "Vs3d.rss";);
+         PRINT_DOC(C11 = "C11.rss";);
+         PRINT_DOC(C12 = "C12.rss";);
+         PRINT_DOC(C13 = "C13.rss";);
+         PRINT_DOC(C22 = "C22.rss";);
+         PRINT_DOC(C23 = "C23.rss";);
+         PRINT_DOC(C33 = "C33.rss";);
+         PRINT_DOC(C44 = "C44.rss";);
+         PRINT_DOC(C55 = "C55.rss";);
+         PRINT_DOC(C66 = "C66.rss";);
          PRINT_DOC(Rho = "Rho3d.rss";);
          PRINT_DOC(Wavelet = "Wav3d.rss";);
          PRINT_DOC(Precordfile = "Pshot.rss";);
@@ -96,8 +103,15 @@ int main(int argc, char** argv) {
    int stype;
    int nhx=1, nhy=1, nhz=1;
    std::string Waveletfile;
-   std::string Vpfile;
-   std::string Vsfile;
+   std::string C11file;
+   std::string C12file;
+   std::string C13file;
+   std::string C22file;
+   std::string C23file;
+   std::string C33file;
+   std::string C44file;
+   std::string C55file;
+   std::string C66file;
    std::string Rhofile;
    std::string Snapfile;
 
@@ -132,7 +146,7 @@ int main(int argc, char** argv) {
    std::shared_ptr<rockseis::Data3D<float>> Vzdata3Di;
 
    // Create a local model class
-   std::shared_ptr<rockseis::ModelElastic3D<float>> lmodel;
+   std::shared_ptr<rockseis::ModelOrtho3D<float>> lmodel;
 
    /* Get parameters from configuration file */
    std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -149,8 +163,15 @@ int main(int argc, char** argv) {
    if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
    if(Inpar->getPar("source_type", &stype) == INPARSE_ERR) status = true;
    if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
-   if(Inpar->getPar("Vp", &Vpfile) == INPARSE_ERR) status = true;
-   if(Inpar->getPar("Vs", &Vsfile) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("C11", &C11file) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("C12", &C12file) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("C13", &C13file) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("C22", &C22file) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("C23", &C23file) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("C33", &C33file) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("C44", &C44file) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("C55", &C55file) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("C66", &C66file) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Wavelet", &Waveletfile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
@@ -205,7 +226,7 @@ int main(int argc, char** argv) {
    Sort->setDatafile(Vxrecordfile);
 
    // Create a global model class
-   std::shared_ptr<rockseis::ModelElastic3D<float>> gmodel (new rockseis::ModelElastic3D<float>(Vpfile, Vsfile, Rhofile, lpml ,fs));
+   std::shared_ptr<rockseis::ModelOrtho3D<float>> gmodel (new rockseis::ModelOrtho3D<float>(C11file, C12file, C13file, C22file, C23file, C33file, C44file, C55file, C66file, Rhofile, lpml ,fs));
 
    // Create a data class for the source wavelet
    std::shared_ptr<rockseis::Data3D<float>> source (new rockseis::Data3D<float>(Waveletfile));
@@ -279,7 +300,7 @@ int main(int argc, char** argv) {
    }
    else {
       /* Slave */
-      std::shared_ptr<rockseis::RtmElastic3D<float>> rtm;
+      std::shared_ptr<rockseis::RtmOrtho3D<float>> rtm;
       while(1) {
          workModeling_t work = mpi.receiveWork();
 
@@ -378,7 +399,7 @@ int main(int argc, char** argv) {
             Vzdata3Di->setField(rockseis::VZ);
             Vzdata3Di->makeMap(lmodel->getGeom(), GMAP);
 
-            rtm = std::make_shared<rockseis::RtmElastic3D<float>>(lmodel, source, Pdata3Di, Vxdata3Di, Vydata3Di, Vzdata3Di, order, snapinc);
+            rtm = std::make_shared<rockseis::RtmOrtho3D<float>>(lmodel, source, Pdata3Di, Vxdata3Di, Vydata3Di, Vzdata3Di, order, snapinc);
 
             // Setting Image objects
             if(Pimaging){ 
