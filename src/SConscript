@@ -179,6 +179,9 @@ if(env['MPI']):
 
     mpiVelasticmod2d = mpi.Program(prefix + 'mpiVelasticmod2d','mpiVelasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiVelasticmod2d)
+
+    mpiPoroelasticmod2d = mpi.Program(prefix + 'mpiPoroelasticmod2d','mpiPoroelasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
+    mpi.Install('../bin/',mpiPoroelasticmod2d)
     
     mpiElasticmod3d = mpi.Program(prefix + 'mpiElasticmod3d','mpiElasticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiElasticmod3d)

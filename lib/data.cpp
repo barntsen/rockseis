@@ -446,6 +446,13 @@ void Data2D<T>::makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, i
       case VZ:
          geometry->makeMap(geom, map, padlx, padly, padhx, padhy, 0.0, -0.5);
          break;
+      case QX:
+         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, -0.5, 0.0);
+         break;
+      case QZ:
+         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, 0.0, -0.5);
+         break;
+
       default:
          geometry->makeMap(geom, map, padlx, padly, padhx, padhy, 0.0, 0.0);
          break;
@@ -1116,6 +1123,15 @@ void Data3D<T>::makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, i
          geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, -0.5, 0.0);
          break;
       case VZ:
+         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, 0.0, -0.5);
+         break;
+      case QX:
+         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, -0.5, 0.0, 0.0);
+         break;
+      case QY:
+         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, -0.5, 0.0);
+         break;
+      case QZ:
          geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, 0.0, -0.5);
          break;
       default:

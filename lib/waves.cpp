@@ -8743,10 +8743,10 @@ void WavesVti2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelVti2D<T>> m
    lpml = model->getLpml();
    dt = this->getDt();
    T *c11, *c13, *c33, *c55, *df;
-   c11 = model->getC11();
-   c13 = model->getC13();
-   c33 = model->getC33();
-   c55 = model->getC55();
+   c11 = model->getC11p();
+   c13 = model->getC13p();
+   c33 = model->getC33p();
+   c55 = model->getC55p();
    df = der->getDf();
 
    if((model->getDomain())->getStatus()){
@@ -8912,10 +8912,10 @@ void WavesVti2D<T>::backwardstepVelocity(std::shared_ptr<rockseis::ModelVti2D<T>
    dt = this->getDt();
    T *Rx, *Rz, *df;
    T *c11, *c13, *c33, *c55;
-   c11 = model->getC11();
-   c13 = model->getC13();
-   c33 = model->getC33();
-   c55 = model->getC55();
+   c11 = model->getC11p();
+   c13 = model->getC13p();
+   c33 = model->getC33p();
+   c55 = model->getC55p();
    Rx = model->getRx();
    Rz = model->getRz();
    df = der->getDf();
@@ -11577,6 +11577,976 @@ void WavesOrtho3D<T>::recordData(std::shared_ptr<ModelOrtho3D<T>> model, std::sh
    }
 }
 
+// =============== 2D POROELASTIC VELOCITY-STRESS WAVES CLASS =============== //
+/** The 2D Poroelastic WAVES model class
+ *
+ */
+
+template<typename T>
+WavesPoroelastic2D<T>::WavesPoroelastic2D()	///< Constructor
+{
+   // Do nothing
+}
+
+
+template<typename T>
+WavesPoroelastic2D<T>::WavesPoroelastic2D(const int _nx, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot): Waves<T>(2, _nx, 1, _nz, _nt, _lpml, _dx, 1.0, _dz, _dt, _ox, 0.0, _oz, _ot) {
+
+   /* Create associated PML class */
+   Pml = std::make_shared<PmlPoroelastic2D<T>>(_nx, _nz, _lpml, _dt);
+
+   /* Allocate memory variables */
+   int nx_pml, nz_pml;
+   this->setDim(2);
+   nx_pml = _nx + 2*_lpml;
+   nz_pml = _nz + 2*_lpml;
+   Sxx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Szz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Qx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   Qz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+
+   adjoint = false;
+}
+
+template<typename T>
+WavesPoroelastic2D<T>::WavesPoroelastic2D(std::shared_ptr<rockseis::ModelPoroelastic2D<T>> model, int _nt, T _dt, T _ot): Waves<T>() {
+   int _nx, _ny, _nz;
+   T _dx, _dy, _dz; 
+   T _ox, _oy, _oz; 
+   int _dim, _lpml;
+
+   /* Get necessary parameters from model class */
+   _nx=model->getNx();
+   _ny=model->getNy();
+   _nz=model->getNz();
+   _dx=model->getDx();
+   _dy=model->getDy();
+   _dz=model->getDz();
+   _ox=model->getOx();
+   _oy=model->getOy();
+   _oz=model->getOz();
+   _dim = model->getDim();
+   _lpml = model->getLpml();
+   this->setNx(_nx);
+   this->setNy(_ny);
+   this->setNz(_nz);
+   this->setNt(_nt);
+   this->setDx(_dx);
+   this->setDy(_dy);
+   this->setDz(_dz);
+   this->setDt(_dt);
+   this->setOx(_ox);
+   this->setOy(_oy);
+   this->setOz(_oz);
+   this->setOt(_ot);
+   this->setLpml(_lpml);
+   this->setDim(_dim);
+   adjoint = false;
+
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition mode
+      this->setDomain(model->getDomain());
+      int ix0, nxo, iz0, nzo;
+      bool low[2],high[2];
+
+      for (int i=0; i<2; i++){
+         low[i] = false;
+         high[i] = false;
+      }
+      ix0 = (model->getDomain())->getIx0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nzo = (model->getDomain())->getNz_orig();
+      if(ix0 < _lpml) low[0]=true;
+      if(ix0 + _nx >= nxo-_lpml) high[0]=true;
+      if(iz0 < _lpml) low[1]=true;
+      if(iz0 + _nz >= nzo-_lpml) high[1]=true;
+
+      /* Create associated PML class */
+      Pml = std::make_shared<PmlPoroelastic2D<T>>(_nx, _nz, _lpml, _dt, &low[0], &high[0]);
+
+      int nx_pml, nz_pml;
+      nx_pml = _nx;
+      nz_pml = _nz;
+
+      Sxx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Szz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Qx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Qz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+
+   }else{
+
+      /* Create associated PML class */
+      Pml = std::make_shared<PmlPoroelastic2D<T>>(_nx, _nz, _lpml, _dt);
+
+      /* Allocate memory variables */
+      int nx_pml, nz_pml;
+      this->setDim(2);
+      nx_pml = _nx + 2*_lpml;
+      nz_pml = _nz + 2*_lpml;
+      Sxx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Szz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Sxz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Qx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      Qz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   }
+}
+
+template<typename T>
+void WavesPoroelastic2D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelPoroelastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+   int i, ix0, ix, iz0, iz, nx, nz, lpml, nxo, nzo;
+   lpml = model->getLpml();
+   T dt;
+   dt = this->getDt();
+   T* Rho_x = model->getRho_x();
+   T* Rho_z = model->getRho_z();
+   T* Rhof_x = model->getRhof_x();
+   T* Rhof_z = model->getRhof_z();
+   T* Mob_x = model->getMob_x();
+   T* Mob_z = model->getMob_z();
+   T* Psi_x = model->getPsi_x();
+   T* Psi_z = model->getPsi_z();
+
+   T *df;
+   df = der->getDf();
+   bool PMLON = true;
+
+
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition 
+      nx = model->getNx();
+      nz = model->getNz();
+      ix0 = (model->getDomain())->getIx0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nzo = (model->getDomain())->getNz_orig();
+   }else{
+      nx = model->getNx() + 2*lpml;
+      nz = model->getNz() + 2*lpml;
+      ix0 = 0;
+      iz0 = 0;
+      nxo = nx;
+      nzo = nz;
+   }
+
+	T tmpA, tmpB, qold;
+
+   // Derivate Sxx forward with respect to x
+   der->ddx_fw(Sxx);
+   // Compute Vx
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+          tmpA=Psi_x[I2D(ix,iz)]*Rho_x[I2D(ix,iz)] - Rhof_x[I2D(ix,iz)]*Rhof_x[I2D(ix,iz)];
+          tmpB=dt*Rho_x[I2D(ix,iz)]*Mob_x[I2D(ix,iz)]/(2.0*tmpA);
+          qold = Qx[I2D(ix,iz)];
+          Qx[I2D(ix,iz)] = qold*(1.0 - tmpB)/(1.0 + tmpB);
+          Qx[I2D(ix,iz)] -= dt*Rhof_x[I2D(ix,iz)]*df[I2D(ix,iz)]/(tmpA*(1.0+tmpB));
+          Vx[I2D(ix,iz)] += dt*Psi_x[I2D(ix,iz)]*df[I2D(ix,iz)]/tmpA;
+          Vx[I2D(ix,iz)] -= 0.5*dt*Rhof_x[I2D(ix,iz)]*Mob_x[I2D(ix,iz)]*(dt*df[I2D(ix,iz)]*Rhof_x[I2D(ix,iz)] - 2.0*qold*tmpA)/(tmpA*tmpA*(1.0+tmpB));
+      }
+   }
+
+   if(PMLON){
+   // Attenuate left and right using staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+                Pml->Sxx_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix-ix0,iz)];
+                tmpA=Psi_x[I2D(ix-ix0,iz)]*Rho_x[I2D(ix-ix0,iz)] - Rhof_x[I2D(ix-ix0,iz)]*Rhof_x[I2D(ix-ix0,iz)];
+                tmpB=dt*Rho_x[I2D(ix-ix0,iz)]*Mob_x[I2D(ix-ix0,iz)]/(2.0*tmpA);
+                Qx[I2D(ix-ix0,iz)] += dt*Rhof_x[I2D(ix-ix0,iz)]*(Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)])/(tmpA*(1.0+tmpB));
+                Vx[I2D(ix-ix0,iz)] -= dt*Psi_x[I2D(ix-ix0,iz)]*(Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)])/tmpA;
+                Vx[I2D(ix-ix0,iz)] += 0.5*dt*dt*Rhof_x[I2D(ix-ix0,iz)]*Rhof_x[I2D(ix-ix0,iz)]*Mob_x[I2D(ix-ix0,iz)]*(Pml->Sxx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Sxx_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i-ix0,iz)];
+                tmpA=Psi_x[I2D(i-ix0,iz)]*Rho_x[I2D(i-ix0,iz)] - Rhof_x[I2D(i-ix0,iz)]*Rhof_x[I2D(i-ix0,iz)];
+                tmpB=dt*Rho_x[I2D(i-ix0,iz)]*Mob_x[I2D(i-ix0,iz)]/(2.0*tmpA);
+                Qx[I2D(i-ix0,iz)] += dt*Rhof_x[I2D(i-ix0,iz)]*(Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)])/(tmpA*(1.0+tmpB));
+                Vx[I2D(i-ix0,iz)] -= dt*Psi_x[I2D(i-ix0,iz)]*(Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)])/tmpA;
+                Vx[I2D(i-ix0,iz)] += 0.5*dt*dt*Rhof_x[I2D(i-ix0,iz)]*Rhof_x[I2D(i-ix0,iz)]*Mob_x[I2D(i-ix0,iz)]*(Pml->Sxx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)])/(tmpA*tmpA*(1.0+tmpB));
+
+            }
+         }
+      }
+   }
+   }
+
+   // Derivate P forward with respect to x
+   der->ddx_fw(P);
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+          tmpA=Psi_x[I2D(ix,iz)]*Rho_x[I2D(ix,iz)] - Rhof_x[I2D(ix,iz)]*Rhof_x[I2D(ix,iz)];
+          tmpB=dt*Rho_x[I2D(ix,iz)]*Mob_x[I2D(ix,iz)]/(2.0*tmpA);
+          Qx[I2D(ix,iz)] -= dt*Rho_x[I2D(ix,iz)]*df[I2D(ix,iz)]/(tmpA*(1.0+tmpB));
+
+          Vx[I2D(ix,iz)] += dt*Rhof_x[I2D(ix,iz)]*df[I2D(ix,iz)]/tmpA;
+          Vx[I2D(ix,iz)] -= 0.5*dt*Rhof_x[I2D(ix,iz)]*Mob_x[I2D(ix,iz)]*(dt*df[I2D(ix,iz)]*Rho_x[I2D(ix,iz)])/(tmpA*tmpA*(1.0+tmpB));
+      }
+   }
+
+   if(PMLON){
+   // Attenuate left and right using staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+                Pml->P_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->P_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix-ix0,iz)];
+                tmpA=Psi_x[I2D(ix-ix0,iz)]*Rho_x[I2D(ix-ix0,iz)] - Rhof_x[I2D(ix-ix0,iz)]*Rhof_x[I2D(ix-ix0,iz)];
+                tmpB=dt*Rho_x[I2D(ix-ix0,iz)]*Mob_x[I2D(ix-ix0,iz)]/(2.0*tmpA);
+                Qx[I2D(ix-ix0,iz)] += dt*Rho_x[I2D(ix-ix0,iz)]*(Pml->P_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)])/(tmpA*(1.0+tmpB));
+                Vx[I2D(ix-ix0,iz)] -= dt*Rhof_x[I2D(ix-ix0,iz)]*(Pml->P_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)])/tmpA;
+                Vx[I2D(ix-ix0,iz)] += 0.5*dt*dt*Rhof_x[I2D(ix-ix0,iz)]*Rho_x[I2D(ix-ix0,iz)]*Mob_x[I2D(ix-ix0,iz)]*(Pml->P_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->P_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->P_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i-ix0,iz)];
+                tmpA=Psi_x[I2D(i-ix0,iz)]*Rho_x[I2D(i-ix0,iz)] - Rhof_x[I2D(i-ix0,iz)]*Rhof_x[I2D(i-ix0,iz)];
+                tmpB=dt*Rho_x[I2D(i-ix0,iz)]*Mob_x[I2D(i-ix0,iz)]/(2.0*tmpA);
+                Qx[I2D(i-ix0,iz)] += dt*Rho_x[I2D(i-ix0,iz)]*(Pml->P_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)])/(tmpA*(1.0+tmpB));
+                Vx[I2D(i-ix0,iz)] -= dt*Rhof_x[I2D(i-ix0,iz)]*(Pml->P_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)])/tmpA;
+                Vx[I2D(i-ix0,iz)] += 0.5*dt*dt*Rhof_x[I2D(i-ix0,iz)]*Rho_x[I2D(i-ix0,iz)]*Mob_x[I2D(i-ix0,iz)]*(Pml->P_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)])/(tmpA*tmpA*(1.0+tmpB));
+
+            }
+         }
+      }
+   }
+   }
+
+
+   // Derivate Sxz backward with respect to z
+   der->ddz_bw(Sxz);
+   // Compute Vx
+   for(iz=0; iz < nz; iz++){
+       for(ix=0; ix < nx; ix++){
+           tmpA=Psi_x[I2D(ix,iz)]*Rho_x[I2D(ix,iz)] - Rhof_x[I2D(ix,iz)]*Rhof_x[I2D(ix,iz)];
+           tmpB=dt*Rho_x[I2D(ix,iz)]*Mob_x[I2D(ix,iz)]/(2.0*tmpA);
+           Qx[I2D(ix,iz)] -= dt*Rhof_x[I2D(ix,iz)]*df[I2D(ix,iz)]/(tmpA*(1.0+tmpB));
+           Vx[I2D(ix,iz)] += dt*Psi_x[I2D(ix,iz)]*df[I2D(ix,iz)]/tmpA;
+           Vx[I2D(ix,iz)] -= 0.5*dt*Rhof_x[I2D(ix,iz)]*Mob_x[I2D(ix,iz)]*(dt*df[I2D(ix,iz)]*Rhof_x[I2D(ix,iz)])/(tmpA*tmpA*(1.0+tmpB));
+       }
+   }
+
+   if(PMLON){
+   // Attenuate bottom and top using non-staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Sxzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
+                tmpA=Psi_x[I2D(ix,iz-iz0)]*Rho_x[I2D(ix,iz-iz0)] - Rhof_x[I2D(ix,iz-iz0)]*Rhof_x[I2D(ix,iz-iz0)];
+                tmpB=dt*Rho_x[I2D(ix,iz-iz0)]*Mob_x[I2D(ix,iz-iz0)]/(2.0*tmpA);
+               Qx[I2D(ix,iz-iz0)] += dt*Rhof_x[I2D(ix,iz-iz0)]*(Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)])/(tmpA*(1.0+tmpB));
+               Vx[I2D(ix,iz-iz0)] -= dt*Psi_x[I2D(ix,iz-iz0)]*(Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)])/tmpA;
+               Vx[I2D(ix,iz-iz0)] += 0.5*dt*dt*Rhof_x[I2D(ix,iz-iz0)]*Rhof_x[I2D(ix,iz-iz0)]*Mob_x[I2D(ix,iz-iz0)]*(Pml->Sxzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Sxzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
+                tmpA=Psi_x[I2D(ix,i-iz0)]*Rho_x[I2D(ix,i-iz0)] - Rhof_x[I2D(ix,i-iz0)]*Rhof_x[I2D(ix,i-iz0)];
+                tmpB=dt*Rho_x[I2D(ix,i-iz0)]*Mob_x[I2D(ix,i-iz0)]/(2.0*tmpA);
+               Qx[I2D(ix,i-iz0)] += dt*Rhof_x[I2D(ix,i-iz0)]*(Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)])/(tmpA*(1.0+tmpB));
+               Vx[I2D(ix,i-iz0)] -= dt*Psi_x[I2D(ix,i-iz0)]*(Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)])/tmpA;
+               Vx[I2D(ix,i-iz0)] += 0.5*dt*dt*Rhof_x[I2D(ix,i-iz0)]*Rhof_x[I2D(ix,i-iz0)]*Mob_x[I2D(ix,i-iz0)]*(Pml->Sxzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+      }
+   }
+   }
+
+   // Derivate Sxz backward with respect to x
+   der->ddx_bw(Sxz);
+   // Compute Vz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+          tmpA=Psi_z[I2D(ix,iz)]*Rho_z[I2D(ix,iz)] - Rhof_z[I2D(ix,iz)]*Rhof_z[I2D(ix,iz)];
+          tmpB=dt*Rho_z[I2D(ix,iz)]*Mob_z[I2D(ix,iz)]/(2.0*tmpA);
+          qold = Qz[I2D(ix,iz)];
+          Qz[I2D(ix,iz)] = qold*(1.0 - tmpB)/(1.0 + tmpB);
+          Qz[I2D(ix,iz)] -= dt*Rhof_z[I2D(ix,iz)]*df[I2D(ix,iz)]/(tmpA*(1.0+tmpB));
+          Vz[I2D(ix,iz)] += dt*Psi_z[I2D(ix,iz)]*df[I2D(ix,iz)]/tmpA;
+          Vz[I2D(ix,iz)] -= 0.5*dt*Rhof_z[I2D(ix,iz)]*Mob_z[I2D(ix,iz)]*(dt*df[I2D(ix,iz)]*Rhof_z[I2D(ix,iz)] - 2.0*qold*tmpA)/(tmpA*tmpA*(1.0+tmpB));
+      }
+   }
+
+   if(PMLON){
+   // Attenuate left and right using non-staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Sxzx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
+                tmpA=Psi_z[I2D(ix-ix0,iz)]*Rho_z[I2D(ix-ix0,iz)] - Rhof_z[I2D(ix-ix0,iz)]*Rhof_z[I2D(ix-ix0,iz)];
+                tmpB=dt*Rho_z[I2D(ix-ix0,iz)]*Mob_z[I2D(ix-ix0,iz)]/(2.0*tmpA);
+                Qz[I2D(ix-ix0,iz)] += dt*Rhof_z[I2D(ix-ix0,iz)]*(Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)])/(tmpA*(1.0+tmpB));
+                Vz[I2D(ix-ix0,iz)] -= dt*Psi_z[I2D(ix-ix0,iz)]*(Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)])/tmpA;
+                Vz[I2D(ix-ix0,iz)] += 0.5*dt*dt*Rhof_z[I2D(ix-ix0,iz)]*Rhof_z[I2D(ix-ix0,iz)]*Mob_z[I2D(ix-ix0,iz)]*(Pml->Sxzx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Sxzx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
+                tmpA=Psi_z[I2D(i-ix0,iz)]*Rho_z[I2D(i-ix0,iz)] - Rhof_z[I2D(i-ix0,iz)]*Rhof_z[I2D(i-ix0,iz)];
+                tmpB=dt*Rho_z[I2D(i-ix0,iz)]*Mob_z[I2D(i-ix0,iz)]/(2.0*tmpA);
+                Qz[I2D(i-ix0,iz)] += dt*Rhof_z[I2D(i-ix0,iz)]*(Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)])/(tmpA*(1.0+tmpB));
+                Vz[I2D(i-ix0,iz)] -= dt*Psi_z[I2D(i-ix0,iz)]*(Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)])/tmpA;
+                Vz[I2D(i-ix0,iz)] += 0.5*dt*dt*Rhof_z[I2D(i-ix0,iz)]*Rhof_z[I2D(i-ix0,iz)]*Mob_z[I2D(i-ix0,iz)]*(Pml->Sxzx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+      }
+   }
+   }
+
+   // Derivate Szz forward with respect to z
+   der->ddz_fw(Szz);
+   // Compute Vz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+           tmpA=Psi_z[I2D(ix,iz)]*Rho_z[I2D(ix,iz)] - Rhof_z[I2D(ix,iz)]*Rhof_z[I2D(ix,iz)];
+           tmpB=dt*Rho_z[I2D(ix,iz)]*Mob_z[I2D(ix,iz)]/(2.0*tmpA);
+           Qz[I2D(ix,iz)] -= dt*Rhof_z[I2D(ix,iz)]*df[I2D(ix,iz)]/(tmpA*(1.0+tmpB));
+           Vz[I2D(ix,iz)] += dt*Psi_z[I2D(ix,iz)]*df[I2D(ix,iz)]/tmpA;
+           Vz[I2D(ix,iz)] -= 0.5*dt*Rhof_z[I2D(ix,iz)]*Mob_z[I2D(ix,iz)]*(dt*df[I2D(ix,iz)]*Rhof_z[I2D(ix,iz)])/(tmpA*tmpA*(1.0+tmpB));
+      }
+   }
+
+   if(PMLON){
+   // Attenuate bottom and top using staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Szz_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->Szz_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz-iz0)];
+               tmpA=Psi_z[I2D(ix,iz-iz0)]*Rho_z[I2D(ix,iz-iz0)] - Rhof_z[I2D(ix,iz-iz0)]*Rhof_z[I2D(ix,iz-iz0)];
+               tmpB=dt*Rho_z[I2D(ix,iz-iz0)]*Mob_z[I2D(ix,iz-iz0)]/(2.0*tmpA);
+               Qz[I2D(ix,iz-iz0)] += dt*Rhof_z[I2D(ix,iz-iz0)]*(Pml->Szz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)])/(tmpA*(1.0+tmpB));
+               Vz[I2D(ix,iz-iz0)] -= dt*Psi_z[I2D(ix,iz-iz0)]*(Pml->Szz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)])/tmpA;
+               Vz[I2D(ix,iz-iz0)] += 0.5*dt*dt*Rhof_z[I2D(ix,iz-iz0)]*Rhof_z[I2D(ix,iz-iz0)]*Mob_z[I2D(ix,iz-iz0)]*(Pml->Szz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Szz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i-iz0)];
+                tmpA=Psi_z[I2D(ix,i-iz0)]*Rho_z[I2D(ix,i-iz0)] - Rhof_z[I2D(ix,i-iz0)]*Rhof_z[I2D(ix,i-iz0)];
+                tmpB=dt*Rho_z[I2D(ix,i-iz0)]*Mob_z[I2D(ix,i-iz0)]/(2.0*tmpA);
+               Qz[I2D(ix,i-iz0)] += dt*Rhof_z[I2D(ix,i-iz0)]*(Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)])/(tmpA*(1.0+tmpB));
+               Vz[I2D(ix,i-iz0)] -= dt*Psi_z[I2D(ix,i-iz0)]*(Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)])/tmpA;
+               Vz[I2D(ix,i-iz0)] += 0.5*dt*dt*Rhof_z[I2D(ix,i-iz0)]*Rhof_z[I2D(ix,i-iz0)]*Mob_z[I2D(ix,i-iz0)]*(Pml->Szz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+      }
+   }
+   }
+
+   // Derivate P forward with respect to z
+   der->ddz_fw(P);
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+          tmpA=Psi_z[I2D(ix,iz)]*Rho_z[I2D(ix,iz)] - Rhof_z[I2D(ix,iz)]*Rhof_z[I2D(ix,iz)];
+          tmpB=dt*Rho_z[I2D(ix,iz)]*Mob_z[I2D(ix,iz)]/(2.0*tmpA);
+          Qz[I2D(ix,iz)] -= dt*Rho_z[I2D(ix,iz)]*df[I2D(ix,iz)]/(tmpA*(1.0+tmpB));
+
+          Vz[I2D(ix,iz)] += dt*Rhof_z[I2D(ix,iz)]*df[I2D(ix,iz)]/tmpA;
+          Vz[I2D(ix,iz)] -= 0.5*dt*Rhof_z[I2D(ix,iz)]*Mob_z[I2D(ix,iz)]*(dt*df[I2D(ix,iz)]*Rho_z[I2D(ix,iz)])/(tmpA*tmpA*(1.0+tmpB));
+      }
+   }
+
+   if(PMLON){
+   // Attenuate bottom and top using staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->P_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->P_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz-iz0)];
+               tmpA=Psi_z[I2D(ix,iz-iz0)]*Rho_z[I2D(ix,iz-iz0)] - Rhof_z[I2D(ix,iz-iz0)]*Rhof_z[I2D(ix,iz-iz0)];
+               tmpB=dt*Rho_z[I2D(ix,iz-iz0)]*Mob_z[I2D(ix,iz-iz0)]/(2.0*tmpA);
+               Qz[I2D(ix,iz-iz0)] += dt*Rho_z[I2D(ix,iz-iz0)]*(Pml->P_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)])/(tmpA*(1.0+tmpB));
+               Vz[I2D(ix,iz-iz0)] -= dt*Rhof_z[I2D(ix,iz-iz0)]*(Pml->P_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)])/tmpA;
+               Vz[I2D(ix,iz-iz0)] += 0.5*dt*dt*Rhof_z[I2D(ix,iz-iz0)]*Rho_z[I2D(ix,iz-iz0)]*Mob_z[I2D(ix,iz-iz0)]*(Pml->P_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->P_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->P_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i-iz0)];
+                tmpA=Psi_z[I2D(ix,i-iz0)]*Rho_z[I2D(ix,i-iz0)] - Rhof_z[I2D(ix,i-iz0)]*Rhof_z[I2D(ix,i-iz0)];
+                tmpB=dt*Rho_z[I2D(ix,i-iz0)]*Mob_z[I2D(ix,i-iz0)]/(2.0*tmpA);
+               Qz[I2D(ix,i-iz0)] += dt*Rho_z[I2D(ix,i-iz0)]*(Pml->P_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)])/(tmpA*(1.0+tmpB));
+               Vz[I2D(ix,i-iz0)] -= dt*Rhof_z[I2D(ix,i-iz0)]*(Pml->P_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)])/tmpA;
+               Vz[I2D(ix,i-iz0)] += 0.5*dt*dt*Rhof_z[I2D(ix,i-iz0)]*Rho_z[I2D(ix,i-iz0)]*Mob_z[I2D(ix,i-iz0)]*(Pml->P_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)])/(tmpA*tmpA*(1.0+tmpB));
+            }
+         }
+      }
+   }
+   }
+} // End of forwardstepVelocity
+
+
+
+template<typename T>
+void WavesPoroelastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelPoroelastic2D<T>> model, std::shared_ptr<rockseis::Der<T>> der){
+   int i, ix0, ix, iz0, iz, nx, nz, lpml, nxo, nzo;
+   T dt;
+   lpml = model->getLpml();
+   dt = this->getDt();
+   T *Lu = model->getLu();
+   T *LuM = model->getLuM();
+   T *M = model->getM_xz();
+   T *Alpha = model->getAlpha();
+   T *Beta = model->getBeta();
+
+   T *df;
+   df = der->getDf();
+
+   bool PMLON = true;
+
+   if((model->getDomain())->getStatus()){
+      // Domain decomposition 
+      nx = model->getNx();
+      nz = model->getNz();
+      ix0 = (model->getDomain())->getIx0();
+      iz0 = (model->getDomain())->getIz0();
+      nxo = (model->getDomain())->getNx_orig();
+      nzo = (model->getDomain())->getNz_orig();
+   }else{
+      nx = model->getNx() + 2*lpml;
+      nz = model->getNz() + 2*lpml;
+      ix0 = 0;
+      iz0 = 0;
+      nxo = nx;
+      nzo = nz;
+   }
+
+   // Derivate Vx backward with respect to x
+   der->ddx_bw(Vx);
+   // Compute Sxx and Szz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxx[I2D(ix,iz)] += dt*LuM[I2D(ix,iz)]*df[I2D(ix,iz)];
+         Szz[I2D(ix,iz)] += dt*Lu[I2D(ix,iz)]*df[I2D(ix,iz)];
+         P[I2D(ix,iz)] -= dt*Alpha[I2D(ix,iz)]*Beta[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   if(PMLON){
+   // Attenuate left and right using non-staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Vxx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
+               Sxx[I2D(ix-ix0,iz)] -= dt*LuM[I2D(ix-ix0,iz)]*(Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+               Szz[I2D(ix-ix0,iz)] -= dt*Lu[I2D(ix-ix0,iz)]*(Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+               P[I2D(ix-ix0,iz)] += dt*Alpha[I2D(ix-ix0,iz)]*Beta[I2D(ix-ix0,iz)]*(Pml->Vxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Vxx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
+               Sxx[I2D(i-ix0,iz)] -= dt*LuM[I2D(i-ix0,iz)]*(Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+               Szz[I2D(i-ix0,iz)] -= dt*Lu[I2D(i-ix0,iz)]*(Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+               P[I2D(i-ix0,iz)] += dt*Alpha[I2D(i-ix0,iz)]*Beta[I2D(i-ix0,iz)]*(Pml->Vxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+   }
+
+// Derivate Qx backward with respect to x
+   der->ddx_bw(Qx);
+   // Compute Sxx and Szz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxx[I2D(ix,iz)] += dt*Alpha[I2D(ix,iz)]*Beta[I2D(ix,iz)]*df[I2D(ix,iz)];
+         Szz[I2D(ix,iz)] += dt*Alpha[I2D(ix,iz)]*Beta[I2D(ix,iz)]*df[I2D(ix,iz)];
+         P[I2D(ix,iz)] -= dt*Beta[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+
+   if(PMLON){
+   // Attenuate left and right using non-staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Qxx_left[I2D_lr(ix,iz)] = Pml->B_ltf[ix]*Pml->Qxx_left[I2D_lr(ix,iz)] + Pml->A_ltf[ix]*df[I2D(ix-ix0,iz)];
+               Sxx[I2D(ix-ix0,iz)] -= dt*Alpha[I2D(ix-ix0,iz)]*Beta[I2D(ix-ix0,iz)]*(Pml->Qxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+               Szz[I2D(ix-ix0,iz)] -= dt*Alpha[I2D(ix-ix0,iz)]*Beta[I2D(ix-ix0,iz)]*(Pml->Qxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+               P[I2D(ix-ix0,iz)] += dt*Beta[I2D(ix-ix0,iz)]*(Pml->Qxx_left[I2D_lr(ix,iz)] + Pml->C_ltf[ix]*df[I2D(ix-ix0,iz)]);
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Qxx_right[I2D_lr(ix,iz)] = Pml->B_rbb[ix]*Pml->Qxx_right[I2D_lr(ix,iz)] + Pml->A_rbb[ix]*df[I2D(i-ix0,iz)];
+               Sxx[I2D(i-ix0,iz)] -= dt*Alpha[I2D(i-ix0,iz)]*Beta[I2D(i-ix0,iz)]*(Pml->Qxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+               Szz[I2D(i-ix0,iz)] -= dt*Alpha[I2D(i-ix0,iz)]*Beta[I2D(i-ix0,iz)]*(Pml->Qxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+               P[I2D(i-ix0,iz)] += dt*Beta[I2D(i-ix0,iz)]*(Pml->Qxx_right[I2D_lr(ix,iz)] + Pml->C_rbb[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+   }
+
+
+   // Derivate Vz backward with respect to z
+   der->ddz_bw(Vz);
+   // Compute Sxx and Szz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxx[I2D(ix,iz)] += dt*Lu[I2D(ix,iz)]*df[I2D(ix,iz)];
+         Szz[I2D(ix,iz)] += dt*LuM[I2D(ix,iz)]*df[I2D(ix,iz)];
+         P[I2D(ix,iz)] -= dt*Alpha[I2D(ix,iz)]*Beta[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   if(PMLON){
+   // Attenuate top and bottom using non-staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Vzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
+               Sxx[I2D(ix,iz-iz0)] -= dt*Lu[I2D(ix,iz-iz0)]*(Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+               Szz[I2D(ix,iz-iz0)] -= dt*LuM[I2D(ix,iz-iz0)]*(Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+               P[I2D(ix,iz-iz0)] += dt*Alpha[I2D(ix,iz-iz0)]*Beta[I2D(ix,iz-iz0)]*(Pml->Vzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Vzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
+               Sxx[I2D(ix,i-iz0)] -= dt*Lu[I2D(ix,i-iz0)]*(Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+               Szz[I2D(ix,i-iz0)] -= dt*LuM[I2D(ix,i-iz0)]*(Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+               P[I2D(ix,i-iz0)] += dt*Alpha[I2D(ix,i-iz0)]*Beta[I2D(ix,i-iz0)]*(Pml->Vzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+   }
+
+   // Derivate Qz backward with respect to z
+   der->ddz_bw(Qz);
+   // Compute Sxx and Szz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxx[I2D(ix,iz)] += dt*Alpha[I2D(ix,iz)]*Beta[I2D(ix,iz)]*df[I2D(ix,iz)];
+         Szz[I2D(ix,iz)] += dt*Alpha[I2D(ix,iz)]*Beta[I2D(ix,iz)]*df[I2D(ix,iz)];
+         P[I2D(ix,iz)] -= dt*Beta[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   if(PMLON){
+   // Attenuate top and bottom using non-staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Qzz_top[I2D_tb(ix,iz)] = Pml->B_ltf[iz]*Pml->Qzz_top[I2D_tb(ix,iz)] + Pml->A_ltf[iz]*df[I2D(ix,iz-iz0)];
+               Sxx[I2D(ix,iz-iz0)] -= dt*Alpha[I2D(ix,iz-iz0)]*Beta[I2D(ix,iz-iz0)]*(Pml->Qzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+               Szz[I2D(ix,iz-iz0)] -= dt*Alpha[I2D(ix,iz-iz0)]*Beta[I2D(ix,iz-iz0)]*(Pml->Qzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+               P[I2D(ix,iz-iz0)] += dt*Beta[I2D(ix,iz-iz0)]*(Pml->Qzz_top[I2D_tb(ix,iz)] + Pml->C_ltf[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Qzz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb[iz]*Pml->Qzz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb[iz]*df[I2D(ix,i-iz0)];
+               Sxx[I2D(ix,i-iz0)] -= dt*Alpha[I2D(ix,i-iz0)]*Beta[I2D(ix,i-iz0)]*(Pml->Qzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+               Szz[I2D(ix,i-iz0)] -= dt*Alpha[I2D(ix,i-iz0)]*Beta[I2D(ix,i-iz0)]*(Pml->Qzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+               P[I2D(ix,i-iz0)] += dt*Beta[I2D(ix,i-iz0)]*(Pml->Qzz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+   }
+
+   // Derivate Vz forward with respect to x
+   der->ddx_fw(Vz);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxz[I2D(ix,iz)] += dt*M[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   if(PMLON){
+   // Attenuate left and right using staggered variables
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < lpml; ix++){
+         if(Pml->getApplypml(0)){
+            if(ix >= ix0 && ix < (ix0 + nx)){
+               // Left
+               Pml->Vzx_left[I2D_lr(ix,iz)] = Pml->B_ltf_stag[ix]*Pml->Vzx_left[I2D_lr(ix,iz)] + Pml->A_ltf_stag[ix]*df[I2D(ix-ix0,iz)];
+               Sxz[I2D(ix-ix0,iz)] -= dt*M[I2D(ix-ix0,iz)]*(Pml->Vzx_left[I2D_lr(ix,iz)] + Pml->C_ltf_stag[ix]*df[I2D(ix-ix0,iz)]);
+            }
+         }
+         if(Pml->getApplypml(1)){
+            i = ix + nxo - lpml;
+            if(i >= ix0 && i < (ix0 + nx)){
+               // Right
+               Pml->Vzx_right[I2D_lr(ix,iz)] = Pml->B_rbb_stag[ix]*Pml->Vzx_right[I2D_lr(ix,iz)] + Pml->A_rbb_stag[ix]*df[I2D(i-ix0,iz)];
+               Sxz[I2D(i-ix0,iz)] -= dt*M[I2D(i-ix0,iz)]*(Pml->Vzx_right[I2D_lr(ix,iz)] + Pml->C_rbb_stag[ix]*df[I2D(i-ix0,iz)]);
+            }
+         }
+      }
+   }
+   }
+
+   // Derivate Vx forward with respect to z
+   der->ddz_fw(Vx);
+   // Compute Sxz
+   for(iz=0; iz < nz; iz++){
+      for(ix=0; ix < nx; ix++){
+         Sxz[I2D(ix,iz)] += dt*M[I2D(ix,iz)]*df[I2D(ix,iz)];
+      }
+   }
+
+   if(PMLON){
+   // Attenuate top and bottom using staggered variables
+   for(iz=0; iz < lpml; iz++){
+      for(ix=0; ix < nx; ix++){
+         if(Pml->getApplypml(4)){
+            if(iz >= iz0 && iz < (iz0 + nz)){
+               // Top
+               Pml->Vxz_top[I2D_tb(ix,iz)] = Pml->B_ltf_stag[iz]*Pml->Vxz_top[I2D_tb(ix,iz)] + Pml->A_ltf_stag[iz]*df[I2D(ix,iz-iz0)];
+               Sxz[I2D(ix,iz-iz0)] -= dt*M[I2D(ix,iz-iz0)]*(Pml->Vxz_top[I2D_tb(ix,iz)] + Pml->C_ltf_stag[iz]*df[I2D(ix,iz-iz0)]);
+            }
+         }
+         if(Pml->getApplypml(5)){
+            i = iz + nzo - lpml;
+            if(i >= iz0 && i < (iz0 + nz)){
+               //Bottom
+               Pml->Vxz_bottom[I2D_tb(ix,iz)] = Pml->B_rbb_stag[iz]*Pml->Vxz_bottom[I2D_tb(ix,iz)] + Pml->A_rbb_stag[iz]*df[I2D(ix,i-iz0)];
+               Sxz[I2D(ix,i-iz0)] -= dt*M[I2D(ix,i-iz0)]*(Pml->Vxz_bottom[I2D_tb(ix,iz)] + Pml->C_rbb_stag[iz]*df[I2D(ix,i-iz0)]);
+            }
+         }
+      }
+   }
+   }
+} // End of forwardstepStress
+
+template<typename T>
+void WavesPoroelastic2D<T>::insertSource(std::shared_ptr<rockseis::ModelPoroelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it){
+   Point2D<int> *map;
+   Point2D<T> *shift;
+   T *wav; 
+   int ntrace = source->getNtrace();
+   int nx, lpml;
+   if(this->getDomdec()){
+      lpml = 0;
+      nx = this->getNx();
+   }else{
+      lpml = this->getLpml();
+      nx = this->getNx() + 2*lpml;
+   }
+   T *Mod;
+   int nt = this->getNt();
+   T dt = this->getDt();
+
+   // Get correct map (source or receiver mapping)
+   if(maptype == SMAP) {
+      map = (source->getGeom())->getSmap();
+      shift = (source->getGeom())->getSshift();
+   }else{
+      map = (source->getGeom())->getGmap();
+      shift = (source->getGeom())->getGshift();
+   }
+
+   rs_field sourcetype = source->getField();
+   wav = source->getData();
+   int i, i1, i2;
+   T xtri[2], ytri[2];
+   switch(sourcetype)
+   {
+      case PRESSURE:
+         for (i=0; i < ntrace; i++) 
+         { 
+            if(map[i].x >= 0 && map[i].y >=0){
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     P[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)] -= dt*wav[Idat(it,i)]*xtri[i2]*ytri[i1];
+                  }
+               }
+            }
+         }
+         break;
+      case VX:
+         Mod = model->getRho_x();
+         for (i=0; i < ntrace; i++) 
+         { 
+            if(map[i].x >= 0 && map[i].y >=0){
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     Vx[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)] += dt*Mod[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)]*wav[Idat(it,i)]*xtri[i2]*ytri[i1];
+                  }
+               }
+            }
+         }
+         break;
+      case VZ:
+         Mod = model->getRho_z();
+         for (i=0; i < ntrace; i++) 
+         { 
+            if(map[i].x >= 0 && map[i].y >=0){
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     Vz[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)] += dt*Mod[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)]*wav[Idat(it,i)]*xtri[i2]*ytri[i1];
+                  }
+               }
+            }
+         }
+         break;
+      default:
+         break;
+   }
+}
+
+
+template<typename T>
+void WavesPoroelastic2D<T>::recordData(std::shared_ptr<rockseis::ModelPoroelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it){
+   Point2D<int> *map;
+   Point2D<T> *shift;
+   T *dataarray; 
+   T *Fielddata1 = NULL;
+   T *Fielddata2 = NULL;
+   T factor;
+   int ntrace = data->getNtrace();
+   int nt = data->getNt();
+   int nx, lpml;
+   if(this->getDomdec()){
+      lpml = 0;
+      nx = this->getNx();
+   }else{
+      lpml = this->getLpml();
+      nx = this->getNx() + 2*lpml;
+   }
+   rs_field field = data->getField();
+
+   // Get correct map (data or receiver mapping)
+   if(maptype == SMAP) {
+      map = (data->getGeom())->getSmap();
+      shift = (data->getGeom())->getSshift();
+   }else{
+      map = (data->getGeom())->getGmap();
+      shift = (data->getGeom())->getGshift();
+   }
+
+   dataarray = data->getData();
+   int i,i1,i2;
+   T xtri[2], ytri[2];
+   Index Im(this->getNx(), this->getNz());
+   switch(field)
+   {
+      case SZZ:
+         Fielddata1 = this->getSxx();
+         Fielddata2 = this->getSzz();
+         for (i=0; i < ntrace; i++) 
+         { 
+            if(map[i].x >= 0 && map[i].y >= 0)
+            {
+               factor = 1.0;
+
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     dataarray[Idat(it,i)] += (1./2.)*xtri[i2]*ytri[i1]*Fielddata1[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)]/factor;
+                     dataarray[Idat(it,i)] += (1./2.)*xtri[i2]*ytri[i1]*Fielddata2[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)]/factor;
+                  }
+               }
+            }
+         }
+         break;
+      case VX:
+         Fielddata1 = this->getVx();
+         for (i=0; i < ntrace; i++) 
+         { 
+            if(map[i].x >= 0 && map[i].y >= 0)
+            {
+
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     dataarray[Idat(it,i)] += xtri[i2]*ytri[i1]*Fielddata1[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)];
+                  }
+               }
+            }
+         }
+         break;
+      case VZ:
+         Fielddata1 = this->getVz();
+         for (i=0; i < ntrace; i++) 
+         { 
+            if(map[i].x >= 0 && map[i].y >= 0)
+            {
+
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     dataarray[Idat(it,i)] += xtri[i2]*ytri[i1]*Fielddata1[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)];
+                  }
+               }
+            }
+         }
+         break;
+      case PRESSURE:
+         Fielddata1 = this->getP();
+         for (i=0; i < ntrace; i++) 
+         { 
+            if(map[i].x >= 0 && map[i].y >= 0)
+            {
+               factor = 1.0;
+
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     dataarray[Idat(it,i)] += (1./2.)*xtri[i2]*ytri[i1]*Fielddata1[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)]/factor;
+                  }
+               }
+            }
+         }
+         break;
+      case QX:
+         Fielddata1 = this->getQx();
+         for (i=0; i < ntrace; i++) 
+         { 
+            if(map[i].x >= 0 && map[i].y >= 0)
+            {
+
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     dataarray[Idat(it,i)] += xtri[i2]*ytri[i1]*Fielddata1[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)];
+                  }
+               }
+            }
+         }
+         break;
+      case QZ:
+         Fielddata1 = this->getQz();
+         for (i=0; i < ntrace; i++) 
+         { 
+            if(map[i].x >= 0 && map[i].y >= 0)
+            {
+
+               xtri[0] = 1 - shift[i].x;
+               xtri[1] = shift[i].x;
+
+               ytri[0] = 1 - shift[i].y;
+               ytri[1] = shift[i].y;
+               for(i1=0; i1<2; i1++){
+                  for(i2=0; i2<2; i2++){
+                     dataarray[Idat(it,i)] += xtri[i2]*ytri[i1]*Fielddata1[I2D(lpml + map[i].x + i2, lpml + map[i].y + i1)];
+                  }
+               }
+            }
+         }
+         break;
+
+      default:
+         break;
+   }
+}
+
+
+template<typename T>
+WavesPoroelastic2D<T>::~WavesPoroelastic2D() {
+   /* Free allocated variables */
+   free(P);
+   free(Sxx);
+   free(Szz);
+   free(Sxz);
+   free(Vx);
+   free(Vz);
+   free(Qx);
+   free(Qz);
+   if(this->getAdjoint()) {
+      free(wrk);
+   }
+}
+
 
 
 
@@ -11593,6 +12563,9 @@ template class WavesElastic2D<float>;
 template class WavesElastic2D<double>;
 template class WavesElastic3D<float>;
 template class WavesElastic3D<double>;
+
+template class WavesPoroelastic2D<float>;
+template class WavesPoroelastic2D<double>;
 
 template class WavesElastic2D_DS<float>;
 template class WavesElastic2D_DS<double>;

@@ -476,6 +476,57 @@ private:
     bool snapPset, snapSxxset, snapSyyset, snapSzzset, snapSxzset, snapSyzset, snapSxyset, snapVxset, snapVyset, snapVzset;
 };
 
+/** The 2D Poroelastic Modelling class
+ *
+ */
+template<typename T>
+class ModellingPoroelastic2D: public Modelling<T> {
+public:
+    ModellingPoroelastic2D();					///< Constructor
+    ModellingPoroelastic2D(std::shared_ptr<ModelPoroelastic2D<T>> poro_model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);					///< Constructor 
+    int run(); ///< Runs modelling
+    void setPoromodel(std::shared_ptr<ModelPoroelastic2D<T>> _model) { poro_model = _model; poro_modelset = true; }
+    void setAcumodel(std::shared_ptr<ModelAcoustic2D<T>> _model) { acu_model = _model; acu_modelset = true; }
+    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
+    void setRecP(std::shared_ptr<Data2D<T>> _recP) { recP = _recP; recPset = true; }
+    void setRecSzz(std::shared_ptr<Data2D<T>> _recSzz) { recSzz = _recSzz; recSzzset = true; }
+    void setRecVx(std::shared_ptr<Data2D<T>> _recVx) { recVx = _recVx; recVxset = true; }
+    void setRecVz(std::shared_ptr<Data2D<T>> _recVz) { recVz = _recVz; recVzset = true; }
+    void setRecQx(std::shared_ptr<Data2D<T>> _recQx) { recQx = _recQx; recQxset = true; }
+    void setRecQz(std::shared_ptr<Data2D<T>> _recQz) { recQz = _recQz; recQzset = true; }
+
+    void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
+    void setSnapSxx(std::string _snapSxx) { snapSxx = _snapSxx; snapSxxset = true; }
+    void setSnapSzz(std::string _snapSzz) { snapSzz = _snapSzz; snapSzzset = true; }
+    void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
+    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
+    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    void setSnapQx(std::string _snapQx) { snapQx = _snapQx; snapQxset = true; }
+    void setSnapQz(std::string _snapQz) { snapQz = _snapQz; snapQzset = true; }
+    T getVpmax(); ///< Get Maximum vp
+    bool checkStability(); ///< Check stability of finite difference modelling
+
+    ~ModellingPoroelastic2D();	///< Destructor
+
+private:
+    std::shared_ptr<ModelAcoustic2D<T>> acu_model;
+    std::shared_ptr<ModelPoroelastic2D<T>> poro_model;
+    std::shared_ptr<Data2D<T>> source;
+    std::shared_ptr<Data2D<T>> recSzz;
+    std::shared_ptr<Data2D<T>> recVx;
+    std::shared_ptr<Data2D<T>> recVz;
+    std::shared_ptr<Data2D<T>> recP;
+    std::shared_ptr<Data2D<T>> recQx;
+    std::shared_ptr<Data2D<T>> recQz;
+    bool acu_modelset;
+    bool poro_modelset;
+    bool sourceset;
+    bool recPset, recVxset, recVzset, recSzzset, recQxset, recQzset;
+    std::string snapP, snapSxx, snapSzz, snapSxz, snapVx, snapVz, snapQx, snapQz;
+    bool snapPset, snapSxxset, snapSzzset, snapSxzset, snapVxset, snapVzset, snapQxset, snapQzset;
+};
+
+
 
 
 }

@@ -631,6 +631,124 @@ PmlElastic3D<T>::~PmlElastic3D() {
    }
 }
 
+// =============== 2D POROELASTIC PML CLASS =============== //
+template<typename T>
+PmlPoroelastic2D<T>::PmlPoroelastic2D(const int nx, const int nz, const int Lpml, const T dt): Pml<T>(Lpml, dt) {
+    int nx_pml, nz_pml;
+    nx_pml= nx + 2*Lpml;
+    nz_pml= nz + 2*Lpml;
+
+    /* Allocate variables */
+    P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Qxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Qxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Qzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Qzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Sxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Sxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Sxzx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Sxzx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Szz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Szz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Sxzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Sxzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Vxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Vxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Vzx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Vzx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+    Vzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Vzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Vxz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    Vxz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+}
+
+template<typename T>
+PmlPoroelastic2D<T>::PmlPoroelastic2D(const int nx, const int nz, const int Lpml, const T dt, const bool *low, const bool *high): Pml<T>(Lpml, dt) {
+    int nx_pml, nz_pml;
+    nx_pml= nx;
+    nz_pml= nz;
+
+    int i;
+    for (i=0; i<6; i++) this->setApplypml(i, false);
+
+    /* Allocate variables */
+    if(low[0]){
+       P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Sxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Sxzx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Qxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vzx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       this->setApplypml(0,true);
+    }
+    if(high[0]){
+       P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Sxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Sxzx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Qxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       Vzx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       this->setApplypml(1,true);
+    }
+    if(low[1]){
+       P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Szz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Sxzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Qzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vxz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       this->setApplypml(4,true);
+    }
+    if(high[1]){
+       P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Szz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Sxzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Qzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       Vxz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       this->setApplypml(5,true);
+    }
+}
+
+template<typename T>
+PmlPoroelastic2D<T>::~PmlPoroelastic2D() {
+    /* Free variables */
+   if(this->getApplypml(0)){
+      free(P_left);
+      free(Sxx_left);
+      free(Vxx_left);
+      free(Qxx_left);
+      free(Sxzx_left);
+      free(Vzx_left);
+   }
+   if(this->getApplypml(1)){
+      free(P_right);
+      free(Sxx_right);
+      free(Sxzx_right);
+      free(Qxx_right);
+      free(Vxx_right);
+      free(Vzx_right);
+   }
+   if(this->getApplypml(4)){
+      free(P_top);
+      free(Szz_top);
+      free(Sxzz_top);
+      free(Qzz_top);
+      free(Vzz_top);
+      free(Vxz_top);
+   }
+   if(this->getApplypml(5)){
+      free(P_bottom);
+      free(Szz_bottom);
+      free(Sxzz_bottom);
+      free(Qzz_bottom);
+      free(Vzz_bottom);
+      free(Vxz_bottom);
+   }
+}
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Pml<float>;
@@ -638,12 +756,14 @@ template class PmlAcoustic2D<float>;
 template class PmlAcoustic3D<float>;
 template class PmlElastic2D<float>;
 template class PmlElastic3D<float>;
+template class PmlPoroelastic2D<float>;
 
 template class Pml<double>;
 template class PmlAcoustic2D<double>;
 template class PmlAcoustic3D<double>;
 template class PmlElastic2D<double>;
 template class PmlElastic3D<double>;
+template class PmlPoroelastic2D<double>;
 
 
 }

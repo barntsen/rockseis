@@ -19,7 +19,7 @@
 namespace rockseis {
 
 // =============== ENUMS =============== //
-typedef enum {PRESSURE, VX, VY, VZ, SXX, SYY, SZZ, SYZ, SXZ, SXY} rs_field; ///< What kind of data is recorded in file
+typedef enum {PRESSURE, VX, VY, VZ, SXX, SYY, SZZ, SYZ, SXZ, SXY, QX, QY, QZ} rs_field; ///< What kind of data is recorded in file
 typedef enum {SOURCE, RECEIVER, CMP} rs_key; ///< Information on how data is sorted
 typedef enum {FINISHED, RUNNING, NOT_STARTED, FAILED} rs_status; ///< Status of a process(ex. in modelling, migration, ...)
 typedef enum {LINEAR, BSPLINE, SINC} rs_interpmode; ///< Interpolation mode.)

@@ -899,5 +899,130 @@ private:
     std::string Rfile; ///< Filename to density model
 };
 
+// =============== 2D POROELASTIC MODEL CLASS =============== //
+/** The 2D Poroelastic model class
+ *
+ */
+template<typename T>
+class ModelPoroelastic2D: public Model<T> {
+public:
+    ModelPoroelastic2D();	///< Constructor
+    ModelPoroelastic2D(const int _nx, const int _nz, const int lpml, const T _dx, const T _dz, const T _ox, const T _oz, const T _f0, const bool _fs);	///< Constructor
+    ModelPoroelastic2D(std::string _Rhofile, std::string _Rhoffile, std::string _Porfile, std::string _Kdfile, std::string _Ksfile,  std::string _Kffile, std::string _Mufile, std::string _Mobfile, std::string _Psifile, const int _lpml, const T _f0, const bool _fs);	///< Constructor
+    ~ModelPoroelastic2D();	///< Destructor
+    
+    // I/O functions
+    void readModel();	///< Read a model from file
+
+    void writeRho(); ///< Write only the Rho model to file
+    void writeRhof(); ///< Write only the Rhof model to file
+    void writePor(); ///< Write only the Por model to file
+    void writeKd(); ///< Write only the Kd model to file
+    void writeKs(); ///< Write only the Ks model to file
+    void writeKf(); ///< Write only the Kf model to file
+    void writeMu(); ///< Write only the Mu model to file
+    void writeMob(); ///< Write only the Mob model to file
+    void writePsi(); ///< Write only the Psi model to file
+    void writeModel() { writeRho(); writeRhof(); writePor(); writeKd(); writeKs(); writeKf(); writeMu(); writeMob(); writePsi(); } ///< Write a model to file
+
+    // Get functions
+    T *getRho() { return Rho; }	///< Get Rho
+    T *getRhof() { return Rhof; }	///< Get Rhof
+    T *getPor() { return Por; }	///< Get Por
+    T *getKd() { return Kd; }	///< Get Kd
+    T *getKs() { return Ks; }	///< Get Ks
+    T *getKf() { return Kf; }	///< Get Kf
+    T *getMu() { return Mu; }	///< Get Mu
+    T *getMob() { return Mob; }	///< Get Mob
+    T *getPsi() { return Psi; }	///< Get Psi
+    T *getLu() { return Lu; }		///< Get L undrained
+    T *getLuM() { return LuM; }		///< Get L2M undrained
+    T *getAlpha() { return Alpha; }		///< Get Alpha
+    T *getBeta() { return Beta; }		///< Get Beta
+    T *getM_xz() { return M_xz; }	///< Get M_xz staggered
+    T *getRho_x() { return Rho_x; }		///< Get Rho_x staggered
+    T *getRho_z() { return Rho_z; }		///< Get Rho_z staggered
+    T *getRhof_x() { return Rhof_x; }		///< Get Rhof_x staggered
+    T *getRhof_z() { return Rhof_z; }		///< Get Rhof_z staggered
+    T *getMob_x() { return Mob_x; }		///< Get Mob_x 
+    T *getMob_z() { return Mob_z; }		///< Get Mob_z 
+    T *getPsi_x() { return Psi_x; }		///< Get Psi_x 
+    T *getPsi_z() { return Psi_z; }		///< Get Psi_z 
+    T getF0() { return f0; } ///< Get the dominant frequency
+    std::string getRhofile() { return Rhofile; }
+    std::string getRhoffile() { return Rhoffile; }
+    std::string getPorfile() { return Porfile; }
+    std::string getKdfile() { return Kdfile; }
+    std::string getKsfile() { return Ksfile; }
+    std::string getKffile() { return Kffile; }
+    std::string getMufile() { return Mufile; }
+    std::string getMobfile() { return Mobfile; }
+    std::string getPsifile() { return Psifile; }
+    void setRhofile(std::string name) { Rhofile = name; }
+    void setRhoffile(std::string name) { Rhoffile = name; }
+    void setPorfile(std::string name) { Porfile = name; }
+    void setKdfile(std::string name) { Kdfile = name; }
+    void setKsfile(std::string name) { Ksfile = name; }
+    void setKffile(std::string name) { Kffile = name; }
+    void setMufile(std::string name) { Mufile = name; }
+    void setMobfile(std::string name) { Mobfile = name; }
+    void setPsifile(std::string name) { Psifile = name; }
+    void setF0(T val) { f0 = val; } ///< Set the dominant frequency
+    T getMinVp();  ///< Returns min Vp
+    T getMinVs();  ///< Returns min Vs
+    T getMinR() {return this->getMax(Rho); }  ///< Returns min R
+    T getMaxVp(); ///< Returns max Vp
+    T getMaxVs(); ///< Returns max Vs
+    T getMaxR() {return this->getMax(Rho); } ///< Returns max R
+   //
+    /** Stagger model functions. 
+    It creates the padded models and other poroelastic variables
+    */
+    std::shared_ptr<ModelPoroelastic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
+    std::shared_ptr<ModelPoroelastic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int order); ///< Returns a model of a domain
+
+    /** Create model
+    It creates an empty Poroelastic model
+    */
+    void createModel();
+    void createPaddedmodel();
+
+private:
+    T *Rho; 
+    T *Rhof; 
+    T *Por; 
+    T *Kd; 
+    T *Ks; 
+    T *Kf; 
+    T *Mu; 
+    T *Mob; 
+    T *Psi; 
+
+    T *Lu; // Lame undrained
+    T *LuM; // Lame + 2Mu undrained
+    T *Alpha; // Biot Willis constant
+    T *Beta;   // Beta parameter
+    T *M_xz; // Lame Mu  (staggered)
+    T *Rho_x;  // Staggered inverse of density in x (padded)
+    T *Rho_z;  // Staggered inverse of density in z (padded)
+    T *Rhof_x;  // Staggered inverse of fluid density in x (padded)
+    T *Rhof_z;  // Staggered inverse of fluid density in z (padded)
+    T *Mob_x;  // Mobility Staggered 
+    T *Mob_z;  // Mobility Staggered 
+    T *Psi_x;  // (1 - O)F - rhof/rho Staggered 
+    T *Psi_z;  // (1 - O)F - rhof/rho Staggered 
+    T f0; // Center frequency
+    std::string Rhofile; ///< Filename to Rho
+    std::string Rhoffile; ///< Filename to Rhof
+    std::string Porfile; ///< Filename to Por
+    std::string Kdfile; ///< Filename to Kd
+    std::string Ksfile; ///< Filename to Ks
+    std::string Kffile; ///< Filename to Kf
+    std::string Mufile; ///< Filename to Mu
+    std::string Mobfile; ///< Filename to Mob
+    std::string Psifile; ///< Filename to Psi
+};
+
+
 }
 #endif //MODEL_H

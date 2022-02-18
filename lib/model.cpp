@@ -6470,14 +6470,14 @@ std::shared_ptr<ModelVti2D<T>> ModelVti2D<T>::getDomainmodel(std::shared_ptr<Dat
             }
             Rz[l2d(i2,i1)] = 2.0/(rhotrace[lpos]+rhotrace_adv[lpos]);
 
-            M1 = rhotrace[lpos]*C55trace[lpos]*C55trace[lpos];
-            M3 = rhotrace_adv[lpos]*C55trace_adv[lpos]*C55trace_adv[lpos];
+            M1 = C55trace[lpos];
+            M3 = C55trace_adv[lpos];
             if(lpos < nx-1){
-               M2 = rhotrace[lpos+1]*C55trace[lpos+1]*C55trace[lpos+1];
-               M4 = rhotrace_adv[lpos+1]*C55trace_adv[lpos+1]*C55trace_adv[lpos+1];
+               M2 = C55trace[lpos+1];
+               M4 = C55trace_adv[lpos+1];
             }else{
-               M2 = rhotrace[lpos]*C55trace[lpos]*C55trace[lpos];
-               M4 = rhotrace_adv[lpos]*C55trace_adv[lpos]*C55trace_adv[lpos];
+               M2 = C55trace[lpos];
+               M4 = C55trace_adv[lpos];
             }
             C55p[l2d(i2,i1)] = 0.25*(M1+M2+M3+M4);
         }
@@ -7972,6 +7972,1159 @@ ModelOrtho3D<T>::~ModelOrtho3D() {
     free(Rz);
 }
 
+// =============== 2D POROELASTIC MODEL CLASS =============== //
+template<typename T>
+ModelPoroelastic2D<T>::ModelPoroelastic2D(): Model<T>(2) {
+    // Nothing here
+}
+
+template<typename T>
+ModelPoroelastic2D<T>::ModelPoroelastic2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz, const T _f0, const bool _fs): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 1.0, _oz, _fs) {
+    
+    /* Allocate variables */
+    Rho = (T *) calloc(1,1);
+    Rhof = (T *) calloc(1,1);
+    Por = (T *) calloc(1,1);
+    Kd = (T *) calloc(1,1);
+    Ks = (T *) calloc(1,1);
+    Kf = (T *) calloc(1,1);
+    Mu = (T *) calloc(1,1);
+    Mob = (T *) calloc(1,1);
+    Psi = (T *) calloc(1,1);
+    Lu = (T *) calloc(1,1);
+    LuM = (T *) calloc(1,1);
+    Alpha = (T *) calloc(1,1);
+    Beta = (T *) calloc(1,1);
+    M_xz = (T *) calloc(1,1);
+    Rho_x = (T *) calloc(1,1);
+    Rho_z = (T *) calloc(1,1);
+    Rhof_x = (T *) calloc(1,1);
+    Rhof_z = (T *) calloc(1,1);
+    Mob_x = (T *) calloc(1,1);
+    Mob_z = (T *) calloc(1,1);
+    Psi_x = (T *) calloc(1,1);
+    Psi_z = (T *) calloc(1,1);
+    f0 = _f0;
+}
+
+template<typename T>
+ModelPoroelastic2D<T>::ModelPoroelastic2D(std::string _Rhofile, std::string _Rhoffile, std::string _Porfile, std::string _Kdfile, std::string _Ksfile,  std::string _Kffile, std::string _Mufile, std::string _Mobfile, std::string _Psifile, const int _lpml, const T _f0, const bool _fs): Model<T>(2) {
+    bool status;
+    int nx, nz;
+    T dx, dz;
+    T ox, oz;
+    Rhofile = _Rhofile;
+    Rhoffile = _Rhoffile;
+    Porfile = _Porfile;
+    Kdfile = _Kdfile;
+    Ksfile = _Ksfile;
+    Kffile = _Kffile;
+    Mufile = _Mufile;
+    Mobfile = _Mobfile;
+    Psifile = _Psifile;
+
+    std::shared_ptr<File> FRho (new File());
+    status = FRho->input(Rhofile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::Error reading from Rho file: ", Rhofile);
+	    exit(1);
+    }
+    std::shared_ptr<File> FRhof (new File());
+    status = FRhof->input(Rhoffile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::Error reading from Rhof file: ", Rhoffile);
+	    exit(1);
+    }
+    std::shared_ptr<File> FPor (new File());
+    status = FPor->input(Porfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::Error reading from Por file: ", Porfile);
+	    exit(1);
+    }
+    std::shared_ptr<File> FKd (new File());
+    status = FKd->input(Kdfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::Error reading from Kd file: ", Kdfile);
+	    exit(1);
+    }
+    std::shared_ptr<File> FKs (new File());
+    status = FKs->input(Ksfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::Error reading from Ks file: ", Ksfile);
+	    exit(1);
+    }
+    std::shared_ptr<File> FKf (new File());
+    status = FKf->input(Kffile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::Error reading from Kf file: ", Kffile);
+	    exit(1);
+    }
+    std::shared_ptr<File> FMu (new File());
+    status = FMu->input(Mufile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::Error reading from Mu file: ", Mufile);
+	    exit(1);
+    }
+    std::shared_ptr<File> FMob (new File());
+    status = FMob->input(Mobfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::Error reading from Mob file: ", Mobfile);
+	    exit(1);
+    }
+    std::shared_ptr<File> FPsi (new File());
+    status = FPsi->input(Psifile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::Error reading from Psi file: ", Psifile);
+	    exit(1);
+    }
+
+    // Compare geometry in the two files
+    if(FRho->compareGeometry(FRhof) != 0)
+    {
+        rs_error("ModelPoroelastic2D::Geometries in Rho and Rhof model files do not match.");
+    }
+    if(FRho->compareGeometry(FPor) != 0)
+    {
+        rs_error("ModelPoroelastic2D::Geometries in Rho and Por model files do not match.");
+    }
+    if(FRho->compareGeometry(FKd) != 0)
+    {
+        rs_error("ModelPoroelastic2D::Geometries in Rho and Kd model files do not match.");
+    }
+    if(FRho->compareGeometry(FKs) != 0)
+    {
+        rs_error("ModelPoroelastic2D::Geometries in Rho and Ks model files do not match.");
+    }
+    if(FRho->compareGeometry(FKf) != 0)
+    {
+        rs_error("ModelPoroelastic2D::Geometries in Rho and Kf model files do not match.");
+    }
+    if(FRho->compareGeometry(FMu) != 0)
+    {
+        rs_error("ModelPoroelastic2D::Geometries in Rho and Mu model files do not match.");
+    }
+    if(FRho->compareGeometry(FMob) != 0)
+    {
+        rs_error("ModelPoroelastic2D::Geometries in Rho and Mob model files do not match.");
+    }
+    if(FRho->compareGeometry(FPsi) != 0)
+    {
+        rs_error("ModelPoroelastic2D::Geometries in Rho and Psi model files do not match.");
+    }
+    if(FRho->getData_format() != sizeof(T))
+    {
+        rs_error("ModelPoroelastic2D::Numerical precision in Rho mismatch with constructor.");
+    }
+ 
+
+    
+    // Read geometry from file
+    nx = FRho->getN(1);
+    dx = (T) FRho->getD(1);
+    ox = (T) FRho->getO(1);
+    nz = FRho->getN(3);
+    dz = (T) FRho->getD(3);
+    oz = (T) FRho->getO(3);
+    
+    // Close files
+    FRho->close();
+    FRhof->close();
+    FPor->close();
+    FKd->close();
+    FKs->close();
+    FKf->close();
+    FMu->close();
+    FMob->close();
+    FPsi->close();
+
+    // Store geometry in model class
+    this->setNx(nx);
+    this->setDx(dx);
+    this->setOx(ox);
+
+    this->setNz(nz);
+    this->setDz(dz);
+    this->setOz(oz);
+
+    this->setLpml(_lpml);
+    this->setFs(_fs);
+    this->setF0(_f0);
+
+    
+    /* Allocate variables */
+    Rho = (T *) calloc(1,1);
+    Rhof = (T *) calloc(1,1);
+    Por = (T *) calloc(1,1);
+    Kd = (T *) calloc(1,1);
+    Ks = (T *) calloc(1,1);
+    Kf = (T *) calloc(1,1);
+    Mu = (T *) calloc(1,1);
+    Mob = (T *) calloc(1,1);
+    Psi = (T *) calloc(1,1);
+    Lu = (T *) calloc(1,1);
+    LuM = (T *) calloc(1,1);
+    Alpha = (T *) calloc(1,1);
+    Beta = (T *) calloc(1,1);
+    M_xz = (T *) calloc(1,1);
+    Rho_x = (T *) calloc(1,1);
+    Rho_z = (T *) calloc(1,1);
+    Rhof_x = (T *) calloc(1,1);
+    Rhof_z = (T *) calloc(1,1);
+    Mob_x = (T *) calloc(1,1);
+    Mob_z = (T *) calloc(1,1);
+    Psi_x = (T *) calloc(1,1);
+    Psi_z = (T *) calloc(1,1);
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::readModel() {
+    bool status;
+    // Get file names
+    std::string Rhofile = this->getRhofile();
+    std::string Rhoffile = this->getRhoffile();
+    std::string Porfile = this->getPorfile();
+    std::string Kdfile = this->getKdfile();
+    std::string Ksfile = this->getKsfile();
+    std::string Kffile = this->getKffile();
+    std::string Mufile = this->getMufile();
+    std::string Mobfile = this->getMobfile();
+    std::string Psifile = this->getPsifile();
+    // Open files for reading
+    std::shared_ptr<File> FRho (new File());
+    status = FRho->input(Rhofile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::readModel : Error reading from Rho file: ", Rhofile);
+    }
+    std::shared_ptr<File> FRhof (new File());
+    status = FRhof->input(Rhoffile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::readModel : Error reading from Rhof file: ", Rhoffile);
+    }
+
+    std::shared_ptr<File> FPor (new File());
+    status = FPor->input(Porfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::readModel : Error reading from Por file: ", Porfile);
+    }
+
+    std::shared_ptr<File> FKd (new File());
+    status = FKd->input(Kdfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::readModel : Error reading from Kd file: ", Kdfile);
+    }
+
+    std::shared_ptr<File> FKs (new File());
+    status = FKs->input(Ksfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::readModel : Error reading from Ks file: ", Ksfile);
+    }
+
+    std::shared_ptr<File> FKf (new File());
+    status = FKf->input(Kffile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::readModel : Error reading from Kf file: ", Kffile);
+    }
+
+    std::shared_ptr<File> FMu (new File());
+    status = FMu->input(Mufile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::readModel : Error reading from Mu file: ", Mufile);
+    }
+
+    std::shared_ptr<File> FMob (new File());
+    status = FMob->input(Mobfile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::readModel : Error reading from Mob file: ", Mobfile);
+    }
+
+    std::shared_ptr<File> FPsi (new File());
+    status = FPsi->input(Psifile.c_str());
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::readModel : Error reading from Psi file: ", Psifile);
+    }
+
+
+    // Read models
+    int nx = this->getNx();
+    int nz = this->getNz();
+    
+    /* Reallocate Models */
+    free(Rho); 
+    Rho = (T *) calloc(nx*nz,sizeof(T));
+    if(Rho == NULL) rs_error("ModelPoroelastic2D::readModel: Failed to allocate memory.");
+    free(Rhof); 
+    Rhof = (T *) calloc(nx*nz,sizeof(T));
+    if(Rhof == NULL) rs_error("ModelPoroelastic2D::readModel: Failed to allocate memory.");
+    free(Por); 
+    Por = (T *) calloc(nx*nz,sizeof(T));
+    if(Por == NULL) rs_error("ModelPoroelastic2D::readModel: Failed to allocate memory.");
+    free(Kd); 
+    Kd = (T *) calloc(nx*nz,sizeof(T));
+    if(Kd == NULL) rs_error("ModelPoroelastic2D::readModel: Failed to allocate memory.");
+    free(Ks); 
+    Ks = (T *) calloc(nx*nz,sizeof(T));
+    if(Ks == NULL) rs_error("ModelPoroelastic2D::readModel: Failed to allocate memory.");
+    free(Kf); 
+    Kf = (T *) calloc(nx*nz,sizeof(T));
+    if(Kf == NULL) rs_error("ModelPoroelastic2D::readModel: Failed to allocate memory.");
+    free(Mu); 
+    Mu = (T *) calloc(nx*nz,sizeof(T));
+    if(Mu == NULL) rs_error("ModelPoroelastic2D::readModel: Failed to allocate memory.");
+    free(Mob); 
+    Mob = (T *) calloc(nx*nz,sizeof(T));
+    if(Mob == NULL) rs_error("ModelPoroelastic2D::readModel: Failed to allocate memory.");
+    free(Psi); 
+    Psi = (T *) calloc(nx*nz,sizeof(T));
+    if(Psi == NULL) rs_error("ModelPoroelastic2D::readModel: Failed to allocate memory.");
+    this->setRealized(true);
+
+    FRho->read(Rho, nx*nz);
+    FRho->close();
+    FRhof->read(Rhof, nx*nz);
+    FRhof->close();
+    FPor->read(Por, nx*nz);
+    FPor->close();
+    FKd->read(Kd, nx*nz);
+    FKd->close();
+    FKs->read(Ks, nx*nz);
+    FKs->close();
+    FKf->read(Kf, nx*nz);
+    FKf->close();
+    FMu->read(Mu, nx*nz);
+    FMu->close();
+    FMob->read(Mob, nx*nz);
+    FMob->close();
+    FPsi->read(Psi, nx*nz);
+    FPsi->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::writeRho() {
+    if(!this->getRealized()) {
+        rs_error("ModelPoroelastic2D::writeRho: Model is not allocated.");
+    }
+    // Get file names
+    std::string Rhofile = this->getRhofile();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(Rhofile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getRho();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::writeRhof() {
+    if(!this->getRealized()) {
+        rs_error("ModelPoroelastic2D::writeRhof: Model is not allocated.");
+    }
+    // Get file names
+    std::string Rhoffile = this->getRhoffile();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(Rhoffile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getRhof();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::writePor() {
+    if(!this->getRealized()) {
+        rs_error("ModelPoroelastic2D::writePor: Model is not allocated.");
+    }
+    // Get file names
+    std::string Porfile = this->getPorfile();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(Porfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getPor();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::writeKd() {
+    if(!this->getRealized()) {
+        rs_error("ModelPoroelastic2D::writeKd: Model is not allocated.");
+    }
+    // Get file names
+    std::string Kdfile = this->getKdfile();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(Kdfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getKd();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::writeKs() {
+    if(!this->getRealized()) {
+        rs_error("ModelPoroelastic2D::writeKs: Model is not allocated.");
+    }
+    // Get file names
+    std::string Ksfile = this->getKsfile();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(Ksfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getKs();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::writeKf() {
+    if(!this->getRealized()) {
+        rs_error("ModelPoroelastic2D::writeKf: Model is not allocated.");
+    }
+    // Get file names
+    std::string Kffile = this->getKffile();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(Kffile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getKf();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::writeMu() {
+    if(!this->getRealized()) {
+        rs_error("ModelPoroelastic2D::writeMu: Model is not allocated.");
+    }
+    // Get file names
+    std::string Mufile = this->getMufile();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(Mufile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getMu();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::writeMob() {
+    if(!this->getRealized()) {
+        rs_error("ModelPoroelastic2D::writeMob: Model is not allocated.");
+    }
+    // Get file names
+    std::string Mobfile = this->getMobfile();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(Mobfile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getMob();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::writePsi() {
+    if(!this->getRealized()) {
+        rs_error("ModelPoroelastic2D::writePsi: Model is not allocated.");
+    }
+    // Get file names
+    std::string Psifile = this->getPsifile();
+    // Open files for writting
+    std::shared_ptr<File> F (new File());
+    F->output(Psifile);
+
+    // Write models
+    int nx = this->getNx();
+    T dx = this->getDx();
+    T ox = this->getOx();
+    int nz = this->getNz();
+    T dz = this->getDz();
+    T oz = this->getOz();
+
+    F->setN(1,nx);
+    F->setN(3,nz);
+    F->setD(1,dx);
+    F->setD(3,dz);
+    F->setO(1,ox);
+    F->setO(3,oz);
+    F->setType(REGULAR);
+    F->setData_format(sizeof(T));
+    F->writeHeader();
+    T *Mod = this->getPsi();
+    F->write(Mod, nx*nz, 0);
+    F->close();
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::createModel() {
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    /* Reallocate models */
+    free(Rho); 
+    Rho = (T *) calloc(nx*nz,sizeof(T));
+    if(Rho == NULL) rs_error("ModelPoroelastic2D::createModel: Failed to allocate memory.");
+    free(Rhof); 
+    Rhof = (T *) calloc(nx*nz,sizeof(T));
+    if(Rhof == NULL) rs_error("ModelPoroelastic2D::createModel: Failed to allocate memory.");
+    free(Por); 
+    Por = (T *) calloc(nx*nz,sizeof(T));
+    if(Por == NULL) rs_error("ModelPoroelastic2D::createModel: Failed to allocate memory.");
+    free(Kd); 
+    Kd = (T *) calloc(nx*nz,sizeof(T));
+    if(Kd == NULL) rs_error("ModelPoroelastic2D::createModel: Failed to allocate memory.");
+    free(Ks); 
+    Ks = (T *) calloc(nx*nz,sizeof(T));
+    if(Ks == NULL) rs_error("ModelPoroelastic2D::createModel: Failed to allocate memory.");
+    free(Kf); 
+    Kf = (T *) calloc(nx*nz,sizeof(T));
+    if(Kf == NULL) rs_error("ModelPoroelastic2D::createModel: Failed to allocate memory.");
+    free(Mu); 
+    Mu = (T *) calloc(nx*nz,sizeof(T));
+    if(Mu == NULL) rs_error("ModelPoroelastic2D::createModel: Failed to allocate memory.");
+    free(Mob); 
+    Mob = (T *) calloc(nx*nz,sizeof(T));
+    if(Mob == NULL) rs_error("ModelPoroelastic2D::createModel: Failed to allocate memory.");
+    free(Psi); 
+    Psi = (T *) calloc(nx*nz,sizeof(T));
+    if(Psi == NULL) rs_error("ModelPoroelastic2D::createModel: Failed to allocate memory.");
+
+    this->setRealized(true);
+}
+
+template<typename T>
+void ModelPoroelastic2D<T>::createPaddedmodel() {
+    int nx = this->getNx();
+    int nz = this->getNz();
+
+    /* Reallocate models */
+    free(Lu); 
+    Lu = (T *) calloc(nx*nz,sizeof(T));
+    if(Lu == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+    free(LuM); 
+    LuM = (T *) calloc(nx*nz,sizeof(T));
+    if(LuM == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Alpha); 
+    Alpha = (T *) calloc(nx*nz,sizeof(T));
+    if(Alpha == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Beta); 
+    Beta = (T *) calloc(nx*nz,sizeof(T));
+    if(Beta == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(M_xz); 
+    M_xz = (T *) calloc(nx*nz,sizeof(T));
+    if(M_xz == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Rho_x); 
+    Rho_x = (T *) calloc(nx*nz,sizeof(T));
+    if(Rho_x == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Rho_z); 
+    Rho_z = (T *) calloc(nx*nz,sizeof(T));
+    if(Rho_z == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Rhof_x); 
+    Rhof_x = (T *) calloc(nx*nz,sizeof(T));
+    if(Rhof_x == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Rhof_z); 
+    Rhof_z = (T *) calloc(nx*nz,sizeof(T));
+    if(Rhof_z == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Mob_x); 
+    Mob_x = (T *) calloc(nx*nz,sizeof(T));
+    if(Mob_x == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Mob_z); 
+    Mob_z = (T *) calloc(nx*nz,sizeof(T));
+    if(Mob_z == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Psi_x); 
+    Psi_x = (T *) calloc(nx*nz,sizeof(T));
+    if(Psi_x == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+
+    free(Psi_z); 
+    Psi_z = (T *) calloc(nx*nz,sizeof(T));
+    if(Psi_z == NULL) rs_error("ModelPoroelastic2D::createPaddedmodel: Failed to allocate memory.");
+}
+
+template<typename T>
+std::shared_ptr<ModelPoroelastic2D<T>> ModelPoroelastic2D<T>::getLocal(std::shared_ptr<Data2D<T>> data, T aperture, bool map) {
+
+    std::shared_ptr<ModelPoroelastic2D<T>> local;
+    T dx = this->getDx();
+    T ox = this->getOx();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+    size_t size;
+    off_t start;
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize2d(data, aperture, map, &start, &size);
+
+    /* Create local model */
+    local = std::make_shared<ModelPoroelastic2D<T>>(size, this->getNz(), this->getLpml(), dx, this->getDz(), (ox + start*dx) , this->getOz(), this->getF0(), this->getFs());
+
+    /*Realizing local model */
+    local->createModel();
+
+	/* Copying from big model into local model */
+    T *Rho = local->getRho();
+    T *Rhof = local->getRhof();
+    T *Por = local->getPor();
+    T *Kd = local->getKd();
+    T *Ks = local->getKs();
+    T *Kf = local->getKf();
+    T *Mu = local->getMu();
+    T *Mob = local->getMob();
+    T *Psi = local->getPsi();
+
+    /* Allocate two traces to read models from file */
+    T *Rhotrace = (T *) calloc(nx, sizeof(T));
+    if(Rhotrace == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Rhoftrace = (T *) calloc(nx, sizeof(T));
+    if(Rhoftrace == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Portrace = (T *) calloc(nx, sizeof(T));
+    if(Portrace == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Kdtrace = (T *) calloc(nx, sizeof(T));
+    if(Kdtrace == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Kstrace = (T *) calloc(nx, sizeof(T));
+    if(Kstrace == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Kftrace = (T *) calloc(nx, sizeof(T));
+    if(Kftrace == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Mutrace = (T *) calloc(nx, sizeof(T));
+    if(Mutrace == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Mobtrace = (T *) calloc(nx, sizeof(T));
+    if(Mobtrace == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Psitrace = (T *) calloc(nx, sizeof(T));
+    if(Psitrace == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> FRho (new File());
+    status = FRho->input(Rhofile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getLocal : Error reading from Rho file.");
+    }
+    std::shared_ptr<File> FRhof (new File());
+    status = FRhof->input(Rhoffile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getLocal : Error reading from Rhof file.");
+    }
+    std::shared_ptr<File> FPor (new File());
+    status = FPor->input(Porfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getLocal : Error reading from Por file.");
+    }
+    std::shared_ptr<File> FKd (new File());
+    status = FKd->input(Kdfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getLocal : Error reading from Kd file.");
+    }
+    std::shared_ptr<File> FKs (new File());
+    status = FKs->input(Ksfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getLocal : Error reading from Ks file.");
+    }
+    std::shared_ptr<File> FKf (new File());
+    status = FKf->input(Kffile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getLocal : Error reading from Kf file.");
+    }
+    std::shared_ptr<File> FMu (new File());
+    status = FMu->input(Mufile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getLocal : Error reading from Mu file.");
+    }
+    std::shared_ptr<File> FMob (new File());
+    status = FMob->input(Mobfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getLocal : Error reading from Mob file.");
+    }
+    std::shared_ptr<File> FPsi (new File());
+    status = FPsi->input(Psifile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getLocal : Error reading from Psi file.");
+    }
+
+    off_t i = start;
+    off_t lpos, fpos;
+    Index l2d(size,nz);
+    Index f2d(nx,nz);
+    for(size_t i1=0; i1<nz; i1++) {
+        fpos = f2d(0, i1)*sizeof(T);
+        FRho->read(Rhotrace, nx, fpos);
+        if(FRho->getFail()) rs_error("ModelPoroelastic2D::getLocal: Error reading from Rho file");
+        FRhof->read(Rhoftrace, nx, fpos);
+        if(FRhof->getFail()) rs_error("ModelPoroelastic2D::getLocal: Error reading from Rhof file");
+        FPor->read(Portrace, nx, fpos);
+        if(FPor->getFail()) rs_error("ModelPoroelastic2D::getLocal: Error reading from Por file");
+        FKd->read(Kdtrace, nx, fpos);
+        if(FKd->getFail()) rs_error("ModelPoroelastic2D::getLocal: Error reading from Kd file");
+        FKs->read(Kstrace, nx, fpos);
+        if(FKs->getFail()) rs_error("ModelPoroelastic2D::getLocal: Error reading from Ks file");
+        FKf->read(Kftrace, nx, fpos);
+        if(FKf->getFail()) rs_error("ModelPoroelastic2D::getLocal: Error reading from Kf file");
+        FMu->read(Mutrace, nx, fpos);
+        if(FMu->getFail()) rs_error("ModelPoroelastic2D::getLocal: Error reading from Mu file");
+        FMob->read(Mobtrace, nx, fpos);
+        if(FMob->getFail()) rs_error("ModelPoroelastic2D::getLocal: Error reading from Mob file");
+        FPsi->read(Psitrace, nx, fpos);
+        if(FPsi->getFail()) rs_error("ModelPoroelastic2D::getLocal: Error reading from Psi file");
+        for(size_t i2=0; i2<size; i2++) {
+            lpos = i + i2;
+            if(lpos < 0) lpos = 0;
+            if(lpos > (nx-1)) lpos = nx - 1;
+            Rho[l2d(i2,i1)] = Rhotrace[lpos];
+            Rhof[l2d(i2,i1)] = Rhoftrace[lpos];
+            Por[l2d(i2,i1)] = Portrace[lpos];
+            Kd[l2d(i2,i1)] = Kdtrace[lpos];
+            Ks[l2d(i2,i1)] = Kstrace[lpos];
+            Kf[l2d(i2,i1)] = Kftrace[lpos];
+            Mu[l2d(i2,i1)] = Mutrace[lpos];
+            Mob[l2d(i2,i1)] = Mobtrace[lpos];
+            Psi[l2d(i2,i1)] = Psitrace[lpos];
+        }
+    }
+
+    /* Free traces */
+    free(Rhotrace);
+    free(Rhoftrace);
+    free(Portrace);
+    free(Kdtrace);
+    free(Kstrace);
+    free(Kftrace);
+    free(Mutrace);
+    free(Mobtrace);
+    free(Psitrace);
+
+    return local;
+}
+
+template<typename T>
+std::shared_ptr<ModelPoroelastic2D<T>> ModelPoroelastic2D<T>::getDomainmodel(std::shared_ptr<Data2D<T>> data, T aperture, bool map, const int d, const int nd0, const int nd1, const int order) {
+    std::shared_ptr<ModelPoroelastic2D<T>> local;
+    T dx = this->getDx();
+    T dz = this->getDz();
+    T ox = this->getOx();
+    T oz = this->getOz();
+    size_t nz = this->getNz();
+    size_t nx = this->getNx();
+    size_t size;
+    off_t start;
+    int nxd,nzd;
+    int ix0,iz0;
+    int lpml = this->getLpml();
+
+    /* Determine grid positions and sizes */
+    this->getLocalsize2d(data, aperture, map, &start, &size);
+    (this->getDomain())->setupDomain3D(size+2*lpml,1,nz+2*this->getLpml(),d,nd0,1,nd1,order);
+    nxd = (this->getDomain())->getNx_pad();
+    nzd = (this->getDomain())->getNz_pad();
+    ix0 = (this->getDomain())->getIx0();
+    iz0 = (this->getDomain())->getIz0();
+
+
+    /* Create domain model */
+    local = std::make_shared<ModelPoroelastic2D<T>>(nxd, nzd, lpml, dx, dz, (ox + (start+ix0-lpml)*dx) , (oz + (iz0-lpml)*dz), this->getF0(), this->getFs());
+    (local->getDomain())->setupDomain3D(size+2*lpml,1,nz+2*lpml,d,nd0,1,nd1,order);
+
+    /*Realizing local model */
+    local->createModel();
+    local->createPaddedmodel();
+
+    /* Copying from big model into local model */
+    T *Rho = local->getRho();
+    T *Rhof = local->getRhof();
+    T *Por = local->getPor();
+    T *Kd = local->getKd();
+    T *Ks = local->getKs();
+    T *Kf = local->getKf();
+    T *Mu = local->getMu();
+    T *Mob = local->getMob();
+    T *Psi = local->getPsi();
+    T *Lu = local->getLu();
+    T *LuM = local->getLuM();
+    T *Alpha = local->getAlpha();
+    T *Beta = local->getBeta();
+    T *M_xz = local->getM_xz();
+    T *Rho_x = local->getRho_x();
+    T *Rho_z = local->getRho_z();
+    T *Rhof_x = local->getRhof_x();
+    T *Rhof_z = local->getRhof_z();
+
+    T *Mob_x = local->getMob_x();
+    T *Mob_z = local->getMob_z();
+    T *Psi_x = local->getPsi_x();
+    T *Psi_z = local->getPsi_z();
+
+    /* Allocate two traces to read models from file */
+    T *Rhotrace = (T *) calloc(nx, sizeof(T));
+    if(Rhotrace == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Rhoftrace = (T *) calloc(nx, sizeof(T));
+    if(Rhoftrace == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Portrace = (T *) calloc(nx, sizeof(T));
+    if(Portrace == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Kdtrace = (T *) calloc(nx, sizeof(T));
+    if(Kdtrace == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Kstrace = (T *) calloc(nx, sizeof(T));
+    if(Kstrace == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Kftrace = (T *) calloc(nx, sizeof(T));
+    if(Kftrace == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Mutrace = (T *) calloc(nx, sizeof(T));
+    if(Mutrace == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Mobtrace = (T *) calloc(nx, sizeof(T));
+    if(Mobtrace == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Psitrace = (T *) calloc(nx, sizeof(T));
+    if(Psitrace == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Rhotrace_adv = (T *) calloc(nx, sizeof(T));
+    if(Rhotrace_adv == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Rhoftrace_adv = (T *) calloc(nx, sizeof(T));
+    if(Rhoftrace_adv == NULL) rs_error("ModelPoroelastic2d::getDomainmodel: Failed to allocate memory.");
+    T *Mutrace_adv = (T *) calloc(nx, sizeof(T));
+    if(Mutrace_adv == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Mobtrace_adv = (T *) calloc(nx, sizeof(T));
+    if(Mobtrace_adv == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+    T *Psitrace_adv = (T *) calloc(nx, sizeof(T));
+    if(Psitrace_adv == NULL) rs_error("ModelPoroelastic2d::getLocal: Failed to allocate memory.");
+
+    // Open files for reading
+    bool status;
+    std::shared_ptr<File> FRho (new File());
+    status = FRho->input(Rhofile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getDomainmodel : Error reading from Rho file.");
+    }
+    std::shared_ptr<File> FRhof (new File());
+    status = FRhof->input(Rhoffile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getDomainmodel : Error reading from Rhof file.");
+    }
+    std::shared_ptr<File> FPor (new File());
+    status = FPor->input(Porfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getDomainmodel : Error reading from Por file.");
+    }
+    std::shared_ptr<File> FKd (new File());
+    status = FKd->input(Kdfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getDomainmodel : Error reading from Kd file.");
+    }
+    std::shared_ptr<File> FKs (new File());
+    status = FKs->input(Ksfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getDomainmodel : Error reading from Ks file.");
+    }
+    std::shared_ptr<File> FKf (new File());
+    status = FKf->input(Kffile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getDomainmodel : Error reading from Kf file.");
+    }
+    std::shared_ptr<File> FMu (new File());
+    status = FMu->input(Mufile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getDomainmodel : Error reading from Mu file.");
+    }
+    std::shared_ptr<File> FMob (new File());
+    status = FMob->input(Mobfile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getDomainmodel : Error reading from Mob file.");
+    }
+    std::shared_ptr<File> FPsi (new File());
+    status = FPsi->input(Psifile);
+    if(status == FILE_ERR){
+	    rs_error("ModelPoroelastic2D::getDomainmodel : Error reading from Psi file.");
+    }
+    
+    off_t i = start;
+    off_t lpos, fpos;
+    Index l2d(nxd,nzd);
+    Index f2d(nx,nz);
+    T M1, M2, M3, M4;
+
+    for(size_t i1=0; i1<nzd; i1++) {
+        lpos = iz0 + i1 - lpml;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        FRho->read(Rhotrace, nx, fpos);
+        if(FRho->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Rho file");
+        FRhof->read(Rhoftrace, nx, fpos);
+        if(FRhof->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Rhof file");
+        FPor->read(Portrace, nx, fpos);
+        if(FPor->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Por file");
+        FKd->read(Kdtrace, nx, fpos);
+        if(FKd->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Kd file");
+        FKs->read(Kstrace, nx, fpos);
+        if(FKs->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Ks file");
+        FKf->read(Kftrace, nx, fpos);
+        if(FKf->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Kf file");
+        FMu->read(Mutrace, nx, fpos);
+        if(FMu->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Mu file");
+        FMob->read(Mobtrace, nx, fpos);
+        if(FMob->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Mob file");
+        FPsi->read(Psitrace, nx, fpos);
+        if(FPsi->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Psi file");
+
+        // Read advanced trace
+        lpos = iz0 + i1 - lpml + 1;
+        if(lpos < 0) lpos = 0;
+        if(lpos > (nz-1)) lpos = nz - 1;
+        fpos = f2d(0, lpos)*sizeof(T);
+        FRho->read(Rhotrace_adv, nx, fpos);
+        if(FRho->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Rho file");
+        FRhof->read(Rhoftrace_adv, nx, fpos);
+        if(FRhof->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Rhof file");
+        FMu->read(Mutrace_adv, nx, fpos);
+        if(FMu->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Mu file");
+        FMob->read(Mobtrace_adv, nx, fpos);
+        if(FMob->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Mob file");
+        FPsi->read(Psitrace_adv, nx, fpos);
+        if(FPsi->getFail()) rs_error("ModelPoroelastic2D::getDomainmodel: Error reading from Psi file");
+        for(size_t i2=0; i2<nxd; i2++) {
+            lpos = i + i2 + ix0 - lpml;
+            if(lpos < 0) lpos = 0;
+            if(lpos > (nx-1)) lpos = nx - 1;
+            Rho[l2d(i2,i1)] = Rhotrace[lpos];
+            Rhof[l2d(i2,i1)] = Rhoftrace[lpos];
+            Por[l2d(i2,i1)] = Portrace[lpos];
+            Kd[l2d(i2,i1)] = Kdtrace[lpos];
+            Ks[l2d(i2,i1)] = Kstrace[lpos];
+            Kf[l2d(i2,i1)] = Kftrace[lpos];
+            Mu[l2d(i2,i1)] = Mutrace[lpos];
+            Mob[l2d(i2,i1)] = Mobtrace[lpos];
+            Psi[l2d(i2,i1)] = Psitrace[lpos];
+            if(Mobtrace[lpos] <= 0.0) rs_error("ModelPoroelastic2D::getDomainmodel: Zero mobility found.");
+            if(Kstrace[lpos] <= 0.0) rs_error("ModelPoroelastic2D::getDomainmodel: Zero Ks found.");
+            if(lpos < nx-1){
+                Rho_x[l2d(i2,i1)] = (Rhotrace[lpos]+Rhotrace[lpos+1])/2.0;
+            }else{
+                Rho_x[l2d(i2,i1)] = (Rhotrace[lpos]);
+            }
+            Rho_z[l2d(i2,i1)] = (Rhotrace[lpos]+Rhotrace_adv[lpos])/2.0;
+            if(lpos < nx-1){
+                Rhof_x[l2d(i2,i1)] = (Rhoftrace[lpos]+Rhoftrace[lpos+1])/2.0;
+            }else{
+                Rhof_x[l2d(i2,i1)] = (Rhoftrace[lpos]);
+            }
+            Rhof_z[l2d(i2,i1)] = (Rhoftrace[lpos]+Rhoftrace_adv[lpos])/2.0;
+
+            if(lpos < nx-1){
+                Mob_x[l2d(i2,i1)] = 2.0/(Mobtrace[lpos]+Mobtrace[lpos+1]);
+            }else{
+                Mob_x[l2d(i2,i1)] = 1.0/(Mobtrace[lpos]);
+            }
+            Mob_z[l2d(i2,i1)] = 2.0/(Mobtrace[lpos]+Mobtrace_adv[lpos]);
+            if(lpos < nx-1){
+                Psi_x[l2d(i2,i1)] = (Psitrace[lpos]+Psitrace[lpos+1])/2.0;
+            }else{
+                Psi_x[l2d(i2,i1)] = (Psitrace[lpos]);
+            }
+            Psi_z[l2d(i2,i1)] = (Psitrace[lpos]+Psitrace_adv[lpos])/2.0;
+            M1 = Mutrace[lpos];
+            M3 = Mutrace_adv[lpos];
+            if(lpos < nx-1){
+               M2 = Mutrace[lpos+1];
+               M4 = Mutrace_adv[lpos+1];
+            }else{
+               M2 = Mutrace[lpos];
+               M4 = Mutrace_adv[lpos];
+            }
+            M_xz[l2d(i2,i1)] = 0.25*(M1+M2+M3+M4);
+
+            Alpha[l2d(i2,i1)] = 1.0 - (Kdtrace[lpos]/Kstrace[lpos]);
+            Beta[l2d(i2,i1)] = 1.0/((Portrace[lpos]/Kftrace[lpos]) + ((Alpha[l2d(i2,i1)] - Portrace[lpos])/Kstrace[lpos]));
+			Lu[l2d(i2,i1)] = Kdtrace[lpos] + (Alpha[l2d(i2,i1)]*Alpha[l2d(i2,i1)]*Beta[l2d(i2,i1)]) - ((2.0/3.0)*Mutrace[lpos]);
+			LuM[l2d(i2,i1)] = Lu[l2d(i2,i1)] + 2.0*Mutrace[lpos];
+        }
+    }
+
+    /* Free traces */
+    free(Rhotrace);   
+    free(Rhoftrace);   
+    free(Portrace);   
+    free(Kdtrace);   
+    free(Kstrace);   
+    free(Kftrace);   
+    free(Mutrace);   
+    free(Mobtrace);   
+    free(Psitrace);   
+    free(Rhotrace_adv);
+    free(Rhoftrace_adv);
+    free(Mutrace_adv);   
+    free(Mobtrace_adv);
+    free(Psitrace_adv);
+    
+    return local;
+}
+
+
+template<typename T>
+ModelPoroelastic2D<T>::~ModelPoroelastic2D() {
+    free(Rho);   
+    free(Rhof);   
+    free(Por);   
+    free(Kd);   
+    free(Ks);   
+    free(Kf);   
+    free(Mu);   
+    free(Mob);   
+    free(Psi);   
+    free(Lu);     
+    free(LuM);    
+    free(Alpha);     
+    free(Beta);     
+    free(M_xz);   
+    free(Rho_x);     
+    free(Rho_z);     
+    free(Rhof_x);   
+    free(Rhof_z);   
+    free(Mob_x);  
+    free(Mob_z);  
+    free(Psi_x);  
+    free(Psi_z);  
+}
 
 
 
@@ -7985,6 +9138,7 @@ template class ModelAcoustic2D<float>;
 template class ModelAcoustic3D<float>;
 template class ModelElastic2D<float>;
 template class ModelElastic3D<float>;
+template class ModelPoroelastic2D<float>;
 
 template class ModelEikonal2D<double>;
 template class ModelEikonal3D<double>;
@@ -7992,6 +9146,7 @@ template class ModelAcoustic2D<double>;
 template class ModelAcoustic3D<double>;
 template class ModelElastic2D<double>;
 template class ModelElastic3D<double>;
+template class ModelPoroelastic2D<double>;
 
 template class ModelViscoelastic2D<float>;
 template class ModelViscoelastic2D<double>;

@@ -2010,6 +2010,244 @@ ModellingOrtho3D<T>::~ModellingOrtho3D() {
     // Nothing here
 }
 
+// =============== POROELASTIC 2D MODELLING CLASS =============== //
+template<typename T>
+ModellingPoroelastic2D<T>::ModellingPoroelastic2D(){
+    sourceset = false;
+    acu_modelset = false;
+    poro_modelset = false;
+    recSzzset = false;
+    recVxset = false;
+    recVzset = false;
+    recPset = false;
+    recQxset = false;
+    recQzset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapVxset = false;
+    snapVzset = false;
+    snapQxset = false;
+    snapQzset = false;
+}
+
+template<typename T>
+ModellingPoroelastic2D<T>::ModellingPoroelastic2D(std::shared_ptr<ModelPoroelastic2D<T>> _model,std::shared_ptr<Data2D<T>> _source, int order, int snapinc):Modelling<T>(order, snapinc){
+    source = _source;
+    poro_model = _model;
+    sourceset = true;
+    acu_modelset = false;
+    poro_modelset = true;
+    recSzzset = false;
+    recVxset = false;
+    recVzset = false;
+    recQxset = false;
+    recQzset = false;
+    recPset = false;
+    snapPset = false;
+    snapSxxset = false;
+    snapSzzset = false;
+    snapSxzset = false;
+    snapVxset = false;
+    snapVzset = false;
+    snapQxset = false;
+    snapQzset = false;
+}
+
+template<typename T>
+T ModellingPoroelastic2D<T>::getVpmax(){
+    T *LuM = poro_model->getLuM();
+    T *Rho = poro_model->getRho_x();
+    // Find maximum Vp
+    T Vpmax;
+    T Vp;
+    Vpmax=sqrt(LuM[0]/Rho[0]);
+    size_t n=poro_model->getNx()*poro_model->getNz();
+    for(size_t i=1; i<n; i++){
+        Vp = sqrt(LuM[i]/Rho[i]);
+        if(Vp > Vpmax){
+            Vpmax = Vp;
+        }
+    }
+    return Vpmax;
+}
+
+template<typename T>
+bool ModellingPoroelastic2D<T>::checkStability(){
+    T Vpmax = this->getVpmax();
+    T dx = poro_model->getDx();
+    T dz = poro_model->getDz();
+    T dt = source->getDt();
+    T dt_stab;
+    dt_stab = 2.0/(3.1415*sqrt((1.0/(dx*dx))+(1/(dz*dz)))*Vpmax); 
+    if(dt < dt_stab){
+        return true;
+    }else{
+        rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
+        return false;
+    }
+}
+
+template<typename T>
+int ModellingPoroelastic2D<T>::run(){
+   int result = MOD_ERR;
+   int nt;
+   T dt;
+   T ot;
+
+   nt = source->getNt();
+   dt = source->getDt();
+   ot = source->getOt();
+
+   if(!this->checkStability()) rs_error("ModellingPoroelastic2D::run: Wavelet sampling interval (dt) does not match the stability criteria.");
+   this->createLog(this->getLogfile());
+
+   // Create the classes 
+   std::shared_ptr<WavesPoroelastic2D<T>> poro_waves (new WavesPoroelastic2D<T>(poro_model, nt, dt, ot));
+   std::shared_ptr<Der<T>> der (new Der<T>(poro_waves->getNx_pml(), 1, poro_waves->getNz_pml(), poro_waves->getDx(), 1.0, poro_waves->getDz(), this->getOrder()));
+
+   // Set PML constants
+   //(poro_waves->getPml())->setSmax(SMAX);
+   (poro_waves->getPml())->setSmax((poro_model->getF0()*5*this->getVpmax())/(2*poro_waves->getLpml()));
+   (poro_waves->getPml())->setKmax(2);
+   (poro_waves->getPml())->setAmax(3.1415*poro_model->getF0());
+   (poro_waves->getPml())->computeABC();
+
+   // Create snapshots
+   std::shared_ptr<Snapshot2D<T>> Szzsnap;
+   std::shared_ptr<Snapshot2D<T>> Vxsnap;
+   std::shared_ptr<Snapshot2D<T>> Vzsnap;
+   std::shared_ptr<Snapshot2D<T>> Psnap;
+   std::shared_ptr<Snapshot2D<T>> Qxsnap;
+   std::shared_ptr<Snapshot2D<T>> Qzsnap;
+
+   if(this->snapSzzset){ 
+      Szzsnap = std::make_shared<Snapshot2D<T>>(poro_waves, this->getSnapinc());
+      Szzsnap->openSnap(this->snapSzz, 'w'); // Create a new snapshot file
+      Szzsnap->setData(poro_waves->getSzz(), 0); //Set Stress as second field
+   }
+   if(this->snapVxset){ 
+      Vxsnap = std::make_shared<Snapshot2D<T>>(poro_waves, this->getSnapinc());
+      Vxsnap->openSnap(this->snapVx, 'w'); // Create a new snapshot file
+      Vxsnap->setData(poro_waves->getVx(), 0); //Set Vx as field to snap
+   }
+   if(this->snapVzset){ 
+      Vzsnap = std::make_shared<Snapshot2D<T>>(poro_waves, this->getSnapinc());
+      Vzsnap->openSnap(this->snapVz, 'w'); // Create a new snapshot file
+      Vzsnap->setData(poro_waves->getVz(), 0); //Set Vz as field to snap
+   }
+   if(this->snapPset){ 
+      Psnap = std::make_shared<Snapshot2D<T>>(poro_waves, this->getSnapinc());
+      Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
+      Psnap->setData(poro_waves->getP(), 0); //Set Pore pressure as field
+   }
+
+   if(this->snapQxset){ 
+       Qxsnap = std::make_shared<Snapshot2D<T>>(poro_waves, this->getSnapinc());
+       Qxsnap->openSnap(this->snapQx, 'w'); // Create a new snapshot file
+       Qxsnap->setData(poro_waves->getQx(), 0); //Set Qx as field to snap
+   }
+   if(this->snapQzset){ 
+       Qzsnap = std::make_shared<Snapshot2D<T>>(poro_waves, this->getSnapinc());
+       Qzsnap->openSnap(this->snapQz, 'w'); // Create a new snapshot file
+       Qzsnap->setData(poro_waves->getQz(), 0); //Set Qz as field to snap
+   }
+
+   this->writeLog("Running 2D Poroelastic modelling.");
+   // Loop over time
+   for(int it=0; it < nt; it++)
+   {
+      // Time stepping
+      poro_waves->forwardstepVelocity(poro_model, der);
+      if((poro_model->getDomain()->getStatus())){
+         (poro_model->getDomain())->shareEdges3D(poro_waves->getVx());
+         (poro_model->getDomain())->shareEdges3D(poro_waves->getQx());
+         (poro_model->getDomain())->shareEdges3D(poro_waves->getVz());
+         (poro_model->getDomain())->shareEdges3D(poro_waves->getQz());
+      }
+      poro_waves->forwardstepStress(poro_model, der);
+      if((poro_model->getDomain()->getStatus())){
+         (poro_model->getDomain())->shareEdges3D(poro_waves->getP());
+         (poro_model->getDomain())->shareEdges3D(poro_waves->getSxx());
+         (poro_model->getDomain())->shareEdges3D(poro_waves->getSzz());
+         (poro_model->getDomain())->shareEdges3D(poro_waves->getSxz());
+      }
+
+      // Inserting source 
+      poro_waves->insertSource(poro_model, source, SMAP, it);
+
+      // Recording data 
+      if(this->recPset){
+         poro_waves->recordData(poro_model,this->recP, GMAP, it);
+      }
+
+      // Recording data 
+      if(this->recSzzset){
+         poro_waves->recordData(poro_model,this->recSzz, GMAP, it);
+      }
+
+      // Recording data (Vx)
+      if(this->recVxset){
+         poro_waves->recordData(poro_model,this->recVx, GMAP, it);
+      }
+
+      // Recording data (Vz)
+      if(this->recVzset){
+         poro_waves->recordData(poro_model,this->recVz, GMAP, it);
+      }
+
+      // Recording data (Qx)
+      if(this->recQxset){
+         poro_waves->recordData(poro_model,this->recQx, GMAP, it);
+      }
+
+      // Recording data (Qz)
+      if(this->recQzset){
+         poro_waves->recordData(poro_model,this->recQz, GMAP, it);
+      }
+
+      //Writting out results to snapshot file
+      if(this->snapPset){ 
+         Psnap->writeSnap(it);
+      }
+
+      if(this->snapSzzset){ 
+         Szzsnap->writeSnap(it);
+      }
+
+      if(this->snapVxset){ 
+         Vxsnap->writeSnap(it);
+      }
+
+      if(this->snapVzset){ 
+         Vzsnap->writeSnap(it);
+      }
+
+      if(this->snapQxset){ 
+         Qxsnap->writeSnap(it);
+      }
+
+      if(this->snapQzset){ 
+         Qzsnap->writeSnap(it);
+      }
+
+      // Output progress to logfile
+      this->writeProgress(it, nt-1, 20, 48);
+   }	
+
+   this->writeLog("Modelling is complete.");
+   result=MOD_OK;
+   return result;
+}
+
+
+template<typename T>
+ModellingPoroelastic2D<T>::~ModellingPoroelastic2D() {
+    // Nothing here
+}
+
+
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Modelling<float>;
@@ -2033,6 +2271,9 @@ template class ModellingViscoelastic2D<double>;
 
 template class ModellingViscoelastic3D<float>;
 template class ModellingViscoelastic3D<double>;
+
+template class ModellingPoroelastic2D<float>;
+template class ModellingPoroelastic2D<double>;
 
 template class ModellingVti2D<float>;
 template class ModellingVti2D<double>;

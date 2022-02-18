@@ -111,6 +111,7 @@ public:
     Snapshot2D(std::shared_ptr<ModelEikonal2D<T>> model, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesAcoustic2D<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesElastic2D<T>> waves, int snapinc); 	///< Constructor
+    Snapshot2D(std::shared_ptr<WavesPoroelastic2D<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesElastic2D_DS<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesViscoelastic2D<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesVti2D<T>> waves, int snapinc); 	///< Constructor

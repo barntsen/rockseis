@@ -579,5 +579,56 @@ private:
     bool adjoint; 
 };
 
+/** The 2D Poroelastic WAVES class
+ *
+ */
+template<typename T>
+class WavesPoroelastic2D: public Waves<T> {
+public:
+    WavesPoroelastic2D();	///< Constructor
+    ~WavesPoroelastic2D();	///< Destructor
+    WavesPoroelastic2D(const int _nx, const int _nz, const int _nt, const int _L, const T _dx, const T _dz, const T _dt, const T _ox, const T _oz, const T _ot);	///< Constructor
+    WavesPoroelastic2D(std::shared_ptr<rockseis::ModelPoroelastic2D<T>> model, int _nt, T _dt, T _ot);	///< Constructor
+
+    // Get functions
+    std::shared_ptr<PmlPoroelastic2D<T>> getPml() { return Pml; } ///< Get Pml 
+    T * getSxx() { return Sxx; }  ///< Get Stress component at time t+1
+    T * getSzz() { return Szz; }  ///< Get Stress component at time t+1
+    T * getSxz() { return Sxz; }  ///< Get Stress component at time t+1
+
+    T * getP() { return P; }  ///< Get Pressure
+
+    T * getVx() { return Vx; }  ///< Get Velocity component at time t+1/2
+    T * getVz() { return Vz; }  ///< Get Velocity component at time t+1/2
+    T * getQx() { return Qx; }  ///< Get Velocity component at time t+1/2
+    T * getQz() { return Qz; }  ///< Get Velocity component at time t+1/2
+    bool getAdjoint() {return adjoint;} ///< Return adjoint flag
+    void setAdjoint(); ///< Set adjoint flag and allocate work array for adjoint computation
+
+    // Time stepping functions
+    void forwardstepVelocity(std::shared_ptr<ModelPoroelastic2D<T>> model, std::shared_ptr<Der<T>> der); ///< Advance one time step forward with particle velocity 
+    void forwardstepStress(std::shared_ptr<ModelPoroelastic2D<T>> model, std::shared_ptr<Der<T>> der);  ///< Advance one time step forward with Stress
+
+    // Insert source functions
+    void insertSource(std::shared_ptr<ModelPoroelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> source, bool maptype, int it); ///< Insert source for modeling ( Source types can be of Velocity type or Pressure )
+
+    // Record data at receivers functions
+    void recordData(std::shared_ptr<ModelPoroelastic2D<T>> model, std::shared_ptr<rockseis::Data2D<T>> data, bool maptype, int it); ///< Record data from modeling ( Data types can be of Velocity type or Pressure )
+
+private:
+    T *Sxx;  // Stress component at time t+1
+    T *Szz; // Stress component at time t+1
+    T *Sxz; // Stress component at time t+1
+    T *P;  // Pressure component
+    T *Vx; // Velocity component at time t+1/2
+    T *Vz; // Velocity component at time t+1/2
+    T *Qx; // Velocity component at time t+1/2
+    T *Qz; // Velocity component at time t+1/2
+    T *wrk; // work array used in adjoint state modelling
+    std::shared_ptr<PmlPoroelastic2D<T>> Pml; // Associated Pml class
+    bool adjoint; 
+};
+
+
 }
 #endif //WAVES_H

@@ -234,6 +234,49 @@ public:
     T *Vzy_back;
 };
 
+// =============== 2D POROELASTIC PML CLASS =============== //
+/** The 2D Poroelastic PML model class
+ *
+ */
+template<typename T>
+class PmlPoroelastic2D: public Pml<T> {
+public:
+    PmlPoroelastic2D();	///< Constructor
+    PmlPoroelastic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor
+    PmlPoroelastic2D(const int nx, const int nz, const int Lpml, const T dt, const bool *low, const bool *high);	///< Constructor
+    ~PmlPoroelastic2D();	///< Destructor
+    
+    T *P_left;
+    T *P_right;
+    T *Sxx_left;
+    T *Sxx_right;
+    T *Sxzx_left;
+    T *Sxzx_right;
+
+    T *P_top;
+    T *P_bottom;
+    T *Szz_top;
+    T *Szz_bottom;
+    T *Sxzz_top;
+    T *Sxzz_bottom;
+    
+    T *Qxx_left;
+    T *Qxx_right;
+    T *Vxx_left;
+    T *Vxx_right;
+    T *Vzx_left;
+    T *Vzx_right;
+    
+    T *Qzz_top;
+    T *Qzz_bottom;
+    T *Vzz_top;
+    T *Vzz_bottom;
+    T *Vxz_top;
+    T *Vxz_bottom;
+    
+};
+
+
 }
 
 #endif //PML_H
