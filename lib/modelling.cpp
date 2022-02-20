@@ -2033,11 +2033,12 @@ ModellingPoroelastic2D<T>::ModellingPoroelastic2D(){
 }
 
 template<typename T>
-ModellingPoroelastic2D<T>::ModellingPoroelastic2D(std::shared_ptr<ModelPoroelastic2D<T>> _model,std::shared_ptr<Data2D<T>> _source, int order, int snapinc):Modelling<T>(order, snapinc){
+ModellingPoroelastic2D<T>::ModellingPoroelastic2D(std::shared_ptr<ModelAcoustic2D<T>> _acu_model, std::shared_ptr<ModelPoroelastic2D<T>> _poro_model, std::shared_ptr<Data2D<T>> _source, int order, int snapinc):Modelling<T>(order, snapinc){
     source = _source;
-    poro_model = _model;
+    acu_model = _acu_model;
+    poro_model = _poro_model;
     sourceset = true;
-    acu_modelset = false;
+    acu_modelset = true;
     poro_modelset = true;
     recSzzset = false;
     recVxset = false;
@@ -2056,7 +2057,22 @@ ModellingPoroelastic2D<T>::ModellingPoroelastic2D(std::shared_ptr<ModelPoroelast
 }
 
 template<typename T>
-T ModellingPoroelastic2D<T>::getVpmax(){
+T ModellingPoroelastic2D<T>::getAcu_vpmax(){
+    T *Vp = acu_model->getVp();
+    // Find maximum Vp
+    T Vpmax;
+    Vpmax=Vp[0];
+    size_t n=acu_model->getNx()*acu_model->getNz();
+    for(size_t i=1; i<n; i++){
+        if(Vp[i] > Vpmax){
+            Vpmax = Vp[i];
+        }
+    }
+    return Vpmax;
+}
+
+template<typename T>
+T ModellingPoroelastic2D<T>::getPoro_vpmax(){
     T *LuM = poro_model->getLuM();
     T *Rho = poro_model->getRho_x();
     // Find maximum Vp
@@ -2075,7 +2091,7 @@ T ModellingPoroelastic2D<T>::getVpmax(){
 
 template<typename T>
 bool ModellingPoroelastic2D<T>::checkStability(){
-    T Vpmax = this->getVpmax();
+    T Vpmax = this->getPoro_vpmax();
     T dx = poro_model->getDx();
     T dz = poro_model->getDz();
     T dt = source->getDt();
@@ -2087,6 +2103,39 @@ bool ModellingPoroelastic2D<T>::checkStability(){
         rs_warning("Modeling time interval exceeds maximum stable number of: ", std::to_string(dt_stab));
         return false;
     }
+}
+
+template<typename T>
+void ModellingPoroelastic2D<T>::Velocity_BC(T *wz, T *p1, T *vz, T *qz, T *p2, T *szz, int nx, int nz_acu, int lpml){
+        int i;
+        off_t  poro_index;
+        off_t  acu_index;
+        T wtmp, qtmp;
+        for (i=0; i < nx; i++){
+            acu_index = (nz_acu-lpml-1)*nx + i;
+            poro_index = (lpml)*nx + i;
+            wtmp = wz[acu_index];
+            qtmp = qz[poro_index];
+            wz[acu_index] = qz[poro_index] + vz[poro_index];
+            //qz[poro_index] = wtmp - vz[poro_index];
+            //vz[poro_index] = wtmp - qtmp;
+        }
+}
+
+template<typename T>
+void ModellingPoroelastic2D<T>::Stress_BC(T *wz, T *p1, T *vz, T *qz, T *p2, T *szz, int nx, int nz_acu, int lpml){
+        int i;
+        off_t  poro_index;
+        off_t  acu_index;
+        T ptmp;
+        for (i=0; i < nx; i++){
+            acu_index = (nz_acu-lpml-1)*nx + i;
+            poro_index = (lpml)*nx + i;
+            ptmp = p1[acu_index];
+            p1[acu_index] = -szz[poro_index];
+            p2[poro_index] = ptmp;
+            szz[poro_index] = -ptmp;
+        }
 }
 
 template<typename T>
@@ -2104,12 +2153,17 @@ int ModellingPoroelastic2D<T>::run(){
    this->createLog(this->getLogfile());
 
    // Create the classes 
+   std::shared_ptr<WavesAcoustic2D<T>> acu_waves (new WavesAcoustic2D<T>(acu_model, nt, dt, ot));
+   std::shared_ptr<Der<T>> acu_der (new Der<T>(acu_waves->getNx_pml(), 1, acu_waves->getNz_pml(), acu_waves->getDx(), 1.0, acu_waves->getDz(), this->getOrder()));
    std::shared_ptr<WavesPoroelastic2D<T>> poro_waves (new WavesPoroelastic2D<T>(poro_model, nt, dt, ot));
-   std::shared_ptr<Der<T>> der (new Der<T>(poro_waves->getNx_pml(), 1, poro_waves->getNz_pml(), poro_waves->getDx(), 1.0, poro_waves->getDz(), this->getOrder()));
+   std::shared_ptr<Der<T>> poro_der (new Der<T>(poro_waves->getNx_pml(), 1, poro_waves->getNz_pml(), poro_waves->getDx(), 1.0, poro_waves->getDz(), this->getOrder()));
 
    // Set PML constants
-   //(poro_waves->getPml())->setSmax(SMAX);
-   (poro_waves->getPml())->setSmax((poro_model->getF0()*5*this->getVpmax())/(2*poro_waves->getLpml()));
+   (acu_waves->getPml())->setSmax((poro_model->getF0()*5*this->getAcu_vpmax())/(2*acu_waves->getLpml()));
+   (acu_waves->getPml())->setKmax(2);
+   (acu_waves->getPml())->setAmax(3.1415*poro_model->getF0());
+
+   (poro_waves->getPml())->setSmax((poro_model->getF0()*5*this->getPoro_vpmax())/(2*poro_waves->getLpml()));
    (poro_waves->getPml())->setKmax(2);
    (poro_waves->getPml())->setAmax(3.1415*poro_model->getF0());
    (poro_waves->getPml())->computeABC();
@@ -2118,7 +2172,8 @@ int ModellingPoroelastic2D<T>::run(){
    std::shared_ptr<Snapshot2D<T>> Szzsnap;
    std::shared_ptr<Snapshot2D<T>> Vxsnap;
    std::shared_ptr<Snapshot2D<T>> Vzsnap;
-   std::shared_ptr<Snapshot2D<T>> Psnap;
+   std::shared_ptr<Snapshot2D<T>> acu_Psnap;
+   std::shared_ptr<Snapshot2D<T>> poro_Psnap;
    std::shared_ptr<Snapshot2D<T>> Qxsnap;
    std::shared_ptr<Snapshot2D<T>> Qzsnap;
 
@@ -2138,9 +2193,12 @@ int ModellingPoroelastic2D<T>::run(){
       Vzsnap->setData(poro_waves->getVz(), 0); //Set Vz as field to snap
    }
    if(this->snapPset){ 
-      Psnap = std::make_shared<Snapshot2D<T>>(poro_waves, this->getSnapinc());
-      Psnap->openSnap(this->snapP, 'w'); // Create a new snapshot file
-      Psnap->setData(poro_waves->getP(), 0); //Set Pore pressure as field
+      acu_Psnap = std::make_shared<Snapshot2D<T>>(acu_waves, this->getSnapinc());
+      acu_Psnap->openSnap("Acu"+this->snapP, 'w'); // Create a new snapshot file
+      acu_Psnap->setData(acu_waves->getP(), 0); //Set Pore pressure as field
+      poro_Psnap = std::make_shared<Snapshot2D<T>>(poro_waves, this->getSnapinc());
+      poro_Psnap->openSnap("Poro"+this->snapP, 'w'); // Create a new snapshot file
+      poro_Psnap->setData(poro_waves->getP(), 0); //Set Pore pressure as field
    }
 
    if(this->snapQxset){ 
@@ -2159,20 +2217,32 @@ int ModellingPoroelastic2D<T>::run(){
    for(int it=0; it < nt; it++)
    {
       // Time stepping
-      poro_waves->forwardstepVelocity(poro_model, der);
+      acu_waves->forwardstepVelocity(acu_model, acu_der);
+      if((acu_model->getDomain()->getStatus())){
+         (acu_model->getDomain())->shareEdges3D(acu_waves->getVx());
+         (acu_model->getDomain())->shareEdges3D(acu_waves->getVz());
+      }
+      poro_waves->forwardstepVelocity(poro_model, poro_der);
       if((poro_model->getDomain()->getStatus())){
          (poro_model->getDomain())->shareEdges3D(poro_waves->getVx());
          (poro_model->getDomain())->shareEdges3D(poro_waves->getQx());
          (poro_model->getDomain())->shareEdges3D(poro_waves->getVz());
          (poro_model->getDomain())->shareEdges3D(poro_waves->getQz());
       }
-      poro_waves->forwardstepStress(poro_model, der);
+
+      acu_waves->forwardstepStress(acu_model, acu_der);
+      if((acu_model->getDomain()->getStatus())){
+         (acu_model->getDomain())->shareEdges3D(acu_waves->getP());
+      }
+
+      poro_waves->forwardstepStress(poro_model, poro_der);
       if((poro_model->getDomain()->getStatus())){
          (poro_model->getDomain())->shareEdges3D(poro_waves->getP());
          (poro_model->getDomain())->shareEdges3D(poro_waves->getSxx());
          (poro_model->getDomain())->shareEdges3D(poro_waves->getSzz());
          (poro_model->getDomain())->shareEdges3D(poro_waves->getSxz());
       }
+      this->Stress_BC(acu_waves->getVz(), acu_waves->getP(), poro_waves->getVz(), poro_waves->getQz(), poro_waves->getP(), poro_waves->getSzz(), acu_waves->getNx_pml(), acu_waves->getNz_pml(), acu_waves->getLpml());
 
       // Inserting source 
       poro_waves->insertSource(poro_model, source, SMAP, it);
@@ -2209,7 +2279,8 @@ int ModellingPoroelastic2D<T>::run(){
 
       //Writting out results to snapshot file
       if(this->snapPset){ 
-         Psnap->writeSnap(it);
+         acu_Psnap->writeSnap(it);
+         poro_Psnap->writeSnap(it);
       }
 
       if(this->snapSzzset){ 

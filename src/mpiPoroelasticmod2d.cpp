@@ -31,7 +31,6 @@ int main(int argc, char** argv) {
          PRINT_DOC();
          PRINT_DOC(# Domain decomposition parameter);
          PRINT_DOC(        ndomain0 = "1";  # Number of domains along x direction to split the model into);
-         PRINT_DOC(        ndomain1 = "1";  # Number of domains along z direction to split the model into);
          PRINT_DOC();
          PRINT_DOC(# Modelling parameters);
          PRINT_DOC(        freesurface = "true";  # True if free surface should be on);
@@ -57,7 +56,11 @@ int main(int argc, char** argv) {
          PRINT_DOC(        Vxsnap = "false";);
          PRINT_DOC(        Vzsnap = "false";);
          PRINT_DOC();
-         PRINT_DOC(# Input files);
+         PRINT_DOC(# Input acoustic model files);
+         PRINT_DOC(        Rho_acu = "Rho_acu2d.rss";);
+         PRINT_DOC(        Vp_acu = "Vp_acu2d.rss";);
+         PRINT_DOC();
+         PRINT_DOC(# Input poroelastic model files);
          PRINT_DOC(        Rho = "Rho2d.rss";);
          PRINT_DOC(        Rhof = "Rhof2d.rss";);
          PRINT_DOC(        Por = "Por2d.rss";);
@@ -99,6 +102,8 @@ int main(int argc, char** argv) {
    float f0;
    float dtrec;
    int stype;
+   std::string Acu_rhofile;
+   std::string Acu_vpfile;
    std::string Surveyfile;
    std::string Waveletfile;
    std::string Rhofile;
@@ -149,7 +154,8 @@ int main(int argc, char** argv) {
 
 
    // Create a local model class
-   std::shared_ptr<rockseis::ModelPoroelastic2D<float>> lmodel;
+   std::shared_ptr<rockseis::ModelPoroelastic2D<float>> poro_lmodel;
+   std::shared_ptr<rockseis::ModelAcoustic2D<float>> acu_lmodel;
 
    /* Get parameters from configuration file */
    std::shared_ptr<rockseis::Inparse> Inpar (new rockseis::Inparse());
@@ -162,10 +168,11 @@ int main(int argc, char** argv) {
    if(Inpar->getPar("dtrec", &dtrec) == INPARSE_ERR) status = true;
    if(Inpar->getPar("order", &order) == INPARSE_ERR) status = true;
    if(Inpar->getPar("ndomain0", &ndomain0) == INPARSE_ERR) status = true;
-   if(Inpar->getPar("ndomain1", &ndomain1) == INPARSE_ERR) status = true;
    if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
    if(Inpar->getPar("source_type", &stype) == INPARSE_ERR) status = true;
    if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("Vp_acu", &Acu_vpfile) == INPARSE_ERR) status = true;
+   if(Inpar->getPar("Rho_acu", &Acu_rhofile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Rhof", &Rhoffile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Por", &Porfile) == INPARSE_ERR) status = true;
@@ -203,6 +210,7 @@ int main(int argc, char** argv) {
    if(Vzrecord){
       if(Inpar->getPar("Vzrecordfile", &Vzrecordfile) == INPARSE_ERR) status = true;
    }
+   if(Inpar->getPar("Psnap", &Psnap) == INPARSE_ERR) status = true;
    if(Psnap){
       if(Inpar->getPar("Psnapfile", &Psnapfile) == INPARSE_ERR) status = true;
    }
@@ -232,6 +240,7 @@ int main(int argc, char** argv) {
       rs_error("Program terminated due to input errors.");
    }
 
+   ndomain1=1;
    // Setup Domain decomposition
    mpi.setNdomain(ndomain0*ndomain1);
    mpi.splitDomains();
@@ -240,8 +249,9 @@ int main(int argc, char** argv) {
    std::shared_ptr<rockseis::Sort<float>> Sort (new rockseis::Sort<float>());
    Sort->setDatafile(Surveyfile);
 
-   // Create a global model class
-   std::shared_ptr<rockseis::ModelPoroelastic2D<float>> gmodel (new rockseis::ModelPoroelastic2D<float>(Rhofile,Rhoffile,Porfile,Kdfile,Ksfile,Kffile,Mufile,Mobfile,Psifile,lpml,f0,fs));
+   // Create global model classes
+   std::shared_ptr<rockseis::ModelPoroelastic2D<float>> poro_gmodel (new rockseis::ModelPoroelastic2D<float>(Rhofile,Rhoffile,Porfile,Kdfile,Ksfile,Kffile,Mufile,Mobfile,Psifile,lpml,f0,false));
+   std::shared_ptr<rockseis::ModelAcoustic2D<float>> acu_gmodel (new rockseis::ModelAcoustic2D<float>(Acu_rhofile,Acu_vpfile,lpml,fs));
 
    // Create a data class for the source wavelet
    std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Waveletfile));
@@ -326,8 +336,10 @@ int main(int argc, char** argv) {
 
             Shotgeom = Sort->get2DGather(work.id);
             size_t ntr = Shotgeom->getNtrace();
-            lmodel = gmodel->getDomainmodel(Shotgeom, apertx, SMAP, mpi.getDomainrank(), ndomain0, ndomain1, order);
-            (lmodel->getDomain())->setMpi(&mpi);
+            poro_lmodel = poro_gmodel->getDomainmodel(Shotgeom, apertx, SMAP, mpi.getDomainrank(), ndomain0, ndomain1, order);
+            (poro_lmodel->getDomain())->setMpi(&mpi);
+            acu_lmodel = acu_gmodel->getDomainmodel(Shotgeom, apertx, SMAP, mpi.getDomainrank(), ndomain0, ndomain1, order);
+            (acu_lmodel->getDomain())->setMpi(&mpi);
 
             // Read wavelet data, set shot coordinates and make a map
             source->read();
@@ -348,9 +360,9 @@ int main(int argc, char** argv) {
                   rs_error("Unknown source type: ", std::to_string(stype));
                   break;
             }
-            source->makeMap(lmodel->getGeom(), SMAP);
+            source->makeMap(poro_lmodel->getGeom(), SMAP);
 
-            modelling = std::make_shared<rockseis::ModellingPoroelastic2D<float>>(lmodel, source, order, snapinc);
+            modelling = std::make_shared<rockseis::ModellingPoroelastic2D<float>>(acu_lmodel, poro_lmodel, source, order, snapinc);
 
             // Set logfile
             modelling->setLogfile("log.txt-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));
@@ -381,8 +393,8 @@ int main(int argc, char** argv) {
                Pdata2D->setField(rockseis::PRESSURE);
                // Copy geometry to Data
                Pdata2D->copyCoords(Shotgeom);
-               Pdata2D->makeMap(lmodel->getGeom(),SMAP);
-               Pdata2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Pdata2D->makeMap(poro_lmodel->getGeom(),SMAP);
+               Pdata2D->makeMap(poro_lmodel->getGeom(),GMAP,(poro_lmodel->getDomain())->getPadl(0),(poro_lmodel->getDomain())->getPadl(2),(poro_lmodel->getDomain())->getPadh(0),(poro_lmodel->getDomain())->getPadh(2));
                modelling->setRecP(Pdata2D);
             }
             if(Vxrecord){
@@ -390,8 +402,8 @@ int main(int argc, char** argv) {
                Vxdata2D->setField(rockseis::VX);
                // Copy geometry to Data
                Vxdata2D->copyCoords(Shotgeom);
-               Vxdata2D->makeMap(lmodel->getGeom(),SMAP,0,0);
-               Vxdata2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Vxdata2D->makeMap(poro_lmodel->getGeom(),SMAP,0,0);
+               Vxdata2D->makeMap(poro_lmodel->getGeom(),GMAP,(poro_lmodel->getDomain())->getPadl(0),(poro_lmodel->getDomain())->getPadl(2),(poro_lmodel->getDomain())->getPadh(0),(poro_lmodel->getDomain())->getPadh(2));
                modelling->setRecVx(Vxdata2D);
             }
             if(Vzrecord){
@@ -399,8 +411,8 @@ int main(int argc, char** argv) {
                Vzdata2D->setField(rockseis::VZ);
                // Copy geometry to Data
                Vzdata2D->copyCoords(Shotgeom);
-               Vzdata2D->makeMap(lmodel->getGeom(),SMAP,0,0);
-               Vzdata2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Vzdata2D->makeMap(poro_lmodel->getGeom(),SMAP,0,0);
+               Vzdata2D->makeMap(poro_lmodel->getGeom(),GMAP,(poro_lmodel->getDomain())->getPadl(0),(poro_lmodel->getDomain())->getPadl(2),(poro_lmodel->getDomain())->getPadh(0),(poro_lmodel->getDomain())->getPadh(2));
                modelling->setRecVz(Vzdata2D);
             }
             if(Szzrecord){
@@ -408,8 +420,8 @@ int main(int argc, char** argv) {
                Szzdata2D->setField(rockseis::SZZ);
                // Copy geometry to Data
                Szzdata2D->copyCoords(Shotgeom);
-               Szzdata2D->makeMap(lmodel->getGeom(),SMAP);
-               Szzdata2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Szzdata2D->makeMap(poro_lmodel->getGeom(),SMAP);
+               Szzdata2D->makeMap(poro_lmodel->getGeom(),GMAP,(poro_lmodel->getDomain())->getPadl(0),(poro_lmodel->getDomain())->getPadl(2),(poro_lmodel->getDomain())->getPadh(0),(poro_lmodel->getDomain())->getPadh(2));
                modelling->setRecSzz(Szzdata2D);
             }
             if(Qxrecord){
@@ -417,8 +429,8 @@ int main(int argc, char** argv) {
                Qxdata2D->setField(rockseis::QX);
                // Copy geometry to Data
                Qxdata2D->copyCoords(Shotgeom);
-               Qxdata2D->makeMap(lmodel->getGeom(),SMAP,0,0);
-               Qxdata2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Qxdata2D->makeMap(poro_lmodel->getGeom(),SMAP,0,0);
+               Qxdata2D->makeMap(poro_lmodel->getGeom(),GMAP,(poro_lmodel->getDomain())->getPadl(0),(poro_lmodel->getDomain())->getPadl(2),(poro_lmodel->getDomain())->getPadh(0),(poro_lmodel->getDomain())->getPadh(2));
                modelling->setRecQx(Qxdata2D);
             }
             if(Qzrecord){
@@ -426,8 +438,8 @@ int main(int argc, char** argv) {
                Qzdata2D->setField(rockseis::QZ);
                // Copy geometry to Data
                Qzdata2D->copyCoords(Shotgeom);
-               Qzdata2D->makeMap(lmodel->getGeom(),SMAP,0,0);
-               Qzdata2D->makeMap(lmodel->getGeom(),GMAP,(lmodel->getDomain())->getPadl(0),(lmodel->getDomain())->getPadl(2),(lmodel->getDomain())->getPadh(0),(lmodel->getDomain())->getPadh(2));
+               Qzdata2D->makeMap(poro_lmodel->getGeom(),SMAP,0,0);
+               Qzdata2D->makeMap(poro_lmodel->getGeom(),GMAP,(poro_lmodel->getDomain())->getPadl(0),(poro_lmodel->getDomain())->getPadl(2),(poro_lmodel->getDomain())->getPadh(0),(poro_lmodel->getDomain())->getPadh(2));
                modelling->setRecQz(Qzdata2D);
             }
 
@@ -476,7 +488,8 @@ int main(int argc, char** argv) {
 
             // Reset all classes
             Shotgeom.reset();
-            lmodel.reset();
+            acu_lmodel.reset();
+            poro_lmodel.reset();
             modelling.reset();
             if(Precord){
                Pdata2D.reset();

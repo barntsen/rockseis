@@ -483,7 +483,7 @@ template<typename T>
 class ModellingPoroelastic2D: public Modelling<T> {
 public:
     ModellingPoroelastic2D();					///< Constructor
-    ModellingPoroelastic2D(std::shared_ptr<ModelPoroelastic2D<T>> poro_model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);					///< Constructor 
+    ModellingPoroelastic2D(std::shared_ptr<ModelAcoustic2D<T>> acu_model, std::shared_ptr<ModelPoroelastic2D<T>> poro_model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs modelling
     void setPoromodel(std::shared_ptr<ModelPoroelastic2D<T>> _model) { poro_model = _model; poro_modelset = true; }
     void setAcumodel(std::shared_ptr<ModelAcoustic2D<T>> _model) { acu_model = _model; acu_modelset = true; }
@@ -503,8 +503,11 @@ public:
     void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
     void setSnapQx(std::string _snapQx) { snapQx = _snapQx; snapQxset = true; }
     void setSnapQz(std::string _snapQz) { snapQz = _snapQz; snapQzset = true; }
-    T getVpmax(); ///< Get Maximum vp
+    T getPoro_vpmax(); ///< Get Maximum vp
+    T getAcu_vpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
+    void Velocity_BC(T *wz, T *p1, T *vz, T *qz, T *p2, T *szz, int nx, int nz_acu, int lpml);
+    void Stress_BC(T *wz, T *p1, T *vz, T *qz, T *p2, T *szz, int nx, int nz_acu, int lpml);
 
     ~ModellingPoroelastic2D();	///< Destructor
 
