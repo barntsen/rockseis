@@ -9080,6 +9080,17 @@ std::shared_ptr<ModelPoroelastic2D<T>> ModelPoroelastic2D<T>::getDomainmodel(std
         }
     }
 
+    // In case of free surface
+    if(this->getFs() && ((iz0 <= lpml) && ((iz0+nzd) >= lpml))){
+        for(size_t ix=0; ix<nxd; ix++){
+            Rho_x[l2d(ix,lpml-iz0)] /= 2.0;
+            LuM[l2d(ix,lpml-iz0)] = (LuM[l2d(ix,lpml-iz0)] - Lu[l2d(ix,lpml-iz0)])/2.0;
+            Lu[l2d(ix,lpml-iz0)] = 0.0;
+        }
+    }
+
+
+
     /* Free traces */
     free(Rhotrace);   
     free(Rhoftrace);   

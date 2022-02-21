@@ -12206,6 +12206,19 @@ void WavesPoroelastic2D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelPor
    }
    }
 
+   // Free surface conditions
+   if(model->getFs()){
+      iz = lpml;
+      if(iz >= iz0 && iz < (iz0 + nz)){
+         for(ix=0; ix < nx; ix++){
+            Szz[I2D(ix,iz-iz0)] = 0.0;
+            P[I2D(ix,iz-iz0)] = 0.0;
+         }
+      }
+   }
+
+
+
    // Derivate Vz forward with respect to x
    der->ddx_fw(Vz);
    // Compute Sxz

@@ -250,7 +250,7 @@ int main(int argc, char** argv) {
    Sort->setDatafile(Surveyfile);
 
    // Create global model classes
-   std::shared_ptr<rockseis::ModelPoroelastic2D<float>> poro_gmodel (new rockseis::ModelPoroelastic2D<float>(Rhofile,Rhoffile,Porfile,Kdfile,Ksfile,Kffile,Mufile,Mobfile,Psifile,lpml,f0,false));
+   std::shared_ptr<rockseis::ModelPoroelastic2D<float>> poro_gmodel (new rockseis::ModelPoroelastic2D<float>(Rhofile,Rhoffile,Porfile,Kdfile,Ksfile,Kffile,Mufile,Mobfile,Psifile,lpml,f0,fs));
    std::shared_ptr<rockseis::ModelAcoustic2D<float>> acu_gmodel (new rockseis::ModelAcoustic2D<float>(Acu_rhofile,Acu_vpfile,lpml,fs));
 
    // Create a data class for the source wavelet

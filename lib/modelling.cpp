@@ -2242,7 +2242,7 @@ int ModellingPoroelastic2D<T>::run(){
          (poro_model->getDomain())->shareEdges3D(poro_waves->getSzz());
          (poro_model->getDomain())->shareEdges3D(poro_waves->getSxz());
       }
-      this->Stress_BC(acu_waves->getVz(), acu_waves->getP(), poro_waves->getVz(), poro_waves->getQz(), poro_waves->getP(), poro_waves->getSzz(), acu_waves->getNx_pml(), acu_waves->getNz_pml(), acu_waves->getLpml());
+      //this->Stress_BC(acu_waves->getVz(), acu_waves->getP(), poro_waves->getVz(), poro_waves->getQz(), poro_waves->getP(), poro_waves->getSzz(), acu_waves->getNx_pml(), acu_waves->getNz_pml(), acu_waves->getLpml());
 
       // Inserting source 
       poro_waves->insertSource(poro_model, source, SMAP, it);
