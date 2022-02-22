@@ -11,7 +11,9 @@
 #include "utils.h"
 
 #define MAXDIMS 9
-
+#define FLT_EPSILON std::numeric_limits<float>::epsilon()
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+#define CLOSETO(x, y) ((ABS((x) - (y)) <= FLT_EPSILON*ABS(y)) ? 1 : 0)
 
 namespace rockseis {
 /// =============== ABSTRACT GEOMETRY CLASS =============== //

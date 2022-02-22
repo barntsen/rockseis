@@ -145,11 +145,16 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
     double oy = (double) _geom->getO(3);
 
     int pos;
+    double res;
     if(map == SMAP)
     {
         // Compute index smap
         for (size_t i = 0; i < n ; i++){
-            pos = (int) std::floor(((double) scoords[i].x - ox + shiftx*dx)/dx);
+            res = ((double) scoords[i].x - ox + shiftx*dx)/dx;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff errors
+            if(CLOSETO(res-pos,1.0))
+               pos += 1;
             if(pos >=padlx && pos < nx-padhx)
             {
                 smap[i].x  = pos; // index is within bounds
@@ -158,7 +163,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             {
                 smap[i].x  = -1;  // index is off bounds
             }
-            pos = (int) std::floor(((double) scoords[i].y - oy + shifty*dy)/dy);
+            res = ((double) scoords[i].y - oy + shifty*dy)/dy;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff errors
+            if(CLOSETO(res-pos,1.0))
+               pos += 1;
             if(pos >=padly && pos < ny-padhy)
             {
                 smap[i].y  = pos; // index is within bounds
@@ -179,7 +188,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
     }else{
         // Compute index gmap
         for (size_t i = 0; i < n ; i++){
-            pos = (int) std::floor(((double) gcoords[i].x - ox + shiftx*dx)/dx);
+            res = ((double) gcoords[i].x - ox + shiftx*dx)/dx;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff errors
+            if(CLOSETO(res-pos,1.0))
+               pos += 1;
             if(pos >=padlx && pos < nx-padhx)
             {
                 gmap[i].x  = pos; // index is within bounds
@@ -188,7 +201,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             {
                 gmap[i].x  = -1;  // index is off bounds
             }
-            pos = (int) std::floor(((double) gcoords[i].y - oy + shifty*dy)/dy);
+            res = ((double) gcoords[i].y - oy + shifty*dy)/dy;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff errors
+            if(CLOSETO(res-pos,1.0))
+               pos += 1;
             if(pos >=padly && pos < ny-padhy)
             {
                 gmap[i].y  = pos; // index is within bounds
