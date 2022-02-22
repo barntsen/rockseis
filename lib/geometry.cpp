@@ -153,7 +153,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = ((double) scoords[i].x - ox + shiftx*dx)/dx;
             pos = (int) std::floor(res);
             //Avoiding roundoff errors
-            if(CLOSETO(res-pos,1.0))
+            if(CLOSE(res-pos,1.0,dx*1e-6))
                pos += 1;
             if(pos >=padlx && pos < nx-padhx)
             {
@@ -166,7 +166,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = ((double) scoords[i].y - oy + shifty*dy)/dy;
             pos = (int) std::floor(res);
             //Avoiding roundoff errors
-            if(CLOSETO(res-pos,1.0))
+            if(CLOSE(res-pos,1.0,dy*1e-6))
                pos += 1;
             if(pos >=padly && pos < ny-padhy)
             {
@@ -191,7 +191,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = ((double) gcoords[i].x - ox + shiftx*dx)/dx;
             pos = (int) std::floor(res);
             //Avoiding roundoff errors
-            if(CLOSETO(res-pos,1.0))
+            if(CLOSE(res-pos,1.0,dx*1e-6))
                pos += 1;
             if(pos >=padlx && pos < nx-padhx)
             {
@@ -204,7 +204,7 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = ((double) gcoords[i].y - oy + shifty*dy)/dy;
             pos = (int) std::floor(res);
             //Avoiding roundoff errors
-            if(CLOSETO(res-pos,1.0))
+            if(CLOSE(res-pos,1.0,dy*1e-6))
                pos += 1;
             if(pos >=padly && pos < ny-padhy)
             {
