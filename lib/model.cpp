@@ -9086,6 +9086,8 @@ std::shared_ptr<ModelPoroelastic2D<T>> ModelPoroelastic2D<T>::getDomainmodel(std
             Rho_x[l2d(ix,lpml-iz0)] /= 2.0;
             LuM[l2d(ix,lpml-iz0)] = (LuM[l2d(ix,lpml-iz0)] - Lu[l2d(ix,lpml-iz0)])/2.0;
             Lu[l2d(ix,lpml-iz0)] = 0.0;
+            Alpha[l2d(ix,lpml-iz0)] = 0.0;
+            Beta[l2d(ix,lpml-iz0)] = 0.0;
         }
     }
 
