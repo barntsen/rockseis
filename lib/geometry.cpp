@@ -152,9 +152,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         for (size_t i = 0; i < n ; i++){
             res = ((double) scoords[i].x - ox + shiftx*dx)/dx;
             pos = (int) std::floor(res);
-            //Avoiding roundoff errors
-            if(CLOSE(res-pos,1.0,dx*1e-6))
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dx*CTHRES))
                pos += 1;
+            if(CLOSE(res-pos,0.0,dx*CTHRES))
+               pos -= 1;
             if(pos >=padlx && pos < nx-padhx)
             {
                 smap[i].x  = pos; // index is within bounds
@@ -165,9 +167,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             }
             res = ((double) scoords[i].y - oy + shifty*dy)/dy;
             pos = (int) std::floor(res);
-            //Avoiding roundoff errors
-            if(CLOSE(res-pos,1.0,dy*1e-6))
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dy*CTHRES))
                pos += 1;
+            if(CLOSE(res-pos,0.0,dy*CTHRES))
+               pos -= 1;
             if(pos >=padly && pos < ny-padhy)
             {
                 smap[i].y  = pos; // index is within bounds
@@ -190,9 +194,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         for (size_t i = 0; i < n ; i++){
             res = ((double) gcoords[i].x - ox + shiftx*dx)/dx;
             pos = (int) std::floor(res);
-            //Avoiding roundoff errors
-            if(CLOSE(res-pos,1.0,dx*1e-6))
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dx*CTHRES))
                pos += 1;
+            if(CLOSE(res-pos,0.0,dx*CTHRES))
+               pos -= 1;
             if(pos >=padlx && pos < nx-padhx)
             {
                 gmap[i].x  = pos; // index is within bounds
@@ -203,9 +209,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             }
             res = ((double) gcoords[i].y - oy + shifty*dy)/dy;
             pos = (int) std::floor(res);
-            //Avoiding roundoff errors
-            if(CLOSE(res-pos,1.0,dy*1e-6))
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dy*CTHRES))
                pos += 1;
+            if(CLOSE(res-pos,0.0,dy*CTHRES))
+               pos -= 1;
             if(pos >=padly && pos < ny-padhy)
             {
                 gmap[i].y  = pos; // index is within bounds
@@ -306,9 +314,16 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
     double oz = (double) _geom->getO(3);
     // Compute index map
     int pos;
+    double res;
     if(map == SMAP){
         for (size_t i = 0; i < n ; i++){
-            pos = (int) std::floor((scoords[i].x - ox + shiftx*dx)/dx);
+            res = (scoords[i].x - ox + shiftx*dx)/dx;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dx*CTHRES))
+               pos += 1;
+            if(CLOSE(res-pos,0.0,dx*CTHRES))
+               pos -= 1;
             if(pos >=padlx && pos < nx-padhx)
             {
                 smap[i].x  = pos; // index is within bounds
@@ -317,7 +332,13 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             {
                 smap[i].x  = -1;  // index is off bounds
             }
-            pos = (int) std::floor((scoords[i].y - oy + shifty*dy)/dy);
+            res = (scoords[i].y - oy + shifty*dy)/dy;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dy*CTHRES))
+               pos += 1;
+            if(CLOSE(res-pos,0.0,dy*CTHRES))
+               pos -= 1;
             if(pos >=padly && pos < ny-padhy)
             {
                 smap[i].y  = pos; // index is within bounds
@@ -326,7 +347,13 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             {
                 smap[i].y  = -1;  // index is off bounds
             }
-            pos = (int) std::floor((scoords[i].z - oz + shiftz*dz)/dz);
+            res = (scoords[i].z - oz + shiftz*dz)/dz;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dz*CTHRES))
+               pos += 1;
+            if(CLOSE(res-pos,0.0,dz*CTHRES))
+               pos -= 1;
             if(pos >=padlz && pos < nz-padhz)
             {
                 smap[i].z  = pos; // index is within bounds
@@ -347,7 +374,13 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         if (!s_inbound && this->getVerbose()) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
     }else{
         for (size_t i = 0; i < n ; i++){
-            pos = (int) std::floor((gcoords[i].x - ox + shiftx*dx)/dx);
+            res = (gcoords[i].x - ox + shiftx*dx)/dx;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dx*CTHRES))
+               pos += 1;
+            if(CLOSE(res-pos,0.0,dx*CTHRES))
+               pos -= 1;
             if(pos >=padlx && pos < nx-padhx)
             {
                 gmap[i].x  = pos; // index is within bounds
@@ -356,7 +389,13 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             {
                 gmap[i].x  = -1;  // index is off bounds
             }
-            pos = (int) std::floor((gcoords[i].y - oy + shifty*dy)/dy);
+            res = (gcoords[i].y - oy + shifty*dy)/dy;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dy*CTHRES))
+               pos += 1;
+            if(CLOSE(res-pos,0.0,dy*CTHRES))
+               pos -= 1;
             if(pos >=padly && pos < ny-padhy)
             {
                 gmap[i].y  = pos; // index is within bounds
@@ -365,7 +404,13 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             {
                 gmap[i].y  = -1;  // index is off bounds
             }
-            pos = (int) std::floor((gcoords[i].z - oz + shiftz*dz)/dz);
+            res = (gcoords[i].z - oz + shiftz*dz)/dz;
+            pos = (int) std::floor(res);
+            //Avoiding roundoff error issues in Domain decomposition
+            if(CLOSE(res-pos,1.0,dz*CTHRES))
+               pos += 1;
+            if(CLOSE(res-pos,0.0,dz*CTHRES))
+               pos -= 1;
             if(pos >=padlz && pos < nz-padhz)
             {
                 gmap[i].z  = pos; // index is within bounds
