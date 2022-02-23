@@ -12,7 +12,7 @@
 #include "utils.h"
 
 #define MAXDIMS 9
-#define CTHRES 1e-6
+#define CTHRES 1e-2
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 #define CLOSE(x, y, d) ((ABS(x - y) <= (d)*ABS(y)) ? 1 : 0)
 

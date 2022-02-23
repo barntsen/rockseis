@@ -153,9 +153,9 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = ((double) scoords[i].x - ox + shiftx*dx)/dx;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dx*CTHRES))
+            if(CLOSE(res-pos,1.0,dx*CTHRES) && (pos < padlx))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dx*CTHRES))
+            if(CLOSE(res-pos,0.0,dx*CTHRES) && (pos >= (nx - padhx)))
                pos -= 1;
             if(pos >=padlx && pos < nx-padhx)
             {
@@ -168,9 +168,9 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = ((double) scoords[i].y - oy + shifty*dy)/dy;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dy*CTHRES))
+            if(CLOSE(res-pos,1.0,dy*CTHRES) && (pos < padly))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dy*CTHRES))
+            if(CLOSE(res-pos,0.0,dy*CTHRES) && (pos >= (ny - padhy)))
                pos -= 1;
             if(pos >=padly && pos < ny-padhy)
             {
@@ -195,9 +195,9 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = ((double) gcoords[i].x - ox + shiftx*dx)/dx;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dx*CTHRES))
+            if(CLOSE(res-pos,1.0,dx*CTHRES) && (pos < padlx))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dx*CTHRES))
+            if(CLOSE(res-pos,0.0,dx*CTHRES) && (pos >= (nx - padhx)))
                pos -= 1;
             if(pos >=padlx && pos < nx-padhx)
             {
@@ -210,9 +210,9 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = ((double) gcoords[i].y - oy + shifty*dy)/dy;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dy*CTHRES))
+            if(CLOSE(res-pos,1.0,dy*CTHRES) && (pos < padly))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dy*CTHRES))
+            if(CLOSE(res-pos,0.0,dy*CTHRES) && (pos >= (ny - padhy)))
                pos -= 1;
             if(pos >=padly && pos < ny-padhy)
             {
@@ -320,9 +320,9 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = (scoords[i].x - ox + shiftx*dx)/dx;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dx*CTHRES))
+            if(CLOSE(res-pos,1.0,dx*CTHRES) && (pos < padlx))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dx*CTHRES))
+            if(CLOSE(res-pos,0.0,dx*CTHRES) && (pos >= (nx - padhx)))
                pos -= 1;
             if(pos >=padlx && pos < nx-padhx)
             {
@@ -335,9 +335,9 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = (scoords[i].y - oy + shifty*dy)/dy;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dy*CTHRES))
+            if(CLOSE(res-pos,1.0,dy*CTHRES) && (pos < padly))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dy*CTHRES))
+            if(CLOSE(res-pos,0.0,dy*CTHRES) && (pos >= (ny - padhy)))
                pos -= 1;
             if(pos >=padly && pos < ny-padhy)
             {
@@ -350,9 +350,9 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = (scoords[i].z - oz + shiftz*dz)/dz;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dz*CTHRES))
+            if(CLOSE(res-pos,1.0,dz*CTHRES) && (pos < padlz))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dz*CTHRES))
+            if(CLOSE(res-pos,0.0,dz*CTHRES) && (pos >= (nz - padhz)))
                pos -= 1;
             if(pos >=padlz && pos < nz-padhz)
             {
@@ -377,9 +377,9 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = (gcoords[i].x - ox + shiftx*dx)/dx;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dx*CTHRES))
+            if(CLOSE(res-pos,1.0,dx*CTHRES) && (pos < padlx))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dx*CTHRES))
+            if(CLOSE(res-pos,0.0,dx*CTHRES) && (pos >= (nx - padhx)))
                pos -= 1;
             if(pos >=padlx && pos < nx-padhx)
             {
@@ -392,9 +392,9 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = (gcoords[i].y - oy + shifty*dy)/dy;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dy*CTHRES))
+            if(CLOSE(res-pos,1.0,dy*CTHRES) && (pos < padly))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dy*CTHRES))
+            if(CLOSE(res-pos,0.0,dy*CTHRES) && (pos >= (ny - padhy)))
                pos -= 1;
             if(pos >=padly && pos < ny-padhy)
             {
@@ -407,9 +407,9 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
             res = (gcoords[i].z - oz + shiftz*dz)/dz;
             pos = (int) std::floor(res);
             //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dz*CTHRES))
+            if(CLOSE(res-pos,1.0,dz*CTHRES) && (pos < padlz))
                pos += 1;
-            if(CLOSE(res-pos,0.0,dz*CTHRES))
+            if(CLOSE(res-pos,0.0,dz*CTHRES) && (pos >= (nz - padhz)))
                pos -= 1;
             if(pos >=padlz && pos < nz-padhz)
             {
