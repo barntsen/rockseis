@@ -750,7 +750,6 @@ template<typename T>
 int KdmvaAcoustic2D<T>::setInitial(double *x, std::string vpfile)
 {
     std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
-    bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
     std::shared_ptr<rockseis::ModelEikonal2D<T>> model_in (new rockseis::ModelEikonal2D<T>(vpfile, 1));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
 
