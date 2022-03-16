@@ -113,6 +113,7 @@ public:
     void insertImageresiduals(T *res); ///< Insert image residuals
     void createAdjsource(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Create a mask for adjoint eikonal computation
     void clearTT(); ///< Reset traveltime array 
+    void copyTT(T *TTin); ///< Copy traveltime 
     void clearLam(); ///< Reset lambda array 
     void clearLam(T val); ///< Reset lambda array using value given by val
 
@@ -157,6 +158,7 @@ public:
     void insertResiduals(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert traveltime residuals
     void insertImageresiduals(T *res); ///< Insert image residuals
     void clearTT(); ///< Reset traveltime array 
+    void copyTT(T *TTin); ///< Copy Traveltime 
     void clearLam(); ///< Reset lambda array 
     void clearLam(T val); ///< Reset lambda array using value given by val
 

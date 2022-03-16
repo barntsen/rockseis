@@ -278,6 +278,22 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int nz1, int nz2, i
        k += ndx;
     }
 }
+template<typename T>
+void RaysAcoustic2D<T>::copyTT(T *TTin) {
+    /* Copy traveltimes from other array */
+
+    int nx = model->getNx_pml();
+    int nz = model->getNz_pml();
+    int lpml = model->getLpml();
+    Index Irays(nx, nz);
+
+    /* Copy TT */
+    for(size_t ix=lpml; ix < nx-lpml; ix++){
+        for(size_t iz=lpml; iz < nz-lpml; iz++){
+            TT[Irays(ix, iz)] = TTin[Irays(ix, iz)]; 
+        }
+    }
+}
 
 template<typename T>
 void RaysAcoustic2D<T>::clearTT() {
@@ -1347,6 +1363,26 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
         }
     }
 
+}
+
+template<typename T>
+void RaysAcoustic3D<T>::copyTT(T *TTin) {
+    /* Copy traveltimes from other array */
+
+    int nx = model->getNx_pml();
+    int ny = model->getNy_pml();
+    int nz = model->getNz_pml();
+    int lpml = model->getLpml();
+    Index Irays(nx, ny, nz);
+
+    /* Copy TT */
+    for(size_t ix=lpml; ix < nx-lpml; ix++){
+        for(size_t iy=lpml; iy < ny-lpml; iy++){
+            for(size_t iz=lpml; iz < nz-lpml; iz++){
+                TT[Irays(ix, iy, iz)] = TTin[Irays(ix, iy, iz)]; 
+            }
+        }
+    }
 }
 
 template<typename T>

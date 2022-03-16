@@ -214,6 +214,7 @@ template<typename T>
 void KdmvaAcoustic2D<T>::runGrad() {
     MPImodeling *mpi = this->getMpi();
     int nsoufin, nrecfin;
+    size_t ngathers;
     std::shared_ptr<rockseis::Data2D<T>> source;
     std::shared_ptr<rockseis::Data2D<T>> shot2D;
     std::shared_ptr<rockseis::RaysAcoustic2D<T>> rays;
@@ -240,67 +241,70 @@ void KdmvaAcoustic2D<T>::runGrad() {
 	if(mpi->getRank() == 0) {
 		// Master
 
-    // -------------------------------------Calculate traveltimes
-        // Get number of receivers
-        Sort->createReceivermap(Precordfile); 
-        size_t nrecgath =  Sort->getNensemb();
+        if(!this->getIncore()){
 
-        // Get number of shots
-        Sort->createShotmap(Precordfile); 
-        size_t nsougath =  Sort->getNensemb();
+            // -------------------------------------Calculate traveltimes
+            // Get number of receivers
+            Sort->createReceivermap(Precordfile); 
+            size_t nrecgath =  Sort->getNensemb();
 
-        Sort->writeKeymap();
-        Sort->writeSortmap();
+            // Get number of shots
+            Sort->createShotmap(Precordfile); 
+            size_t nsougath =  Sort->getNensemb();
 
-        nsoufin = nsougath/this->getSouinc() + 1;
-        if(nsoufin > nsougath) nsoufin = nsougath;
+            Sort->writeKeymap();
+            Sort->writeSortmap();
 
-        nrecfin = nrecgath/this->getRecinc() + 1;
-        if(nrecfin > nrecgath) nrecfin = nrecgath;
+            nsoufin = nsougath/this->getSouinc() + 1;
+            if(nsoufin > nsougath) nsoufin = nsougath;
 
-        // -------------------------------------Create a travel time table class
-        size_t ngathers = nsoufin + nrecfin;
-        ttable = std::make_shared<rockseis::Ttable2D<T>> (gmodel, ngathers);
-        ttable->setFilename(Ttablefile);
-        ttable->createEmptyttable();
+            nrecfin = nrecgath/this->getRecinc() + 1;
+            if(nrecfin > nrecgath) nrecfin = nrecgath;
 
-        /******************      Creating source side traveltime   ***********************/
-		// Create work queue
-		for(long int i=0; i<nsoufin; i++) {
-			// Work struct
-			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
-			mpi->addWork(work);
-		}
+            // -------------------------------------Create a travel time table class
+            ngathers = nsoufin + nrecfin;
+            ttable = std::make_shared<rockseis::Ttable2D<T>> (gmodel, ngathers);
+            ttable->setFilename(Ttablefile);
+            ttable->createEmptyttable();
 
-        // Broadcast nsoufin
-        MPI_Bcast(&nsoufin, 1, MPI_INT, 0, MPI_COMM_WORLD);
+            /******************      Creating source side traveltime   ***********************/
+            // Create work queue
+            for(long int i=0; i<nsoufin; i++) {
+                // Work struct
+                std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
+                mpi->addWork(work);
+            }
 
-		// Perform work in parallel
-		mpi->performWork();
+            // Broadcast nsoufin
+            MPI_Bcast(&nsoufin, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        // Reset mpi 
-        mpi->clearWork();
+            // Perform work in parallel
+            mpi->performWork();
 
-        /******************       Creating receiver side traveltime    ***********************/
-        // Create new list of positions
-        Sort->createReceivermap(Precordfile); 
-        Sort->setReciprocity(true);
-        Sort->writeKeymap();
-        Sort->writeSortmap();
+            // Reset mpi 
+            mpi->clearWork();
 
-        for(long int i=0; i<nrecfin; i++) {
-            // Work struct
-            std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
-            mpi->addWork(work);
+            /******************       Creating receiver side traveltime    ***********************/
+            // Create new list of positions
+            Sort->createReceivermap(Precordfile); 
+            Sort->setReciprocity(true);
+            Sort->writeKeymap();
+            Sort->writeSortmap();
+
+            for(long int i=0; i<nrecfin; i++) {
+                // Work struct
+                std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
+                mpi->addWork(work);
+            }
+
+            // Perform work in parallel
+            mpi->performWork();
+
+            //Clear work vector 
+            mpi->clearWork();
         }
 
-        // Perform work in parallel
-        mpi->performWork();
-
-		//Clear work vector 
-		mpi->clearWork();
-
-    // -------------------------------------Migrate data
+        // -------------------------------------Migrate data
         Sort->setReciprocity(false);
         Sort->createShotmap(Precordfile); 
         Sort->writeKeymap();
@@ -363,106 +367,108 @@ void KdmvaAcoustic2D<T>::runGrad() {
         size_t number;
         std::shared_ptr<rockseis::Data2D<T>> Shotgeom;
 
-        // Receive nsoufin from master
-        MPI_Bcast(&nsoufin, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        if(!this->getIncore()){
+            // Receive nsoufin from master
+            MPI_Bcast(&nsoufin, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        /******************             Creating source side     ***********************/
-        while(1) {
-            workModeling_t work = mpi->receiveWork();
+            /******************             Creating source side     ***********************/
+            while(1) {
+                workModeling_t work = mpi->receiveWork();
 
-            if(work.MPItag == MPI_TAG_DIE) {
-                break;
+                if(work.MPItag == MPI_TAG_DIE) {
+                    break;
+                }
+
+                if(work.MPItag == MPI_TAG_NO_WORK) {
+                    mpi->sendNoWork(0);
+                }
+                else {
+                    // Calculate traveltime
+                    Sort->readKeymap();
+                    Sort->readSortmap();
+
+                    number = work.id*this->getSouinc();
+                    if (number > Sort->getNensemb()-1) number = Sort->getNensemb()-1;
+                    Shotgeom = Sort->get2DGather(number);
+
+                    // Set shot coordinates and make a map
+                    source = std::make_shared<rockseis::Data2D<T>>(1, 1, 1.0, 0.0);
+                    source->copyCoords(Shotgeom);
+
+                    source->makeMap(gmodel->getGeom(), SMAP);
+
+                    // Run modelling 
+                    rays = std::make_shared<rockseis::RaysAcoustic2D<T>>(gmodel);
+
+                    /* initialize traveltime field at source positions */
+                    rays->insertSource(source, SMAP);
+                    rays->solve();
+
+                    // Create traveltime table
+                    ttable = std::make_shared<rockseis::Ttable2D<T>> (Ttablefile);
+                    ttable->fetchTtabledata(rays, source, work.id); //Get traveltime data
+                    ttable->writeTtable(work.id);
+                    ttable.reset();
+
+                    // Reset all classes
+                    source.reset();
+                    Shotgeom.reset();
+                    rays.reset();
+                    work.status = WORK_FINISHED;
+
+                    // Send result back
+                    mpi->sendResult(work);		
+                }
             }
+            /******************             Creating receiver side     ***********************/
+            while(1) {
+                workModeling_t work = mpi->receiveWork();
 
-            if(work.MPItag == MPI_TAG_NO_WORK) {
-                mpi->sendNoWork(0);
-            }
-            else {
-                // Calculate traveltime
-                Sort->readKeymap();
-                Sort->readSortmap();
+                if(work.MPItag == MPI_TAG_DIE) {
+                    break;
+                }
 
-                number = work.id*this->getSouinc();
-                if (number > Sort->getNensemb()-1) number = Sort->getNensemb()-1;
-                Shotgeom = Sort->get2DGather(number);
+                if(work.MPItag == MPI_TAG_NO_WORK) {
+                    mpi->sendNoWork(0);
+                }
+                else {
+                    // Do some work
+                    Sort->readKeymap();
+                    Sort->readSortmap();
 
-                // Set shot coordinates and make a map
-	            source = std::make_shared<rockseis::Data2D<T>>(1, 1, 1.0, 0.0);
-                source->copyCoords(Shotgeom);
+                    number = work.id*this->getRecinc();
+                    if (number > Sort->getNensemb()-1) number = Sort->getNensemb()-1;
+                    Shotgeom = Sort->get2DGather(number);
 
-                source->makeMap(gmodel->getGeom(), SMAP);
+                    // Set shot coordinates and make a map
+                    source = std::make_shared<rockseis::Data2D<T>>(1, 1, 1.0, 0.0);
+                    source->copyCoords(Shotgeom);
 
-                // Run modelling 
-                rays = std::make_shared<rockseis::RaysAcoustic2D<T>>(gmodel);
+                    source->makeMap(gmodel->getGeom(), SMAP);
 
-                /* initialize traveltime field at source positions */
-                rays->insertSource(source, SMAP);
-                rays->solve();
+                    // Run modelling 
+                    rays = std::make_shared<rockseis::RaysAcoustic2D<T>>(gmodel);
 
-                // Create traveltime table
-                ttable = std::make_shared<rockseis::Ttable2D<T>> (Ttablefile);
-                ttable->fetchTtabledata(rays, source, work.id); //Get traveltime data
-                ttable->writeTtable(work.id);
-                ttable.reset();
-                
-                // Reset all classes
-                source.reset();
-                Shotgeom.reset();
-                rays.reset();
-                work.status = WORK_FINISHED;
+                    /* initialize traveltime field at source positions */
+                    rays->insertSource(source, SMAP);
+                    rays->solve();
 
-                // Send result back
-                mpi->sendResult(work);		
-            }
-        }
-        /******************             Creating receiver side     ***********************/
-        while(1) {
-            workModeling_t work = mpi->receiveWork();
+                    // Create traveltime table
+                    ttable = std::make_shared<rockseis::Ttable2D<T>> (Ttablefile);
+                    ttable->fetchTtabledata(rays, source, work.id+nsoufin); //Get traveltime data
+                    ttable->writeTtable(work.id+nsoufin);
+                    ttable.reset();
 
-            if(work.MPItag == MPI_TAG_DIE) {
-                break;
-            }
+                    // Reset all classes
+                    source.reset();
+                    Shotgeom.reset();
+                    rays.reset();
+                    work.status = WORK_FINISHED;
 
-            if(work.MPItag == MPI_TAG_NO_WORK) {
-                mpi->sendNoWork(0);
-            }
-            else {
-                // Do some work
-                Sort->readKeymap();
-                Sort->readSortmap();
+                    // Send result back
+                    mpi->sendResult(work);		
 
-                number = work.id*this->getRecinc();
-                if (number > Sort->getNensemb()-1) number = Sort->getNensemb()-1;
-                Shotgeom = Sort->get2DGather(number);
-
-                // Set shot coordinates and make a map
-	            source = std::make_shared<rockseis::Data2D<T>>(1, 1, 1.0, 0.0);
-                source->copyCoords(Shotgeom);
-
-                source->makeMap(gmodel->getGeom(), SMAP);
-
-                // Run modelling 
-                rays = std::make_shared<rockseis::RaysAcoustic2D<T>>(gmodel);
-
-                /* initialize traveltime field at source positions */
-                rays->insertSource(source, SMAP);
-                rays->solve();
-
-                // Create traveltime table
-                ttable = std::make_shared<rockseis::Ttable2D<T>> (Ttablefile);
-                ttable->fetchTtabledata(rays, source, work.id+nsoufin); //Get traveltime data
-                ttable->writeTtable(work.id+nsoufin);
-                ttable.reset();
-                
-                // Reset all classes
-                source.reset();
-                Shotgeom.reset();
-                rays.reset();
-                work.status = WORK_FINISHED;
-
-                // Send result back
-                mpi->sendResult(work);		
-
+                }
             }
         }
         // ------------------------------------Migrate data
@@ -496,15 +502,17 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 // Make image class
                 pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile + "-" + std::to_string(work.id), lmodel, this->getNhx(), this->getNhz());
 
-                // Create traveltime table class
-                ttable = std::make_shared<rockseis::Ttable2D<T>>(Ttablefile);
-                ttable->allocTtable();
+                if(!this->getIncore()){
+                    // Create traveltime table class
+                    ttable = std::make_shared<rockseis::Ttable2D<T>>(Ttablefile);
+                    ttable->allocTtable();
+                }
 
                 // Create imaging class
                 kdmig = std::make_shared<rockseis::KdmigAcoustic2D<T>>(lmodel, ttable, shot2D, pimage);
 
-                // Set traveltime parameters
-                kdmig->setIncore(true);
+                // Set Incore
+                kdmig->setIncore(this->getIncore());
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(1);
@@ -562,16 +570,26 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
                 lmodel->Expand();
 
+                // Map coordinates to model
+                shot2D->makeMap(lmodel->getGeom(), SMAP);
+                shot2D->makeMap(lmodel->getGeom(), GMAP);
+
                 // Make image class
                 pimage = std::make_shared<rockseis::Image2D<T>>(PIMAGERESFILE);
                 lpimage = pimage->getLocal(shot2D, apertx, SMAP);
 
                 // Create traveltime table class
-                ttable = std::make_shared<rockseis::Ttable2D<T>>(Ttablefile);
-                ttable->allocTtable();
+                if(!this->getIncore()){
+                    // Create traveltime table class
+                    ttable = std::make_shared<rockseis::Ttable2D<T>>(Ttablefile);
+                    ttable->allocTtable();
+                }
 
                 // Create imaging class
                 kdmig = std::make_shared<rockseis::KdmigAcoustic2D<T>>(lmodel, ttable, shot2D, lpimage);
+
+                // Set Incore
+                kdmig->setIncore(this->getIncore());
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(1);

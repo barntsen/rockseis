@@ -163,6 +163,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
             PRINT_DOC(constrain = "false";  # Constrain inversion requires Lboundfile and Uboundfile containing models with the bounds);
+            PRINT_DOC(incore = "false";  # Do all traveltime computation incore (No traveltime table storage));
 
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
             PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
@@ -220,6 +221,7 @@ int main(int argc, char** argv) {
     int max_linesearch, max_iterations;
     int linesearch;
     int optmethod; 
+    bool incore;
     std::string Vpfile;
     std::string Misfitfile;
     std::string Precordfile;
@@ -248,6 +250,7 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("nhx", &nhx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("nhz", &nhz) == INPARSE_ERR) status = true;
     if(Inpar->getPar("radius", &radius) == INPARSE_ERR) status = true;
+    if(Inpar->getPar("incore", &incore) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Souinc", &souinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Recinc", &recinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
@@ -317,6 +320,7 @@ int main(int argc, char** argv) {
     kdmva->setVpregalpha(vpregalpha);
 
     kdmva->setRadius(radius);
+    kdmva->setIncore(incore);
     kdmva->setSouinc(souinc);
     kdmva->setRecinc(recinc);
 

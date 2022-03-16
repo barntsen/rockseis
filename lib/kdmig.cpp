@@ -238,8 +238,10 @@ int KdmigAcoustic2D<T>::run_adj()
      this->createLog(this->getLogfile());
 
      // Create the classes 
-     std::shared_ptr<Ttable2D<T>> ttable_sou (new Ttable2D<T>(model, 1));
-     std::shared_ptr<Ttable2D<T>> ttable_rec (new Ttable2D<T>(model, 1));
+     std::shared_ptr<RaysAcoustic2D<T>> rays_sou;
+     std::shared_ptr<RaysAcoustic2D<T>> rays_rec;
+     std::shared_ptr<Ttable2D<T>> ttable_sou;
+     std::shared_ptr<Ttable2D<T>> ttable_rec;
      std::shared_ptr<RaysAcoustic2D<T>> rays_adj (new RaysAcoustic2D<T>(model));
 
      /* Get data */
@@ -251,60 +253,109 @@ int KdmigAcoustic2D<T>::run_adj()
      // Create gradient
      vpgrad->allocateImage();
 
-     // Create ttable arrays
-     ttable_sou->allocTtable();
-     ttable_rec->allocTtable();
+     // Create the classes 
+    if(this->getIncore()){
+         rays_sou = std::make_shared<RaysAcoustic2D<T>> (model);
+         rays_rec = std::make_shared<RaysAcoustic2D<T>> (model);
+     }else{
+         ttable_sou = std::make_shared<Ttable2D<T>> (model, 1);
+         ttable_rec = std::make_shared<Ttable2D<T>> (model, 1);
+         // Allocate ttable arrays
+         ttable_sou->allocTtable();
+         ttable_rec->allocTtable();
+     }
 
     // Allocate memory for adjoint sources 
     T* adjsrc_sou, *adjsrc_rec;
     adjsrc_sou = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
     adjsrc_rec = (T *) calloc(rays_adj->getNx()*rays_adj->getNz(), sizeof(T));
 
-     this->writeLog("Running 2D Kirchhoff migration.");
+     this->writeLog("Running 2D Kirchhoff gradient computation.");
 
      this->writeLog("Doing forward Loop.");
-     // Inserting source point
-     ttable_sou->insertSource(data, SMAP, 0);
+     if(this->getIncore()){
+         // Inserting source point
+         rays_sou->insertSource(data, SMAP, 0);
 
-     // Solving Eikonal equation for source traveltime
-     ttable->interpTtable(ttable_sou, this->getRadius());
+         // Solving Eikonal equation for source traveltime
+         rays_sou->solve();
+     }else{
+         // Inserting source point
+         ttable_sou->insertSource(data, SMAP, 0);
+
+         // Solving Eikonal equation for source traveltime
+         ttable->interpTtable(ttable_sou, this->getRadius());
+     }
 
      //Loop over data traces
      int i,j;
      for (i=0; i<ntr; i++){
-         // Inserting new receiver point
-         ttable_rec->insertSource(data, GMAP, i);
-
-         // Solving Eikonal equation for receiver traveltime
-         ttable->interpTtable(ttable_rec, this->getRadius());
-
          // Derivate data
          for(j=1; j<nt-1; j++){
              data_dt[j] =  (rdata_array[Idata(j+1,i)] - rdata_array[Idata(j-1,i)])/(2.0*dt);
          }
+         if(this->getIncore()){
+             // Reset traveltime for receiver
+             rays_rec->clearTT();
 
-         // Build adjoint source
-         this->calcAdjointsource(adjsrc_sou, adjsrc_rec, ttable_sou, ttable_rec, data_dt, nt, dt, ot);
+             // Inserting new receiver point
+             rays_rec->insertSource(data, GMAP, i);
 
-         // Solve the source side adjoint equation
-         rays_adj->clearTT();
-         ttable_sou->putTtabledata(rays_adj);
-         rays_adj->insertImageresiduals(adjsrc_sou);
-         rays_adj->solve_adj();
+             // Solving Eikonal equation for receiver traveltime
+             rays_rec->solve();
 
-         // Calculate gradient
-         this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
-         rays_adj->clearLam(1e16);
+             // Build adjoint source
+             this->calcAdjointsource(adjsrc_sou, adjsrc_rec, rays_sou, rays_rec, data_dt, nt, dt, ot, model->getLpml());
 
-         // Solve the receiver side equation
-         rays_adj->clearTT();
-         ttable_rec->putTtabledata(rays_adj);
-         rays_adj->insertImageresiduals(adjsrc_rec);
-         rays_adj->solve_adj();
+             // Solve the source side adjoint equation
+             rays_adj->clearTT();
+             rays_adj->copyTT(rays_sou->getTT());
+             rays_adj->insertImageresiduals(adjsrc_sou);
+             rays_adj->solve_adj();
 
-         // Calculate gradient
-         this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
-         rays_adj->clearLam(1e16);
+             // Calculate gradient
+             this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+             rays_adj->clearLam(1e16);
+
+             // Solve the receiver side equation
+             rays_adj->clearTT();
+             rays_adj->copyTT(rays_rec->getTT());
+             rays_adj->insertImageresiduals(adjsrc_rec);
+             rays_adj->solve_adj();
+
+             // Calculate gradient
+             this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+             rays_adj->clearLam(1e16);
+         }else{
+             // Inserting new receiver point
+             ttable_rec->insertSource(data, GMAP, i);
+
+             // Solving Eikonal equation for receiver traveltime
+             ttable->interpTtable(ttable_rec, this->getRadius());
+
+             // Build adjoint source
+             this->calcAdjointsource(adjsrc_sou, adjsrc_rec, ttable_sou, ttable_rec, data_dt, nt, dt, ot);
+
+             // Solve the source side adjoint equation
+             rays_adj->clearTT();
+             ttable_sou->putTtabledata(rays_adj);
+             rays_adj->insertImageresiduals(adjsrc_sou);
+             rays_adj->solve_adj();
+
+             // Calculate gradient
+             this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+             rays_adj->clearLam(1e16);
+
+             // Solve the receiver side equation
+             rays_adj->clearTT();
+             ttable_rec->putTtabledata(rays_adj);
+             rays_adj->insertImageresiduals(adjsrc_rec);
+             rays_adj->solve_adj();
+
+             // Calculate gradient
+             this->scaleGrad(model, rays_adj->getLam(), vpgrad->getImagedata());
+             rays_adj->clearLam(1e16);
+         }
 
         // Output progress to logfile
         this->writeProgress(i, ntr-1, 20, 48);
@@ -541,7 +592,7 @@ void KdmigAcoustic2D<T>::crossCorr_td(std::shared_ptr<RaysAcoustic2D<T>> rays_so
                for (ix=0; ix<nx; ix++){
                   if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
                   {
-                     TTsum = TT_sou[kt2D(ix-hx, iz-hz)] + TT_rec[kt2D(ix+hx, iz+hz)] - ot;
+                     TTsum = TT_sou[kt2D(ix-hx+pad, iz-hz+pad)] + TT_rec[kt2D(ix+hx+pad, iz+hz+pad)] - ot;
                      it0 = (int) ((TTsum -ot)/dt);
                      it1 = it0 + 1;
 
@@ -678,7 +729,7 @@ void KdmigAcoustic2D<T>::demigShot_td(std::shared_ptr<RaysAcoustic2D<T>> rays_so
                for (ix=0; ix<nx; ix++){
                         if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
                   {
-                     TTsum = TT_sou[kt2D(ix-2*hx, iz-2*hz)] + TT_rec[kt2D(ix, iz)] - ot;
+                     TTsum = TT_sou[kt2D(ix-2*hx+pad, iz-2*hz+pad)] + TT_rec[kt2D(ix+pad, iz+pad)] - ot;
                      it0 = (int) ((TTsum -ot)/dt);
                      it1 = it0 + 1;
 
@@ -695,7 +746,6 @@ void KdmigAcoustic2D<T>::demigShot_td(std::shared_ptr<RaysAcoustic2D<T>> rays_so
       }
    }
 }
-
 
 template<typename T>
 void KdmigAcoustic2D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T *data, unsigned long nt, T dt, T ot) {
@@ -743,6 +793,68 @@ void KdmigAcoustic2D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::sh
 
                             // Receiver side residual
                             TTsum = TT_sou[kt2D(ix-2*hx, iz-2*hz)] + TT_rec[kt2D(ix, iz)] - ot;
+                            it0 = (int) ((TTsum -ot)/dt);
+                            it1 = it0 + 1;
+                            if(it0 > 0 && it1 < nt-1){
+                                wsr = data[it0];
+                                wsi = data[it1];
+                                omega = (TTsum - it0*dt + ot)/dt;
+                                adjsrc_rec[km2D(ix,iz)] += imagedata[ki2D(ix-hx,iz-hz,ihx,ihz)]*((1.0-omega)*wsr + omega*wsi);
+                            }
+                        }
+                    }
+                }	
+            }
+        }
+    }
+}
+
+template<typename T>
+void KdmigAcoustic2D<T>::calcAdjointsource(T *adjsrc_sou, T* adjsrc_rec, std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T *data, unsigned long nt, T dt, T ot, int pad) {
+   int ix, iz, ihx, ihz;
+   T *TT_sou = rays_sou->getTT();
+   T *TT_rec = rays_rec->getTT();
+   T *imagedata = pimage->getImagedata();
+   int nhx = pimage->getNhx();
+   int nhz = pimage->getNhz();
+   int nx = pimage->getNx();
+   int nz = pimage->getNz();
+   int nxt = nx + 2*pad;
+   int hx, hz;
+   T wsr,wsi;
+   int it0, it1;
+   T TTsum;
+   T omega=0;
+   //Reset arrays
+   for (ix=0; ix<nx; ix++){
+      for (iz=0; iz<nz; iz++){
+         adjsrc_sou[km2D(ix,iz)] = 0.0;
+         adjsrc_rec[km2D(ix,iz)] = 0.0;
+      }
+    }
+
+    for (ihz=0; ihz<nhz; ihz++){
+        hz= -(nhz-1)/2 + ihz;
+        for (ihx=0; ihx<nhx; ihx++){
+            hx= -(nhx-1)/2 + ihx;
+            for (iz=0; iz<nz; iz++){
+                if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz)){
+                    for (ix=0; ix<nx; ix++){
+                        if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
+                        {
+                            // Source side residual
+                            TTsum = TT_sou[kt2D(ix+pad, iz+pad)] + TT_rec[kt2D(ix+2*hx+pad, iz+2*hz+pad)] - ot;
+                            it0 = (int) ((TTsum -ot)/dt);
+                            it1 = it0 + 1;
+                            if(it0 > 0 && it1 < nt-1){
+                                wsr = data[it0];
+                                wsi = data[it1];
+                                omega = (TTsum - it0*dt + ot)/dt;
+                                adjsrc_sou[km2D(ix,iz)] += imagedata[ki2D(ix+hx,iz+hz,ihx,ihz)]*((1.0-omega)*wsr + omega*wsi);
+                            }
+
+                            // Receiver side residual
+                            TTsum = TT_sou[kt2D(ix-2*hx+pad, iz-2*hz+pad)] + TT_rec[kt2D(ix+pad, iz+pad)] - ot;
                             it0 = (int) ((TTsum -ot)/dt);
                             it1 = it0 + 1;
                             if(it0 > 0 && it1 < nt-1){
