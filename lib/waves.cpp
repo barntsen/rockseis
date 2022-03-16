@@ -36,11 +36,6 @@ Waves<T>::Waves() {
 }
 
 template<typename T>
-Waves<T>::~Waves() {
-   // Nothing here
-}
-
-template<typename T>
 Waves<T>::Waves(const int _dim, const int _nx, const int _ny, const int _nz, const int _nt, const int _lpml, const T _dx, const T _dy, const T _dz, const T _dt,  const T _ox, const T _oy, const T _oz, const T _ot) {
    geometry = std::make_shared<Geometry<T>>(); 
    geometry->setN(1, _nx);
@@ -86,6 +81,11 @@ int Waves<T>::getNz_pml() {
    }else{
       return geometry->getN(3) + 2*lpml;
    }
+}
+
+template<typename T>
+Waves<T>::~Waves() {
+   // Nothing here
 }
 
 // =============== 2D ACOUSTIC WAVES CLASS =============== //
