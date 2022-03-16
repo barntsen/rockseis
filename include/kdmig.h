@@ -151,10 +151,13 @@ public:
     void setTtable(std::shared_ptr<Ttable3D<T>> _ttable) { ttable = _ttable; ttableset = true; }
     void crossCorr_td(std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
     void crossCorr_td(std::shared_ptr<RaysAcoustic3D<T>> rays_sou, std::shared_ptr<RaysAcoustic3D<T>> rays_rec, T* data, unsigned long nfs, T df, T ot, int pad);
+    void demigShot_td(std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
+    void demigShot_td(std::shared_ptr<RaysAcoustic3D<T>> rays_sou, std::shared_ptr<RaysAcoustic3D<T>> rays_rec, T* data, unsigned long nfs, T df, T ot, int pad);
     void calcAdjointsource(T *adj_sou, T *adj_rec, std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     void scaleGrad(std::shared_ptr<rockseis::ModelEikonal3D<T>> model, T *lam, T *grad);
     int run();
     int run_adj();
+    int run_demig();
 
     ~KdmigAcoustic3D();	///< Destructor
 
