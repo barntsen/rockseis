@@ -764,7 +764,6 @@ void WavesAcoustic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelAcou
                      Vx[I3D(ix-ix0,iy,iz)] -= dt*Rx[I3D(ix-ix0,iy,iz)]*(Pml->P_left[I3D_lr(ix,iy,iz)] + Pml->C_ltf_stag[ix]*df[I3D(ix-ix0,iy,iz)]);
                   }
                }
-
                if(Pml->getApplypml(1)){
                   i = ix + nxo - lpml;
                   if(i >= ix0 && i < (ix0 + nx)){
@@ -799,7 +798,6 @@ void WavesAcoustic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelAcou
                      // Front
                      Pml->P_front[I3D_fb(ix,iy,iz)] = Pml->B_ltf_stag[iy]*Pml->P_front[I3D_fb(ix,iy,iz)] + Pml->A_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)];
                      Vy[I3D(ix,iy-iy0,iz)] -= dt*Ry[I3D(ix,iy-iy0,iz)]*(Pml->P_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf_stag[iy]*df[I3D(ix,iy-iy0,iz)]);
-
                   }
                }
                if(Pml->getApplypml(3)){
@@ -838,7 +836,6 @@ void WavesAcoustic3D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelAcou
                      Vz[I3D(ix,iy,iz-iz0)] -= dt*Rz[I3D(ix,iy,iz-iz0)]*(Pml->P_top[I3D_tb(ix,iy,iz)] + Pml->C_ltf_stag[iz]*df[I3D(ix,iy,iz-iz0)]);
                   }
                }
-
                if(Pml->getApplypml(5)){
                   i = iz + nzo - lpml;
                   if(i >= iz0 && i < (iz0 + nz)){
@@ -946,7 +943,6 @@ void WavesAcoustic3D<T>::forwardstepStress(std::shared_ptr<rockseis::ModelAcoust
                      P[I3D(ix,iy-iy0,iz)] -= dt*L[I3D(ix,iy-iy0,iz)]*(Pml->Vyy_front[I3D_fb(ix,iy,iz)] + Pml->C_ltf[iy]*df[I3D(ix,iy-iy0,iz)]);
                   }
                }
-
                if(Pml->getApplypml(3)){
                   i = iy + nyo - lpml;
                   if(i >= iy0 && i < (iy0 + ny)){
