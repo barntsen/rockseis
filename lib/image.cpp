@@ -830,7 +830,7 @@ Image2D<T>::~Image2D() {
 
 // constructor
 template<typename T>
-Image3D<T>::Image3D(std::string imagefile): Model<T>(3)
+Image3D<T>::Image3D(std::string _imagefile): Model<T>(3)
 {
    bool status;
    long int _nx, _ny, _nz;
@@ -841,6 +841,7 @@ Image3D<T>::Image3D(std::string imagefile): Model<T>(3)
    /* Get necessary parameters from file */
 
    //Opening file for reading
+   imagefile = _imagefile;
    std::shared_ptr<rockseis::File> Fin (new rockseis::File());
    status = Fin->input(imagefile.c_str());
    if(status == FILE_ERR){

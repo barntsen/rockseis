@@ -633,9 +633,9 @@ void KdmigAcoustic2D<T>::demigShot_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, s
       for (ihx=0; ihx<nhx; ihx++){
          hx= -(nhx-1)/2 + ihx;
          for (iz=0; iz<nz; iz++){
-            if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+            if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz)){
                for (ix=0; ix<nx; ix++){
-                  if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+                  if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
                   {
                       TTsum = TT_rec[kt2D(ix, iz)] + TT_sou[kt2D(ix-2*hx, iz-2*hz)] - ot;
 
@@ -678,7 +678,7 @@ void KdmigAcoustic2D<T>::demigShot_td(std::shared_ptr<Ttable2D<T>> ttable_sou, s
       hz= -(nhz-1)/2 + ihz;
       for (ihx=0; ihx<nhx; ihx++){
          hx= -(nhx-1)/2 + ihx;
-         for (iz=0; iz<nz; iz++){
+         for (iz=1; iz<nz-1; iz++){
                 if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz)){
                for (ix=0; ix<nx; ix++){
                         if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
@@ -1029,6 +1029,7 @@ int KdmigAcoustic3D<T>::run_demig()
 
      this->writeLog("Running 3D Kirchhoff demigration.");
 
+
      this->writeLog("Doing forward Loop.");
      if(this->getIncore()){
          rays_sou->insertSource(data, SMAP, 0);
@@ -1278,7 +1279,7 @@ void KdmigAcoustic3D<T>::crossCorr_td(std::shared_ptr<RaysAcoustic3D<T>> rays_so
                         for (ix=0; ix<nx; ix++){
                            if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
                            {
-                              TTsum = TT_sou[kt3D(ix-hx, iy-hy, iz-hz)] + TT_rec[kt3D(ix+hx, iy+hy, iz+hz)] - ot;
+                              TTsum = TT_sou[kt3D(ix-hx+pad, iy-hy+pad, iz-hz+pad)] + TT_rec[kt3D(ix+hx+pad, iy+hy+pad, iz+hz+pad)] - ot;
                               it0 = (int) ((TTsum -ot)/dt);
                               it1 = it0 + 1;
 
@@ -1326,12 +1327,12 @@ void KdmigAcoustic3D<T>::demigShot_td(std::shared_ptr<Ttable3D<T>> ttable_sou, s
          hy= -(nhy-1)/2 + ihy;
          for (ihx=0; ihx<nhx; ihx++){
             hx= -(nhx-1)/2 + ihx;
-            for (iz=0; iz<nz; iz++){
-               if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+            for (iz=1; iz<nz-1; iz++){
+               if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz)){
                   for (iy=0; iy<ny; iy++){
-                     if( ((iy-hy) >= 0) && ((iy-hy) < ny) && ((iy+hy) >= 0) && ((iy+hy) < ny)){
+                     if( ((iy-2*hy) >= 0) && ((iy-2*hy) < ny) && ((iy+2*hy) >= 0) && ((iy+2*hy) < ny)){
                         for (ix=0; ix<nx; ix++){
-                           if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+                           if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
                            {
                               TTsum = TT_sou[kt3D(ix-2*hx, iy-2*hy, iz-2*hz)] + TT_rec[kt3D(ix, iy, iz)] - ot;
                               it0 = (int) ((TTsum -ot)/dt);
@@ -1382,14 +1383,14 @@ void KdmigAcoustic3D<T>::demigShot_td(std::shared_ptr<RaysAcoustic3D<T>> rays_so
          hy= -(nhy-1)/2 + ihy;
          for (ihx=0; ihx<nhx; ihx++){
             hx= -(nhx-1)/2 + ihx;
-            for (iz=0; iz<nz; iz++){
-               if( ((iz-hz) >= 0) && ((iz-hz) < nz) && ((iz+hz) >= 0) && ((iz+hz) < nz)){
+            for (iz=1; iz<nz-1; iz++){
+               if( ((iz-2*hz) >= 0) && ((iz-2*hz) < nz) && ((iz+2*hz) >= 0) && ((iz+2*hz) < nz)){
                   for (iy=0; iy<ny; iy++){
-                     if( ((iy-hy) >= 0) && ((iy-hy) < ny) && ((iy+hy) >= 0) && ((iy+hy) < ny)){
+                     if( ((iy-2*hy) >= 0) && ((iy-2*hy) < ny) && ((iy+2*hy) >= 0) && ((iy+2*hy) < ny)){
                         for (ix=0; ix<nx; ix++){
-                           if( ((ix-hx) >= 0) && ((ix-hx) < nx) && ((ix+hx) >= 0) && ((ix+hx) < nx))
+                           if( ((ix-2*hx) >= 0) && ((ix-2*hx) < nx) && ((ix+2*hx) >= 0) && ((ix+2*hx) < nx))
                            {
-                              TTsum = TT_sou[kt3D(ix-2*hx, iy-2*hy, iz-2*hz)] + TT_rec[kt3D(ix, iy, iz)] - ot;
+                              TTsum = TT_sou[kt3D(ix-2*hx+pad, iy-2*hy+pad, iz-2*hz+pad)] + TT_rec[kt3D(ix+pad, iy+pad, iz+pad)] - ot;
                               it0 = (int) ((TTsum -ot)/dt);
                               it1 = it0 + 1;
 
