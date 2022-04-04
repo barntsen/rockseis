@@ -55,10 +55,10 @@ int main(int argc, char** argv) {
          PRINT_DOC(        Szzsnap = "false";);
          PRINT_DOC(        Vxsnap = "false";);
          PRINT_DOC(        Vzsnap = "false";);
-         PRINT_DOC();
-         PRINT_DOC(# Input acoustic model files);
-         PRINT_DOC(        Rho_acu = "Rho_acu2d.rss";);
-         PRINT_DOC(        Vp_acu = "Vp_acu2d.rss";);
+//         PRINT_DOC();
+//         PRINT_DOC(# Input acoustic model files);
+//         PRINT_DOC(        Rho_acu = "Rho_acu2d.rss";);
+//         PRINT_DOC(        Vp_acu = "Vp_acu2d.rss";);
          PRINT_DOC();
          PRINT_DOC(# Input poroelastic model files);
          PRINT_DOC(        Rho = "Rho2d.rss";);
@@ -102,8 +102,8 @@ int main(int argc, char** argv) {
    float f0;
    float dtrec;
    int stype;
-   std::string Acu_rhofile;
-   std::string Acu_vpfile;
+//   std::string Acu_rhofile;
+//   std::string Acu_vpfile;
    std::string Surveyfile;
    std::string Waveletfile;
    std::string Rhofile;
@@ -171,8 +171,8 @@ int main(int argc, char** argv) {
    if(Inpar->getPar("snapinc", &snapinc) == INPARSE_ERR) status = true;
    if(Inpar->getPar("source_type", &stype) == INPARSE_ERR) status = true;
    if(Inpar->getPar("freesurface", &fs) == INPARSE_ERR) status = true;
-   if(Inpar->getPar("Vp_acu", &Acu_vpfile) == INPARSE_ERR) status = true;
-   if(Inpar->getPar("Rho_acu", &Acu_rhofile) == INPARSE_ERR) status = true;
+//   if(Inpar->getPar("Vp_acu", &Acu_vpfile) == INPARSE_ERR) status = true;
+//   if(Inpar->getPar("Rho_acu", &Acu_rhofile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Rho", &Rhofile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Rhof", &Rhoffile) == INPARSE_ERR) status = true;
    if(Inpar->getPar("Por", &Porfile) == INPARSE_ERR) status = true;
@@ -251,7 +251,7 @@ int main(int argc, char** argv) {
 
    // Create global model classes
    std::shared_ptr<rockseis::ModelPoroelastic2D<float>> poro_gmodel (new rockseis::ModelPoroelastic2D<float>(Rhofile,Rhoffile,Porfile,Kdfile,Ksfile,Kffile,Mufile,Mobfile,Psifile,lpml,f0,fs));
-   std::shared_ptr<rockseis::ModelAcoustic2D<float>> acu_gmodel (new rockseis::ModelAcoustic2D<float>(Acu_rhofile,Acu_vpfile,lpml,fs));
+//   std::shared_ptr<rockseis::ModelAcoustic2D<float>> acu_gmodel (new rockseis::ModelAcoustic2D<float>(Acu_rhofile,Acu_vpfile,lpml,fs));
 
    // Create a data class for the source wavelet
    std::shared_ptr<rockseis::Data2D<float>> source (new rockseis::Data2D<float>(Waveletfile));
@@ -338,8 +338,8 @@ int main(int argc, char** argv) {
             size_t ntr = Shotgeom->getNtrace();
             poro_lmodel = poro_gmodel->getDomainmodel(Shotgeom, apertx, SMAP, mpi.getDomainrank(), ndomain0, ndomain1, order);
             (poro_lmodel->getDomain())->setMpi(&mpi);
-            acu_lmodel = acu_gmodel->getDomainmodel(Shotgeom, apertx, SMAP, mpi.getDomainrank(), ndomain0, ndomain1, order);
-            (acu_lmodel->getDomain())->setMpi(&mpi);
+//            acu_lmodel = acu_gmodel->getDomainmodel(Shotgeom, apertx, SMAP, mpi.getDomainrank(), ndomain0, ndomain1, order);
+//            (acu_lmodel->getDomain())->setMpi(&mpi);
 
             // Read wavelet data, set shot coordinates and make a map
             source->read();
@@ -362,7 +362,7 @@ int main(int argc, char** argv) {
             }
             source->makeMap(poro_lmodel->getGeom(), SMAP);
 
-            modelling = std::make_shared<rockseis::ModellingPoroelastic2D<float>>(acu_lmodel, poro_lmodel, source, order, snapinc);
+            modelling = std::make_shared<rockseis::ModellingPoroelastic2D<float>>(poro_lmodel, source, order, snapinc);
 
             // Set logfile
             modelling->setLogfile("log.txt-" + std::to_string(work.id)+ "-" + std::to_string(mpi.getDomainrank()));

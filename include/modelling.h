@@ -482,8 +482,10 @@ private:
 template<typename T>
 class ModellingPoroelastic2D: public Modelling<T> {
 public:
-    ModellingPoroelastic2D();					///< Constructor
-    ModellingPoroelastic2D(std::shared_ptr<ModelAcoustic2D<T>> acu_model, std::shared_ptr<ModelPoroelastic2D<T>> poro_model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);					///< Constructor 
+
+    ModellingPoroelastic2D();    ///< Constructors
+    ModellingPoroelastic2D(std::shared_ptr<ModelAcoustic2D<T>> acu_model, std::shared_ptr<ModelPoroelastic2D<T>> poro_model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);    ///< Constructors
+    ModellingPoroelastic2D(std::shared_ptr<ModelPoroelastic2D<T>> poro_model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);    ///< Constructors
     int run(); ///< Runs modelling
     void setPoromodel(std::shared_ptr<ModelPoroelastic2D<T>> _model) { poro_model = _model; poro_modelset = true; }
     void setAcumodel(std::shared_ptr<ModelAcoustic2D<T>> _model) { acu_model = _model; acu_modelset = true; }
@@ -505,6 +507,7 @@ public:
     void setSnapQz(std::string _snapQz) { snapQz = _snapQz; snapQzset = true; }
     T getPoro_vpmax(); ///< Get Maximum vp
     T getAcu_vpmax(); ///< Get Maximum vp
+    bool getAcumodelset() { return acu_modelset; } ///< Get acoustic modelset
     bool checkStability(); ///< Check stability of finite difference modelling
     void Velocity_BC(T *wz, T *p1, T *vz, T *qz, T *p2, T *szz, int nx, int nz_acu, int lpml);
     void Stress_BC(T *wz, T *p1, T *vz, T *qz, T *p2, T *szz, int nx, int nz_acu, int lpml);
