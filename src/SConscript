@@ -60,6 +60,9 @@ env.Install('../bin/',window)
 bandpass = env.Program(prefix + 'bandpass','bandpass.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
 env.Install('../bin/',bandpass)
 
+mutedata = env.Program(prefix + 'mutedata','mutedata.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
+env.Install('../bin/',mutedata)
+
 st1d = env.Program(prefix + 'st1d','st1d.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
 env.Install('../bin/',st1d)
 
