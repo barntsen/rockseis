@@ -2169,7 +2169,7 @@ std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getDomainmodel(std::shar
     T *R = local->getR();
     T *L = local->getL();
     T *Rx = local->getRx();
-    T *Ry = local->getRx();
+    T *Ry = local->getRy();
     T *Rz = local->getRz();
 
     /* Allocate two traces to read models from file */
@@ -2315,7 +2315,7 @@ std::shared_ptr<ModelAcoustic3D<T>> ModelAcoustic3D<T>::getDomainmodel(std::shar
     T *R = local->getR();
     T *L = local->getL();
     T *Rx = local->getRx();
-    T *Ry = local->getRx();
+    T *Ry = local->getRy();
     T *Rz = local->getRz();
 
     /* Allocate two traces to read models from file */

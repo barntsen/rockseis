@@ -54,11 +54,13 @@ int main(int argc, char** argv) {
          PRINT_DOC(        Vysnap = "false";);
          PRINT_DOC(        Vzsnap = "false";);
          PRINT_DOC();
-         PRINT_DOC(# Files);
+         PRINT_DOC(# Input files);
          PRINT_DOC(        Vp = "Vp3d.rss";);
          PRINT_DOC(        Rho = "Rho3d.rss";);
          PRINT_DOC(        Wavelet = "Wav3d.rss";);
          PRINT_DOC(        Survey = "3DSurvey.rss";);
+         PRINT_DOC();
+         PRINT_DOC(# Output files);
          PRINT_DOC(        Precordfile = "Pshot.rss";);
          PRINT_DOC(        Vxrecordfile = "Vxshot.rss";);
          PRINT_DOC(        Vyrecordfile = "Vyshot.rss";);
