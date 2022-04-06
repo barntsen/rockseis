@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
             for(long i0=0; i0<n[0]; i0++){
                 traceout[i0] = tracein[i0*j[0] + f[0]];
             }
-            out->write(traceout, n[0], Iout(0,i1-f[1],(i2-f[2])/j[2],(i3-f[3])/j[3],(i4-f[4])/j[4],(i5-f[5])/j[5],(i6-f[6])/j[6],(i7-f[7])/j[7],(i8-f[8])/j[8])*esize_data);
+            out->write(traceout, n[0], Iout(0,(i1-f[1])/j[1],(i2-f[2])/j[2],(i3-f[3])/j[3],(i4-f[4])/j[4],(i5-f[5])/j[5],(i6-f[6])/j[6],(i7-f[7])/j[7],(i8-f[8])/j[8])*esize_data);
         }
         }
         }
