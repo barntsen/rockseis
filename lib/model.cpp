@@ -602,7 +602,7 @@ void ModelEikonal2D<T>::writeVelocity() {
 template<typename T>
 void ModelEikonal2D<T>::Expand(){
     if(!this->getRealized()) {
-        rs_error("ModelEikonal2D::staggerModels_Eikonal: Model is not allocated.");
+        rs_error("ModelEikonal2D::Expand: Model is not allocated.");
     }
     int nx, nz, lpml, nx_pml, nz_pml;
     nx = this->getNx();
@@ -615,7 +615,7 @@ void ModelEikonal2D<T>::Expand(){
     // Reallocate necessary variables 
     free(L); 
     L = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    if(L == NULL) rs_error("ModelEikonal2D::staggerModels_Eikonal: Failed to allocate memory.");
+    if(L == NULL) rs_error("ModelEikonal2D::Expand: Failed to allocate memory.");
     
     // Padding
     this->padmodel2d(L, Velocity, nx, nz, lpml);
@@ -825,7 +825,7 @@ ModelEikonal3D<T>::~ModelEikonal3D() {
 template<typename T>
 void ModelEikonal3D<T>::Expand(){
     if(!this->getRealized()) {
-        rs_error("ModelEikonal3D::staggerModels_Eikonal: Model is not allocated.");
+        rs_error("ModelEikonal3D::Expand: Model is not allocated.");
     }
     int nx, ny, nz, lpml, nx_pml, ny_pml, nz_pml;
     nx = this->getNx();
@@ -840,7 +840,7 @@ void ModelEikonal3D<T>::Expand(){
     // Reallocate necessary variables 
     free(L); 
     L = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    if(L == NULL) rs_error("ModelEikonal3D::staggerModels_Eikonal: Failed to allocate memory.");
+    if(L == NULL) rs_error("ModelEikonal3D::Expand: Failed to allocate memory.");
     
     // Padding
     this->padmodel3d(L, Velocity, nx, ny, nz, lpml);
@@ -1408,28 +1408,6 @@ void ModelAcoustic2D<T>::staggerModels(){
             L[ind_pml(ix,lpml)] *= 0.0;
         }
     }
-}
-
-template<typename T>
-void ModelAcoustic2D<T>::staggerModels_Eikonal(){
-    if(!this->getRealized()) {
-        rs_error("ModelAcoustic2D::staggerModels_Eikonal: Model is not allocated.");
-    }
-    int nx, nz, lpml, nx_pml, nz_pml;
-    nx = this->getNx();
-    nz = this->getNz();
-    lpml = this->getLpml();
-    
-    nx_pml = this->getNx_pml();
-    nz_pml = this->getNz_pml();
-    
-    // Reallocate necessary variables 
-    free(L); 
-    L = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-    if(L == NULL) rs_error("ModelAcoustic2D::staggerModels_Eikonal: Failed to allocate memory.");
-    
-    // Padding
-    this->padmodel2d(L, Vp, nx, nz, lpml);
 }
 
 template<typename T>
@@ -2060,31 +2038,6 @@ void ModelAcoustic3D<T>::staggerModels(){
         }
     }
 }
-
-template<typename T>
-void ModelAcoustic3D<T>::staggerModels_Eikonal(){
-    if(!this->getRealized()) {
-        rs_error("ModelAcoustic3D::staggerModels_Eikonal: Model is not allocated.");
-    }
-    int nx, ny, nz, lpml, nx_pml, ny_pml, nz_pml;
-    nx = this->getNx();
-    ny = this->getNy();
-    nz = this->getNz();
-    lpml = this->getLpml();
-    
-    nx_pml = nx + 2*lpml;
-    ny_pml = ny + 2*lpml;
-    nz_pml = nz + 2*lpml;
-    
-    // Reallocate necessary variables 
-    free(L); 
-    L = (T *) calloc(nx_pml*ny_pml*nz_pml,sizeof(T));
-    if(L == NULL) rs_error("ModelAcoustic3D::staggerModels_Eikonal: Failed to allocate memory.");
-    
-    // Padding
-    this->padmodel3d(L, Vp, nx, ny, nz, lpml);
-}
-
 
 template<typename T>
 void ModelAcoustic3D<T>::createModel() {
