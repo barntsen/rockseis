@@ -9,16 +9,46 @@ MAXDIMS=9
 
 
 class RSSdata:
-    def __init__(self):
-        self.data_format=0;
-        self.header_format=0;
-        self.type=0;
-        self.Nheader=0;
-        self.Ndims=0;
-        self.fullsize=0
+    def __init__(self, data=None, datatype=None):
+        ndim = 0
+        dims = []
+        if(data is not None):
+            ndim = data.ndim
+            dims = data.shape
+            self.data = data
+            if(datatype is not None):
+                if (datatype < 2 or datatype > 3):
+                    raise TypeError('Invalid datatype: use 2 for DATA2D and 3 for DATA3D formats')
+                if(ndim > 2):
+                    raise TypeError('For DATA2D and DATA3D formats ndim = 2 is expeted')
+        self.data_format=4
+        self.header_format=4
+        self.Nheader=0
+        self.type=0
+        if (datatype == 2):
+            self.type=2
+            self.Nheader=4
+        if (datatype == 3):
+            self.type=3
+            self.Nheader=6
+        self.Ndims=ndim;
         self.geomN = np.zeros([MAXDIMS,1], dtype='uint64')
         self.geomD = np.zeros([MAXDIMS,1], dtype='float64')
         self.geomO = np.zeros([MAXDIMS,1], dtype='float64')
+        self.fullsize = 1
+        for i in range(0,ndim):
+            self.geomN[i] = np.uint64(dims[i])
+            self.geomD[i] = 1.0
+            self.fullsize = self.fullsize * self.geomN[i]
+
+        # Creating coordinates arrays
+        self.srcX = np.zeros([int(self.geomN[1]),1], dtype='float32')
+        self.srcZ = np.zeros([int(self.geomN[1]),1], dtype='float32')
+        self.GroupX = np.zeros([int(self.geomN[1]),1], dtype='float32')
+        self.GroupZ = np.zeros([int(self.geomN[1]),1], dtype='float32')
+        if(self.Nheader == 6):
+            self.srcY = np.zeros([int(self.geomN[1]),1], dtype='float32')
+            self.GroupY = np.zeros([int(self.geomN[1]),1], dtype='float32')
 
     def read(self,filename):
         f = open(filename, 'rb')

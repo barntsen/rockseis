@@ -14,7 +14,7 @@ bindir = '../bin/'
 
 if(env['WX']):
     # Getting platform dependent flags using wx-config
-    gui.ParseConfig('/Users/2915005/software/wxWidgets-3.1.4/osxbuild/wx-config --cxxflags --libs')
+    gui.ParseConfig('/Users/wiktorweibull/software/wxWidgets-3.0.2/build-release/wx-config --cxxflags --libs')
 
 	# Where are the files 
     gui.Append(CPPPATH=['./lib', './include', './shared'])
