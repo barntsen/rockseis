@@ -400,9 +400,6 @@ int main(int argc, char** argv) {
             // Set logfile
             rtm->setLogfile("log.txt-" + std::to_string(work.id) + "-" + std::to_string(mpi.getDomainrank()));
 
-            // Stagger model
-            lmodel->staggerModels();
-
             switch(checkpoint){
                case rockseis::FULL:
                   rtm->run();
