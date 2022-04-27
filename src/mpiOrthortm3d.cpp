@@ -334,12 +334,12 @@ int main(int argc, char** argv) {
                // create and write an empty pimagefile, with the size of the local model
                lmodel = gmodel->getLocal(Vxdata3D, apertx, aperty, SMAP);
                if(Pimaging){
-                  pimage = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, 1, 1, 1);
+                  pimage = std::make_shared<rockseis::Image3D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhy, nhz);
                   pimage->createEmpty();
                   pimage.reset();
                }
                if(Simaging){
-                  simage = std::make_shared<rockseis::Image3D<float>>(Simagefile + "-" + std::to_string(work.id), lmodel, 1, 1, 1);
+                  simage = std::make_shared<rockseis::Image3D<float>>(Simagefile + "-" + std::to_string(work.id), lmodel, nhx, nhy, nhz);
                   simage->createEmpty();
                   simage.reset();
                }

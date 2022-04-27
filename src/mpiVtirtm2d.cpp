@@ -306,12 +306,12 @@ int main(int argc, char** argv) {
                // create and write empty gradfiles, with the size of the local model
                lmodel = gmodel->getLocal(Vxdata2D, apertx, SMAP);
                if(Pimaging){
-                  pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                  pimage = std::make_shared<rockseis::Image2D<float>>(Pimagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
                   pimage->createEmpty();
                   pimage.reset();
                }
                if(Simaging){
-                  simage = std::make_shared<rockseis::Image2D<float>>(Simagefile + "-" + std::to_string(work.id), lmodel, 1, 1);
+                  simage = std::make_shared<rockseis::Image2D<float>>(Simagefile + "-" + std::to_string(work.id), lmodel, nhx, nhz);
                   simage->createEmpty();
                   simage.reset();
                }
