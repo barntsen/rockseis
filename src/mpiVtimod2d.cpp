@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
          PRINT_DOC(            source_type = "0"; # Source type 0 - pressure. 1 for Vx. 3 for Vz.);
          PRINT_DOC(            snapinc = "10"; # Snap interval in multiples of modelling interval);
          PRINT_DOC(            dtrec = "4e-3"; # Recording interval in seconds);
-         PRINT_DOC(            apertx = "900"; # Aperture for local model (source is in the middle));
+         PRINT_DOC(            apertx = "0"; # Aperture for local model (source is in the middle));
          PRINT_DOC();
          PRINT_DOC(# Booleans);
          PRINT_DOC(            Precord = "true";  # Set these to true if recording or snapshoting is to be made.);

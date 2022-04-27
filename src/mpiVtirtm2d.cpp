@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
          PRINT_DOC(lpml = "10"; # Size of pml absorbing boundary (should be larger than order + 5 ));
          PRINT_DOC(source_type = "0"; # Source type 0 - pressure. 1 for Vx. 3 for Vz.);
          PRINT_DOC(snapinc = "4"; # Snap interval in multiples of modelling interval);
-         PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
+         PRINT_DOC(apertx = "0"; # Aperture for local model (source is in the middle));
          PRINT_DOC();
          PRINT_DOC(# Checkpointing parameters);
          PRINT_DOC(snapmethod = "0";  );

@@ -40,8 +40,8 @@ int main(int argc, char** argv) {
          PRINT_DOC(lpml = "18"; # Size of pml absorbing boundary (should be larger than order + 5 ));
          PRINT_DOC(source_type = "0"; # Source type 0 - pressure. 1 for Vx. 2 for Vy. 3 for Vz.);
          PRINT_DOC(snapinc = "4"; # Snap interval in multiples of modelling interval);
-         PRINT_DOC(apertx = "1800"; # Aperture for local model (source is in the middle));
-         PRINT_DOC(aperty = "1800"; # Aperture for local model (source is in the middle));
+         PRINT_DOC(apertx = "0"; # Aperture for local model (source is in the middle));
+         PRINT_DOC(aperty = "0"; # Aperture for local model (source is in the middle));
          PRINT_DOC();
          PRINT_DOC(# Checkpointing parameters);
          PRINT_DOC(snapmethod = "0";  );
@@ -420,9 +420,6 @@ int main(int argc, char** argv) {
 
             // Set logfile
             rtm->setLogfile("log.txt-" + std::to_string(work.id) + "-" + std::to_string(mpi.getDomainrank()));
-
-            // Stagger model
-            lmodel->staggerModels();
 
             switch(checkpoint){
                case rockseis::FULL:
