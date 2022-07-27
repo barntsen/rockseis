@@ -1,3 +1,8 @@
-rm -v *.rss
-rm -v log*txt*
-rm -r -v Results
+#!/bin/sh
+
+rm -f *.rss
+rm -f *Psnaps*
+rm -f *Vxsnaps*
+rm -f *Vzsnaps*
+rm -f log*
+rm -f *.log
