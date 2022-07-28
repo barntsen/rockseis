@@ -238,6 +238,7 @@ int ModellingAcoustic2D<T>::run(){
    }
 
    this->writeLog("Running 2D Acoustic modelling.");
+
    // Loop over time
    for(int it=0; it < nt; it++)
    {

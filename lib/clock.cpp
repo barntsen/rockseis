@@ -13,8 +13,7 @@ namespace rockseis {
 
 template<typename T>
 Clock<T>::Clock() {
-
-tend=((long double)std::clock())/CLOCKS_PER_SEC;
+tend=0;
 tstart=tend;
 telapsed=0;
 wtstart=0;
@@ -28,8 +27,10 @@ Clock<T>::~Clock() {
 template<typename T>
 void Clock<T>::start() {
 struct timeval time;
+// Cpu time
+tstart=((long double)std::clock())/CLOCKS_PER_SEC;
 
-tstart=tend;
+// Wall clock time
 gettimeofday(&time,NULL);
 wtstart=(T)time.tv_sec + (T)time.tv_usec*0.000001;
 
@@ -39,12 +40,14 @@ template<typename T>
 void Clock<T>::stop() {
 struct timeval time;
 
+//Cpu clock time
 tend=((long double)std::clock())/CLOCKS_PER_SEC;
-telapsed += tend-tstart;
-tstart=tend;
+telapsed = telapsed +tend-tstart;
+
+// Wall clock time
 gettimeofday(&time,NULL);
 wtend=(T)time.tv_sec + (T)time.tv_usec*0.000001;
-wtelapsed=wtend-wtstart+wtelapsed;
+wtelapsed=wtelapsed+wtend-wtstart;
 }
 
 template<typename T>

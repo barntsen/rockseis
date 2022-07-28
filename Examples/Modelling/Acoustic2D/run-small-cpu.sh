@@ -8,10 +8,8 @@ python3 small.py
 
 echo "** Start cpu modelling for small model **"
 # Running single node acoustic gpu modeling
-rsAcousticmod2d mod-small.cfg
+/usr/bin/time --format='Wall time: %e sec(s)' rsAcousticmod2d mod-small.cfg
 
 # Plotting seismograms
 python3 Ploting_seismo.py
 
-# Plotting snapshots
-python3 Ploting_snaps-single.py

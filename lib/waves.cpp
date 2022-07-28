@@ -1,5 +1,6 @@
 // Include statements
 #include "waves.h"
+#include "balloc.h"
 
 #define I2D(i,j) ((j)*nx + (i)) 
 #define I2D_lr(i,j) ((j)*lpml + (i)) 
@@ -101,9 +102,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(){
    nx_pml = nx + 2*lpml;
    nz_pml = nz + 2*lpml;
    Pml = std::make_shared<PmlAcoustic2D<T>>(nx, nz, lpml, dt);
-   P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   P = (T *) BallocNew(nx_pml*nz_pml,sizeof(T));
+   Vx = (T *) BallocNew(nx_pml*nz_pml,sizeof(T));
+   Vz = (T *) BallocNew(nx_pml*nz_pml,sizeof(T));
 }
 
 template<typename T>
@@ -117,9 +118,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(const int _nx, const int _nz, const int _nt,
    this->setDim(2);
    nx_pml = _nx + 2*_lpml;
    nz_pml = _nz + 2*_lpml;
-   P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-   Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+   P = (T *) BallocNew(nx_pml*nz_pml,sizeof(T));
+   Vx = (T *) BallocNew(nx_pml*nz_pml,sizeof(T));
+   Vz = (T *) BallocNew(nx_pml*nz_pml,sizeof(T));
 
 }
 
@@ -185,9 +186,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
       nx_pml = _nx;
       nz_pml = _nz;
 
-      P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+      P = (T *) BallocNew(nx_pml*nz_pml, sizeof(T)); 
+      Vx = (T *) BallocNew(nx_pml*nz_pml, sizeof(T)); 
+      Vz = (T *) BallocNew(nx_pml*nz_pml, sizeof(T)); 
 
    }else{
       /* Create associated PML class */
@@ -198,9 +199,10 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
       this->setDim(2);
       nx_pml = _nx + 2*_lpml;
       nz_pml = _nz + 2*_lpml;
-      P = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      Vx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
-      Vz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+
+      P = (T *) BallocNew(nx_pml*nz_pml, sizeof(T)); 
+      Vx = (T *) BallocNew(nx_pml*nz_pml, sizeof(T)); 
+      Vz = (T *) BallocNew(nx_pml*nz_pml, sizeof(T)); 
    }
 
 }
@@ -208,9 +210,9 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
 template<typename T>
 WavesAcoustic2D<T>::~WavesAcoustic2D() {
    /* Free allocated variables */
-   free(P);
-   free(Vx);
-   free(Vz);
+   BallocDelete(P);
+   BallocDelete(Vx);
+   BallocDelete(Vz);
 }
 
 template<typename T>

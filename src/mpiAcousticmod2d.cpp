@@ -20,6 +20,7 @@ using namespace rockseis;
 
 int main(int argc, char** argv) {
    // Initializing MPI
+   //
    MPIdomaindecomp mpi = MPIdomaindecomp(&argc,&argv);
    if(mpi.getNrank() < 2){
       rs_error("This is a parallel program, it must run with at least 2 processors, use mpirun.");

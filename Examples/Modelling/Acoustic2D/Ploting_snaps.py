@@ -4,7 +4,7 @@ import RSSPython as rs
 
 # Reading the data
 rsfile = rs.RSSdata()
-rsfile.read("Psnaps.rss-0-0")
+rsfile.read("Psnaps.rss")
 
 # Getting the information about the snap
 nx = int(rsfile.geomN[0])
@@ -39,7 +39,7 @@ ax.set_ylabel('Z [m]')
 ax.set_title('Psnap at ' + str(t[snapnum]) + ' s')
 
 # plotting Vxsnap
-rsfile.read("Vxsnaps.rss-0-0")
+rsfile.read("Vxsnaps.rss")
 snap = rsfile.data[:,:,:,snapnum].squeeze().T
 ax = axs[1]
 vm = np.percentile(snap, 99)
@@ -51,7 +51,7 @@ ax.set_title('Vxsnap')
 ax.set_title('Vxsnap at ' + str(t[snapnum]) + ' s')
 
 # plotting Vzsnap
-rsfile.read("Vzsnaps.rss-0-0")
+rsfile.read("Vzsnaps.rss")
 snap = rsfile.data[:,:,:,snapnum].squeeze().T
 ax = axs[2]
 vm = np.percentile(snap, 99)
