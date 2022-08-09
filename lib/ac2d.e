@@ -177,7 +177,7 @@ int Ac2dFwstepstressz(float [*,*] Vzztop, float [*,*] Vzzbot,
           Vzztop[ix,iz]  = Blft[iz]*Vzztop[ix,iz] 
                         + Alft[iz]*df[ix,iz-iz0];
           P[ix,iz-iz0] = P[ix,iz-iz0] 
-                        - dt*L[ix,i-iz0]*(Vzztop[ix,iz] 
+                        - dt*L[ix,iz-iz0]*(Vzztop[ix,iz] 
                         + Clft[iz]*df[ix,iz-iz0]);
         }
       }

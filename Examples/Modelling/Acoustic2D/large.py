@@ -71,16 +71,17 @@ wavfile.write('wav2d.rss')
 
 ## Survey (source and receiver positions)
 nsources = 1;
-nreceivers = 801;
+nreceivers = 800;
 data = np.ones([1, nsources*nreceivers]);
 surveyfile = rs.RSSdata(data,2); # 2 for 2D or 3 for 3D
 count=0;
 for i in range(0,nsources):
     sx = dx*(nx-1)/2;
     sz = 50.0
+    dr=200.0
     for j in range(0,nreceivers):
-        rx = sx-(nreceivers/2)+(j)*dx;
-        rz = 100.0;        
+        rx = sx-(nreceivers/2)*dr+(j)*dr;
+        rz = 4000.0;        
         surveyfile.srcX[count] = sx;
         surveyfile.srcZ[count] = sz;
         surveyfile.GroupX[count] = rx;
