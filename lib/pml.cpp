@@ -1,5 +1,6 @@
 // Include statements
 #include "pml.h"
+#include "balloc.h"
 
 namespace rockseis {
 
@@ -11,18 +12,18 @@ Pml<T>::Pml() {
     Kmax = KMAX;
     dt = 0.0;
     Lpml=10;
-    A_ltf = (T *) malloc(Lpml*sizeof(T));
-    B_ltf = (T *) malloc(Lpml*sizeof(T));
-    C_ltf = (T *) malloc(Lpml*sizeof(T));
-    A_ltf_stag = (T *) malloc(Lpml*sizeof(T));
-    B_ltf_stag = (T *) malloc(Lpml*sizeof(T));
-    C_ltf_stag = (T *) malloc(Lpml*sizeof(T));
-    A_rbb = (T *) malloc(Lpml*sizeof(T));
-    B_rbb = (T *) malloc(Lpml*sizeof(T));
-    C_rbb = (T *) malloc(Lpml*sizeof(T));
-    A_rbb_stag = (T *) malloc(Lpml*sizeof(T));
-    B_rbb_stag = (T *) malloc(Lpml*sizeof(T));
-    C_rbb_stag = (T *) malloc(Lpml*sizeof(T));
+    A_ltf = (T *) BallocNew(Lpml,sizeof(T));
+    B_ltf = (T *) BallocNew(Lpml,sizeof(T));
+    C_ltf = (T *) BallocNew(Lpml,sizeof(T));
+    A_ltf_stag = (T *) BallocNew(Lpml,sizeof(T));
+    B_ltf_stag = (T *) BallocNew(Lpml,sizeof(T));
+    C_ltf_stag = (T *) BallocNew(Lpml,sizeof(T));
+    A_rbb = (T *) BallocNew(Lpml,sizeof(T));
+    B_rbb = (T *) BallocNew(Lpml,sizeof(T));
+    C_rbb = (T *) BallocNew(Lpml,sizeof(T));
+    A_rbb_stag = (T *) BallocNew(Lpml,sizeof(T));
+    B_rbb_stag = (T *) BallocNew(Lpml,sizeof(T));
+    C_rbb_stag = (T *) BallocNew(Lpml,sizeof(T));
  
     for(int i=0; i<6; i++) setApplypml(i,true);
 
@@ -33,19 +34,18 @@ Pml<T>::Pml() {
 template<typename T>
 Pml<T>::~Pml() {
     /* Free variables */
-    free(A_ltf);
-    free(B_ltf);
-    free(C_ltf);
-    free(A_ltf_stag);
-    free(B_ltf_stag);
-    free(C_ltf_stag);
-    free(A_rbb);
-    free(B_rbb);
-    free(C_rbb);
-    free(A_rbb_stag);
-    free(B_rbb_stag);
-    free(C_rbb_stag);
-
+    BallocDelete(A_ltf);
+    BallocDelete(B_ltf);
+    BallocDelete(C_ltf);
+    BallocDelete(A_ltf_stag);
+    BallocDelete(B_ltf_stag);
+    BallocDelete(C_ltf_stag);
+    BallocDelete(A_rbb);
+    BallocDelete(B_rbb);
+    BallocDelete(C_rbb);
+    BallocDelete(A_rbb_stag);
+    BallocDelete(B_rbb_stag);
+    BallocDelete(C_rbb_stag);
 }
 
 template<typename T>
@@ -55,18 +55,18 @@ Pml<T>::Pml(const int _Lpml, const T _dt) {
     Kmax = KMAX;
     dt = _dt;
     Lpml = _Lpml;
-    A_ltf = (T *) malloc(Lpml*sizeof(T));
-    B_ltf = (T *) malloc(Lpml*sizeof(T));
-    C_ltf = (T *) malloc(Lpml*sizeof(T));
-    A_ltf_stag = (T *) malloc(Lpml*sizeof(T));
-    B_ltf_stag = (T *) malloc(Lpml*sizeof(T));
-    C_ltf_stag = (T *) malloc(Lpml*sizeof(T));
-    A_rbb = (T *) malloc(Lpml*sizeof(T));
-    B_rbb = (T *) malloc(Lpml*sizeof(T));
-    C_rbb = (T *) malloc(Lpml*sizeof(T));
-    A_rbb_stag = (T *) malloc(Lpml*sizeof(T));
-    B_rbb_stag = (T *) malloc(Lpml*sizeof(T));
-    C_rbb_stag = (T *) malloc(Lpml*sizeof(T));
+    A_ltf = (T *) BallocNew(Lpml,sizeof(T));
+    B_ltf = (T *) BallocNew(Lpml,sizeof(T));
+    C_ltf = (T *) BallocNew(Lpml,sizeof(T));
+    A_ltf_stag = (T *) BallocNew(Lpml,sizeof(T));
+    B_ltf_stag = (T *) BallocNew(Lpml,sizeof(T));
+    C_ltf_stag = (T *) BallocNew(Lpml,sizeof(T));
+    A_rbb = (T *) BallocNew(Lpml,sizeof(T));
+    B_rbb = (T *) BallocNew(Lpml,sizeof(T));
+    C_rbb = (T *) BallocNew(Lpml,sizeof(T));
+    A_rbb_stag = (T *) BallocNew(Lpml,sizeof(T));
+    B_rbb_stag = (T *) BallocNew(Lpml,sizeof(T));
+    C_rbb_stag = (T *) BallocNew(Lpml,sizeof(T));
 
     for(int i=0; i<6; i++) setApplypml(i,true);
     
@@ -182,14 +182,14 @@ PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, cons
     nz_pml= nz + 2*Lpml;
 
     /* Allocate variables */
-    P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
-    P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
-    P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-    P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
-    Vxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
-    Vxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
-    Vzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-    Vzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+    P_left=(T *) BallocNew(nz_pml*Lpml,sizeof(T));
+    P_right=(T *) BallocNew(nz_pml*Lpml,sizeof(T));
+    P_top=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
+    P_bottom=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
+    Vxx_left=(T *) BallocNew(nz_pml*Lpml,sizeof(T));
+    Vxx_right=(T *) BallocNew(nz_pml*Lpml,sizeof(T));
+    Vzz_top=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
+    Vzz_bottom=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
 }
 
 template<typename T>
@@ -203,23 +203,23 @@ PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, cons
 
     /* Allocate variables */
     if(low[0]){
-       P_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
-       Vxx_left=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       P_left=(T *) BallocNew(nz_pml*Lpml,sizeof(T));
+       Vxx_left=(T *) BallocNew(nz_pml*Lpml,sizeof(T));
        this->setApplypml(0,true);
     }
     if(high[0]){
-       P_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
-       Vxx_right=(T *) calloc(nz_pml*Lpml,sizeof(T));
+       P_right=(T *) BallocNew(nz_pml*Lpml,sizeof(T));
+       Vxx_right=(T *) BallocNew(nz_pml*Lpml,sizeof(T));
        this->setApplypml(1,true);
     }
     if(low[1]){
-       P_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
-       Vzz_top=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       P_top=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
+       Vzz_top=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
        this->setApplypml(4,true);
     }
     if(high[1]){
-       P_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
-       Vzz_bottom=(T *) calloc(nx_pml*Lpml,sizeof(T));
+       P_bottom=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
+       Vzz_bottom=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
        this->setApplypml(5,true);
     }
 }
@@ -228,20 +228,20 @@ template<typename T>
 PmlAcoustic2D<T>::~PmlAcoustic2D() {
    /* Free variables */
    if(this->getApplypml(0)){
-      free(P_left);
-      free(Vxx_left);
+      BallocDelete(P_left);
+      BallocDelete(Vxx_left);
    }
    if(this->getApplypml(1)){
-      free(P_right);
-      free(Vxx_right);
+      BallocDelete(P_right);
+      BallocDelete(Vxx_right);
    }
    if(this->getApplypml(4)){
-      free(P_top);
-      free(Vzz_top);
+      BallocDelete(P_top);
+      BallocDelete(Vzz_top);
    }
    if(this->getApplypml(5)){
-      free(P_bottom);
-      free(Vzz_bottom);
+      BallocDelete(P_bottom);
+      BallocDelete(Vzz_bottom);
    }
 }
 

@@ -64,14 +64,12 @@ if gpu['ON'] == True :
                                ['ballocgpu.cpp', 'gpu.cpp'])
   dergpu         = gpu.Library(builddir + 'dergpu',
                                ['dergpu.cpp','diff.cpp'])
- 
-  # Because I use the same source file for the cpu and gpu versions
-  # the object files has to be explicitly built to avoid conflicts
-
   modellingpuObj = gpu.Object('modellingpu.o', 'modelling.cpp')
   clockgpuObj    = gpu.Object('clockgpu.o', 'clock.cpp')
+  ac2dObj        = gpu.Object('ac2d.o', 'ac2d.cpp')
+  ac2dcObj       = gpu.Object('ac2dc.o', 'ac2dc.cpp')
   modellingpu    = gpu.Library(builddir + 'modellingpu',
                             ['modellingpu.o','clockgpu.o'])
-  wavesgpuObj    = gpu.Object('wavesgpu.o', 'waves.cpp')
+  wavesgpuObj    = gpu.Object('wavesgpu.o', 'wavesgpu.cpp')
   wavesgpu       = gpu.Library(builddir + 'wavesgpu',
-                            ['wavesgpu.o','clockgpu.o'])
+                            ['wavesgpu.o','clockgpu.o', 'ac2d.o','ac2dc.o'])

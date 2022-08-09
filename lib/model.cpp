@@ -1,5 +1,6 @@
 // Include statements
 #include "model.h"
+#include "balloc.h"
 
 namespace rockseis {
 
@@ -1147,22 +1148,22 @@ void ModelAcoustic1D<T>::staggerModels(){
 template<typename T>
 ModelAcoustic2D<T>::ModelAcoustic2D(): Model<T>(2) {
     /* Allocate variables */
-    Vp = (T *) calloc(1,1);
-    R = (T *) calloc(1,1);
-    L = (T *) calloc(1,1);
-    Rx = (T *) calloc(1,1);
-    Rz = (T *) calloc(1,1);
+    Vp = (T *) BallocNew(1,1);
+    R = (T *) BallocNew(1,1);
+    L = (T *) BallocNew(1,1);
+    Rx = (T *) BallocNew(1,1);
+    Rz = (T *) BallocNew(1,1);
     
 }
 
 template<typename T>
 ModelAcoustic2D<T>::ModelAcoustic2D(const int _nx, const int _nz, const int _lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs): Model<T>(2, _nx, 1, _nz,  _lpml, _dx, 1.0, _dz, _ox, 0.0, _oz, _fs) {
     /* Allocate variables */
-    Vp = (T *) calloc(1,1);
-    R = (T *) calloc(1,1);
-    L = (T *) calloc(1,1);
-    Rx = (T *) calloc(1,1);
-    Rz = (T *) calloc(1,1);
+    Vp = (T *) BallocNew(1,1);
+    R = (T *) BallocNew(1,1);
+    L = (T *) BallocNew(1,1);
+    Rx = (T *) BallocNew(1,1);
+    Rz = (T *) BallocNew(1,1);
 }
 
 template<typename T>
@@ -1226,21 +1227,21 @@ ModelAcoustic2D<T>::ModelAcoustic2D(std::string _Vpfile, std::string _Rfile, con
     this->setFs(_fs);
 
     /* Allocate variables */
-    Vp = (T *) calloc(1,1);
-    R = (T *) calloc(1,1);
-    L = (T *) calloc(1,1);
-    Rx = (T *) calloc(1,1);
-    Rz = (T *) calloc(1,1);
+    Vp = (T *) BallocNew(1,1);
+    R = (T *) BallocNew(1,1);
+    L = (T *) BallocNew(1,1);
+    Rx = (T *) BallocNew(1,1);
+    Rz = (T *) BallocNew(1,1);
 }
 
 template<typename T>
 ModelAcoustic2D<T>::~ModelAcoustic2D() {
     // Freeing all variables
-    free(Vp);
-    free(R);
-    free(L);
-    free(Rx);
-    free(Rz);
+    BallocDelete(Vp);
+    BallocDelete(R);
+    BallocDelete(L);
+    BallocDelete(Rx);
+    BallocDelete(Rz);
 }
 
 template<typename T>
@@ -1266,10 +1267,10 @@ void ModelAcoustic2D<T>::readModel() {
     int nz = this->getNz();
 
     // Reallocate variables to correct size
-    free(Vp); free(R);
-    Vp = (T *) calloc(nx*nz,sizeof(T));
+    BallocDelete(Vp); BallocDelete(R);
+    Vp = (T *) BallocNew(nx*nz,sizeof(T));
     if(Vp == NULL) rs_error("ModelAcoustic2D::readModel: Failed to allocate memory.");
-    R = (T *) calloc(nx*nz,sizeof(T));
+    R = (T *) BallocNew(nx*nz,sizeof(T));
     if(R == NULL) rs_error("ModelAcoustic2D::readModel: Failed to allocate memory.");
     this->setRealized(true);
 
@@ -1364,12 +1365,12 @@ void ModelAcoustic2D<T>::staggerModels(){
     Index ind_pml(nx_pml, nz_pml);
 
     // Reallocate necessary variables 
-    free(L); free(Rx); free(Rz);
-    L = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    BallocDelete(L); BallocDelete(Rx); BallocDelete(Rz);
+    L = (T *) BallocNew(nx_pml*nz_pml,sizeof(T));
     if(L == NULL) rs_error("ModelAcoustic2D::staggerModels: Failed to allocate memory.");
-    Rx = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Rx = (T *) BallocNew(nx_pml*nz_pml,sizeof(T));
     if(Rx == NULL) rs_error("ModelAcoustic2D::staggerModels: Failed to allocate memory.");
-    Rz = (T *) calloc(nx_pml*nz_pml,sizeof(T));
+    Rz = (T *) BallocNew(nx_pml*nz_pml,sizeof(T));
     if(Rz == NULL) rs_error("ModelAcoustic2D::staggerModels: Failed to allocate memory.");
     
     // Padding
@@ -1416,10 +1417,10 @@ void ModelAcoustic2D<T>::createModel() {
     int nz = this->getNz();
 
     /* Reallocate Vp and R */
-    free(Vp); free(R);
-    Vp = (T *) calloc(nx*nz,sizeof(T));
+    BallocDelete(Vp); BallocDelete(R);
+    Vp = (T *) BallocNew(nx*nz,sizeof(T));
     if(Vp == NULL) rs_error("ModelAcoustic2D::createModel: Failed to allocate memory.");
-    R = (T *) calloc(nx*nz,sizeof(T));
+    R = (T *) BallocNew(nx*nz,sizeof(T));
     if(R == NULL) rs_error("ModelAcoustic2D::createModel: Failed to allocate memory.");
     this->setRealized(true);
 }
@@ -1430,12 +1431,12 @@ void ModelAcoustic2D<T>::createPaddedmodel() {
     int nz = this->getNz();
 
     /* Reallocate L Rx, and Rz */
-    free(L); free(Rx); free(Rz);
-    L = (T *) calloc(nx*nz,sizeof(T));
+    BallocDelete(L); BallocDelete(Rx); BallocDelete(Rz);
+    L = (T *) BallocNew(nx*nz,sizeof(T));
     if(L == NULL) rs_error("ModelAcoustic2D::createPaddedmodel: Failed to allocate memory.");
-    Rx = (T *) calloc(nx*nz,sizeof(T));
+    Rx = (T *) BallocNew(nx*nz,sizeof(T));
     if(Rx == NULL) rs_error("ModelAcoustic2D::createPaddedmodel: Failed to allocate memory.");
-    Rz = (T *) calloc(nx*nz,sizeof(T));
+    Rz = (T *) BallocNew(nx*nz,sizeof(T));
     if(Rz == NULL) rs_error("ModelAcoustic2D::createPaddedmodel: Failed to allocate memory.");
 }
 
