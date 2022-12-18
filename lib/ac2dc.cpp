@@ -82,6 +82,12 @@ int Ac2dFwstepvxc(float *Pleft, float *Pright,
                dAlftstag,dBlftstag,dClftstag, 
                dArbbstag,dBrbbstag,dCrbbstag, 
                dGetapplypml,ix0,iz0,nxo,nzo,dt); 
+  // Call gpu kernel
+  Ac2dFwstepvx2(dPleft, dPright,   
+               dVx,dRx,ddf,    
+               dAlftstag,dBlftstag,dClftstag, 
+               dArbbstag,dBrbbstag,dCrbbstag, 
+               dGetapplypml,ix0,iz0,nxo,nzo,dt); 
 
   // Remove descriptors
   BallocDelete(dPleft);
@@ -173,8 +179,15 @@ int Ac2dFwstepvzc(float *Ptop, float *Pbot,
   dGetapplypml->a = Getapplypml;
   dGetapplypml->d[0] = ng;
 
+
   // Call gpu kernel
   Ac2dFwstepvz(dPtop, dPbot,   
+               dVz,dRz,ddf,    
+               dAlftstag,dBlftstag,dClftstag, 
+               dArbbstag,dBrbbstag,dCrbbstag, 
+               dGetapplypml,ix0,iz0,nxo,nzo,dt); 
+  // Call gpu kernel
+  Ac2dFwstepvz2(dPtop, dPbot,   
                dVz,dRz,ddf,    
                dAlftstag,dBlftstag,dClftstag, 
                dArbbstag,dBrbbstag,dCrbbstag, 
@@ -277,6 +290,11 @@ int Ac2dFwstepstressxc(float *Vxxleft, float *Vxxright,
               dAlft,dBlft,dClft,
               dArbb,dBrbb,dCrbb,
               dGetapplypml,ix0,iz0,nxo,nzo,dt);
+  Ac2dFwstepstressx2(dVxxleft, dVxxright,
+              dP,dL,ddf,
+              dAlft,dBlft,dClft,
+              dArbb,dBrbb,dCrbb,
+              dGetapplypml,ix0,iz0,nxo,nzo,dt);
 
   // Remove descriptors
   BallocDelete(dVxxleft);
@@ -370,6 +388,11 @@ int Ac2dFwstepstresszc(float *Vzztop, float *Vzzbot,
 
   // Call gpu kernel
   Ac2dFwstepstressz(dVzztop, dVzzbot,
+              dP,dL,ddf,
+              dAlft,dBlft,dClft,
+              dArbb,dBrbb,dCrbb,
+              dGetapplypml,ix0,iz0,nxo,nzo,dt);
+  Ac2dFwstepstressz2(dVzztop, dVzzbot,
               dP,dL,ddf,
               dAlft,dBlft,dClft,
               dArbb,dBrbb,dCrbb,
