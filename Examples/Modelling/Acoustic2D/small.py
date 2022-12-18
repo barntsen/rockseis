@@ -24,7 +24,7 @@ def fd2dstability(dx, dz, Cmax):
 
 # In[24]:
 ## Creating a model 
-nx = 801;
+nx = 1001;
 nz = 61;
 dx = 10;
 dz = 10;

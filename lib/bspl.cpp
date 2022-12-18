@@ -1,4 +1,5 @@
 #include "bspl.h"
+#include "balloc.h"
 
 namespace rockseis {
 /* Constructors*/
@@ -69,10 +70,10 @@ Bspl1D<T>::Bspl1D(const int _nx, const T _dx, const T _dtx, const int _kx) : Bsp
 	}
 
 	nc = (ntx-kx-1);
-	c = (T *) calloc(nc,sizeof(T));
-	tx = (T *) calloc(ntx,sizeof(T));
-	x = (T *) calloc(mx,sizeof(T));
-	mod = (T *) calloc(mx,sizeof(T));
+	c = (T *) BallocNew(nc,sizeof(T));
+	tx = (T *) BallocNew(ntx,sizeof(T));
+	x = (T *) BallocNew(mx,sizeof(T));
+	mod = (T *) BallocNew(mx,sizeof(T));
 
 	/* Computing the evaluation arrays */
 	int i;
@@ -97,10 +98,10 @@ Bspl1D<T>::Bspl1D(const int _nx, const T _dx, const T _dtx, const int _kx) : Bsp
 template<typename T>
 Bspl1D<T>::~Bspl1D()
 {
-	free(c);
-	free(tx);
-	free(x);
-	free(mod);
+	BallocDelete(c);
+	BallocDelete(tx);
+	BallocDelete(x);
+	BallocDelete(mod);
 }
 
 template<typename T>
@@ -193,23 +194,23 @@ Bspl2D<T>::Bspl2D(const int _nx, const int _nz, const T _dx, const T _dz, const 
 	}
 
 	int i;
-	this->wx= (T **) calloc(this->mx,sizeof(T *));
+	this->wx= (T **) BallocNew(this->mx,sizeof(T *));
     for(i=0; i<this->mx; i++){
-        this->wx[i] = (T *) calloc((this->kx+1), sizeof(T));
+        this->wx[i] = (T *) BallocNew((this->kx+1), sizeof(T));
     }
-	this->wz= (T **) calloc(this->mz,sizeof(T *));
+	this->wz= (T **) BallocNew(this->mz,sizeof(T *));
     for(i=0; i<this->mz; i++){
-        this->wz[i] = (T *) calloc((this->kz+1), sizeof(T));
+        this->wz[i] = (T *) BallocNew((this->kz+1), sizeof(T));
     }
 	this->nc = (this->ntz-this->kz-1)*(this->ntx-this->kx-1);
-	this->c=  (T *) calloc(this->nc, sizeof(T));
-	this->tx= (T *) calloc(this->ntx, sizeof(T));
-	this->tz= (T *) calloc(this->ntz, sizeof(T));
-	this->lx= (int *) calloc(this->mx, sizeof(int));
-	this->lz= (int *) calloc(this->mz, sizeof(int));
-	this->x= (T *) calloc(this->mx, sizeof(T));
-	this->z= (T *) calloc(this->mz, sizeof(T));
-	this->mod= (T *) calloc(this->mx*this->mz, sizeof(T));
+	this->c=  (T *) BallocNew(this->nc, sizeof(T));
+	this->tx= (T *) BallocNew(this->ntx, sizeof(T));
+	this->tz= (T *) BallocNew(this->ntz, sizeof(T));
+	this->lx= (int *) BallocNew(this->mx, sizeof(int));
+	this->lz= (int *) BallocNew(this->mz, sizeof(int));
+	this->x= (T *) BallocNew(this->mx, sizeof(T));
+	this->z= (T *) BallocNew(this->mz, sizeof(T));
+	this->mod= (T *) BallocNew(this->mx*this->mz, sizeof(T));
 
 	/* Computing the evaluation arrays */
 	for (i=0; i<this->mx; i++){
@@ -249,18 +250,18 @@ Bspl2D<T>::Bspl2D(const int _nx, const int _nz, const T _dx, const T _dz, const 
 template<typename T>
 Bspl2D<T>::~Bspl2D()
 {
-	free(c);
-	free(tx);
-	free(tz);
-	free(x);
-	free(z);
-	free(lx);
-	free(lz);
-	free(wx[0]);
-	free(wx);
-	free(wz[0]);
-	free(wz);
-	free(mod);
+	BallocDelete(c);
+	BallocDelete(tx);
+	BallocDelete(tz);
+	BallocDelete(x);
+	BallocDelete(z);
+	BallocDelete(lx);
+	BallocDelete(lz);
+	BallocDelete(wx[0]);
+	BallocDelete(wx);
+	BallocDelete(wz[0]);
+	BallocDelete(wz);
+	BallocDelete(mod);
 }
 
 
@@ -416,30 +417,30 @@ Bspl3D<T>::Bspl3D(const int _nx, const int _ny, const int _nz, const T _dx, cons
 	}
 
 	int i;
-	this->wx= (T **) calloc(this->mx,sizeof(T *));
+	this->wx= (T **) BallocNew(this->mx,sizeof(T *));
     for(i=0; i<this->mx; i++){
-        this->wx[i] = (T *) calloc((this->kx+1), sizeof(T));
+        this->wx[i] = (T *) BallocNew((this->kx+1), sizeof(T));
     }
-	this->wy= (T **) calloc(this->my,sizeof(T *));
+	this->wy= (T **) BallocNew(this->my,sizeof(T *));
     for(i=0; i<this->my; i++){
-        this->wy[i] = (T *) calloc((this->ky+1), sizeof(T));
+        this->wy[i] = (T *) BallocNew((this->ky+1), sizeof(T));
     }
-	this->wz= (T **) calloc(this->mz,sizeof(T *));
+	this->wz= (T **) BallocNew(this->mz,sizeof(T *));
     for(i=0; i<this->mz; i++){
-        this->wz[i] = (T *) calloc((this->kz+1), sizeof(T));
+        this->wz[i] = (T *) BallocNew((this->kz+1), sizeof(T));
     }
 	this->nc = (this->ntz-this->kz-1)*(this->ntx-this->kx-1)*(this->nty-this->ky-1);
-	this->c=  (T *) calloc(this->nc, sizeof(T));
-	this->tx= (T *) calloc(this->ntx, sizeof(T));
-	this->ty= (T *) calloc(this->nty, sizeof(T));
-	this->tz= (T *) calloc(this->ntz, sizeof(T));
-	this->lx= (int *) calloc(this->mx, sizeof(int));
-	this->ly= (int *) calloc(this->my, sizeof(int));
-	this->lz= (int *) calloc(this->mz, sizeof(int));
-	this->x= (T *) calloc(this->mx, sizeof(T));
-	this->y= (T *) calloc(this->my, sizeof(T));
-	this->z= (T *) calloc(this->mz, sizeof(T));
-	this->mod= (T *) calloc(this->mx*this->my*this->mz, sizeof(T));
+	this->c=  (T *) BallocNew(this->nc, sizeof(T));
+	this->tx= (T *) BallocNew(this->ntx, sizeof(T));
+	this->ty= (T *) BallocNew(this->nty, sizeof(T));
+	this->tz= (T *) BallocNew(this->ntz, sizeof(T));
+	this->lx= (int *) BallocNew(this->mx, sizeof(int));
+	this->ly= (int *) BallocNew(this->my, sizeof(int));
+	this->lz= (int *) BallocNew(this->mz, sizeof(int));
+	this->x= (T *) BallocNew(this->mx, sizeof(T));
+	this->y= (T *) BallocNew(this->my, sizeof(T));
+	this->z= (T *) BallocNew(this->mz, sizeof(T));
+	this->mod= (T *) BallocNew(this->mx*this->my*this->mz, sizeof(T));
 
     /* Computing the evaluation arrays */
 	for (i=0; i<this->mx; i++){

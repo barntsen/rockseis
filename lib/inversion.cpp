@@ -1,4 +1,6 @@
 #include "inversion.h"
+#include "balloc.h"
+#include "derd.h"
 
 
 namespace rockseis {
@@ -1423,7 +1425,7 @@ void InversionAcoustic2D<T>::computeRegularisation(double *x)
 {
    // Models
    std::shared_ptr<rockseis::ModelAcoustic2D<T>> model (new rockseis::ModelAcoustic2D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
-   std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
+   std::shared_ptr<Derd<double>> der (new Derd<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
    std::shared_ptr<rockseis::Bspl2D<double>> spline;
 
    // Write linesearch model
@@ -1438,11 +1440,11 @@ void InversionAcoustic2D<T>::computeRegularisation(double *x)
    int N, Nmod;
 
    Nmod = (model->getGeom())->getNtot();
-   dvpdx = (double *) calloc(Nmod, sizeof(double));
-   dvpdz = (double *) calloc(Nmod, sizeof(double));
-   drhodx = (double *) calloc(Nmod, sizeof(double));
-   drhodz = (double *) calloc(Nmod, sizeof(double));
-   gwrk = (double *) calloc(Nmod, sizeof(double));
+   dvpdx = (double *) BallocNew(Nmod, sizeof(double));
+   dvpdz = (double *) BallocNew(Nmod, sizeof(double));
+   drhodx = (double *) BallocNew(Nmod, sizeof(double));
+   drhodz = (double *) BallocNew(Nmod, sizeof(double));
+   gwrk = (double *) BallocNew(Nmod, sizeof(double));
    model->readModel();
    model->setVpfile(VPREGGRADFILE);
    model->setRfile(RHOREGGRADFILE);
@@ -1605,11 +1607,11 @@ void InversionAcoustic2D<T>::computeRegularisation(double *x)
    model->writeModel();
 
    // Free variables
-   free(dvpdx);
-   free(dvpdz);
-   free(drhodx);
-   free(drhodz);
-   free(gwrk);
+   BallocDelete(dvpdx);
+   BallocDelete(dvpdz);
+   BallocDelete(drhodx);
+   BallocDelete(drhodz);
+   BallocDelete(gwrk);
 }
 
 // =============== 3D ACOUSTIC INVERSION CLASS =============== //
@@ -2647,7 +2649,7 @@ void InversionAcoustic3D<T>::computeRegularisation(double *x)
 {
    // Models
    std::shared_ptr<rockseis::ModelAcoustic3D<T>> model (new rockseis::ModelAcoustic3D<T>(VPLSFILE, RHOLSFILE, 1 ,0));
-   std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), model->getNy(), model->getNz(), model->getDx(), model->getDy(), model->getDz(), 8));
+   std::shared_ptr<Derd<double>> der (new Derd<double>(model->getNx(), model->getNy(), model->getNz(), model->getDx(), model->getDy(), model->getDz(), 8));
    std::shared_ptr<rockseis::Bspl3D<double>> spline;
 
    // Write linesearch model
@@ -4531,7 +4533,7 @@ void InversionElastic2D<T>::computeRegularisation(double *x)
 {
    // Models
    std::shared_ptr<rockseis::ModelElastic2D<T>> model (new rockseis::ModelElastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, 1 ,0));
-   std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
+   std::shared_ptr<Derd<double>> der (new Derd<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
    std::shared_ptr<rockseis::Bspl2D<double>> spline;
 
    // Write linesearch model
@@ -6259,7 +6261,7 @@ void InversionElastic3D<T>::computeRegularisation(double *x)
 {
    // Models
    std::shared_ptr<rockseis::ModelElastic3D<T>> model (new rockseis::ModelElastic3D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, 1 ,0));
-   std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), model->getNy(), model->getNz(), model->getDx(), model->getDy(), model->getDz(), 8));
+   std::shared_ptr<Derd<double>> der (new Derd<double>(model->getNx(), model->getNy(), model->getNz(), model->getDx(), model->getDy(), model->getDz(), 8));
    std::shared_ptr<rockseis::Bspl3D<double>> spline;
 
    // Write linesearch model
@@ -8598,7 +8600,7 @@ void InversionViscoelastic2D<T>::computeRegularisation(double *x)
 {
    // Models
    std::shared_ptr<rockseis::ModelViscoelastic2D<T>> model (new rockseis::ModelViscoelastic2D<T>(VPLSFILE, VSLSFILE, RHOLSFILE, QPLSFILE, QSLSFILE, 1, 15.0, 0));
-   std::shared_ptr<Der<double>> der (new Der<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
+   std::shared_ptr<Derd<double>> der (new Derd<double>(model->getNx(), 1, model->getNz(), model->getDx(), 1.0, model->getDz(), 8));
    std::shared_ptr<rockseis::Bspl2D<double>> spline;
 
    // Write linesearch model

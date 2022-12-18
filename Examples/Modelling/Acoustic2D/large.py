@@ -24,13 +24,14 @@ def fd2dstability(dx, dz, Cmax):
 
 # In[24]:
 ## Creating a model 
-nx = 25001;
+nx = 1001;
 nz = 1001;
 dx = 10;
 dz = 10;
 z = np.zeros([nz,1])
 z[:,0] = np.linspace(0,nz-1*dz, nz);
 G=1.5;
+G=0.0
 vp = 2000 + G*z;
 rho = 1000*np.ones(vp.shape);
 
@@ -62,26 +63,27 @@ mod.write('rho.rss');
 f0 = 15;
 t0 = 2/f0;
 dt = 0.9*fd2dstability(dx, dz, 4000);
-rec_time = 0.1 
+rec_time = 2.0 
 nt = int(np.floor(rec_time/dt)); 
 wav,t = Ricker(f0, t0, nt, dt); 
+
 wavfile = rs.RSSdata(wav,2); # 2 for 2D or 3 for 3D
 wavfile.geomD[0] = dt;
 wavfile.write('wav2d.rss')
 
 ## Survey (source and receiver positions)
 nsources = 1;
-nreceivers = 800;
+nreceivers = 801;
 data = np.ones([1, nsources*nreceivers]);
 surveyfile = rs.RSSdata(data,2); # 2 for 2D or 3 for 3D
 count=0;
 for i in range(0,nsources):
     sx = dx*(nx-1)/2;
-    sz = 50.0
-    dr=200.0
+    sz = dz*2.0
+    minoff = (nreceivers*dx)/2
     for j in range(0,nreceivers):
-        rx = sx-(nreceivers/2)*dr+(j)*dr;
-        rz = 4000.0;        
+        rx = sx+(j)*dx-minoff;
+        rz = 30.0;        
         surveyfile.srcX[count] = sx;
         surveyfile.srcZ[count] = sz;
         surveyfile.GroupX[count] = rx;

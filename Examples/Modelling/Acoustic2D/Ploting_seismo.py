@@ -51,5 +51,6 @@ ax.set_xlabel('TRC number')
 ax.set_ylabel('TWT [s]')
 ax.set_title('Vzshot')
 
+plt.savefig('data.pdf')
 plt.show()
 

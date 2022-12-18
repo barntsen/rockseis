@@ -12,6 +12,7 @@ if mpi['ON'] == True:
   file      = mpi.Library(builddir + 'file','file.cpp')
   pml       = mpi.Library(builddir + 'pml','pml.cpp')
   der       = mpi.Library(builddir + 'der','der.cpp')
+  derd      = mpi.Library(builddir + 'derd','derd.cpp')
   domain    = mpi.Library(builddir + 'domain','domain.cpp')
   hilbert   = mpi.Library(builddir + 'hilbert','hilbert.cpp')
   waves     = mpi.Library(builddir   + 'waves',['waves.cpp', 'pml.cpp'])
@@ -63,7 +64,7 @@ if gpu['ON'] == True :
   ballocgpu      = gpu.Library(builddir+ 'ballocgpu',
                                ['ballocgpu.cpp', 'gpu.cpp'])
   dergpu         = gpu.Library(builddir + 'dergpu',
-                               ['dergpu.cpp','diff.cpp'])
+                               ['dergpu.cpp','diff.cpp', 'diffc.cpp'])
   modellingpuObj = gpu.Object('modellingpu.o', 'modelling.cpp')
   clockgpuObj    = gpu.Object('clockgpu.o', 'clock.cpp')
   ac2dObj        = gpu.Object('ac2d.o', 'ac2d.cpp')
@@ -73,3 +74,6 @@ if gpu['ON'] == True :
   wavesgpuObj    = gpu.Object('wavesgpu.o', 'wavesgpu.cpp')
   wavesgpu       = gpu.Library(builddir + 'wavesgpu',
                             ['wavesgpu.o','clockgpu.o', 'ac2d.o','ac2dc.o'])
+  fwigpuObj    = gpu.Object('fwigpu.o','fwi.cpp')
+  fwigpu       = mpi.Library(builddir + 'fwigpu',
+            		    ['fwigpu.o', 'wavesgpu.o', 'revolve.o', 'pml.o','dergpu.o'])

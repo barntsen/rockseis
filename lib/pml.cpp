@@ -190,6 +190,9 @@ PmlAcoustic2D<T>::PmlAcoustic2D(const int nx, const int nz, const int Lpml, cons
     Vxx_right=(T *) BallocNew(nz_pml*Lpml,sizeof(T));
     Vzz_top=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
     Vzz_bottom=(T *) BallocNew(nx_pml*Lpml,sizeof(T));
+
+   //DEBUG
+   printf("nx_pml,nz_pml,Lpml: %d %d %d \n", nx_pml,nz_pml,Lpml);
 }
 
 template<typename T>

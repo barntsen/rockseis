@@ -36,12 +36,12 @@ struct nctempdiff2 {int d[2]; struct diff *a; } ;
 struct nctempdiff3 {int d[3]; struct diff *a; } ;
 struct nctempdiff4 {int d[4]; struct diff *a; } ;
 struct diff* DiffNew (int l);
-int DiffDxminus (float *_A, float *_dA, float *_w,float dx,int l, int nx, int ny);
-int DiffDyminus (float *_A, float *_dA, float *_w,float dx,int l, int nx, int ny);
-int DiffDxplus (float *_A, float *_dA, float *_w,float dx,int l, int nx, int ny);
-int DiffDyplus (float *_A, float *_dA, float *_w,float dx,int l, int nx, int ny);
-__global__ void kernel_DiffDxminus (float *_A, float *_dA, float *_w,float dx,int l, int nx, int ny);
-__global__ void kernel_DiffDxminus (float *_A, float *_dA, float *_w,float dx,int l, int _nx, int _ny)
+int DiffDxminus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l);
+int DiffDyminus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l);
+int DiffDxplus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l);
+int DiffDyplus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l);
+__global__ void kernel_DiffDxminus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l);
+__global__ void kernel_DiffDxminus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l)
 {
 int nx;
 int ny;
@@ -49,27 +49,6 @@ int i;
 int j;
 int k;
 float sum;
-
-nctempfloat2 A_;
-nctempfloat2 *A; 
-A_.d[0] = _nx;
-A_.d[1] = _ny;
-A_.a = _A;
-A= &A_;
-
-nctempfloat2 dA_;
-nctempfloat2 *dA; 
-dA_.d[0] = _nx;
-dA_.d[1] = _ny;
-dA_.a = _dA;
-dA= &dA_;
-
-nctempfloat1 w_;
-nctempfloat1 *w; 
-w_.d[0] = l;
-w_.a = _w;
-w= &w_;
-
 int nctemp5=A->d[0];nx =nctemp5;
 int nctemp13=A->d[1];ny =nctemp13;
 int nctemp19=0;
@@ -235,15 +214,14 @@ dA->a[nctemp425] =nctemp433;
 }
 }
 }
-int DiffDxminus (float *A, float *dA, float *w,float dx,int l,int nx, int ny)
+int DiffDxminus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l)
 {
-  kernel_DiffDxminus<<<NBLOCKS,NTHREADS>>>(A,dA,w,dx,l,nx,ny);
+  kernel_DiffDxminus<<<NBLOCKS,NTHREADS>>>(A,dA,w,dx,l);
 GpuError();
 return(1);
 }
-
-__global__ void kernel_DiffDxplus (float *_A, float *_dA, float *_w,float dx,int l, int nx, int ny);
-__global__ void kernel_DiffDxplus (float *_A, float *_dA, float *_w,float dx,int l, int _nx, int _ny)
+__global__ void kernel_DiffDxplus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l);
+__global__ void kernel_DiffDxplus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l)
 {
 int nx;
 int ny;
@@ -251,27 +229,6 @@ int i;
 int j;
 int k;
 float sum;
-
-nctempfloat2 A_;
-nctempfloat2 *A; 
-A_.d[0] = _nx;
-A_.d[1] = _ny;
-A_.a = _A;
-A= &A_;
-
-nctempfloat2 dA_;
-nctempfloat2 *dA; 
-dA_.d[0] = _nx;
-dA_.d[1] = _ny;
-dA_.a = _dA;
-dA= &dA_;
-
-nctempfloat1 w_;
-nctempfloat1 *w; 
-w_.d[0] = l;
-w_.a = _w;
-w= &w_;
-
 int nctemp438=A->d[0];nx =nctemp438;
 int nctemp446=A->d[1];ny =nctemp446;
 int nctemp452=0;
@@ -435,40 +392,20 @@ dA->a[nctemp848] =nctemp856;
 }
 }
 }
-int DiffDxplus (float *A, float *dA, float *w,float dx,int l, int nx, int ny)
+int DiffDxplus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l)
 {
-  kernel_DiffDxplus<<<NBLOCKS,NTHREADS>>>(A,dA,w,dx,l,nx,ny);
+  kernel_DiffDxplus<<<NBLOCKS,NTHREADS>>>(A,dA,w,dx,l);
 GpuError();
 return(1);
 }
-__global__ void kernel_DiffDyminus (float *_A, float *_dA, float *_w,float dx,int l, int nx, int ny);
-__global__ void kernel_DiffDyminus (float *_A, float *_dA, float *_w,float dx,int l, int _nx, int _ny)
+__global__ void kernel_DiffDyminus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l);
+__global__ void kernel_DiffDyminus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l)
 {
 int nx;
 int ny;
 int i;
 int j;
 int k;
-
-nctempfloat2 A_;
-nctempfloat2 *A; 
-A_.d[0] = _nx;
-A_.d[1] = _ny;
-A_.a = _A;
-A= &A_;
-
-nctempfloat2 dA_;
-nctempfloat2 *dA; 
-dA_.d[0] = _nx;
-dA_.d[1] = _ny;
-dA_.a = _dA;
-dA= &dA_;
-
-nctempfloat1 w_;
-nctempfloat1 *w; 
-w_.d[0] = l;
-w_.a = _w;
-w= &w_;
 float sum;
 int nctemp861=A->d[0];nx =nctemp861;
 int nctemp869=A->d[1];ny =nctemp869;
@@ -635,15 +572,14 @@ dA->a[nctemp1281] =nctemp1289;
 }
 }
 }
-int DiffDyminus (float *A, float *dA, float *w, float dx,int l, int nx, int ny)
+int DiffDyminus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l)
 {
-  kernel_DiffDyminus<<<NBLOCKS,NTHREADS>>>(A,dA,w,dx,l,nx,ny);
+  kernel_DiffDyminus<<<NBLOCKS,NTHREADS>>>(A,dA,w,dx,l);
 GpuError();
 return(1);
 }
-
-__global__ void kernel_DiffDyplus (float *_A, float *_dA, float *_w,float dx,int l,int _nx,int _ny);
-__global__ void kernel_DiffDyplus (float *_A, float *_dA, float *_w,float dx,int l,int _nx,int _ny)
+__global__ void kernel_DiffDyplus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l);
+__global__ void kernel_DiffDyplus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l)
 {
 int nx;
 int ny;
@@ -651,27 +587,6 @@ int i;
 int j;
 int k;
 float sum;
-
-nctempfloat2 A_;
-nctempfloat2 *A; 
-A_.d[0] = _nx;
-A_.d[1] = _ny;
-A_.a = _A;
-A= &A_;
-
-nctempfloat2 dA_;
-nctempfloat2 *dA; 
-dA_.d[0] = _nx;
-dA_.d[1] = _ny;
-dA_.a = _dA;
-dA= &dA_;
-
-nctempfloat1 w_;
-nctempfloat1 *w; 
-w_.d[0] = l;
-w_.a = _w;
-w= &w_;
-
 int nctemp1294=A->d[0];nx =nctemp1294;
 int nctemp1302=A->d[1];ny =nctemp1302;
 int nctemp1308=0;
@@ -835,9 +750,9 @@ dA->a[nctemp1704] =nctemp1712;
 }
 }
 }
-int DiffDyplus (float *A, float *dA, float *w,float dx, int l, int nx, int ny)
+int DiffDyplus (nctempfloat2 *A,nctempfloat2 *dA,nctempfloat1 *w,float dx,int l)
 {
-  kernel_DiffDyplus<<<NBLOCKS,NTHREADS>>>(A,dA,w,dx,l,nx,ny);
+  kernel_DiffDyplus<<<NBLOCKS,NTHREADS>>>(A,dA,w,dx,l);
 GpuError();
 return(1);
 }

@@ -1033,6 +1033,9 @@ int FwiAcoustic2D<T>::run(){
    T dt;
    T ot;
 
+  //DEBUG
+   printf("Fwi run\n");
+
    nt = source->getNt();
    dt = source->getDt();
    ot = source->getOt();
@@ -1051,6 +1054,7 @@ int FwiAcoustic2D<T>::run(){
    // Create snapshots
    std::shared_ptr<Snapshot2D<T>> Psnap;
    Psnap = std::make_shared<Snapshot2D<T>>(waves, this->getSnapinc());
+   //DEBUG
    Psnap->openSnap(this->getSnapfile(), 'w'); // Create a new snapshot file
    Psnap->setData(waves->getP(), 0); //Set Pressure as snap field
 
@@ -4132,13 +4136,19 @@ int FwiElastic2D<T>::run_optimal(){
    } while((whatodo != terminate) && (whatodo != error));
    this->writeLog("\nGradient computation completed.");
 
+   //DEBUG
+   printf("Scale\n");
    // Scale gradients
    this->scaleGrad(model);
 
+   //DEBUG
    //Remove snapshot file
+   printf("Remove snaps\n");
    optimal->removeCheck();
 
    result=FWI_OK;
+   //DEBUG
+   printf("Return\n");
    return result;
 }
 

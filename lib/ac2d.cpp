@@ -27,9 +27,13 @@ void *GpuNew(int n);
 void *GpuDelete(void *f);
 void *GpuError();
 int Ac2dFwstepvx (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
+int Ac2dFwstepvx2 (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
 int Ac2dFwstepvz (nctempfloat2 *Ptop,nctempfloat2 *Pbot,nctempfloat2 *Vz,nctempfloat2 *Rz,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
+int Ac2dFwstepvz2 (nctempfloat2 *Ptop,nctempfloat2 *Pbot,nctempfloat2 *Vz,nctempfloat2 *Rz,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
 int Ac2dFwstepstressx (nctempfloat2 *Vxxleft,nctempfloat2 *Vxxright,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
+int Ac2dFwstepstressx2 (nctempfloat2 *Vxxleft,nctempfloat2 *Vxxright,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
 int Ac2dFwstepstressz (nctempfloat2 *Vzztop,nctempfloat2 *Vzzbot,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
+int Ac2dFwstepstressz2 (nctempfloat2 *Vzztop,nctempfloat2 *Vzzbot,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
 __global__ void kernel_Ac2dFwstepvx (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
 __global__ void kernel_Ac2dFwstepvx (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
 {
@@ -65,120 +69,139 @@ float nctemp66 = Vx->a[nctemp46] + nctemp65;
 Vx->a[nctemp39] =nctemp66;
 }
 }
-int nctemp70=0;
-int nctemp73=1;
-int nctemp67 = (Getapplypml->a[nctemp70] || Getapplypml->a[nctemp73]);
-if(nctemp67)
-{
-int nctemp77=0;
-int nctemp79=lpml;
-int nctemp82=0;
-int nctemp84=nz;
-int nctemp75=(nctemp79-nctemp77)*(nctemp84-nctemp82);
-for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp75;nctempno+=blockDim.x*gridDim.x){
-iz=nctemp82+nctempno/(nctemp79-nctemp77);
-ix=nctemp77+nctempno%(nctemp79-nctemp77);
-{
-int nctemp87=0;
-if(Getapplypml->a[nctemp87])
-{
-int nctemp95 = (ix >= ix0);
-int nctemp92 = (nctemp95 && ix);
-int nctemp105 = ix0 + nx;
-int nctemp89 = (nctemp92 < nctemp105);
-if(nctemp89)
-{
-int nctemp109=ix;
-nctemp109=iz*Pleft->d[0]+nctemp109;
-int nctemp119=ix;
-int nctemp122=ix;
-nctemp122=iz*Pleft->d[0]+nctemp122;
-float nctemp125 = Blftstag->a[nctemp119] * Pleft->a[nctemp122];
-int nctemp130=ix;
-int nctemp138 = ix - ix0;
-int nctemp133=nctemp138;
-nctemp133=iz*df->d[0]+nctemp133;
-float nctemp140 = Alftstag->a[nctemp130] * df->a[nctemp133];
-float nctemp141 = nctemp125 + nctemp140;
-Pleft->a[nctemp109] =nctemp141;
-int nctemp150 = ix - ix0;
-int nctemp145=nctemp150;
-nctemp145=iz*Vx->d[0]+nctemp145;
-int nctemp161 = ix - iz0;
-int nctemp156=nctemp161;
-nctemp156=iz*Vx->d[0]+nctemp156;
-int nctemp176 = ix - ix0;
-int nctemp171=nctemp176;
-nctemp171=iz*Rx->d[0]+nctemp171;
-float nctemp178 = dt * Rx->a[nctemp171];
-int nctemp183=ix;
-nctemp183=iz*Pleft->d[0]+nctemp183;
-int nctemp190=ix;
-int nctemp198 = ix - ix0;
-int nctemp193=nctemp198;
-nctemp193=iz*df->d[0]+nctemp193;
-float nctemp200 = Clftstag->a[nctemp190] * df->a[nctemp193];
-float nctemp201 = Pleft->a[nctemp183] + nctemp200;
-float nctemp202 = nctemp178 * nctemp201;
-float nctemp203 = Vx->a[nctemp156] - nctemp202;
-Vx->a[nctemp145] =nctemp203;
-}
-}
-int nctemp205=1;
-if(Getapplypml->a[nctemp205])
-{
-int nctemp218 = ix + nxo;
-int nctemp220 = nctemp218 - lpml;
-i =nctemp220;
-int nctemp227 = (i >= ix0);
-int nctemp224 = (nctemp227 && i);
-int nctemp237 = ix0 + nx;
-int nctemp221 = (nctemp224 < nctemp237);
-if(nctemp221)
-{
-int nctemp241=ix;
-nctemp241=iz*Pright->d[0]+nctemp241;
-int nctemp251=ix;
-int nctemp254=ix;
-nctemp254=iz*Pright->d[0]+nctemp254;
-float nctemp257 = Brbbstag->a[nctemp251] * Pright->a[nctemp254];
-int nctemp262=ix;
-int nctemp270 = i - ix0;
-int nctemp265=nctemp270;
-nctemp265=iz*df->d[0]+nctemp265;
-float nctemp272 = Arbbstag->a[nctemp262] * df->a[nctemp265];
-float nctemp273 = nctemp257 + nctemp272;
-Pright->a[nctemp241] =nctemp273;
-int nctemp282 = i - ix0;
-int nctemp277=nctemp282;
-nctemp277=iz*Vx->d[0]+nctemp277;
-int nctemp293 = ix - ix0;
-int nctemp288=nctemp293;
-nctemp288=iz*Vx->d[0]+nctemp288;
-int nctemp308 = i - ix0;
-int nctemp303=nctemp308;
-nctemp303=iz*Rx->d[0]+nctemp303;
-float nctemp310 = dt * Rx->a[nctemp303];
-int nctemp315=ix;
-nctemp315=iz*Pright->d[0]+nctemp315;
-int nctemp322=ix;
-int nctemp330 = i - ix0;
-int nctemp325=nctemp330;
-nctemp325=iz*df->d[0]+nctemp325;
-float nctemp332 = Crbbstag->a[nctemp322] * df->a[nctemp325];
-float nctemp333 = Pright->a[nctemp315] + nctemp332;
-float nctemp334 = nctemp310 * nctemp333;
-float nctemp335 = Vx->a[nctemp288] - nctemp334;
-Vx->a[nctemp277] =nctemp335;
-}
-}
-}
-}
-}
 }
 int Ac2dFwstepvx (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
 {
   kernel_Ac2dFwstepvx<<<NBLOCKS,NTHREADS>>>(Pleft,Pright,Vx,Rx,df,Alftstag,Blftstag,Clftstag,Arbbstag,Brbbstag,Crbbstag,Getapplypml,ix0,iz0,nxo,nzo,dt);
+GpuError();
+return(1);
+}
+__global__ void kernel_Ac2dFwstepvx2 (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
+__global__ void kernel_Ac2dFwstepvx2 (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
+{
+int nx;
+int nz;
+int ix;
+int iz;
+int i;
+int lpml;
+int nctemp71=Vx->d[0];nx =nctemp71;
+int nctemp79=Vx->d[1];nz =nctemp79;
+int nctemp87=Alftstag->d[0];lpml =nctemp87;
+int nctemp94=0;
+int nctemp97=1;
+int nctemp91 = (Getapplypml->a[nctemp94] || Getapplypml->a[nctemp97]);
+if(nctemp91)
+{
+int nctemp101=0;
+int nctemp103=lpml;
+int nctemp106=0;
+int nctemp108=nz;
+int nctemp99=(nctemp103-nctemp101)*(nctemp108-nctemp106);
+for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp99;nctempno+=blockDim.x*gridDim.x){
+iz=nctemp106+nctempno/(nctemp103-nctemp101);
+ix=nctemp101+nctempno%(nctemp103-nctemp101);
+{
+int nctemp111=0;
+if(Getapplypml->a[nctemp111])
+{
+int nctemp116 = (ix >= ix0);
+int nctemp129 = ix0 + nx;
+int nctemp121 = (ix < nctemp129);
+int nctemp113 = (nctemp116 && nctemp121);
+if(nctemp113)
+{
+int nctemp133=ix;
+nctemp133=iz*Pleft->d[0]+nctemp133;
+int nctemp143=ix;
+int nctemp146=ix;
+nctemp146=iz*Pleft->d[0]+nctemp146;
+float nctemp149 = Blftstag->a[nctemp143] * Pleft->a[nctemp146];
+int nctemp154=ix;
+int nctemp162 = ix - ix0;
+int nctemp157=nctemp162;
+nctemp157=iz*df->d[0]+nctemp157;
+float nctemp164 = Alftstag->a[nctemp154] * df->a[nctemp157];
+float nctemp165 = nctemp149 + nctemp164;
+Pleft->a[nctemp133] =nctemp165;
+int nctemp174 = ix - ix0;
+int nctemp169=nctemp174;
+nctemp169=iz*Vx->d[0]+nctemp169;
+int nctemp185 = ix - ix0;
+int nctemp180=nctemp185;
+nctemp180=iz*Vx->d[0]+nctemp180;
+int nctemp200 = ix - ix0;
+int nctemp195=nctemp200;
+nctemp195=iz*Rx->d[0]+nctemp195;
+float nctemp202 = dt * Rx->a[nctemp195];
+int nctemp207=ix;
+nctemp207=iz*Pleft->d[0]+nctemp207;
+int nctemp214=ix;
+int nctemp222 = ix - ix0;
+int nctemp217=nctemp222;
+nctemp217=iz*df->d[0]+nctemp217;
+float nctemp224 = Clftstag->a[nctemp214] * df->a[nctemp217];
+float nctemp225 = Pleft->a[nctemp207] + nctemp224;
+float nctemp226 = nctemp202 * nctemp225;
+float nctemp227 = Vx->a[nctemp180] - nctemp226;
+Vx->a[nctemp169] =nctemp227;
+}
+}
+int nctemp229=1;
+if(Getapplypml->a[nctemp229])
+{
+int nctemp242 = ix + nxo;
+int nctemp244 = nctemp242 - lpml;
+i =nctemp244;
+int nctemp248 = (i >= ix0);
+int nctemp261 = ix0 + nx;
+int nctemp253 = (i < nctemp261);
+int nctemp245 = (nctemp248 && nctemp253);
+if(nctemp245)
+{
+int nctemp265=ix;
+nctemp265=iz*Pright->d[0]+nctemp265;
+int nctemp275=ix;
+int nctemp278=ix;
+nctemp278=iz*Pright->d[0]+nctemp278;
+float nctemp281 = Brbbstag->a[nctemp275] * Pright->a[nctemp278];
+int nctemp286=ix;
+int nctemp294 = i - ix0;
+int nctemp289=nctemp294;
+nctemp289=iz*df->d[0]+nctemp289;
+float nctemp296 = Arbbstag->a[nctemp286] * df->a[nctemp289];
+float nctemp297 = nctemp281 + nctemp296;
+Pright->a[nctemp265] =nctemp297;
+int nctemp306 = i - ix0;
+int nctemp301=nctemp306;
+nctemp301=iz*Vx->d[0]+nctemp301;
+int nctemp317 = i - ix0;
+int nctemp312=nctemp317;
+nctemp312=iz*Vx->d[0]+nctemp312;
+int nctemp332 = i - ix0;
+int nctemp327=nctemp332;
+nctemp327=iz*Rx->d[0]+nctemp327;
+float nctemp334 = dt * Rx->a[nctemp327];
+int nctemp339=ix;
+nctemp339=iz*Pright->d[0]+nctemp339;
+int nctemp346=ix;
+int nctemp354 = i - ix0;
+int nctemp349=nctemp354;
+nctemp349=iz*df->d[0]+nctemp349;
+float nctemp356 = Crbbstag->a[nctemp346] * df->a[nctemp349];
+float nctemp357 = Pright->a[nctemp339] + nctemp356;
+float nctemp358 = nctemp334 * nctemp357;
+float nctemp359 = Vx->a[nctemp312] - nctemp358;
+Vx->a[nctemp301] =nctemp359;
+}
+}
+}
+}
+}
+}
+int Ac2dFwstepvx2 (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
+{
+  kernel_Ac2dFwstepvx2<<<NBLOCKS,NTHREADS>>>(Pleft,Pright,Vx,Rx,df,Alftstag,Blftstag,Clftstag,Arbbstag,Brbbstag,Crbbstag,Getapplypml,ix0,iz0,nxo,nzo,dt);
 GpuError();
 return(1);
 }
@@ -191,146 +214,165 @@ int ix;
 int iz;
 int i;
 int lpml;
-int nctemp340=Vz->d[0];nx =nctemp340;
-int nctemp348=Vz->d[1];nz =nctemp348;
-int nctemp356=Alftstag->d[0];lpml =nctemp356;
-int nctemp362=0;
-int nctemp364=nx;
-int nctemp367=0;
-int nctemp369=nz;
-int nctemp360=(nctemp364-nctemp362)*(nctemp369-nctemp367);
-for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp360;nctempno+=blockDim.x*gridDim.x){
-iz=nctemp367+nctempno/(nctemp364-nctemp362);
-ix=nctemp362+nctempno%(nctemp364-nctemp362);
+int nctemp364=Vz->d[0];nx =nctemp364;
+int nctemp372=Vz->d[1];nz =nctemp372;
+int nctemp380=Alftstag->d[0];lpml =nctemp380;
+int nctemp386=0;
+int nctemp388=nx;
+int nctemp391=0;
+int nctemp393=nz;
+int nctemp384=(nctemp388-nctemp386)*(nctemp393-nctemp391);
+for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp384;nctempno+=blockDim.x*gridDim.x){
+iz=nctemp391+nctempno/(nctemp388-nctemp386);
+ix=nctemp386+nctempno%(nctemp388-nctemp386);
 {
-int nctemp374=ix;
-nctemp374=iz*Vz->d[0]+nctemp374;
-int nctemp381=ix;
-nctemp381=iz*Vz->d[0]+nctemp381;
-int nctemp392=ix;
-nctemp392=iz*Rz->d[0]+nctemp392;
-float nctemp395 = dt * Rz->a[nctemp392];
-int nctemp397=ix;
-nctemp397=iz*df->d[0]+nctemp397;
-float nctemp400 = nctemp395 * df->a[nctemp397];
-float nctemp401 = Vz->a[nctemp381] + nctemp400;
-Vz->a[nctemp374] =nctemp401;
-}
-}
-int nctemp405=4;
-int nctemp408=5;
-int nctemp402 = (Getapplypml->a[nctemp405] || Getapplypml->a[nctemp408]);
-if(nctemp402)
-{
-int nctemp412=0;
-int nctemp414=lpml;
-int nctemp417=0;
-int nctemp419=nx;
-int nctemp410=(nctemp414-nctemp412)*(nctemp419-nctemp417);
-for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp410;nctempno+=blockDim.x*gridDim.x){
-ix=nctemp417+nctempno/(nctemp414-nctemp412);
-iz=nctemp412+nctempno%(nctemp414-nctemp412);
-{
-int nctemp422=4;
-if(Getapplypml->a[nctemp422])
-{
-int nctemp427 = (iz >= iz0);
-int nctemp440 = iz0 + nz;
-int nctemp432 = (iz < nctemp440);
-int nctemp424 = (nctemp427 && nctemp432);
-if(nctemp424)
-{
-int nctemp444=ix;
-nctemp444=iz*Ptop->d[0]+nctemp444;
-int nctemp454=iz;
-int nctemp457=ix;
-nctemp457=iz*Ptop->d[0]+nctemp457;
-float nctemp460 = Blftstag->a[nctemp454] * Ptop->a[nctemp457];
-int nctemp465=iz;
-int nctemp468=ix;
-int nctemp474 = iz - iz0;
-nctemp468=nctemp474*df->d[0]+nctemp468;
-float nctemp475 = Alftstag->a[nctemp465] * df->a[nctemp468];
-float nctemp476 = nctemp460 + nctemp475;
-Ptop->a[nctemp444] =nctemp476;
-int nctemp480=ix;
-int nctemp486 = iz - iz0;
-nctemp480=nctemp486*Vz->d[0]+nctemp480;
-int nctemp491=ix;
-int nctemp497 = iz - iz0;
-nctemp491=nctemp497*Vz->d[0]+nctemp491;
-int nctemp506=ix;
-int nctemp512 = iz - iz0;
-nctemp506=nctemp512*Rz->d[0]+nctemp506;
-float nctemp513 = dt * Rz->a[nctemp506];
-int nctemp518=ix;
-nctemp518=iz*Ptop->d[0]+nctemp518;
-int nctemp525=iz;
-int nctemp528=ix;
-int nctemp534 = iz - iz0;
-nctemp528=nctemp534*df->d[0]+nctemp528;
-float nctemp535 = Clftstag->a[nctemp525] * df->a[nctemp528];
-float nctemp536 = Ptop->a[nctemp518] + nctemp535;
-float nctemp537 = nctemp513 * nctemp536;
-float nctemp538 = Vz->a[nctemp491] - nctemp537;
-Vz->a[nctemp480] =nctemp538;
-}
-}
-int nctemp540=5;
-if(Getapplypml->a[nctemp540])
-{
-int nctemp553 = iz + nzo;
-int nctemp555 = nctemp553 - lpml;
-i =nctemp555;
-int nctemp562 = (i >= iz0);
-int nctemp559 = (nctemp562 && i);
-int nctemp572 = iz0 + nz;
-int nctemp556 = (nctemp559 < nctemp572);
-if(nctemp556)
-{
-int nctemp576=ix;
-nctemp576=iz*Pbot->d[0]+nctemp576;
-int nctemp586=iz;
-int nctemp589=ix;
-nctemp589=iz*Pbot->d[0]+nctemp589;
-float nctemp592 = Brbbstag->a[nctemp586] * Pbot->a[nctemp589];
-int nctemp597=iz;
-int nctemp600=ix;
-int nctemp606 = i - iz0;
-nctemp600=nctemp606*df->d[0]+nctemp600;
-float nctemp607 = Arbbstag->a[nctemp597] * df->a[nctemp600];
-float nctemp608 = nctemp592 + nctemp607;
-Pbot->a[nctemp576] =nctemp608;
-int nctemp612=ix;
-int nctemp618 = i - iz0;
-nctemp612=nctemp618*Vz->d[0]+nctemp612;
-int nctemp623=ix;
-int nctemp629 = i - iz0;
-nctemp623=nctemp629*Vz->d[0]+nctemp623;
-int nctemp638=ix;
-int nctemp644 = i - iz0;
-nctemp638=nctemp644*Rz->d[0]+nctemp638;
-float nctemp645 = dt * Rz->a[nctemp638];
-int nctemp650=ix;
-nctemp650=iz*Pbot->d[0]+nctemp650;
-int nctemp657=iz;
-int nctemp660=ix;
-int nctemp666 = i - iz0;
-nctemp660=nctemp666*df->d[0]+nctemp660;
-float nctemp667 = Crbbstag->a[nctemp657] * df->a[nctemp660];
-float nctemp668 = Pbot->a[nctemp650] + nctemp667;
-float nctemp669 = nctemp645 * nctemp668;
-float nctemp670 = Vz->a[nctemp623] - nctemp669;
-Vz->a[nctemp612] =nctemp670;
-}
-}
-}
+int nctemp398=ix;
+nctemp398=iz*Vz->d[0]+nctemp398;
+int nctemp405=ix;
+nctemp405=iz*Vz->d[0]+nctemp405;
+int nctemp416=ix;
+nctemp416=iz*Rz->d[0]+nctemp416;
+float nctemp419 = dt * Rz->a[nctemp416];
+int nctemp421=ix;
+nctemp421=iz*df->d[0]+nctemp421;
+float nctemp424 = nctemp419 * df->a[nctemp421];
+float nctemp425 = Vz->a[nctemp405] + nctemp424;
+Vz->a[nctemp398] =nctemp425;
 }
 }
 }
 int Ac2dFwstepvz (nctempfloat2 *Ptop,nctempfloat2 *Pbot,nctempfloat2 *Vz,nctempfloat2 *Rz,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
 {
   kernel_Ac2dFwstepvz<<<NBLOCKS,NTHREADS>>>(Ptop,Pbot,Vz,Rz,df,Alftstag,Blftstag,Clftstag,Arbbstag,Brbbstag,Crbbstag,Getapplypml,ix0,iz0,nxo,nzo,dt);
+GpuError();
+return(1);
+}
+__global__ void kernel_Ac2dFwstepvz2 (nctempfloat2 *Ptop,nctempfloat2 *Pbot,nctempfloat2 *Vz,nctempfloat2 *Rz,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
+__global__ void kernel_Ac2dFwstepvz2 (nctempfloat2 *Ptop,nctempfloat2 *Pbot,nctempfloat2 *Vz,nctempfloat2 *Rz,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
+{
+int nx;
+int nz;
+int ix;
+int iz;
+int i;
+int lpml;
+int nctemp430=Vz->d[0];nx =nctemp430;
+int nctemp438=Vz->d[1];nz =nctemp438;
+int nctemp446=Alftstag->d[0];lpml =nctemp446;
+int nctemp453=4;
+int nctemp456=5;
+int nctemp450 = (Getapplypml->a[nctemp453] || Getapplypml->a[nctemp456]);
+if(nctemp450)
+{
+int nctemp460=0;
+int nctemp462=nx;
+int nctemp465=0;
+int nctemp467=lpml;
+int nctemp458=(nctemp462-nctemp460)*(nctemp467-nctemp465);
+for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp458;nctempno+=blockDim.x*gridDim.x){
+iz=nctemp465+nctempno/(nctemp462-nctemp460);
+ix=nctemp460+nctempno%(nctemp462-nctemp460);
+{
+int nctemp470=4;
+if(Getapplypml->a[nctemp470])
+{
+int nctemp475 = (iz >= iz0);
+int nctemp488 = iz0 + nz;
+int nctemp480 = (iz < nctemp488);
+int nctemp472 = (nctemp475 && nctemp480);
+if(nctemp472)
+{
+int nctemp492=ix;
+nctemp492=iz*Ptop->d[0]+nctemp492;
+int nctemp502=iz;
+int nctemp505=ix;
+nctemp505=iz*Ptop->d[0]+nctemp505;
+float nctemp508 = Blftstag->a[nctemp502] * Ptop->a[nctemp505];
+int nctemp513=iz;
+int nctemp516=ix;
+int nctemp522 = iz - iz0;
+nctemp516=nctemp522*df->d[0]+nctemp516;
+float nctemp523 = Alftstag->a[nctemp513] * df->a[nctemp516];
+float nctemp524 = nctemp508 + nctemp523;
+Ptop->a[nctemp492] =nctemp524;
+int nctemp528=ix;
+int nctemp534 = iz - iz0;
+nctemp528=nctemp534*Vz->d[0]+nctemp528;
+int nctemp539=ix;
+int nctemp545 = iz - iz0;
+nctemp539=nctemp545*Vz->d[0]+nctemp539;
+int nctemp554=ix;
+int nctemp560 = iz - iz0;
+nctemp554=nctemp560*Rz->d[0]+nctemp554;
+float nctemp561 = dt * Rz->a[nctemp554];
+int nctemp566=ix;
+nctemp566=iz*Ptop->d[0]+nctemp566;
+int nctemp573=iz;
+int nctemp576=ix;
+int nctemp582 = iz - iz0;
+nctemp576=nctemp582*df->d[0]+nctemp576;
+float nctemp583 = Clftstag->a[nctemp573] * df->a[nctemp576];
+float nctemp584 = Ptop->a[nctemp566] + nctemp583;
+float nctemp585 = nctemp561 * nctemp584;
+float nctemp586 = Vz->a[nctemp539] - nctemp585;
+Vz->a[nctemp528] =nctemp586;
+}
+}
+int nctemp588=5;
+if(Getapplypml->a[nctemp588])
+{
+int nctemp601 = iz + nzo;
+int nctemp603 = nctemp601 - lpml;
+i =nctemp603;
+int nctemp610 = (i >= iz0);
+int nctemp607 = (nctemp610 && i);
+int nctemp620 = iz0 + nz;
+int nctemp604 = (nctemp607 < nctemp620);
+if(nctemp604)
+{
+int nctemp624=ix;
+nctemp624=iz*Pbot->d[0]+nctemp624;
+int nctemp634=iz;
+int nctemp637=ix;
+nctemp637=iz*Pbot->d[0]+nctemp637;
+float nctemp640 = Brbbstag->a[nctemp634] * Pbot->a[nctemp637];
+int nctemp645=iz;
+int nctemp648=ix;
+int nctemp654 = i - iz0;
+nctemp648=nctemp654*df->d[0]+nctemp648;
+float nctemp655 = Arbbstag->a[nctemp645] * df->a[nctemp648];
+float nctemp656 = nctemp640 + nctemp655;
+Pbot->a[nctemp624] =nctemp656;
+int nctemp660=ix;
+int nctemp666 = i - iz0;
+nctemp660=nctemp666*Vz->d[0]+nctemp660;
+int nctemp671=ix;
+int nctemp677 = i - iz0;
+nctemp671=nctemp677*Vz->d[0]+nctemp671;
+int nctemp686=ix;
+int nctemp692 = i - iz0;
+nctemp686=nctemp692*Rz->d[0]+nctemp686;
+float nctemp693 = dt * Rz->a[nctemp686];
+int nctemp698=ix;
+nctemp698=iz*Pbot->d[0]+nctemp698;
+int nctemp705=iz;
+int nctemp708=ix;
+int nctemp714 = i - iz0;
+nctemp708=nctemp714*df->d[0]+nctemp708;
+float nctemp715 = Crbbstag->a[nctemp705] * df->a[nctemp708];
+float nctemp716 = Pbot->a[nctemp698] + nctemp715;
+float nctemp717 = nctemp693 * nctemp716;
+float nctemp718 = Vz->a[nctemp671] - nctemp717;
+Vz->a[nctemp660] =nctemp718;
+}
+}
+}
+}
+}
+}
+int Ac2dFwstepvz2 (nctempfloat2 *Ptop,nctempfloat2 *Pbot,nctempfloat2 *Vz,nctempfloat2 *Rz,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
+{
+  kernel_Ac2dFwstepvz2<<<NBLOCKS,NTHREADS>>>(Ptop,Pbot,Vz,Rz,df,Alftstag,Blftstag,Clftstag,Arbbstag,Brbbstag,Crbbstag,Getapplypml,ix0,iz0,nxo,nzo,dt);
 GpuError();
 return(1);
 }
@@ -343,146 +385,165 @@ int ix;
 int iz;
 int i;
 int lpml;
-int nctemp675=P->d[0];nx =nctemp675;
-int nctemp683=P->d[1];nz =nctemp683;
-int nctemp691=Alft->d[0];lpml =nctemp691;
-int nctemp697=0;
-int nctemp699=nx;
-int nctemp702=0;
-int nctemp704=nz;
-int nctemp695=(nctemp699-nctemp697)*(nctemp704-nctemp702);
-for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp695;nctempno+=blockDim.x*gridDim.x){
-iz=nctemp702+nctempno/(nctemp699-nctemp697);
-ix=nctemp697+nctempno%(nctemp699-nctemp697);
+int nctemp723=P->d[0];nx =nctemp723;
+int nctemp731=P->d[1];nz =nctemp731;
+int nctemp739=Alft->d[0];lpml =nctemp739;
+int nctemp745=0;
+int nctemp747=nx;
+int nctemp750=0;
+int nctemp752=nz;
+int nctemp743=(nctemp747-nctemp745)*(nctemp752-nctemp750);
+for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp743;nctempno+=blockDim.x*gridDim.x){
+iz=nctemp750+nctempno/(nctemp747-nctemp745);
+ix=nctemp745+nctempno%(nctemp747-nctemp745);
 {
-int nctemp709=ix;
-nctemp709=iz*P->d[0]+nctemp709;
-int nctemp716=ix;
-nctemp716=iz*P->d[0]+nctemp716;
-int nctemp727=ix;
-nctemp727=iz*L->d[0]+nctemp727;
-float nctemp730 = dt * L->a[nctemp727];
-int nctemp732=ix;
-nctemp732=iz*df->d[0]+nctemp732;
-float nctemp735 = nctemp730 * df->a[nctemp732];
-float nctemp736 = P->a[nctemp716] + nctemp735;
-P->a[nctemp709] =nctemp736;
-}
-}
-int nctemp740=0;
-int nctemp743=1;
-int nctemp737 = (Getapplypml->a[nctemp740] || Getapplypml->a[nctemp743]);
-if(nctemp737)
-{
-int nctemp747=0;
-int nctemp749=lpml;
-int nctemp752=0;
-int nctemp754=nz;
-int nctemp745=(nctemp749-nctemp747)*(nctemp754-nctemp752);
-for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp745;nctempno+=blockDim.x*gridDim.x){
-iz=nctemp752+nctempno/(nctemp749-nctemp747);
-ix=nctemp747+nctempno%(nctemp749-nctemp747);
-{
-int nctemp757=0;
-if(Getapplypml->a[nctemp757])
-{
-int nctemp765 = (ix >= ix0);
-int nctemp762 = (nctemp765 && ix);
-int nctemp775 = ix0 + nx;
-int nctemp759 = (nctemp762 < nctemp775);
-if(nctemp759)
-{
-int nctemp779=ix;
-nctemp779=iz*Vxxleft->d[0]+nctemp779;
-int nctemp789=ix;
-int nctemp792=ix;
-nctemp792=iz*Vxxleft->d[0]+nctemp792;
-float nctemp795 = Blft->a[nctemp789] * Vxxleft->a[nctemp792];
-int nctemp800=ix;
-int nctemp808 = ix - ix0;
-int nctemp803=nctemp808;
-nctemp803=iz*df->d[0]+nctemp803;
-float nctemp810 = Alft->a[nctemp800] * df->a[nctemp803];
-float nctemp811 = nctemp795 + nctemp810;
-Vxxleft->a[nctemp779] =nctemp811;
-int nctemp820 = ix - ix0;
-int nctemp815=nctemp820;
-nctemp815=iz*P->d[0]+nctemp815;
-int nctemp831 = ix - iz0;
-int nctemp826=nctemp831;
-nctemp826=iz*P->d[0]+nctemp826;
-int nctemp846 = ix - ix0;
-int nctemp841=nctemp846;
-nctemp841=iz*L->d[0]+nctemp841;
-float nctemp848 = dt * L->a[nctemp841];
-int nctemp853=ix;
-nctemp853=iz*Vxxleft->d[0]+nctemp853;
-int nctemp860=ix;
-int nctemp868 = ix - ix0;
-int nctemp863=nctemp868;
-nctemp863=iz*df->d[0]+nctemp863;
-float nctemp870 = Clft->a[nctemp860] * df->a[nctemp863];
-float nctemp871 = Vxxleft->a[nctemp853] + nctemp870;
-float nctemp872 = nctemp848 * nctemp871;
-float nctemp873 = P->a[nctemp826] - nctemp872;
-P->a[nctemp815] =nctemp873;
-}
-}
-int nctemp875=1;
-if(Getapplypml->a[nctemp875])
-{
-int nctemp888 = ix + nxo;
-int nctemp890 = nctemp888 - lpml;
-i =nctemp890;
-int nctemp897 = (i >= ix0);
-int nctemp894 = (nctemp897 && i);
-int nctemp907 = ix0 + nx;
-int nctemp891 = (nctemp894 < nctemp907);
-if(nctemp891)
-{
-int nctemp911=ix;
-nctemp911=iz*Vxxright->d[0]+nctemp911;
-int nctemp921=ix;
-int nctemp924=ix;
-nctemp924=iz*Vxxright->d[0]+nctemp924;
-float nctemp927 = Brbb->a[nctemp921] * Vxxright->a[nctemp924];
-int nctemp932=ix;
-int nctemp940 = i - ix0;
-int nctemp935=nctemp940;
-nctemp935=iz*df->d[0]+nctemp935;
-float nctemp942 = Arbb->a[nctemp932] * df->a[nctemp935];
-float nctemp943 = nctemp927 + nctemp942;
-Vxxright->a[nctemp911] =nctemp943;
-int nctemp952 = i - ix0;
-int nctemp947=nctemp952;
-nctemp947=iz*P->d[0]+nctemp947;
-int nctemp963 = ix - ix0;
-int nctemp958=nctemp963;
-nctemp958=iz*P->d[0]+nctemp958;
-int nctemp978 = i - ix0;
-int nctemp973=nctemp978;
-nctemp973=iz*L->d[0]+nctemp973;
-float nctemp980 = dt * L->a[nctemp973];
-int nctemp985=ix;
-nctemp985=iz*Vxxright->d[0]+nctemp985;
-int nctemp992=ix;
-int nctemp1000 = i - ix0;
-int nctemp995=nctemp1000;
-nctemp995=iz*df->d[0]+nctemp995;
-float nctemp1002 = Crbb->a[nctemp992] * df->a[nctemp995];
-float nctemp1003 = Vxxright->a[nctemp985] + nctemp1002;
-float nctemp1004 = nctemp980 * nctemp1003;
-float nctemp1005 = P->a[nctemp958] - nctemp1004;
-P->a[nctemp947] =nctemp1005;
-}
-}
-}
+int nctemp757=ix;
+nctemp757=iz*P->d[0]+nctemp757;
+int nctemp764=ix;
+nctemp764=iz*P->d[0]+nctemp764;
+int nctemp775=ix;
+nctemp775=iz*L->d[0]+nctemp775;
+float nctemp778 = dt * L->a[nctemp775];
+int nctemp780=ix;
+nctemp780=iz*df->d[0]+nctemp780;
+float nctemp783 = nctemp778 * df->a[nctemp780];
+float nctemp784 = P->a[nctemp764] + nctemp783;
+P->a[nctemp757] =nctemp784;
 }
 }
 }
 int Ac2dFwstepstressx (nctempfloat2 *Vxxleft,nctempfloat2 *Vxxright,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
 {
   kernel_Ac2dFwstepstressx<<<NBLOCKS,NTHREADS>>>(Vxxleft,Vxxright,P,L,df,Alft,Blft,Clft,Arbb,Brbb,Crbb,Getapplypml,ix0,iz0,nxo,nzo,dt);
+GpuError();
+return(1);
+}
+__global__ void kernel_Ac2dFwstepstressx2 (nctempfloat2 *Vxxleft,nctempfloat2 *Vxxright,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
+__global__ void kernel_Ac2dFwstepstressx2 (nctempfloat2 *Vxxleft,nctempfloat2 *Vxxright,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
+{
+int nx;
+int nz;
+int ix;
+int iz;
+int i;
+int lpml;
+int nctemp789=P->d[0];nx =nctemp789;
+int nctemp797=P->d[1];nz =nctemp797;
+int nctemp805=Alft->d[0];lpml =nctemp805;
+int nctemp812=0;
+int nctemp815=1;
+int nctemp809 = (Getapplypml->a[nctemp812] || Getapplypml->a[nctemp815]);
+if(nctemp809)
+{
+int nctemp819=0;
+int nctemp821=lpml;
+int nctemp824=0;
+int nctemp826=nz;
+int nctemp817=(nctemp821-nctemp819)*(nctemp826-nctemp824);
+for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp817;nctempno+=blockDim.x*gridDim.x){
+iz=nctemp824+nctempno/(nctemp821-nctemp819);
+ix=nctemp819+nctempno%(nctemp821-nctemp819);
+{
+int nctemp829=0;
+if(Getapplypml->a[nctemp829])
+{
+int nctemp837 = (ix >= ix0);
+int nctemp834 = (nctemp837 && ix);
+int nctemp847 = ix0 + nx;
+int nctemp831 = (nctemp834 < nctemp847);
+if(nctemp831)
+{
+int nctemp851=ix;
+nctemp851=iz*Vxxleft->d[0]+nctemp851;
+int nctemp861=ix;
+int nctemp864=ix;
+nctemp864=iz*Vxxleft->d[0]+nctemp864;
+float nctemp867 = Blft->a[nctemp861] * Vxxleft->a[nctemp864];
+int nctemp872=ix;
+int nctemp880 = ix - ix0;
+int nctemp875=nctemp880;
+nctemp875=iz*df->d[0]+nctemp875;
+float nctemp882 = Alft->a[nctemp872] * df->a[nctemp875];
+float nctemp883 = nctemp867 + nctemp882;
+Vxxleft->a[nctemp851] =nctemp883;
+int nctemp892 = ix - ix0;
+int nctemp887=nctemp892;
+nctemp887=iz*P->d[0]+nctemp887;
+int nctemp903 = ix - ix0;
+int nctemp898=nctemp903;
+nctemp898=iz*P->d[0]+nctemp898;
+int nctemp918 = ix - ix0;
+int nctemp913=nctemp918;
+nctemp913=iz*L->d[0]+nctemp913;
+float nctemp920 = dt * L->a[nctemp913];
+int nctemp925=ix;
+nctemp925=iz*Vxxleft->d[0]+nctemp925;
+int nctemp932=ix;
+int nctemp940 = ix - ix0;
+int nctemp935=nctemp940;
+nctemp935=iz*df->d[0]+nctemp935;
+float nctemp942 = Clft->a[nctemp932] * df->a[nctemp935];
+float nctemp943 = Vxxleft->a[nctemp925] + nctemp942;
+float nctemp944 = nctemp920 * nctemp943;
+float nctemp945 = P->a[nctemp898] - nctemp944;
+P->a[nctemp887] =nctemp945;
+}
+}
+int nctemp947=1;
+if(Getapplypml->a[nctemp947])
+{
+int nctemp960 = ix + nxo;
+int nctemp962 = nctemp960 - lpml;
+i =nctemp962;
+int nctemp969 = (i >= ix0);
+int nctemp966 = (nctemp969 && i);
+int nctemp979 = ix0 + nx;
+int nctemp963 = (nctemp966 < nctemp979);
+if(nctemp963)
+{
+int nctemp983=ix;
+nctemp983=iz*Vxxright->d[0]+nctemp983;
+int nctemp993=ix;
+int nctemp996=ix;
+nctemp996=iz*Vxxright->d[0]+nctemp996;
+float nctemp999 = Brbb->a[nctemp993] * Vxxright->a[nctemp996];
+int nctemp1004=ix;
+int nctemp1012 = i - ix0;
+int nctemp1007=nctemp1012;
+nctemp1007=iz*df->d[0]+nctemp1007;
+float nctemp1014 = Arbb->a[nctemp1004] * df->a[nctemp1007];
+float nctemp1015 = nctemp999 + nctemp1014;
+Vxxright->a[nctemp983] =nctemp1015;
+int nctemp1024 = i - ix0;
+int nctemp1019=nctemp1024;
+nctemp1019=iz*P->d[0]+nctemp1019;
+int nctemp1035 = i - ix0;
+int nctemp1030=nctemp1035;
+nctemp1030=iz*P->d[0]+nctemp1030;
+int nctemp1050 = i - ix0;
+int nctemp1045=nctemp1050;
+nctemp1045=iz*L->d[0]+nctemp1045;
+float nctemp1052 = dt * L->a[nctemp1045];
+int nctemp1057=ix;
+nctemp1057=iz*Vxxright->d[0]+nctemp1057;
+int nctemp1064=ix;
+int nctemp1072 = i - ix0;
+int nctemp1067=nctemp1072;
+nctemp1067=iz*df->d[0]+nctemp1067;
+float nctemp1074 = Crbb->a[nctemp1064] * df->a[nctemp1067];
+float nctemp1075 = Vxxright->a[nctemp1057] + nctemp1074;
+float nctemp1076 = nctemp1052 * nctemp1075;
+float nctemp1077 = P->a[nctemp1030] - nctemp1076;
+P->a[nctemp1019] =nctemp1077;
+}
+}
+}
+}
+}
+}
+int Ac2dFwstepstressx2 (nctempfloat2 *Vxxleft,nctempfloat2 *Vxxright,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
+{
+  kernel_Ac2dFwstepstressx2<<<NBLOCKS,NTHREADS>>>(Vxxleft,Vxxright,P,L,df,Alft,Blft,Clft,Arbb,Brbb,Crbb,Getapplypml,ix0,iz0,nxo,nzo,dt);
 GpuError();
 return(1);
 }
@@ -495,146 +556,165 @@ int ix;
 int iz;
 int i;
 int lpml;
-int nctemp1010=P->d[0];nx =nctemp1010;
-int nctemp1018=P->d[1];nz =nctemp1018;
-int nctemp1026=Alft->d[0];lpml =nctemp1026;
-int nctemp1032=0;
-int nctemp1034=nx;
-int nctemp1037=0;
-int nctemp1039=nz;
-int nctemp1030=(nctemp1034-nctemp1032)*(nctemp1039-nctemp1037);
-for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp1030;nctempno+=blockDim.x*gridDim.x){
-iz=nctemp1037+nctempno/(nctemp1034-nctemp1032);
-ix=nctemp1032+nctempno%(nctemp1034-nctemp1032);
+int nctemp1082=P->d[0];nx =nctemp1082;
+int nctemp1090=P->d[1];nz =nctemp1090;
+int nctemp1098=Alft->d[0];lpml =nctemp1098;
+int nctemp1104=0;
+int nctemp1106=nx;
+int nctemp1109=0;
+int nctemp1111=nz;
+int nctemp1102=(nctemp1106-nctemp1104)*(nctemp1111-nctemp1109);
+for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp1102;nctempno+=blockDim.x*gridDim.x){
+iz=nctemp1109+nctempno/(nctemp1106-nctemp1104);
+ix=nctemp1104+nctempno%(nctemp1106-nctemp1104);
 {
-int nctemp1044=ix;
-nctemp1044=iz*P->d[0]+nctemp1044;
-int nctemp1051=ix;
-nctemp1051=iz*P->d[0]+nctemp1051;
-int nctemp1062=ix;
-nctemp1062=iz*L->d[0]+nctemp1062;
-float nctemp1065 = dt * L->a[nctemp1062];
-int nctemp1067=ix;
-nctemp1067=iz*df->d[0]+nctemp1067;
-float nctemp1070 = nctemp1065 * df->a[nctemp1067];
-float nctemp1071 = P->a[nctemp1051] + nctemp1070;
-P->a[nctemp1044] =nctemp1071;
-}
-}
-int nctemp1075=4;
-int nctemp1078=5;
-int nctemp1072 = (Getapplypml->a[nctemp1075] || Getapplypml->a[nctemp1078]);
-if(nctemp1072)
-{
-int nctemp1082=0;
-int nctemp1084=nx;
-int nctemp1087=0;
-int nctemp1089=lpml;
-int nctemp1080=(nctemp1084-nctemp1082)*(nctemp1089-nctemp1087);
-for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp1080;nctempno+=blockDim.x*gridDim.x){
-iz=nctemp1087+nctempno/(nctemp1084-nctemp1082);
-ix=nctemp1082+nctempno%(nctemp1084-nctemp1082);
-{
-int nctemp1092=4;
-if(Getapplypml->a[nctemp1092])
-{
-int nctemp1100 = (iz >= iz0);
-int nctemp1097 = (nctemp1100 && iz);
-int nctemp1110 = iz0 + nz;
-int nctemp1094 = (nctemp1097 < nctemp1110);
-if(nctemp1094)
-{
-int nctemp1114=ix;
-nctemp1114=iz*Vzztop->d[0]+nctemp1114;
-int nctemp1124=iz;
-int nctemp1127=ix;
-nctemp1127=iz*Vzztop->d[0]+nctemp1127;
-float nctemp1130 = Blft->a[nctemp1124] * Vzztop->a[nctemp1127];
-int nctemp1135=iz;
-int nctemp1138=ix;
-int nctemp1144 = iz - iz0;
-nctemp1138=nctemp1144*df->d[0]+nctemp1138;
-float nctemp1145 = Alft->a[nctemp1135] * df->a[nctemp1138];
-float nctemp1146 = nctemp1130 + nctemp1145;
-Vzztop->a[nctemp1114] =nctemp1146;
-int nctemp1150=ix;
-int nctemp1156 = iz - iz0;
-nctemp1150=nctemp1156*P->d[0]+nctemp1150;
-int nctemp1161=ix;
-int nctemp1167 = iz - iz0;
-nctemp1161=nctemp1167*P->d[0]+nctemp1161;
-int nctemp1176=ix;
-int nctemp1182 = iz - iz0;
-nctemp1176=nctemp1182*L->d[0]+nctemp1176;
-float nctemp1183 = dt * L->a[nctemp1176];
-int nctemp1188=ix;
-nctemp1188=iz*Vzztop->d[0]+nctemp1188;
-int nctemp1195=iz;
-int nctemp1198=ix;
-int nctemp1204 = iz - iz0;
-nctemp1198=nctemp1204*df->d[0]+nctemp1198;
-float nctemp1205 = Clft->a[nctemp1195] * df->a[nctemp1198];
-float nctemp1206 = Vzztop->a[nctemp1188] + nctemp1205;
-float nctemp1207 = nctemp1183 * nctemp1206;
-float nctemp1208 = P->a[nctemp1161] - nctemp1207;
-P->a[nctemp1150] =nctemp1208;
-}
-}
-int nctemp1210=5;
-if(Getapplypml->a[nctemp1210])
-{
-int nctemp1223 = iz + nzo;
-int nctemp1225 = nctemp1223 - lpml;
-i =nctemp1225;
-int nctemp1232 = (i >= iz0);
-int nctemp1229 = (nctemp1232 && i);
-int nctemp1242 = iz0 + nz;
-int nctemp1226 = (nctemp1229 < nctemp1242);
-if(nctemp1226)
-{
-int nctemp1246=ix;
-nctemp1246=iz*Vzzbot->d[0]+nctemp1246;
-int nctemp1256=iz;
-int nctemp1259=ix;
-nctemp1259=iz*Vzzbot->d[0]+nctemp1259;
-float nctemp1262 = Brbb->a[nctemp1256] * Vzzbot->a[nctemp1259];
-int nctemp1267=iz;
-int nctemp1270=ix;
-int nctemp1276 = i - iz0;
-nctemp1270=nctemp1276*df->d[0]+nctemp1270;
-float nctemp1277 = Arbb->a[nctemp1267] * df->a[nctemp1270];
-float nctemp1278 = nctemp1262 + nctemp1277;
-Vzzbot->a[nctemp1246] =nctemp1278;
-int nctemp1282=ix;
-int nctemp1288 = i - iz0;
-nctemp1282=nctemp1288*P->d[0]+nctemp1282;
-int nctemp1293=ix;
-int nctemp1299 = i - iz0;
-nctemp1293=nctemp1299*P->d[0]+nctemp1293;
-int nctemp1308=ix;
-int nctemp1314 = i - iz0;
-nctemp1308=nctemp1314*L->d[0]+nctemp1308;
-float nctemp1315 = dt * L->a[nctemp1308];
-int nctemp1320=ix;
-nctemp1320=iz*Vzzbot->d[0]+nctemp1320;
-int nctemp1327=iz;
-int nctemp1330=ix;
-int nctemp1336 = i - iz0;
-nctemp1330=nctemp1336*df->d[0]+nctemp1330;
-float nctemp1337 = Crbb->a[nctemp1327] * df->a[nctemp1330];
-float nctemp1338 = Vzzbot->a[nctemp1320] + nctemp1337;
-float nctemp1339 = nctemp1315 * nctemp1338;
-float nctemp1340 = P->a[nctemp1293] - nctemp1339;
-P->a[nctemp1282] =nctemp1340;
-}
-}
-}
+int nctemp1116=ix;
+nctemp1116=iz*P->d[0]+nctemp1116;
+int nctemp1123=ix;
+nctemp1123=iz*P->d[0]+nctemp1123;
+int nctemp1134=ix;
+nctemp1134=iz*L->d[0]+nctemp1134;
+float nctemp1137 = dt * L->a[nctemp1134];
+int nctemp1139=ix;
+nctemp1139=iz*df->d[0]+nctemp1139;
+float nctemp1142 = nctemp1137 * df->a[nctemp1139];
+float nctemp1143 = P->a[nctemp1123] + nctemp1142;
+P->a[nctemp1116] =nctemp1143;
 }
 }
 }
 int Ac2dFwstepstressz (nctempfloat2 *Vzztop,nctempfloat2 *Vzzbot,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
 {
   kernel_Ac2dFwstepstressz<<<NBLOCKS,NTHREADS>>>(Vzztop,Vzzbot,P,L,df,Alft,Blft,Clft,Arbb,Brbb,Crbb,Getapplypml,ix0,iz0,nxo,nzo,dt);
+GpuError();
+return(1);
+}
+__global__ void kernel_Ac2dFwstepstressz2 (nctempfloat2 *Vzztop,nctempfloat2 *Vzzbot,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
+__global__ void kernel_Ac2dFwstepstressz2 (nctempfloat2 *Vzztop,nctempfloat2 *Vzzbot,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
+{
+int nx;
+int nz;
+int ix;
+int iz;
+int i;
+int lpml;
+int nctemp1148=P->d[0];nx =nctemp1148;
+int nctemp1156=P->d[1];nz =nctemp1156;
+int nctemp1164=Alft->d[0];lpml =nctemp1164;
+int nctemp1171=4;
+int nctemp1174=5;
+int nctemp1168 = (Getapplypml->a[nctemp1171] || Getapplypml->a[nctemp1174]);
+if(nctemp1168)
+{
+int nctemp1178=0;
+int nctemp1180=nx;
+int nctemp1183=0;
+int nctemp1185=lpml;
+int nctemp1176=(nctemp1180-nctemp1178)*(nctemp1185-nctemp1183);
+for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp1176;nctempno+=blockDim.x*gridDim.x){
+iz=nctemp1183+nctempno/(nctemp1180-nctemp1178);
+ix=nctemp1178+nctempno%(nctemp1180-nctemp1178);
+{
+int nctemp1188=4;
+if(Getapplypml->a[nctemp1188])
+{
+int nctemp1196 = (iz >= iz0);
+int nctemp1193 = (nctemp1196 && iz);
+int nctemp1206 = iz0 + nz;
+int nctemp1190 = (nctemp1193 < nctemp1206);
+if(nctemp1190)
+{
+int nctemp1210=ix;
+nctemp1210=iz*Vzztop->d[0]+nctemp1210;
+int nctemp1220=iz;
+int nctemp1223=ix;
+nctemp1223=iz*Vzztop->d[0]+nctemp1223;
+float nctemp1226 = Blft->a[nctemp1220] * Vzztop->a[nctemp1223];
+int nctemp1231=iz;
+int nctemp1234=ix;
+int nctemp1240 = iz - iz0;
+nctemp1234=nctemp1240*df->d[0]+nctemp1234;
+float nctemp1241 = Alft->a[nctemp1231] * df->a[nctemp1234];
+float nctemp1242 = nctemp1226 + nctemp1241;
+Vzztop->a[nctemp1210] =nctemp1242;
+int nctemp1246=ix;
+int nctemp1252 = iz - iz0;
+nctemp1246=nctemp1252*P->d[0]+nctemp1246;
+int nctemp1257=ix;
+int nctemp1263 = iz - iz0;
+nctemp1257=nctemp1263*P->d[0]+nctemp1257;
+int nctemp1272=ix;
+int nctemp1278 = iz - iz0;
+nctemp1272=nctemp1278*L->d[0]+nctemp1272;
+float nctemp1279 = dt * L->a[nctemp1272];
+int nctemp1284=ix;
+nctemp1284=iz*Vzztop->d[0]+nctemp1284;
+int nctemp1291=iz;
+int nctemp1294=ix;
+int nctemp1300 = iz - iz0;
+nctemp1294=nctemp1300*df->d[0]+nctemp1294;
+float nctemp1301 = Clft->a[nctemp1291] * df->a[nctemp1294];
+float nctemp1302 = Vzztop->a[nctemp1284] + nctemp1301;
+float nctemp1303 = nctemp1279 * nctemp1302;
+float nctemp1304 = P->a[nctemp1257] - nctemp1303;
+P->a[nctemp1246] =nctemp1304;
+}
+}
+int nctemp1306=5;
+if(Getapplypml->a[nctemp1306])
+{
+int nctemp1319 = iz + nzo;
+int nctemp1321 = nctemp1319 - lpml;
+i =nctemp1321;
+int nctemp1328 = (i >= iz0);
+int nctemp1325 = (nctemp1328 && i);
+int nctemp1338 = iz0 + nz;
+int nctemp1322 = (nctemp1325 < nctemp1338);
+if(nctemp1322)
+{
+int nctemp1342=ix;
+nctemp1342=iz*Vzzbot->d[0]+nctemp1342;
+int nctemp1352=iz;
+int nctemp1355=ix;
+nctemp1355=iz*Vzzbot->d[0]+nctemp1355;
+float nctemp1358 = Brbb->a[nctemp1352] * Vzzbot->a[nctemp1355];
+int nctemp1363=iz;
+int nctemp1366=ix;
+int nctemp1372 = i - iz0;
+nctemp1366=nctemp1372*df->d[0]+nctemp1366;
+float nctemp1373 = Arbb->a[nctemp1363] * df->a[nctemp1366];
+float nctemp1374 = nctemp1358 + nctemp1373;
+Vzzbot->a[nctemp1342] =nctemp1374;
+int nctemp1378=ix;
+int nctemp1384 = i - iz0;
+nctemp1378=nctemp1384*P->d[0]+nctemp1378;
+int nctemp1389=ix;
+int nctemp1395 = i - iz0;
+nctemp1389=nctemp1395*P->d[0]+nctemp1389;
+int nctemp1404=ix;
+int nctemp1410 = i - iz0;
+nctemp1404=nctemp1410*L->d[0]+nctemp1404;
+float nctemp1411 = dt * L->a[nctemp1404];
+int nctemp1416=ix;
+nctemp1416=iz*Vzzbot->d[0]+nctemp1416;
+int nctemp1423=iz;
+int nctemp1426=ix;
+int nctemp1432 = i - iz0;
+nctemp1426=nctemp1432*df->d[0]+nctemp1426;
+float nctemp1433 = Crbb->a[nctemp1423] * df->a[nctemp1426];
+float nctemp1434 = Vzzbot->a[nctemp1416] + nctemp1433;
+float nctemp1435 = nctemp1411 * nctemp1434;
+float nctemp1436 = P->a[nctemp1389] - nctemp1435;
+P->a[nctemp1378] =nctemp1436;
+}
+}
+}
+}
+}
+}
+int Ac2dFwstepstressz2 (nctempfloat2 *Vzztop,nctempfloat2 *Vzzbot,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
+{
+  kernel_Ac2dFwstepstressz2<<<NBLOCKS,NTHREADS>>>(Vzztop,Vzzbot,P,L,df,Alft,Blft,Clft,Arbb,Brbb,Crbb,Getapplypml,ix0,iz0,nxo,nzo,dt);
 GpuError();
 return(1);
 }

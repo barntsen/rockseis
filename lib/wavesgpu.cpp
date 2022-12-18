@@ -134,6 +134,7 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
    T _ox, _oy, _oz; 
    int _dim, _lpml;
 
+
    /* Get necessary parameters from model class */
    _nx=model->getNx();
    _ny=model->getNy();
@@ -201,6 +202,7 @@ WavesAcoustic2D<T>::WavesAcoustic2D(std::shared_ptr<rockseis::ModelAcoustic2D<T>
       nx_pml = _nx + 2*_lpml;
       nz_pml = _nz + 2*_lpml;
 
+      //printf("Here with nx_pml,nz_pml,lpml: %d %d %d \n", nx_pml, nz_pml, _lpml);
       P = (T *) BallocNew(nx_pml*nz_pml, sizeof(T)); 
       Vx = (T *) BallocNew(nx_pml*nz_pml, sizeof(T)); 
       Vz = (T *) BallocNew(nx_pml*nz_pml, sizeof(T)); 
@@ -248,7 +250,7 @@ void WavesAcoustic2D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelAcou
    }
 
    for(int i=0; i<ng; i++){
-     if(Pml->getApplypml()){
+     if(Pml->getApplypml(i)){
        Getapplypml[i] = 1;
      }else{
        Getapplypml[i] = 0;
@@ -257,18 +259,22 @@ void WavesAcoustic2D<T>::forwardstepVelocity(std::shared_ptr<rockseis::ModelAcou
 
    // Compute Vx and attenuate in x-direction
    der->ddx_fw(P);
+
    Ac2dFwstepvxc((float*)Pml->P_left, (float*)Pml->P_right, (float*)Vx,(float*)Rx,(float*)df,      
               (float*)Pml->A_ltf_stag,(float*)Pml->B_ltf_stag,(float *) Pml->C_ltf_stag, 
               (float *)Pml->A_rbb_stag,(float*)Pml->B_rbb_stag,(float *)Pml->C_rbb_stag, 
               Getapplypml,ix0,iz0,nxo,nzo,
               (float)dt,nx,nz,lpml,ng); 
+
    // Compute Vz and attenuate in z-direction
    der->ddz_fw(P);
+
    Ac2dFwstepvzc((float*)Pml->P_top, (float*)Pml->P_bottom, (float*)Vz,(float*)Rz,(float*)df,      
               (float*)Pml->A_ltf_stag,(float*)Pml->B_ltf_stag,(float*)Pml->C_ltf_stag, 
               (float*)Pml->A_rbb_stag,(float*)Pml->B_rbb_stag,(float*)Pml->C_rbb_stag, 
               Getapplypml,ix0,iz0,nxo,nzo,
               (float)dt,nx,nz,lpml,ng); 
+
   BallocDelete(Getapplypml);
 }
 template<typename T>

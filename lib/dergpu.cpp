@@ -1,5 +1,5 @@
 #include "der.h"
-#include "diff.h"
+#include "Diffc.h"
 #include  "balloc.h"  // GPU memory allocation and error check
 #include "clock.h"
 //
@@ -65,16 +65,16 @@ namespace rockseis {
 template <typename T>
 Der<T>::Der()
 {
-    //nx = 1;
-    //ny = 1;
-    //nz = 1;
-    //dx = 1.;
-    //dy = 1.;
-    //dz = 1.;
-    //order = 1;
-    //coeffs = (T *) BallocNew(CARRAYSIZE,sizeof(T));
-    //coeffs[0] = w11;
-    //df = (T *) BallocNew(nx*ny*nz,sizeof(T));
+    nx = 1;
+    ny = 1;
+    nz = 1;
+    dx = 1.;
+    dy = 1.;
+    dz = 1.;
+    order = 1;
+    coeffs = (T *) BallocNew(CARRAYSIZE,sizeof(T));
+    coeffs[0] = w11;
+    df = (T *) BallocNew(nx*ny*nz,sizeof(T));
 }
 
 template <typename T>
@@ -89,7 +89,7 @@ Der<T>::Der(const int _nx, const int _ny, const int _nz, const T _dx, const T _d
     order = _order;
 
     df     =  (T *) BallocNew(nx*ny*nz,sizeof(T));
-    coeffs =  (T *) BallocNew(1,sizeof(T));
+    coeffs =  (T *) BallocNew(order,sizeof(T));
 
     /* Check for possibility of integer overflow */
     long int lnx, lny, lnz;
@@ -171,7 +171,7 @@ template <typename T>
 void Der<T>::ddx_fw(T *f){
 
    //Call the gpu differentiator function
-   DiffDxplus((float *)f,(float *)df,(float *)coeffs, (float)dx,order,nx,nz);
+   DiffDxplusc((float *)f,(float *)df,(float *)coeffs, (float)dx,order,nx,nz);
 }
 
 // Forward z-derivative
@@ -179,7 +179,7 @@ template <typename T>
 void Der<T>::ddz_fw(T *f){
 
    // Call the gpu differentiator function
-   DiffDyplus((float *)f,(float *)df, (float *)coeffs, (float)dx,order,nx,nz);
+   DiffDyplusc((float *)f,(float *)df, (float *)coeffs, (float)dx,order,nx,nz);
 }
 
 // Backward x-derivative
@@ -187,14 +187,14 @@ template <typename T>
 void Der<T>::ddx_bw(T *f){
 
    // Call the gpu differentiator function
-   DiffDxminus((float *) f, (float *)df, (float *)coeffs,(float)dx,order,nx,nz);
+   DiffDxminusc((float *) f, (float *)df, (float *)coeffs,(float)dx,order,nx,nz);
 }
 
 // Backward z-derivative
 template <typename T>
 void Der<T>::ddz_bw(T *f){
    // Call the gpu differentiator function
-   DiffDyminus((float *) f, (float *)df ,(float *)coeffs, (float)dx,order,nx,nz);
+   DiffDyminusc((float *) f, (float *)df ,(float *)coeffs, (float)dx,order,nx,nz);
 }
 
 template <typename T>
