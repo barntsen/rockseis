@@ -39,15 +39,15 @@ libs     = ['file',  'model',  'pml',      'waves',
             'utils', 'der',    'geometry', 'data',   
             'sort',  'rsfcpp', 'rsfc',     'inparse',
             'fft',   'ballocpu']
-#segy2rss = env.Program(prefix + 'segy2rss','segy2rss.cpp',LIBS=libs)
-#env.Install('../bin/',segy2rss)
+segy2rss = env.Program(prefix + 'segy2rss','segy2rss.cpp',LIBS=libs)
+env.Install('../bin/',segy2rss)
 
 libs     = ['file',     'model',  'pml',      'waves',  
             'utils',    'der',    'geometry', 'data',  
             'sort',     'rsfcpp', 'rsfc',     'inparse', 
             'fft',      'ballocpu']
-#rss2segy = env.Program(prefix + 'rss2segy','rss2segy.cpp',LIBS=libs)
-#env.Install('../bin/',rss2segy)
+rss2segy = env.Program(prefix + 'rss2segy','rss2segy.cpp',LIBS=libs)
+env.Install('../bin/',rss2segy)
 
 libs     = ['file',  'model',  'pml',       'waves',   
             'utils', 'der',    'geometry',  'sort', 

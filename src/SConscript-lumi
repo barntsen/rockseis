@@ -490,7 +490,7 @@ if mpi['ON'] == True :
                                  'sort',     'data',    'lsrtm',    'parallel', 
                                  'interp',   'inparse', 'snap',     'image', 
                                  'opt',      'bspl',    'fft',      'hilbert',
-                                 'ballocgpu','  'mpi', 
+                                 'ballocgpu', 'mpi', 
                                  'rtm']
     mpiAcousticrtm2dgpuObj   = gpu.Object('mpiAcousticrtm2dgpu',
                                           'mpiAcousticrtm2d.cpp')

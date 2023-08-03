@@ -68,4 +68,4 @@ SConscript('config4cpp/src/SConscript','env')
 
 #Build madagscar libraries
 #Do not build on Idun
-#SConscript('madagascar/lib/SConscript',['env','envc'])
+SConscript('madagascar/lib/SConscript',['env','envc'])
