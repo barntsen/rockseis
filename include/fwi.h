@@ -18,6 +18,7 @@
 #include "snap.h"
 #include "image.h"
 #include "revolve.h"
+#include "clock.h"
 
 #define FWI_OK 1
 #define FWI_ERR 0

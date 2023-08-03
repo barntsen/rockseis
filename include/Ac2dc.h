@@ -27,3 +27,12 @@ int Ac2dFwstepstresszc(float *Vzztop, float *Vzzbot,
               float *Arbb,float *Brbb,float *Crbb, 
               int   *Getapplypml,int ix0,int iz0,int nxo,int nzo,
               float dt,int nx, int nz,int lpml,int ng); 
+
+
+int Ac2dXcorrc(float *Vp,  int nx, int nz, int padr, int pads, 
+              float *Rho, float *Rx, float *Rz,int nxs, int nys, 
+	      int nxr, int nyr, float *wsp, float *wrx, float *wrz, 
+              float *vpgraddata, float *rhograddata, 
+	      float dx, float dz, int srcilumset, float *srcilumdata);  
+
+int Ac2dMemcpyc( void * s, void *t, int n);

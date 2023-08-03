@@ -5,6 +5,9 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <cmath>
 #define NHEAD2D 4
 #define NHEAD3D 6
@@ -94,6 +97,10 @@ void rs_warning(std::string, std::string, std::string);
 
 void remove_file(std::string);
 bool file_exists(std::string);
+
+//============== Timing     ===============================//
+
+double wtime();             // Return wall clock time in secs
 
 }
 #endif //UTILS_H

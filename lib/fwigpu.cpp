@@ -1,5 +1,7 @@
 // Include statements
 #include "fwi.h"
+#include "Ac2dc.h"
+#include "clock.h"
 
 namespace rockseis {
 
@@ -98,11 +100,9 @@ void Fwi<T>::writeProgressbar(int x, int n, int r, int w){
       // Calculuate the ratio of complete-to-incomplete.
       float ratio = x/(float)n;
       int   c     = ratio * w;
-      prog.current = wtime();
-      float time_spent  = (float) ( prog.current - prog.previous ) ;
-      prog.previous = prog.current;
-      prog.persec = 0.0;
-      //if(time_spent > 0) prog.persec = (n/r) / time_spent;
+
+      if( n== 0){prog.previous = wtime();}
+      float time_spent  = (float) (wtime() - prog.previous ) ;
       if(time_spent > 0) prog.persec = time_spent;
       snprintf(prog.speed, 48, "%.2f its/s", prog.persec); 
 
@@ -134,12 +134,9 @@ void Fwi<T>::writeProgress(int x, int n, int r, int w){
 
       // Calculuate the ratio of complete-to-incomplete.
       float ratio = x/(float)n;
-      prog.current = wtime();
-      //float time_spent  = (float) ( prog.current - prog.previous ); 
-      float time_spent  = (float) ( prog.current ); 
-      prog.previous = prog.current;
-      prog.persec = 0.0;
-      //if(time_spent > 0) prog.persec = (n/r) / time_spent;
+      if(n==0){prog.previous = wtime();}
+      float time_spent  = (float) ( wtime() - prog.previous ); 
+      prog.persec = time_spent;
       if(time_spent > 0) prog.persec = time_spent;
       snprintf(prog.speed, 48, "%.2f sec(s)", prog.persec); 
 
@@ -532,6 +529,7 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
    T vpscale, rhoscale1;
    int nx = vpgrad->getNx();
    int nz = vpgrad->getNz();
+
    T dx = vpgrad->getDx();
    T dz = vpgrad->getDz();
    int nxs, nxr;
@@ -545,32 +543,22 @@ void FwiAcoustic2D<T>::crossCorr(T *wsp, int pads, T* wrp, T* wrx, T* wrz, int p
       nxr = nx+2*padr;
    }
 
+   int nys = nz+2*pads;
+   int nyr = nz+2*padr;
+
    T* Vp = model->getVp();
    T* Rho = model->getR();
    T* Rx = model->getRx();
    T* Rz = model->getRz();
 
-   for (ix=1; ix<nx-1; ix++){
-      {
-         for (iz=1; iz<nz-1; iz++){
-            vpscale = -2.0/(Vp[km2D(ix, iz)]);
-            rhoscale1 = -1.0/(Rho[km2D(ix, iz)]);
-            mrxx = (wrx[kr2D(ix+padr, iz+padr)] - wrx[kr2D(ix+padr-1, iz+padr)])/dx;
-            mrzz = (wrz[kr2D(ix+padr, iz+padr)] - wrz[kr2D(ix+padr, iz+padr-1)])/dz;
-            vpgraddata[ki2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*(mrxx + mrzz);
-            rhograddata[ki2D(ix,iz)] -= rhoscale1*wsp[ks2D(ix+pads, iz+pads)]*(mrxx + mrzz);
-            uderx = 0.5*wrx[kr2D(ix+padr, iz+padr)]*Rx[kr2D(ix+padr, iz+padr)]*(wsp[ks2D(ix+pads+1, iz+pads)] - wsp[ks2D(ix+pads, iz+pads)])/dx;
-            uderx += 0.5*wrx[kr2D(ix+padr-1, iz+padr)]*Rx[kr2D(ix+padr-1, iz+padr)]*(wsp[ks2D(ix+pads, iz+pads)] - wsp[ks2D(ix+pads-1, iz+pads)])/dx;
-            uderz = 0.5*wrz[kr2D(ix+padr, iz+padr)]*Rz[kr2D(ix+padr, iz+padr)]*(wsp[ks2D(ix+pads, iz+pads+1)] - wsp[ks2D(ix+pads, iz+pads)])/dz;
-            uderz += 0.5*wrz[kr2D(ix+padr, iz+padr-1)]*Rz[kr2D(ix+padr, iz+padr-1)]*(wsp[ks2D(ix+pads, iz+pads)] - wsp[ks2D(ix+pads, iz+pads-1)])/dz;
-            rhograddata[ki2D(ix,iz)] += (uderx + uderz);
+   // Call GPU kernel to do the real work
+   //
 
-            if(srcilumset){
-               srcilumdata[ki2D(ix,iz)] -= vpscale*wsp[ks2D(ix+pads, iz+pads)]*wsp[ks2D(ix+pads, iz+pads)];
-            }
-         }	
-      }
-   }
+   Ac2dXcorrc((float *)Vp, nx,  nz, padr, pads, 
+              (float *)Rho, (float *)Rx, (float *)Rz, nxs, nys, 
+	      nxr, nyr, (float *)wsp, (float *)wrx, (float *)wrz, 
+              (float *)vpgraddata, (float *)rhograddata, 
+	      dx, dz, srcilumset, (float *)srcilumdata);
 }
 
 template<typename T>
@@ -1089,6 +1077,7 @@ int FwiAcoustic2D<T>::run(){
       this->writeProgress(it, nt-1, 20, 48);
    }//End of forward loop
 
+
    //Close snapshot file
    Psnap->closeSnap();
 
@@ -1171,6 +1160,8 @@ int FwiAcoustic2D<T>::run_optimal(){
    this->createLog(this->getLogfile());
 
    // Create the classes 
+   Clock <double> t1 = Clock<double>();
+   Clock <double> t2 = Clock<double>();
    std::shared_ptr<WavesAcoustic2D<T>> waves_fw (new WavesAcoustic2D<T>(model, nt, dt, ot));
    std::shared_ptr<WavesAcoustic2D<T>> waves_bw (new WavesAcoustic2D<T>(model, nt, dt, ot));
    std::shared_ptr<Der<T>> der (new Der<T>(waves_fw->getNx_pml(), 1, waves_fw->getNz_pml(), waves_fw->getDx(), 1.0, waves_fw->getDz(), this->getOrder()));
@@ -1191,15 +1182,18 @@ int FwiAcoustic2D<T>::run_optimal(){
    // Create image
    vpgrad->allocateImage();
 
-   this->writeLog("Running 2D Acoustic full-waveform inversion gradient with optimal checkpointing.");
+   this->writeLog("DEBUG Running 2D Acoustic full-waveform inversion gradient with optimal checkpointing.");
    this->writeLog("Doing forward Loop.");
    bool reverse = false;
+   t1.start();
    // Loop over forward time
    do
    {
       oldcapo=optimal->getCapo();
       whatodo = optimal->revolve();
+      t2.start();
       capo = optimal->getCapo();
+      t2.stop();
       if (whatodo == advance)
       {
          for(int it=oldcapo; it < capo; it++)
@@ -1324,7 +1318,9 @@ int FwiAcoustic2D<T>::run_optimal(){
 
    } while((whatodo != terminate) && (whatodo != error));
    this->writeLog("\nGradient computation completed.");
-
+   t1.stop();
+   t1.print();
+   t2.print();
 
    //Remove snapshot file
    optimal->removeCheck();

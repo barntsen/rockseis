@@ -1,4 +1,5 @@
 #include "image.h"
+#include "balloc.h"
 
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
 #define ks2D(i,j) ((j)*nxs + (i))
@@ -803,7 +804,7 @@ template<typename T>
 void Image2D<T>::allocateImage()
 {
    // Allocate the memory for the image
-   imagedata = (T *) calloc(this->getNhx()*this->getNhz()*this->getNx()*this->getNz(), sizeof(T));
+   imagedata = (T *) BallocNew(this->getNhx()*this->getNhz()*this->getNx()*this->getNz(), sizeof(T));
    if(imagedata == NULL) rs_error("Image2D::allocate: Failed to allocate memory for imagedata");
    allocated = true;
 }
@@ -812,7 +813,7 @@ template<typename T>
 void Image2D<T>::freeImage()
 {
    if(allocated){
-      free(imagedata);
+      BallocDelete(imagedata);
    }
    allocated = false;
 }
@@ -822,7 +823,7 @@ template<typename T>
 Image2D<T>::~Image2D() {
    // Freeing all variables
    if(allocated){
-      free(imagedata);
+      BallocDelete(imagedata);
    }
 }
 

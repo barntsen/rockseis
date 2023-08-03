@@ -18,7 +18,7 @@ public:
     ~Clock();                              ///< Destructor
 
     // Functions
-    T  elapsed();                      ///< Get Elapsed time
+    T  wtime();                         ///< Get Wall clock time
 
     // Functions
     void start();                      ///< Start clock

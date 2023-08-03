@@ -46,4 +46,12 @@ int Ac2dFwstepstressz2(float [*,*] Vzztop, float [*,*] Vzzbot,
               float [*] Alft,float [*] Blft,float [*] Clft, 
               float [*] Arbb,float [*] Brbb,float [*] Crbb, 
               int [*] Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt){} 
-              
+
+//Xcorr performs cross correlations for gradient computation
+int Ac2dXcorr(float [*,*] Vp, int padr, int pads, 
+              float [*,*] Rho, float [*,*] Rx, float [*,*] Rz, 
+	      float [*,*] wsp, float [*,*] wrx, float [*,*]  wrz, 
+              float [*,*] vpgraddata, float [*,*] rhograddata, 
+	      float dx, float dz, int srcilumset, float [*,*] srcilumdata){}  
+
+int Ac2dMemcpy(char [*] s, char [*] t){}

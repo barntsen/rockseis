@@ -113,12 +113,14 @@ void Modelling<T>::writeProgress(int x, int n, int r, int w){
 
       // Calculuate the ratio of complete-to-incomplete.
       float ratio = x/(float)n;
-      prog.current = clock();
-      float time_spent  = (float) ( prog.current - prog.previous ) / CLOCKS_PER_SEC;
+      prog.current = wtime();
+      //float time_spent  = (float) ( prog.current - prog.previous ) / CLOCKS_PER_SEC;
+      float time_spent  = (float) ( prog.current - prog.previous ); 
       prog.previous = prog.current;
       prog.persec = 0.0;
-      if(time_spent > 0) prog.persec = (n/r) / time_spent;
-      snprintf(prog.speed, 48, "%.2f its/s", prog.persec); 
+      //if(time_spent > 0) prog.persec = (n/r) / time_spent;
+      if(time_spent > 0) prog.persec = time_spent;
+      snprintf(prog.speed, 48, "%.2f sec(s)", prog.persec); 
 
       // Show the percentage complete.
       sprintf(prog.progress,"%3d%%", (int)(ratio*100) );

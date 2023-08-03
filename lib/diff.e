@@ -35,35 +35,12 @@ int DiffDxminus(float [*,*] A, float [*,*] dA, float [*] w, float dx, int l){
   parallel(i=0:l,j=0:ny)
   {
     sum=0.0;
-    //LibePuts(stdout,"dxmin left at point: "); 
-    //LibePuti(stdout,i); 
-    //LibePuts(stdout,"\n");
     for(k=1; k<i+1; k=k+1){
       sum = -w[k-1]*A[i-k,j] + sum; 
-      //LibePuts(stdout,"  left index A:");
-      //LibePuti(stdout,i-k); 
-      //LibePuts(stdout," Val: ");
-      //LibePutf(stdout,A[i-k,j]);
-      //LibePuts(stdout,"\n");
-      //LibePuts(stdout,"      index w0:");
-      //LibePuti(stdout,k-1); 
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     }
     for(k=1; k<l+1; k=k+1){
       sum = w[k-1]*A[i+(k-1),j] +sum; 
-      //LibePuts(stdout,"  right index A:");
-      //LibePuti(stdout,i+k-1); 
-      //LibePuts(stdout," Val: ");
-      //LibePutf(stdout,A[i+k-1,j]);
-      //LibePuts(stdout,"\n");
-      //LibePuts(stdout,"       index w0:");
-      //LibePuti(stdout,k-1); 
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     }
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     dA[i,j] = sum/dx;
   } 
 
@@ -84,39 +61,14 @@ int DiffDxminus(float [*,*] A, float [*,*] dA, float [*] w, float dx, int l){
   //
   parallel(i=nx-l:nx,j=0:ny)
   {
-    /*
-    LibePuts(stdout,"dxmin right at point: "); 
-    LibePuti(stdout,i); 
-    LibePuts(stdout,"\n");
-    */
     sum = 0.0;
     for(k=1; k<l+1; k=k+1){
-      /*
-      LibePuts(stdout,"  left index A:");
-      LibePuti(stdout,i-k); 
-      LibePuts(stdout,"      index w0:");
-      LibePuti(stdout,k-1); 
-      LibePuts(stdout,"\n"); 
-      LibeFlush(stdout);
-      */
       sum = -w[k-1]*A[i-k,j] + sum;
     }
 
     for(k=1; k<(nx-i+1); k=k+1){
       sum = w[k-1]*A[i+(k-1),j] + sum;
-      /*
-      LibePuts(stdout,"  right index A:");
-      LibePuti(stdout,i+k-1); 
-      LibePuts(stdout,"       index w0:");
-      LibePuti(stdout,k-1); 
-      LibePuts(stdout,"\n"); 
-      LibeFlush(stdout);
-     */
     }
-      /*
-      LibePuts(stdout,"\n"); 
-      LibeFlush(stdout);
-      */
     dA[i,j] = sum/dx;
   }
 }
@@ -153,29 +105,12 @@ int DiffDxplus(float [*,*] A, float [*,*] dA, float [*] w, float dx, int l){
   parallel(i=0:l,j=0:ny)
   {
     sum=0.0;
-    //LibePuts(stdout,"dxplus left at point: "); 
-    //LibePuti(stdout,i); 
-    //LibePuts(stdout,"\n");
     for(k=1; k<i+2; k=k+1){
       sum = -w[k-1]*A[i-(k-1),j] + sum; 
-      //LibePuts(stdout,"  left index A:");
-      //LibePuti(stdout,i-(k-1)); 
-      //LibePuts(stdout,"      index w0:");
-      //LibePuti(stdout,k-1); 
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     }
     for(k=1; k<l+1; k=k+1){
       sum = w[k-1]*A[i+k,j] +sum; 
-      //LibePuts(stdout,"  right index A:");
-      //LibePuti(stdout,i+k); 
-      //LibePuts(stdout,"      index w0:");
-      //LibePuti(stdout,k-1); 
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     }
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     dA[i,j] = sum/dx;
   } 
   //
@@ -196,38 +131,13 @@ int DiffDxplus(float [*,*] A, float [*,*] dA, float [*] w, float dx, int l){
   parallel(i=nx-l:nx,j=0:ny)
   {
     sum = 0.0;
-    /*
-    LibePuts(stdout,"dxplus right at point: "); 
-    LibePuti(stdout,i); 
-    LibePuts(stdout,"\n");
-    */
     for(k=1; k<l+1; k=k+1){
-      /*
-      LibePuts(stdout,"  left index A:");
-      LibePuti(stdout,i-(k-1)); 
-      LibePuts(stdout,"      index w0:");
-      LibePuti(stdout,k-1); 
-      LibePuts(stdout,"\n"); 
-      LibeFlush(stdout);
-      */
       sum = -w[k-1]*A[i-(k-1),j] + sum;
     }
 
     for(k=1; k<nx-i; k=k+1){
-      /*
-      LibePuts(stdout,"  right index A:");
-      LibePuti(stdout,i+k); 
-      LibePuts(stdout,"      index w0:");
-      LibePuti(stdout,k-1); 
-      LibePuts(stdout,"\n"); 
-      LibeFlush(stdout);
-      */
       sum = w[k-1]*A[i+k,j] + sum;
     }
-      /*
-      LibePuts(stdout,"\n"); 
-      LibeFlush(stdout);
-      */
     dA[i,j] = sum/dx;
   }
 }
@@ -264,30 +174,13 @@ int DiffDyminus(float [*,*] A, float [*,*] dA, float [*] w, float dx, int l){
   parallel(i=0:nx,j=0:l)
   {
     sum=0.0;
-    //LibePuts(stdout,"dymin left at point: "); 
-    //LibePuti(stdout,j); 
-    //LibePuts(stdout,"\n");
     for(k=1; k<j+1; k=k+1){
       sum = -w[k-1]*A[i,j-k] + sum; 
-      //LibePuts(stdout,"  left index A:");
-      //LibePuti(stdout,j-k); 
-      //LibePuts(stdout,"      index w0:");
-      //LibePuti(stdout,k-1); 
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     }
     for(k=1; k<l+1; k=k+1){
       sum = w[k-1]*A[i,j+(k-1)] +sum; 
-      //LibePuts(stdout,"  right index A:");
-      //LibePuti(stdout,j+k-1); 
-      //LibePuts(stdout,"       index w0:");
-      //LibePuti(stdout,k-1); 
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     }
     dA[i,j] = sum/dx;
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
   } 
 
   //
@@ -307,39 +200,14 @@ int DiffDyminus(float [*,*] A, float [*,*] dA, float [*] w, float dx, int l){
   //
   parallel(i=0:nx,j=ny-l:ny)
   {
-    /*
-    LibePuts(stdout,"dymin right at point: ");
-    LibePuti(stdout,j);
-    LibePuts(stdout,"\n");
-    */
     sum = 0.0;
     for(k=1; k<l+1; k=k+1){
-      /*
-      LibePuts(stdout,"  left index A:");
-      LibePuti(stdout,j-k);
-      LibePuts(stdout,"      index w0:");
-      LibePuti(stdout,k-1);
-      LibePuts(stdout,"\n");
-      LibeFlush(stdout);
-      */
       sum = -w[k-1]*A[i,j-k] + sum;
    }
 
     for(k=1; k<(ny-j+1); k=k+1){
-      /*
-      LibePuts(stdout,"  right index A:");
-      LibePuti(stdout,j+k-1);
-      LibePuts(stdout,"       index w0:");
-      LibePuti(stdout,k-1);
-      LibePuts(stdout,"\n");
-      LibeFlush(stdout);
-      */
       sum = w[k-1]*A[i,j+(k-1)] + sum;
     }
-    /*
-    LibePuts(stdout,"\n");
-    LibeFlush(stdout);
-    */
 
     dA[i,j] = sum/dx;
   }
@@ -376,29 +244,12 @@ int DiffDyplus(float [*,*] A, float [*,*] dA, float [*] w, float dx, int l){
   parallel(i=0:nx,j=0:l)
   {
     sum=0.0;
-    //LibePuts(stdout,"dyplus left at point: "); 
-    //LibePuti(stdout,j); 
-    //LibePuts(stdout,"\n");
     for(k=1; k<j+2; k=k+1){
       sum = -w[k-1]*A[i,j-(k-1)] + sum; 
-      //LibePuts(stdout,"  left index A:");
-      //LibePuti(stdout,j-(k-1)); 
-      //LibePuts(stdout,"      index w0:");
-      //LibePuti(stdout,k-1); 
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     }
     for(k=1; k<l+1; k=k+1){
       sum = w[k-1]*A[i,j+k] +sum; 
-      //LibePuts(stdout,"  right index A:");
-      //LibePuti(stdout,j+k); 
-      //LibePuts(stdout,"       index w0:");
-      //LibePuti(stdout,k-1); 
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     }
-      //LibePuts(stdout,"\n"); 
-      //LibeFlush(stdout);
     dA[i,j] = sum/dx;
   } 
 
@@ -420,38 +271,13 @@ int DiffDyplus(float [*,*] A, float [*,*] dA, float [*] w, float dx, int l){
   parallel(i=0:nx,j=ny-l:ny)
   {
     sum = 0.0;
-    /*
-    LibePuts(stdout,"dyplus right at point: ");
-    LibePuti(stdout,j);
-    LibePuts(stdout,"\n");
-    */
     for(k=1; k<l+1; k=k+1){
-     /*
-      LibePuts(stdout,"  left index A:");
-      LibePuti(stdout,j-(k-1));
-      LibePuts(stdout,"      index w0:");
-      LibePuti(stdout,k-1);
-      LibePuts(stdout,"\n");
-      LibeFlush(stdout);
-    */
       sum = -w[k-1]*A[i,j-(k-1)] + sum;
     }
 
     for(k=1; k<ny-j; k=k+1){
-      /*
-      LibePuts(stdout,"  right index A:");
-      LibePuti(stdout,j+k);
-      LibePuts(stdout,"      index w0:");
-      LibePuti(stdout,k-1);
-      LibePuts(stdout,"\n");
-      LibeFlush(stdout);
-      */
       sum = w[k-1]*A[i,j+k] + sum;
     }
-    /*
-    LibePuts(stdout,"\n");
-    LibeFlush(stdout);
-    */
     dA[i,j] = sum/dx;
   }
 }

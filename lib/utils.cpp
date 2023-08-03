@@ -90,6 +90,12 @@ bool file_exists (std::string filename) {
     }   
 }
 
+//Timer
+double wtime() {
+  struct timespec tp;
+  clock_gettime(CLOCK_MONOTONIC, &tp);
+  return ((double)tp.tv_sec + (double)tp.tv_nsec*1.0e-9) ;
+}
 
 // =============== INITIALIZING TEMPLATE STRUCTS =============== //
 template struct Point2D<int>;

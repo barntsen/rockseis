@@ -61,7 +61,8 @@ AR		= ar
 AR_FLAGS	= -r
 RANLIB		= /bin/true
 RANLIB_FLAGS	= 
-CXX		= g++
+#CXX		= g++
+CXX		= CC 
 else ifeq ($(OS),Cygwin)
 #-----
 # Cygwin: same as Linux

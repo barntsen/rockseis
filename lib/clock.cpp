@@ -7,6 +7,7 @@
 #include "clock.h"
 #include<time.h>
 #include<sys/time.h>
+#include<sys/types.h>
 
 namespace rockseis {
 // =========== CLOCK CLASS =========== //
@@ -26,41 +27,35 @@ Clock<T>::~Clock() {
 }
 template<typename T>
 void Clock<T>::start() {
-struct timeval time;
-// Cpu time
-tstart=((long double)std::clock())/CLOCKS_PER_SEC;
 
-// Wall clock time
-gettimeofday(&time,NULL);
-wtstart=(T)time.tv_sec + (T)time.tv_usec*0.000001;
+  // Cpu time
+  tstart=((long double)std::clock())/CLOCKS_PER_SEC;
+
+  // Wall clock time
+  struct timespec tp;
+  clock_gettime(CLOCK_MONOTONIC, &tp);
+  wtstart=(T)tp.tv_sec + (T)tp.tv_nsec*1.0e-9;
 
 }
 
 template<typename T>
 void Clock<T>::stop() {
-struct timeval time;
 
-//Cpu clock time
-tend=((long double)std::clock())/CLOCKS_PER_SEC;
-telapsed = telapsed +tend-tstart;
+  //Cpu clock time
+  tend=((long double)std::clock())/CLOCKS_PER_SEC;
+  telapsed = telapsed +tend-tstart;
 
-// Wall clock time
-gettimeofday(&time,NULL);
-wtend=(T)time.tv_sec + (T)time.tv_usec*0.000001;
-wtelapsed=wtelapsed+wtend-wtstart;
-}
-
-template<typename T>
-T Clock<T>::elapsed() {
-
-tend=((long double)std::clock())/CLOCKS_PER_SEC;
-return(telapsed+tend-tstart);
+  // Wall clock time
+  struct timespec tp;
+  clock_gettime(CLOCK_MONOTONIC, &tp);
+  wtend=(T)tp.tv_sec + (T)tp.tv_nsec*1.0e-09;
+  wtelapsed=wtelapsed+wtend-wtstart;
 }
 
 template<typename T>
 void Clock<T>::print(){
 
-std::cout <<" Cpu  time (seconds) : " << telapsed << "\n";
+//std::cout <<" Cpu  time (seconds) : " << telapsed << "\n";
 std::cout <<" Wall time (seconds) : " << wtelapsed << "\n";
 }
 

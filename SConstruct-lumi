@@ -35,19 +35,19 @@ if env['FFTW'] == True :
     env.Append(CPPPATH=['../../fftw-3.3.6-pl2/fftw-build/include/'])
 
 #--- Create mpi environment
-mpi = env.Clone(CC='mpicc', CXX='mpicxx')
+mpi = env.Clone(CC='cc', CXX='CC')
 mpi['ON'] = True
 
 #--- Create GPU environment
-gpu = env.Clone(CXX='nvcc', CPPFLAGS='-x cu -arch=sm_60')
+gpu = env.Clone(CXX='hipcc', CPPFLAGS= '-O3 -ffast-math')
 gpu['ON'] = True
 
 #--- Create clean environment
-envc = Environment(ENV=os.environ, CC ='gcc', CXX='g++', CPPFLAGS='-g')
+envc = Environment(ENV=os.environ, CC ='cc', CXX='CC', CPPFLAGS='-g')
 
 # Include paths 
-gpu.Append(CPPPATH=['../include','/usr/lib/x86_64-linux-gnu/openmpi/include'])
-gpu.Append(LIBPATH=['../build','/usr/lib/x86_64-linux-gnu/openmpi/lib'])
+gpu.Append(CPPPATH=['../include'])
+gpu.Append(LIBPATH=['../build'])
 gpu.Append(CPPPATH=['../config4cpp/include'])
 gpu.Append(CPPPATH=['../config4cpp/src'])
 gpu.Append(LIBPATH=['../config4cpp/lib'])
@@ -67,5 +67,5 @@ SConscript('gui/SConscript','env')
 SConscript('config4cpp/src/SConscript','env')
 
 #Build madagscar libraries
-#Do not build on Idun
+#Do not build on Idun and Lumi
 #SConscript('madagascar/lib/SConscript',['env','envc'])

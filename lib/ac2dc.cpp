@@ -413,3 +413,120 @@ int Ac2dFwstepstresszc(float *Vzztop, float *Vzzbot,
   BallocDelete(dGetapplypml);
   return(1);
 }
+
+// Xcorr performs cross correlations for gradient computation
+int Ac2dXcorrc(float *Vp,  int nx, int nz, int padr, int pads, 
+              float *Rho, float *Rx, float *Rz,int nxs, int nzs, 
+	      int nxr, int nzr, float *wsp, float *wrx, float *wrz, 
+              float *vpgraddata, float *rhograddata, 
+	      float dx, float dz, int srcilumset, float * srcilumdata)  
+{
+
+  // Add descriptors
+
+  nctempfloat2 *dVp;
+  dVp = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  dVp->a = Vp;
+  dVp->d[0] = nx;
+  dVp->d[1] = nz;
+
+  nctempfloat2 *dRho;
+  dRho = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  dRho->a = Rho;
+  dRho->d[0] = nx; 
+  dRho->d[1] = nz;
+
+  nctempfloat2 *dRx;
+  dRx = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  dRx->a = Rx;
+  dRx->d[0] = nxr;
+  dRx->d[1] = nzr;
+
+  nctempfloat2 *dRz;
+  dRz = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  dRz->a = Rz;
+  dRz->d[0] = nxr;
+  dRz->d[1] = nzr;
+
+  nctempfloat2 *dwsp;
+  dwsp = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  dwsp->a = wsp;
+  dwsp->d[0] = nxs;
+  dwsp->d[1] = nzs;
+
+  nctempfloat2 *dwrx;
+  dwrx = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  dwrx->a = wrx;
+  dwrx->d[0] = nxr;
+  dwrx->d[1] = nzr;
+
+  nctempfloat2 *dwrz;
+  dwrz = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  dwrz->a = wrz;
+  dwrz->d[0] = nxr;
+  dwrz->d[1] = nzr;
+
+  nctempfloat2 *dvpgraddata;
+  dvpgraddata = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  dvpgraddata->a = vpgraddata;
+  dvpgraddata->d[0] = nx;
+  dvpgraddata->d[1] = nz;
+
+  nctempfloat2 *drhograddata;
+  drhograddata = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  drhograddata->a = rhograddata;
+  drhograddata->d[0] = nx;
+  drhograddata->d[1] = nz;
+
+  nctempfloat2 *dsrcilumdata;
+  dsrcilumdata = (nctempfloat2 *)BallocNew(1,sizeof(nctempfloat2));
+  dsrcilumdata->a = srcilumdata;
+  dsrcilumdata->d[0] = nx;
+  dsrcilumdata->d[1] = nz;
+
+  // Call gpu kernel
+   
+  Ac2dXcorr(dVp, padr, pads, 
+              dRho, dRx,  dRz, 
+	      dwsp, dwrx, dwrz, 
+              dvpgraddata, drhograddata, 
+	      dx, dz, srcilumset, dsrcilumdata);  
+
+  // Remove descriptors
+  BallocDelete(dVp);
+  BallocDelete(dRho);
+  BallocDelete(dRx);
+  BallocDelete(dRz);
+  BallocDelete(dwsp);
+  BallocDelete(dwrx);
+  BallocDelete(dwrz);
+  BallocDelete(dvpgraddata);
+  BallocDelete(drhograddata);
+  BallocDelete(dsrcilumdata);
+
+  return(1);
+}
+
+// Memcpy copies data
+int Ac2dMemcpyc(void *s,  void *t, int n)
+{
+
+  // Add descriptors
+
+  nctempchar1 *ds;
+  ds = (nctempchar1 *)BallocNew(1,sizeof(nctempchar1));
+  ds->a = (char *)s;
+  ds->d[0] = n;
+
+  nctempchar1 *dt;
+  dt = (nctempchar1 *)BallocNew(1,sizeof(nctempchar1));
+  dt->a = (char *)t;
+  dt->d[0] = n;
+
+  Ac2dMemcpy(ds,dt);
+  
+  BallocDelete(ds);
+  BallocDelete(dt);
+
+  return(1);
+}

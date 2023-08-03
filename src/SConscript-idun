@@ -437,7 +437,7 @@ if mpi['ON'] == True :
                                 'wavesgpu', 'utils',   'dergpu',   'derd', 'geometry', 
                                 'sort',     'data',    'parallel', 'pml',
                                 'interp',   'inparse', 'snap',     'fft',
-                                'mpi',      'mpi_cxx', 'pthread',  'ballocgpu']
+                                'mpi',      'pthread',  'ballocgpu']
     mpiAcousticredat2dgpuObj = gpu.Object('mpiAcousticredat2dgpu',
                                           'mpiAcousticredat2d.cpp')
     mpiAcousticredat2dgpu    = gpu.Program(prefix + 'mpiAcousticredat2dgpu',
@@ -490,7 +490,7 @@ if mpi['ON'] == True :
                                  'sort',     'data',    'lsrtm',    'parallel', 
                                  'interp',   'inparse', 'snap',     'image', 
                                  'opt',      'bspl',    'fft',      'hilbert',
-                                 'ballocgpu',' pthread', 'mpi', 'mpi_cxx',
+                                 'ballocgpu',' pthread', 'mpi',
                                  'rtm']
     mpiAcousticrtm2dgpuObj   = gpu.Object('mpiAcousticrtm2dgpu',
                                           'mpiAcousticrtm2d.cpp')
@@ -515,7 +515,7 @@ if mpi['ON'] == True :
                      'wavesgpu',     'utils',   'dergpu',  'derd', 'geometry',     
                      'sort',      'data',    'fwigpu',   'parallel',     
                      'interp',    'inparse', 'snap',  'image',  
-                     'opt',       'bspl',    'fft',   'ballocgpu', 'mpi', 'mpi_cxx']
+                     'opt',       'bspl',    'fft',   'ballocgpu', 'mpi']
                      
     mpiAcousticfwi2dgpuObj   = gpu.Object('mpiAcousticfwi2dgpu',
                                           'mpiAcousticfwi2d.cpp')

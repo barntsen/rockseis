@@ -34,6 +34,8 @@ int Ac2dFwstepstressx (nctempfloat2 *Vxxleft,nctempfloat2 *Vxxright,nctempfloat2
 int Ac2dFwstepstressx2 (nctempfloat2 *Vxxleft,nctempfloat2 *Vxxright,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
 int Ac2dFwstepstressz (nctempfloat2 *Vzztop,nctempfloat2 *Vzzbot,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
 int Ac2dFwstepstressz2 (nctempfloat2 *Vzztop,nctempfloat2 *Vzzbot,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
+int Ac2dXcorr (nctempfloat2 *Vp,int padr,int pads,nctempfloat2 *Rho,nctempfloat2 *Rx,nctempfloat2 *Rz,nctempfloat2 *wsp,nctempfloat2 *wrx,nctempfloat2 *wrz,nctempfloat2 *vpgraddata,nctempfloat2 *rhograddata,float dx,float dz,int srcilumset,nctempfloat2 *srcilumdata);
+int Ac2dMemcpy (nctempchar1 *s,nctempchar1 *t);
 __global__ void kernel_Ac2dFwstepvx (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt);
 __global__ void kernel_Ac2dFwstepvx (nctempfloat2 *Pleft,nctempfloat2 *Pright,nctempfloat2 *Vx,nctempfloat2 *Rx,nctempfloat2 *df,nctempfloat1 *Alftstag,nctempfloat1 *Blftstag,nctempfloat1 *Clftstag,nctempfloat1 *Arbbstag,nctempfloat1 *Brbbstag,nctempfloat1 *Crbbstag,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
 {
@@ -715,6 +717,249 @@ P->a[nctemp1378] =nctemp1436;
 int Ac2dFwstepstressz2 (nctempfloat2 *Vzztop,nctempfloat2 *Vzzbot,nctempfloat2 *P,nctempfloat2 *L,nctempfloat2 *df,nctempfloat1 *Alft,nctempfloat1 *Blft,nctempfloat1 *Clft,nctempfloat1 *Arbb,nctempfloat1 *Brbb,nctempfloat1 *Crbb,nctempint1 *Getapplypml,int ix0,int iz0,int nxo,int nzo,float dt)
 {
   kernel_Ac2dFwstepstressz2<<<NBLOCKS,NTHREADS>>>(Vzztop,Vzzbot,P,L,df,Alft,Blft,Clft,Arbb,Brbb,Crbb,Getapplypml,ix0,iz0,nxo,nzo,dt);
+GpuError();
+return(1);
+}
+__global__ void kernel_Ac2dXcorr (nctempfloat2 *Vp,int padr,int pads,nctempfloat2 *Rho,nctempfloat2 *Rx,nctempfloat2 *Rz,nctempfloat2 *wsp,nctempfloat2 *wrx,nctempfloat2 *wrz,nctempfloat2 *vpgraddata,nctempfloat2 *rhograddata,float dx,float dz,int srcilumset,nctempfloat2 *srcilumdata);
+__global__ void kernel_Ac2dXcorr (nctempfloat2 *Vp,int padr,int pads,nctempfloat2 *Rho,nctempfloat2 *Rx,nctempfloat2 *Rz,nctempfloat2 *wsp,nctempfloat2 *wrx,nctempfloat2 *wrz,nctempfloat2 *vpgraddata,nctempfloat2 *rhograddata,float dx,float dz,int srcilumset,nctempfloat2 *srcilumdata)
+{
+float vpscale;
+float rhoscale1;
+float mrxx;
+float mrzz;
+float uderx;
+float uderz;
+int nx;
+int nz;
+int ix;
+int iz;
+int nctemp1441=Vp->d[0];nx =nctemp1441;
+int nctemp1449=Vp->d[1];nz =nctemp1449;
+int nctemp1455=1;
+int nctemp1462 = nx - 1;
+int nctemp1457=nctemp1462;
+int nctemp1464=1;
+int nctemp1471 = nz - 1;
+int nctemp1466=nctemp1471;
+int nctemp1453=(nctemp1457-nctemp1455)*(nctemp1466-nctemp1464);
+for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp1453;nctempno+=blockDim.x*gridDim.x){
+iz=nctemp1464+nctempno/(nctemp1457-nctemp1455);
+ix=nctemp1455+nctempno%(nctemp1457-nctemp1455);
+{
+float nctemp1478= -2.0;
+int nctemp1480=ix;
+nctemp1480=iz*Vp->d[0]+nctemp1480;
+float nctemp1483 = nctemp1478 / Vp->a[nctemp1480];
+vpscale =nctemp1483;
+float nctemp1490= -1.0;
+int nctemp1492=ix;
+nctemp1492=iz*Rho->d[0]+nctemp1492;
+float nctemp1495 = nctemp1490 / Rho->a[nctemp1492];
+rhoscale1 =nctemp1495;
+int nctemp1511 = ix + padr;
+int nctemp1506=nctemp1511;
+int nctemp1516 = iz + padr;
+nctemp1506=nctemp1516*wrx->d[0]+nctemp1506;
+int nctemp1526 = ix + padr;
+int nctemp1528 = nctemp1526 - 1;
+int nctemp1518=nctemp1528;
+int nctemp1533 = iz + padr;
+nctemp1518=nctemp1533*wrx->d[0]+nctemp1518;
+float nctemp1534 = wrx->a[nctemp1506] - wrx->a[nctemp1518];
+float nctemp1536 = nctemp1534 / dx;
+mrxx =nctemp1536;
+int nctemp1552 = ix + padr;
+int nctemp1547=nctemp1552;
+int nctemp1557 = iz + padr;
+nctemp1547=nctemp1557*wrz->d[0]+nctemp1547;
+int nctemp1564 = ix + padr;
+int nctemp1559=nctemp1564;
+int nctemp1572 = iz + padr;
+int nctemp1574 = nctemp1572 - 1;
+nctemp1559=nctemp1574*wrz->d[0]+nctemp1559;
+float nctemp1575 = wrz->a[nctemp1547] - wrz->a[nctemp1559];
+float nctemp1577 = nctemp1575 / dz;
+mrzz =nctemp1577;
+int nctemp1581=ix;
+nctemp1581=iz*vpgraddata->d[0]+nctemp1581;
+int nctemp1588=ix;
+nctemp1588=iz*vpgraddata->d[0]+nctemp1588;
+int nctemp1604 = ix + pads;
+int nctemp1599=nctemp1604;
+int nctemp1609 = iz + pads;
+nctemp1599=nctemp1609*wsp->d[0]+nctemp1599;
+float nctemp1610 = vpscale * wsp->a[nctemp1599];
+float nctemp1616 = mrxx + mrzz;
+float nctemp1617 = nctemp1610 * nctemp1616;
+float nctemp1618 = vpgraddata->a[nctemp1588] - nctemp1617;
+vpgraddata->a[nctemp1581] =nctemp1618;
+int nctemp1622=ix;
+nctemp1622=iz*rhograddata->d[0]+nctemp1622;
+int nctemp1629=ix;
+nctemp1629=iz*rhograddata->d[0]+nctemp1629;
+int nctemp1645 = ix + pads;
+int nctemp1640=nctemp1645;
+int nctemp1650 = iz + pads;
+nctemp1640=nctemp1650*wsp->d[0]+nctemp1640;
+float nctemp1651 = rhoscale1 * wsp->a[nctemp1640];
+float nctemp1657 = mrxx + mrzz;
+float nctemp1658 = nctemp1651 * nctemp1657;
+float nctemp1659 = rhograddata->a[nctemp1629] - nctemp1658;
+rhograddata->a[nctemp1622] =nctemp1659;
+int nctemp1682 = ix + padr;
+int nctemp1677=nctemp1682;
+int nctemp1687 = iz + padr;
+nctemp1677=nctemp1687*wrx->d[0]+nctemp1677;
+float nctemp1688 = 0.5 * wrx->a[nctemp1677];
+int nctemp1695 = ix + padr;
+int nctemp1690=nctemp1695;
+int nctemp1700 = iz + padr;
+nctemp1690=nctemp1700*Rx->d[0]+nctemp1690;
+float nctemp1701 = nctemp1688 * Rx->a[nctemp1690];
+int nctemp1714 = ix + pads;
+int nctemp1716 = nctemp1714 + 1;
+int nctemp1706=nctemp1716;
+int nctemp1721 = iz + pads;
+nctemp1706=nctemp1721*wsp->d[0]+nctemp1706;
+int nctemp1728 = ix + pads;
+int nctemp1723=nctemp1728;
+int nctemp1733 = iz + pads;
+nctemp1723=nctemp1733*wsp->d[0]+nctemp1723;
+float nctemp1734 = wsp->a[nctemp1706] - wsp->a[nctemp1723];
+float nctemp1735 = nctemp1701 * nctemp1734;
+float nctemp1737 = nctemp1735 / dx;
+uderx =nctemp1737;
+int nctemp1767 = ix + padr;
+int nctemp1769 = nctemp1767 - 1;
+int nctemp1759=nctemp1769;
+int nctemp1774 = iz + padr;
+nctemp1759=nctemp1774*wrx->d[0]+nctemp1759;
+float nctemp1775 = 0.5 * wrx->a[nctemp1759];
+int nctemp1785 = ix + padr;
+int nctemp1787 = nctemp1785 - 1;
+int nctemp1777=nctemp1787;
+int nctemp1792 = iz + padr;
+nctemp1777=nctemp1792*Rx->d[0]+nctemp1777;
+float nctemp1793 = nctemp1775 * Rx->a[nctemp1777];
+int nctemp1803 = ix + pads;
+int nctemp1798=nctemp1803;
+int nctemp1808 = iz + pads;
+nctemp1798=nctemp1808*wsp->d[0]+nctemp1798;
+int nctemp1818 = ix + pads;
+int nctemp1820 = nctemp1818 - 1;
+int nctemp1810=nctemp1820;
+int nctemp1825 = iz + pads;
+nctemp1810=nctemp1825*wsp->d[0]+nctemp1810;
+float nctemp1826 = wsp->a[nctemp1798] - wsp->a[nctemp1810];
+float nctemp1827 = nctemp1793 * nctemp1826;
+float nctemp1829 = nctemp1827 / dx;
+float nctemp1830 = uderx + nctemp1829;
+uderx =nctemp1830;
+int nctemp1853 = ix + padr;
+int nctemp1848=nctemp1853;
+int nctemp1858 = iz + padr;
+nctemp1848=nctemp1858*wrz->d[0]+nctemp1848;
+float nctemp1859 = 0.5 * wrz->a[nctemp1848];
+int nctemp1866 = ix + padr;
+int nctemp1861=nctemp1866;
+int nctemp1871 = iz + padr;
+nctemp1861=nctemp1871*Rz->d[0]+nctemp1861;
+float nctemp1872 = nctemp1859 * Rz->a[nctemp1861];
+int nctemp1882 = ix + pads;
+int nctemp1877=nctemp1882;
+int nctemp1890 = iz + pads;
+int nctemp1892 = nctemp1890 + 1;
+nctemp1877=nctemp1892*wsp->d[0]+nctemp1877;
+int nctemp1899 = ix + pads;
+int nctemp1894=nctemp1899;
+int nctemp1904 = iz + pads;
+nctemp1894=nctemp1904*wsp->d[0]+nctemp1894;
+float nctemp1905 = wsp->a[nctemp1877] - wsp->a[nctemp1894];
+float nctemp1906 = nctemp1872 * nctemp1905;
+float nctemp1908 = nctemp1906 / dz;
+uderz =nctemp1908;
+int nctemp1935 = ix + padr;
+int nctemp1930=nctemp1935;
+int nctemp1943 = iz + padr;
+int nctemp1945 = nctemp1943 - 1;
+nctemp1930=nctemp1945*wrz->d[0]+nctemp1930;
+float nctemp1946 = 0.5 * wrz->a[nctemp1930];
+int nctemp1953 = ix + padr;
+int nctemp1948=nctemp1953;
+int nctemp1961 = iz + padr;
+int nctemp1963 = nctemp1961 - 1;
+nctemp1948=nctemp1963*Rz->d[0]+nctemp1948;
+float nctemp1964 = nctemp1946 * Rz->a[nctemp1948];
+int nctemp1974 = ix + pads;
+int nctemp1969=nctemp1974;
+int nctemp1979 = iz + pads;
+nctemp1969=nctemp1979*wsp->d[0]+nctemp1969;
+int nctemp1986 = ix + pads;
+int nctemp1981=nctemp1986;
+int nctemp1994 = iz + pads;
+int nctemp1996 = nctemp1994 - 1;
+nctemp1981=nctemp1996*wsp->d[0]+nctemp1981;
+float nctemp1997 = wsp->a[nctemp1969] - wsp->a[nctemp1981];
+float nctemp1998 = nctemp1964 * nctemp1997;
+float nctemp2000 = nctemp1998 / dz;
+float nctemp2001 = uderz + nctemp2000;
+uderz =nctemp2001;
+int nctemp2005=ix;
+nctemp2005=iz*rhograddata->d[0]+nctemp2005;
+int nctemp2012=ix;
+nctemp2012=iz*rhograddata->d[0]+nctemp2012;
+float nctemp2020 = uderx + uderz;
+float nctemp2021 = rhograddata->a[nctemp2012] + nctemp2020;
+rhograddata->a[nctemp2005] =nctemp2021;
+if(srcilumset)
+{
+int nctemp2026=ix;
+nctemp2026=iz*srcilumdata->d[0]+nctemp2026;
+int nctemp2033=ix;
+nctemp2033=iz*srcilumdata->d[0]+nctemp2033;
+int nctemp2049 = ix + pads;
+int nctemp2044=nctemp2049;
+int nctemp2054 = iz + pads;
+nctemp2044=nctemp2054*wsp->d[0]+nctemp2044;
+float nctemp2055 = vpscale * wsp->a[nctemp2044];
+int nctemp2062 = ix + pads;
+int nctemp2057=nctemp2062;
+int nctemp2067 = iz + pads;
+nctemp2057=nctemp2067*wsp->d[0]+nctemp2057;
+float nctemp2068 = nctemp2055 * wsp->a[nctemp2057];
+float nctemp2069 = srcilumdata->a[nctemp2033] - nctemp2068;
+srcilumdata->a[nctemp2026] =nctemp2069;
+}
+}
+}
+}
+int Ac2dXcorr (nctempfloat2 *Vp,int padr,int pads,nctempfloat2 *Rho,nctempfloat2 *Rx,nctempfloat2 *Rz,nctempfloat2 *wsp,nctempfloat2 *wrx,nctempfloat2 *wrz,nctempfloat2 *vpgraddata,nctempfloat2 *rhograddata,float dx,float dz,int srcilumset,nctempfloat2 *srcilumdata)
+{
+  kernel_Ac2dXcorr<<<NBLOCKS,NTHREADS>>>(Vp,padr,pads,Rho,Rx,Rz,wsp,wrx,wrz,vpgraddata,rhograddata,dx,dz,srcilumset,srcilumdata);
+GpuError();
+return(1);
+}
+__global__ void kernel_Ac2dMemcpy (nctempchar1 *s,nctempchar1 *t);
+__global__ void kernel_Ac2dMemcpy (nctempchar1 *s,nctempchar1 *t)
+{
+int i;
+int n;
+int nctemp2074=s->d[0];n =nctemp2074;
+int nctemp2080=0;
+int nctemp2082=n;
+int nctemp2078=nctemp2082-nctemp2080;
+for(int nctempno=blockIdx.x*blockDim.x + threadIdx.x; nctempno<nctemp2078;nctempno+=blockDim.x*gridDim.x){
+i=nctemp2080+nctempno;
+{
+int nctemp2087=i;
+int nctemp2090=i;
+t->a[nctemp2087] =s->a[nctemp2090];
+}
+}
+}
+int Ac2dMemcpy (nctempchar1 *s,nctempchar1 *t)
+{
+  kernel_Ac2dMemcpy<<<NBLOCKS,NTHREADS>>>(s,t);
 GpuError();
 return(1);
 }

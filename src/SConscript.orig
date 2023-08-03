@@ -18,43 +18,43 @@ libs     = ['file',       'model', 'pml',      'waves',
             'utils',      'der',   'geometry', 'data', 
             'config4cpp', 'sort',  'rsfcpp',   'rsfc',
             'ballocpu']
-#rsf2rss  = env.Program(prefix + 'rsf2rss','rsf2rss.cpp', LIBS=libs)
-#env.Install('../bin/',rsf2rss)
+rsf2rss  = env.Program(prefix + 'rsf2rss','rsf2rss.cpp', LIBS=libs)
+env.Install('../bin/',rsf2rss)
 
 libs     = ['file',       'model', 'pml',      'waves', 
             'utils',      'der',   'geometry', 'data',  
             'config4cpp', 'sort',  'rsfcpp',   'rsfc',  
             'fft',        'ballocpu']
-#rsf2data = env.Program(prefix + 'rsf2data','rsf2data.cpp',LIBS=libs)
-#env.Install('../bin/',rsf2data)
+rsf2data = env.Program(prefix + 'rsf2data','rsf2data.cpp',LIBS=libs)
+env.Install('../bin/',rsf2data)
 
 libs     = ['file',       'model', 'pml',      'waves', 
             'utils',      'der',   'geometry', 'data',  
             'config4cpp', 'sort',  'rsfcpp',   'rsfc',  
             'fft',        'ballocpu']
-#rss2rsf  = env.Program(prefix + 'rss2rsf','rss2rsf.cpp',LIBS=libs)
-#env.Install('../bin/',rss2rsf)
+rss2rsf  = env.Program(prefix + 'rss2rsf','rss2rsf.cpp',LIBS=libs)
+env.Install('../bin/',rss2rsf)
 
 libs     = ['file',  'model',  'pml',      'waves', 
             'utils', 'der',    'geometry', 'data',   
             'sort',  'rsfcpp', 'rsfc',     'inparse',
             'fft',   'ballocpu']
-#segy2rss = env.Program(prefix + 'segy2rss','segy2rss.cpp',LIBS=libs)
-#env.Install('../bin/',segy2rss)
+segy2rss = env.Program(prefix + 'segy2rss','segy2rss.cpp',LIBS=libs)
+env.Install('../bin/',segy2rss)
 
 libs     = ['file',     'model',  'pml',      'waves',  
             'utils',    'der',    'geometry', 'data',  
             'sort',     'rsfcpp', 'rsfc',     'inparse', 
             'fft',      'ballocpu']
-#rss2segy = env.Program(prefix + 'rss2segy','rss2segy.cpp',LIBS=libs)
-#env.Install('../bin/',rss2segy)
+rss2segy = env.Program(prefix + 'rss2segy','rss2segy.cpp',LIBS=libs)
+env.Install('../bin/',rss2segy)
 
 libs     = ['file',  'model',  'pml',       'waves',   
             'utils', 'der',    'geometry',  'sort', 
             'rsfcpp', 'rsfc',  'inparse',   'fft',   
             'data',   'ballocpu']
-#rss2sps  = env.Program(prefix + 'rss2sps','rss2sps.cpp',LIBS=libs)
-#env.Install('../bin/',rss2sps)
+rss2sps  = env.Program(prefix + 'rss2sps','rss2sps.cpp',LIBS=libs)
+env.Install('../bin/',rss2sps)
 
 libs     = ['file', 'utils','geometry', 'data', 'inparse', 'fft']
 info     = env.Program(prefix + 'info','info.cpp',LIBS=libs)
@@ -194,7 +194,7 @@ if mpi['ON'] == True :
 
 
     libs          = ['inversion', 'file',    'model', 'pml', 
-                     'waves',     'utils',   'der',   'derd', 'geometry', 
+                     'waves',     'utils',   'der',   'geometry', 
                      'sort',      'data',    'fwi',   'parallel', 
                      'interp',    'inparse', 'snap',  'image', 
                      'opt',       'bspl',    'fft', 'ballocpu']
@@ -203,7 +203,7 @@ if mpi['ON'] == True :
     mpi.Install('../bin/',Acousticfwi3d)
 
     libs          = ['inversion', 'file',    'model', 'pml', 
-                     'waves',     'utils',   'der', 'derd', 'geometry', 
+                     'waves',     'utils',   'der',   'geometry', 
                      'sort',      'data',    'fwi',   'parallel', 
                      'interp',    'inparse', 'snap', 'image', 
                      'opt',       'bspl',    'fft',  'ballocpu']
@@ -222,7 +222,7 @@ if mpi['ON'] == True :
     mpi.Install('../bin/',Velasticfwi2d)
 
     libs            = ['wemva',    'file',  'model', 'pml', 
-                       'waves',    'utils', 'der',   'derd','geometry', 
+                       'waves',    'utils', 'der',   'geometry', 
                        'sort',     'data',  'rtm',   'mva', 
                        'parallel', 'interp', 'inparse', 'snap', 
                        'image',    'opt',   'bspl',    'fft', 
@@ -237,7 +237,7 @@ if mpi['ON'] == True :
     mpi.Install('../bin/',Elasticwemva2d)
 
     libs            = ['file',     'model', 'pml',      'waves', 
-                       'rays',     'utils', 'der',  'derd'  ,  'geometry', 
+                       'rays',     'utils', 'der',      'geometry', 
                        'sort',     'data',  'tomo',     'fat', 
                        'parallel', 'interp', 'inparse', 'snap', 
                        'image',    'opt',    'bspl',    'fft', 
@@ -253,7 +253,7 @@ if mpi['ON'] == True :
 
     libs            = ['file',   'model', 'pml',    'kdmva', 
                        'ttable', 'kdmig', 'kdtree', 'rays', 
-                       'utils', 'der', 'derd','geometry', 'sort', 
+                       'utils', 'der', 'geometry', 'sort', 
                        'data', 'fat', 'parallel', 'interp', 
                        'inparse', 'snap', 'image', 'opt', 
                        'bspl','fft', 'hilbert', 'ballocpu']
@@ -262,7 +262,7 @@ if mpi['ON'] == True :
     mpi.Install('../bin/', Acoustickdmva2d)
 
     libs            = ['lsmiginv', 'file',    'model', 'pml', 
-                       'waves',    'utils',   'der',   'derd', 'geometry', 
+                       'waves',    'utils',   'der',   'geometry', 
                        'sort',     'data',    'lsrtm', 'parallel', 
                        'interp',   'inparse', 'snap',  'image', 
                        'opt',      'bspl',    'fft',   'hilbert',
@@ -281,7 +281,7 @@ if mpi['ON'] == True :
 #------------------------------------------------------------------
 
     libs             = ['file',    'model', 'waves',   'pml', 
-                        'rays',    'utils', 'der', 'derd',    'geometry', 
+                        'rays',    'utils', 'der',     'geometry', 
                         'sort',    'data',  'parallel', 'interp', 
                         'inparse', 'snap',  'fft', 'ballocpu']
     mpiAcousticfat2d = mpi.Program(prefix + 'mpiAcousticfat2d',
@@ -421,7 +421,7 @@ if mpi['ON'] == True :
     mpi.Install('../bin/',mpiAcoustickddemig3d)
 
     libs          = ['inversion', 'file',    'model', 'pml', 
-                     'waves',     'utils',   'der',  'derd', 'geometry',     
+                     'waves',     'utils',   'der',   'geometry',     
                      'sort',      'data',    'fwi',   'parallel',     
                      'interp',    'inparse', 'snap',  'image',  
                      'opt',       'bspl',    'fft',   'ballocpu']
@@ -431,10 +431,80 @@ if mpi['ON'] == True :
     mpi.Install('../bin/',Acousticfwi2d)
 
 #------------------------------------------------------------------
+# Single node gpu programs 
+#------------------------------------------------------------------
+if (gpu['ON'] == True):
+    libs               = ['file',     'model',   'pml',      'modellingpu', 
+                          'wavesgpu', 'utils',   'dergpu',   'geometry', 
+                          'sort',     'data',    'parallel', 'pml',
+                          'interp',   'inparse', 'snap',     'fft',
+                          'mpi',      'mpi_cxx', 'pthread',  'ballocgpu']
+    Acousticmod2dgpuObj = gpu.Object('Acousticmod2dgpu','Acousticmod2d.cpp')
+    Acousticmod2dgpu    = gpu.Program(prefix + 'Acousticmod2dgpu',
+                                      Acousticmod2dgpuObj, LIBS=libs)
+    mpi.Install('../bin/', Acousticmod2dgpu)
+
+    Elasticmod2dgpuObj = gpu.Object('Elasticmod2dgpu','Elasticmod2d.cpp')
+    Elasticmod2dgpu   = gpu.Program(prefix + 'Elasticmod2dgpu',
+                                      Elasticmod2dgpuObj, LIBS=libs)
+    mpi.Install('../bin/', Elasticmod2dgpu)
+
+    libs               = ['file',     'model',   'pml',      'modellingpu', 
+                          'wavesgpu', 'utils',   'dergpu',   'geometry', 
+                          'sort',     'data',    'parallel', 'pml',
+                          'interp',   'inparse', 'snap',     'fft',
+                          'mpi',      'mpi_cxx', 'pthread',  'image', 
+                          'ballocgpu', 'fwigpu',    'opt',      'bspl',
+                          'inversion']
+    Acousticfwi2dgpuObj = gpu.Object('Acousticfwi2dgpu','Acousticfwi2d.cpp')
+    Acousticfwi2dgpu    = gpu.Program(prefix + 'Acousticfwi2dgpu',
+                                      Acousticfwi2dgpuObj, LIBS=libs)
+    mpi.Install('../bin/', Acousticfwi2dgpu)
+
+    Elasticfwi2dgpuObj = gpu.Object('Elasticfwi2dgpu','Elasticfwi2d.cpp')
+    Elasticfwi2dgpu    = gpu.Program(prefix + 'Elasticfwi2dgpu',
+                                      Elasticfwi2dgpuObj, LIBS=libs)
+    mpi.Install('../bin/', Elasticfwi2dgpu)
+
+    Velasticfwi2dgpuObj = gpu.Object('Velasticfwi2dgpu','Velasticfwi2d.cpp')
+    Velasticfwi2dgpu    = gpu.Program(prefix + 'Velasticfwi2dgpu',
+                                      Velasticfwi2dgpuObj, LIBS=libs)
+    mpi.Install('../bin/', Velasticfwi2dgpu)
+
+    libs                 = ['wemva',    'file',      'model',   'pml', 
+                            'waves',    'utils',     'dergpu',  'geometry', 
+                            'sort',     'data',      'rtm',     'mva', 
+                            'parallel', 'interp',    'inparse', 'snap', 
+                            'image',    'opt',       'bspl',    'fft', 
+                            'hilbert',  'ballocgpu', 'mpi',     
+                            'mpi_cxx','pthread']
+    Acousticwemva2dgpuObj = gpu.Object('Acousticwemva2dgpu','Acousticwemva2d.cpp')
+    Acousticwemva2dgpu    = gpu.Program(prefix + 'Acousticwemva2dgpu',
+                                      Acousticwemva2dgpuObj, LIBS=libs)
+    mpi.Install('../bin/', Acousticwemva2dgpu)
+
+    Elasticwemva2dgpuObj = gpu.Object('Elasticwemva2dgpu','Elasticwemva2d.cpp')
+    Elasticwemva2dgpu    = gpu.Program(prefix + 'Elasticwemva2dgpu',
+                                      Elasticwemva2dgpuObj, LIBS=libs)
+    mpi.Install('../bin/', Elasticwemva2dgpu)
+
+    libs                  = ['lsmiginv', 'file',    'model',    'pml', 
+                             'waves',    'utils',   'der',      'geometry', 
+                             'sort',     'data',    'lsrtm',    'parallel', 
+                             'interp',   'inparse', 'snap',     'image', 
+                             'opt',      'bspl',    'fft',      'hilbert',
+                             'ballocgpu','pthread', 'mpi_cxx', 'mpi']
+    Acousticlsrtm2dgpuObj = gpu.Object('Acousticlsrtm2dgpu','Acousticlsrtm2d.cpp')
+    Acousticlsrtm2dgpu    = gpu.Program(prefix + 'Acousticlsrtm2dgpu',
+                                      Acousticlsrtm2dgpuObj, LIBS=libs)
+    mpi.Install('../bin/', Acousticlsrtm2dgpu)
+
+
+#------------------------------------------------------------------
 # Multi node gpu programs 
 #------------------------------------------------------------------
     libs                     = ['file',     'model',   'pml',      'modellingpu', 
-                                'wavesgpu', 'utils',   'dergpu',   'derd', 'geometry', 
+                                'wavesgpu', 'utils',   'dergpu',   'geometry', 
                                 'sort',     'data',    'parallel', 'pml',
                                 'interp',   'inparse', 'snap',     'fft',
                                 'mpi',      'mpi_cxx', 'pthread',  'ballocgpu']
@@ -450,12 +520,6 @@ if mpi['ON'] == True :
     mpiAcousticmod2dgpu      = gpu.Program(prefix + 'mpiAcousticmod2dgpu',
                                       mpiAcousticmod2dgpuObj, LIBS=libs)
     mpi.Install('../bin/', mpiAcousticmod2dgpu)
-
-    Acousticmod2dgpuObj   = gpu.Object('Acousticmod2dgpu',
-                                          'Acousticmod2d.cpp')
-    Acousticmod2dgpu      = gpu.Program(prefix + 'Acousticmod2dgpu',
-                                      Acousticmod2dgpuObj, LIBS=libs)
-    mpi.Install('../bin/', Acousticmod2dgpu)
 
 
     mpiElasticmod2dgpuObj   = gpu.Object('mpiElasticmod2dgpu',
@@ -486,11 +550,11 @@ if mpi['ON'] == True :
     mpi.Install('../bin/', mpiPoroelasticmod2dgpu)
 
     libs                      = ['lsmiginv', 'file',    'model',    'pml', 
-                                 'waves',    'utils',   'der',      'derd','geometry', 
+                                 'waves',    'utils',   'der',      'geometry', 
                                  'sort',     'data',    'lsrtm',    'parallel', 
                                  'interp',   'inparse', 'snap',     'image', 
                                  'opt',      'bspl',    'fft',      'hilbert',
-                                 'ballocgpu',' pthread', 'mpi', 'mpi_cxx',
+                                 'ballocgpu',' pthread', 'mpi_cxx', 'mpi',
                                  'rtm']
     mpiAcousticrtm2dgpuObj   = gpu.Object('mpiAcousticrtm2dgpu',
                                           'mpiAcousticrtm2d.cpp')
@@ -511,14 +575,4 @@ if mpi['ON'] == True :
                                       mpiVtirtm2dgpuObj, LIBS=libs)
     mpi.Install('../bin/', mpiVtirtm2dgpu)
 
-    libs          = ['inversion', 'file',    'model', 'pml', 
-                     'wavesgpu',     'utils',   'dergpu',  'derd', 'geometry',     
-                     'sort',      'data',    'fwigpu',   'parallel',     
-                     'interp',    'inparse', 'snap',  'image',  
-                     'opt',       'bspl',    'fft',   'ballocgpu', 'mpi', 'mpi_cxx']
-                     
-    mpiAcousticfwi2dgpuObj   = gpu.Object('mpiAcousticfwi2dgpu',
-                                          'mpiAcousticfwi2d.cpp')
-    mpiAcousticfwi2dgpu      = gpu.Program(prefix + 'mpiAcousticfwi2dgpu',
-                                      mpiAcousticfwi2dgpuObj, LIBS=libs)
-    mpi.Install('../bin/', mpiAcousticfwi2dgpu)
+

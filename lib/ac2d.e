@@ -264,3 +264,58 @@ int Ac2dFwstepstressz2(float [*,*] Vzztop, float [*,*] Vzzbot,
     }
   }
 }
+
+//Xcorr performs cross correlations for gradient computation
+int Ac2dXcorr(float [*,*] Vp, int padr, int pads, 
+              float [*,*] Rho, float [*,*] Rx, float [*,*] Rz, 
+	      float [*,*] wsp, float [*,*] wrx, float [*,*]  wrz, 
+              float [*,*] vpgraddata, float [*,*] rhograddata, 
+	      float dx, float dz, int srcilumset, float [*,*] srcilumdata)  
+{
+  float vpscale;
+  float rhoscale1;
+  float mrxx, mrzz;
+  float uderx,uderz;
+  int nx, nz;
+  int ix,iz;
+   
+  nx = len(Vp,0);
+  nz = len(Vp,1);
+
+  parallel(ix=1:nx-1,iz=1:nz-1)
+  {
+    vpscale = -2.0/Vp[ix, iz];
+    rhoscale1 = -1.0/Rho[ix, iz];
+    mrxx = (wrx[ix+padr,iz+padr] - wrx[ix+padr-1,iz+padr])/dx;
+    mrzz = (wrz[ix+padr,iz+padr] - wrz[ix+padr,iz+padr-1])/dz;
+    vpgraddata[ix,iz]  = vpgraddata[ix,iz]-vpscale
+                         *wsp[ix+pads,iz+pads]*(mrxx + mrzz);
+    rhograddata[ix,iz] = rhograddata[ix,iz]-rhoscale1
+                         *wsp[ix+pads,iz+pads]*(mrxx + mrzz);
+    uderx = 0.5*wrx[ix+padr,iz+padr]*Rx[ix+padr,iz+padr]
+            *(wsp[ix+pads+1,iz+pads] - wsp[ix+pads,iz+pads])/dx;
+    uderx = uderx +0.5*wrx[ix+padr-1,iz+padr]*Rx[ix+padr-1,iz+padr]
+            *(wsp[ix+pads,iz+pads] - wsp[ix+pads-1,iz+pads])/dx;
+    uderz = 0.5*wrz[ix+padr,iz+padr]*Rz[ix+padr,iz+padr]
+            *(wsp[ix+pads,iz+pads+1] - wsp[ix+pads,iz+pads])/dz;
+    uderz = uderz + 0.5*wrz[ix+padr,iz+padr-1]*Rz[ix+padr, iz+padr-1]
+            *(wsp[ix+pads,iz+pads] - wsp[ix+pads,iz+pads-1])/dz;
+    rhograddata[ix,iz] = rhograddata[ix,iz]+(uderx + uderz);
+
+    if(srcilumset)
+    {
+      srcilumdata[ix,iz] = srcilumdata[ix,iz]-vpscale*wsp[ix+pads,iz+pads]*wsp[ix+pads,iz+pads];
+    }
+  }
+
+}
+
+// Memory copy 
+int Ac2dMemcpy(char [*] s, char [*] t)
+{
+  int i,n;
+
+  n= len(s,0);
+  parallel(i=0:n)
+  { t[i] = s[i];}
+}

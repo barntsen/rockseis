@@ -74,11 +74,6 @@ if gpu['ON'] == True :
   wavesgpuObj    = gpu.Object('wavesgpu.o', 'wavesgpu.cpp')
   wavesgpu       = gpu.Library(builddir + 'wavesgpu',
                             ['wavesgpu.o','clockgpu.o', 'ac2d.o','ac2dc.o'])
-  fwigpuObj    = gpu.Object('fwigpu.o','fwigpu.cpp')
+  fwigpuObj    = gpu.Object('fwigpu.o','fwi.cpp')
   fwigpu       = mpi.Library(builddir + 'fwigpu',
-            		    ['fwigpu.o', 'wavesgpu.o', 'revolvegpu.o', 'pml.o',
-                             'dergpu.o', 'ac2d.o', 'ac2dc.o'])
-
-  revolvegpuObj = gpu.Object('revolvegpu.o','revolvegpu.cpp')
-  revolvegpu    = mpi.Library(builddir + 'revolvegpu',
-            	            ['revolvegpu.o', 'wavesgpu.o', 'file.o'])
+            		    ['fwigpu.o', 'wavesgpu.o', 'revolve.o', 'pml.o','dergpu.o'])

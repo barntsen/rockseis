@@ -1,4 +1,5 @@
 #include "snap.h"
+#include "balloc.h"
 
 namespace rockseis {
 // constructor
@@ -202,11 +203,11 @@ void Snapshot<T>::allocSnap(int i)
    if(snapswitch){
       if(i >= NPTR || i < 0) rs_error("Snap::allocSnap: Trying to allocate data out of bounds.");
       if(this->allocated[i] == false) {
-         this->data[i] = (T *) calloc(this->getNx()*this->getNy()*this->getNz(), sizeof(T));
+         this->data[i] = (T *) BallocNew(this->getNx()*this->getNy()*this->getNz(), sizeof(T));
          this->allocated[i] = true;
       }else{
-         free(this->data[i]);
-         this->data[i] = (T *) calloc(this->getNx()*this->getNy()*this->getNz(), sizeof(T));
+         BallocDelete(this->data[i]);
+         this->data[i] = (T *) BallocNew(this->getNx()*this->getNy()*this->getNz(), sizeof(T));
          this->allocated[i] = true;
       }
    }
@@ -216,7 +217,7 @@ template<typename T>
 void Snapshot<T>::freeSnaps()
 {
     for(int i=0; i<NPTR; i++){
-        if(this->allocated[i]) free(this->data[i]);
+        if(this->allocated[i]) BallocDelete(this->data[i]);
     }
 }
 
