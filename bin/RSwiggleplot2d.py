@@ -64,7 +64,6 @@ ax.invert_yaxis()
 plt.xlabel('Trace')
 plt.ylabel('Time (s)')
 plt.rc('font', size=15)
-plt.grid()
 
 if(args.figfile is not None):
     plt.savefig(args.figfile,bbox_inches='tight', format=args.format)
