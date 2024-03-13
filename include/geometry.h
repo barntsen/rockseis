@@ -4,7 +4,6 @@
 // Include statements
 #include <vector>
 #include <string>
-#include <limits>
 #include <math.h>
 #include <cmath>
 #include <iostream>
@@ -12,9 +11,7 @@
 #include "utils.h"
 
 #define MAXDIMS 9
-#define CTHRES 1e-2
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-#define CLOSE(x, y, d) ((ABS(x - y) <= (d)*ABS(y)) ? 1 : 0)
+
 
 namespace rockseis {
 /// =============== ABSTRACT GEOMETRY CLASS =============== //
@@ -53,14 +50,10 @@ public:
     // Compare geometry
     bool compare(std::shared_ptr<Geometry<T>> other);  ///< Returns 0 if non-zero entries in two geometries are equal
 
-    bool getVerbose() { return verbose; } ///< If to print warnings 
-    void setVerbose(bool val) { verbose = val; } ///< Switch to print warnings 
-
 private:
     size_t n[MAXDIMS];	// Dimension sizes
     T d[MAXDIMS];	// Sampling interval
     T o[MAXDIMS];	// Origin 
-    bool verbose;
 };
 
 
@@ -75,11 +68,8 @@ public:
     virtual ~Geometry2D();       	///< Destructor
     /** Creates integer map from data coordinates and model geometry.
      * */
-    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padhx, int padhy, T shiftx, T shifty); 
-    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padhx, int padhy) {makeMap(_geom,map,padlx,padly,padhx,padhy, 0, 0);} 
-    void makeMap(std::shared_ptr<Geometry<T>> _geom, int padx, int pady) {makeMap(_geom,SMAP,padx,pady,padx,pady,0,0); makeMap(_geom,GMAP,padx,pady,padx,pady,0,0);} 
-    void makeMap(std::shared_ptr<Geometry<T>> _geom) {makeMap(_geom,SMAP,0,0,0,0,0,0); makeMap(_geom,GMAP,0,0,0,0,0,0);} 
-    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {makeMap(_geom,map,0,0,0,0,0,0);} 
+    void makeMap(std::shared_ptr<Geometry<T>> _geom); 
+    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map); 
     void copySmap2Gmap();
     void copyGmap2Smap();
 
@@ -111,11 +101,8 @@ public:
     virtual ~Geometry3D();       	///< Destructor
     /** Creates integer map from data coordinates and model geometry.
      * */
-    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padlz, int padhx, int padhy, int padhz, T shiftx, T shifty, T shiftz); 
-    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padlz, int padhx, int padhy, int padhz) {makeMap(_geom,map,padlx,padly,padlz,padhx,padhy,padhz,0,0,0);} 
-    void makeMap(std::shared_ptr<Geometry<T>> _geom, int padx, int pady, int padz) {makeMap(_geom,SMAP,padx,pady,padz,padx,pady,padz); makeMap(_geom,GMAP,padx,pady,padz,padx,pady,padz);} 
-    void makeMap(std::shared_ptr<Geometry<T>> _geom) {makeMap(_geom,SMAP,0,0,0,0,0,0); makeMap(_geom,GMAP,0,0,0,0,0,0);} 
-    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {makeMap(_geom,map,0,0,0,0,0,0);} 
+    void makeMap(std::shared_ptr<Geometry<T>> _geom);
+    void makeMap(std::shared_ptr<Geometry<T>> _geom, bool map);
     void copySmap2Gmap();
     void copyGmap2Smap();
 

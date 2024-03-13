@@ -631,6 +631,9 @@ Ttable3D<T>::Ttable3D(std::string tablefile)
     }
     Fpos->close();
 
+    // Variables for sorting results of interpolation 
+    interpdist = (T *) calloc(ntable, sizeof(T));
+    interpch = (size_t *) calloc(ntable, sizeof(size_t));
 }
 
 template<typename T>
@@ -659,21 +662,14 @@ void Ttable3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source, bool
 template<typename T>
 void Ttable3D<T>::allocTtable() 
 {
-    int ntable = this->getNtable();
     if(this->getAllocated() == false) {
         this->data = (T *) calloc(this->getNx_pml()*this->getNy_pml()*this->getNz_pml(), sizeof(T));
         this->wrk = (T *) calloc(this->getNx_pml()*this->getNy_pml()*this->getNz_pml(), sizeof(T));
-
-        // Variables for sorting results of interpolation 
-        interpdist = (T *) calloc(ntable, sizeof(T));
-        interpch = (size_t *) calloc(ntable, sizeof(size_t));
         this->setAllocated(true);
     }else{
-        free(this->data); free(this->wrk);free(this->interpdist); free(this->interpch);
+        free(this->data); free(this->wrk);
         this->data = (T *) calloc(this->getNx_pml()*this->getNy_pml()*this->getNz_pml(), sizeof(T));
         this->wrk = (T *) calloc(this->getNx_pml()*this->getNy_pml()*this->getNz_pml(), sizeof(T));
-        this->interpdist = (T *) calloc(ntable, sizeof(T));
-        this->interpch = (size_t *) calloc(ntable, sizeof(size_t));
         this->setAllocated(true);
     }
 }
@@ -1054,9 +1050,6 @@ void Ttable3D<T>::freeTtable()
     if(this->getAllocated()) {
         free(this->data);
         free(this->wrk);
-        free(interpdist);
-        free(interpch);
-        this->setAllocated(false);
     }
 }
 
@@ -1066,9 +1059,9 @@ Ttable3D<T>::~Ttable3D() {
     if(this->getAllocated()) {
         free(this->data);
         free(this->wrk);
-        free(interpdist);
-        free(interpch);
     }
+    free(interpdist);
+    free(interpch);
 }
 
 

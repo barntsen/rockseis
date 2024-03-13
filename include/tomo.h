@@ -115,11 +115,11 @@ public:
 
 
 private:
-    int lpml;
+	int lpml;
     bool incore;
-    int order;
-    int snapinc;
-    int nsnaps;
+	int order;
+	int snapinc;
+	int nsnaps;
     bool constrain;
     double fnorm;
     std::string logfile; ///< Log file
@@ -202,9 +202,6 @@ public:
 
     // Mute gradient
     void applyMute();
-
-    // Apply Chain rule for constrained optimisation using logistic model
-    void applyChainrule(double *x);
 
     // Regularisation computation
     void computeRegularisation(double *x);
@@ -318,9 +315,6 @@ public:
 
     // Mute gradient
     void applyMute();
-
-    // Aplly Chain rule for constrained optimisation using logistic model
-    void applyChainrule(double *x);
 
     // Regularisation computation
     void computeRegularisation(double *x);

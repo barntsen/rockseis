@@ -6,21 +6,13 @@
 #include <string>
 #include <stdlib.h>
 #include <math.h>
-#include "utils.h"
 
 //#define AMAX 150
 //#define KMAX 2
 
 #define AMAX 0
-#define KMAX 2
+#define KMAX 1
 #define SMAX 1200
-
-#define LEFTPML 0
-#define RIGHTPML 1
-#define FRONTPML 2
-#define BACKPML 3
-#define TOPPML 4
-#define BOTTOMPML 5
 
 namespace rockseis {
 // =============== ABSTRACT PML CLASS =============== //
@@ -40,8 +32,6 @@ public:
     T getKmax() { return Kmax; }	///< Get Kmax
     int getLpml() { return Lpml; }	///< Get Lpml
     T getDt() { return dt; }	///< Get dt
-    bool *getApplypml() {return &applypml[0];} ///< Get applypml flag
-    bool getApplypml(int i) {if(i>=0 && i<6) return applypml[i]; else {rs_error("Invalid index in getApplypml()"); return false;} } ///< Get applypml flag
     
     // Set functions
     void setAmax(T _Amax) { Amax= _Amax;}	///< Set Amax
@@ -49,13 +39,11 @@ public:
     void setSmax(T _Smax) { Smax= _Smax;}	///< Set Smax
     void setDt(T _dt) { dt= _dt;}	///< Set dt
     void setLpml(int _L) { Lpml = _L;}	///< Set Lpml
-    void setApplypml(int i, bool val) { if(i>=0 && i<6) applypml[i] = val; } ///< Set apply pml flag
     
     /** Compute A,B and C constants. 
      * Uses Amax, Kmax and Smax to compute the PML variables.
     * */
-    void computeABC(int sign);
-    void computeABC() { this->computeABC(1); }
+    void computeABC();
     
     // Left, top and front constants 
     T *A_ltf; // Non-staggered
@@ -72,7 +60,6 @@ public:
     T *B_rbb_stag; // Staggered
     T *C_rbb_stag; // Staggered
 private:
-    bool applypml[6];
     int Lpml; // Length of PML boundary
     T dt;     // Time sampling interval
     T Amax; // PML constant (usually = pi*f0) where f0 is the dominant frequency
@@ -94,8 +81,8 @@ public:
     
     T *P_top;
     T *P_bottom;
-    T *Vzz_top;
-    T *Vzz_bottom;
+    T *Azz_top;
+    T *Azz_bottom;
 };
 
 // =============== 2D ACOUSTIC PML CLASS =============== //
@@ -106,8 +93,7 @@ template<typename T>
 class PmlAcoustic2D: public Pml<T> {
 public:
     PmlAcoustic2D();	///< Constructor
-    PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor 
-    PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt, const bool *low, const bool *high);	///< Constructor for domain decomposition
+    PmlAcoustic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor
     void callcompABC() { this->computeABC(); }  ///< Interface to computeABC()
     ~PmlAcoustic2D();	///< Destructor
     
@@ -115,10 +101,10 @@ public:
     T *P_right;
     T *P_top;
     T *P_bottom;
-    T *Vxx_left;
-    T *Vxx_right;
-    T *Vzz_top;
-    T *Vzz_bottom;
+    T *Axx_left;
+    T *Axx_right;
+    T *Azz_top;
+    T *Azz_bottom;
 };
 
 // =============== 3D ACOUSTIC PML CLASS =============== //
@@ -130,7 +116,6 @@ class PmlAcoustic3D: public Pml<T> {
 public:
     PmlAcoustic3D();	///< Constructor
     PmlAcoustic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt);	///< Constructor
-    PmlAcoustic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt, const bool *low, const bool *high);	///< Constructor for domain decomposition
     void callcompABC() { this->computeABC(); }  ///< Interface to computeABC()
     ~PmlAcoustic3D();	///< Destructor
     
@@ -140,12 +125,12 @@ public:
     T *P_bottom;
     T *P_front;
     T *P_back;
-    T *Vxx_left;
-    T *Vxx_right;
-    T *Vyy_front;
-    T *Vyy_back;
-    T *Vzz_top;
-    T *Vzz_bottom;
+    T *Axx_left;
+    T *Axx_right;
+    T *Ayy_front;
+    T *Ayy_back;
+    T *Azz_top;
+    T *Azz_bottom;
 };
 
 // =============== 2D ELASTIC PML CLASS =============== //
@@ -157,7 +142,6 @@ class PmlElastic2D: public Pml<T> {
 public:
     PmlElastic2D();	///< Constructor
     PmlElastic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor
-    PmlElastic2D(const int nx, const int nz, const int Lpml, const T dt, const bool *low, const bool *high);	///< Constructor
     ~PmlElastic2D();	///< Destructor
     
     T *Sxx_left;
@@ -191,7 +175,6 @@ class PmlElastic3D: public Pml<T> {
 public:
     PmlElastic3D();	///< Constructor
     PmlElastic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt); 	///< Constructor
-    PmlElastic3D(const int nx, const int ny, const int nz, const int Lpml, const T dt, const bool *low, const bool *high); 	///< Constructor
     ~PmlElastic3D();	///< Destructor
     
     T *Sxx_left;
@@ -233,49 +216,6 @@ public:
     T *Vzy_front;
     T *Vzy_back;
 };
-
-// =============== 2D POROELASTIC PML CLASS =============== //
-/** The 2D Poroelastic PML model class
- *
- */
-template<typename T>
-class PmlPoroelastic2D: public Pml<T> {
-public:
-    PmlPoroelastic2D();	///< Constructor
-    PmlPoroelastic2D(const int nx, const int nz, const int Lpml, const T dt);	///< Constructor
-    PmlPoroelastic2D(const int nx, const int nz, const int Lpml, const T dt, const bool *low, const bool *high);	///< Constructor
-    ~PmlPoroelastic2D();	///< Destructor
-    
-    T *P_left;
-    T *P_right;
-    T *Sxx_left;
-    T *Sxx_right;
-    T *Sxzx_left;
-    T *Sxzx_right;
-
-    T *P_top;
-    T *P_bottom;
-    T *Szz_top;
-    T *Szz_bottom;
-    T *Sxzz_top;
-    T *Sxzz_bottom;
-    
-    T *Qxx_left;
-    T *Qxx_right;
-    T *Vxx_left;
-    T *Vxx_right;
-    T *Vzx_left;
-    T *Vzx_right;
-    
-    T *Qzz_top;
-    T *Qzz_bottom;
-    T *Vzz_top;
-    T *Vzz_bottom;
-    T *Vxz_top;
-    T *Vxz_bottom;
-    
-};
-
 
 }
 

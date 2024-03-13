@@ -35,7 +35,8 @@ public:
     bool getAlloc() { return allocated; }	///< Get status if data is allocated
     std::string getFile() { return datafile; } ///< Get filename
     rs_field getField() { return field; } ///< Get data type
-    bool getReciprocity() { return reciprocity; } ///< Get reciprocity flag
+    bool open(std::string flag); ///< Open file. Flags can be "i", "o" or "a".
+    T gauss(int n, int m); ///<Fourier transform of Gaussian
     void close();  ///< Close file
 
     // Set functions
@@ -48,7 +49,6 @@ public:
     void setField(rs_field _field) { field = _field; } ///< Set data type 
     void setRecinc(const int inc) { recinc = inc; }	///< Set Nx
     void setAlloc(bool val) {allocated = val; }	///< Set status if data is allocated
-    void setReciprocity(bool val) { reciprocity = val; } ///< Set reciprocity flag
 
     // Filter
     void Filter1D(T f0, T f1, T f2, T f3, T df, unsigned long nf, T* W, T *cdata);
@@ -59,10 +59,6 @@ public:
     // S-transform
     void St1D(std::shared_ptr<rockseis::Fft<T>> fft1d, std::shared_ptr<rockseis::Fft<T>> ifft1d, T *data, int lo, int hi, T *result);
     void iSt1D(T *data, int lo, int hi, T *result);
-
-    // File functions
-    bool open(std::string flag); ///< Open file. Flags can be "i", "o" or "a".
-    T gauss(int n, int m); ///<Fourier transform of Gaussian
 
 private:
     std::string datafile;
@@ -75,7 +71,6 @@ private:
     std::shared_ptr<File> Fdata;
     int recinc;
     bool allocated;
-    bool reciprocity;
 };
 
 // =============== 2D DATA CLASS =============== //
@@ -98,11 +93,8 @@ public:
     // Make map function
     /** Makes an integer map of the data coordinates over a given model geometry
      * */
-    
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padhx, int padhy);
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padx, int pady) { this->makeMap(geom, map, padx, pady, padx, pady); } 
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { this->makeMap(geom, map, 0,0,0,0);} 
-    void makeMap(std::shared_ptr<Geometry<T>> geom) { this->makeMap(geom, SMAP, 0,0,0,0); this->makeMap(geom, GMAP, 0,0,0,0);} 
+    void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); } 
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
     
     void copyGmap2Smap() { geometry->copyGmap2Smap(); } 
     void copySmap2Gmap() { geometry->copySmap2Gmap(); } 
@@ -125,9 +117,6 @@ public:
 
     //Hilbert transform
     void applyHilbert(); ///< Apply a Hilbert transform to the data
-
-    // Apply scaling to data
-    void scale_data(T scale); ///< Apply scaling to data 
 
 private:
     std::shared_ptr<Geometry2D<T>> geometry; // Data geometry 
@@ -154,11 +143,8 @@ public:
     // Make map function
     /** Makes an integer map of the data coordinates over a given model geometry
      * */
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padlz, int padhx, int padhy, int padhz);
-
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padx, int pady, int padz) { this->makeMap(geom, map, padx, pady, padz, padx, pady, padz); } 
-    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { this->makeMap(geom, map, 0,0,0,0,0,0);} 
-    void makeMap(std::shared_ptr<Geometry<T>> geom) { this->makeMap(geom, SMAP, 0,0,0,0,0,0); this->makeMap(geom, GMAP, 0,0,0,0,0,0);} 
+    void makeMap(std::shared_ptr<Geometry<T>> geom) { geometry->makeMap(geom); }  
+    void makeMap(std::shared_ptr<Geometry<T>> geom, bool map) { geometry->makeMap(geom, map); } 
 
     void copyGmap2Smap() { geometry->copyGmap2Smap(); } 
     void copySmap2Gmap() { geometry->copySmap2Gmap(); } 
@@ -180,9 +166,6 @@ public:
 
     //Hilbert transform
     void applyHilbert(); ///< Apply a Hilbert transform to the data
-
-    // Apply scaling to data
-    void scale_data(T scale); ///< Apply scaling to data 
 
 private:
     std::shared_ptr<Geometry3D<T>> geometry;  // Data geometry 

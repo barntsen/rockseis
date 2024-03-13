@@ -142,11 +142,11 @@ public:
     void setSrcilum(std::shared_ptr<Image2D<T>> _srcilum) { srcilum = _srcilum; srcilumset = true; }
     void setVpgrad(std::shared_ptr<Image2D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
-    void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setDataAz(std::shared_ptr<Data2D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
     void setDatamodP(std::shared_ptr<Data2D<T>> _datamodP) { datamodP = _datamodP; datamodPset = true; }
-    void setDatamodVz(std::shared_ptr<Data2D<T>> _datamodVz) { datamodVz = _datamodVz; datamodVzset = true; }
+    void setDatamodAz(std::shared_ptr<Data2D<T>> _datamodAz) { datamodAz = _datamodAz; datamodAzset = true; }
     void setDataresP(std::shared_ptr<Data2D<T>> _dataresP) { dataresP = _dataresP; dataresPset = true; }
-    void setDataresVz(std::shared_ptr<Data2D<T>> _dataresVz) { dataresVz = _dataresVz; dataresVzset = true; }
+    void setDataresAz(std::shared_ptr<Data2D<T>> _dataresAz) { dataresAz = _dataresAz; dataresAzset = true; }
     void setDataweight(std::shared_ptr<Data2D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
 
     void calcAdjointsource(T *adjsrc_bw, T* wrp, int padr);
@@ -164,20 +164,20 @@ private:
     std::shared_ptr<Image2D<T>> pimage;
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> dataP;
-    std::shared_ptr<Data2D<T>> dataVz;
+    std::shared_ptr<Data2D<T>> dataAz;
     std::shared_ptr<Data2D<T>> datamodP;
-    std::shared_ptr<Data2D<T>> datamodVz;
+    std::shared_ptr<Data2D<T>> datamodAz;
     std::shared_ptr<Data2D<T>> dataresP;
-    std::shared_ptr<Data2D<T>> dataresVz;
+    std::shared_ptr<Data2D<T>> dataresAz;
     std::shared_ptr<Data2D<T>> dataweight;
     bool modelset;
     bool srcilumset;
     bool vpgradset;
     bool pimageset;
     bool sourceset;
-    bool dataPset, dataVzset;
-    bool datamodPset, datamodVzset;
-    bool dataresPset, dataresVzset;
+    bool dataPset, dataAzset;
+    bool datamodPset, datamodAzset;
+    bool dataresPset, dataresAzset;
     bool dataweightset;
 };
 
@@ -197,11 +197,11 @@ public:
     void setVpgrad(std::shared_ptr<Image3D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
     void setRhograd(std::shared_ptr<Image3D<T>> _rhograd) { rhograd = _rhograd; rhogradset = true; }
     void setDataP(std::shared_ptr<Data3D<T>> _dataP) { dataP = _dataP; dataPset = true; }
-    void setDataVz(std::shared_ptr<Data3D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setDataAz(std::shared_ptr<Data3D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
     void setDatamodP(std::shared_ptr<Data3D<T>> _datamodP) { datamodP = _datamodP; datamodPset = true; }
-    void setDatamodVz(std::shared_ptr<Data3D<T>> _datamodVz) { datamodVz = _datamodVz; datamodVzset = true; }
+    void setDatamodAz(std::shared_ptr<Data3D<T>> _datamodAz) { datamodAz = _datamodAz; datamodAzset = true; }
     void setDataresP(std::shared_ptr<Data3D<T>> _dataresP) { dataresP = _dataresP; dataresPset = true; }
-    void setDataresVz(std::shared_ptr<Data3D<T>> _dataresVz) { dataresVz = _dataresVz; dataresVzset = true; }
+    void setDataresAz(std::shared_ptr<Data3D<T>> _dataresAz) { dataresAz = _dataresAz; dataresAzset = true; }
     void setDataweight(std::shared_ptr<Data3D<T>> _dataweight) { dataweight = _dataweight; dataweightset = true; }
     void crossCorr(T* wsp, int pads, T* wrp, T* wrx, T* wry, T* wrz, int padr, T *vp, T* rho);
     void computeMisfit();
@@ -216,20 +216,20 @@ private:
     std::shared_ptr<Data3D<T>> wavgrad;
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> dataP;
-    std::shared_ptr<Data3D<T>> dataVz;
+    std::shared_ptr<Data3D<T>> dataAz;
     std::shared_ptr<Data3D<T>> datamodP;
-    std::shared_ptr<Data3D<T>> datamodVz;
+    std::shared_ptr<Data3D<T>> datamodAz;
     std::shared_ptr<Data3D<T>> dataresP;
-    std::shared_ptr<Data3D<T>> dataresVz;
+    std::shared_ptr<Data3D<T>> dataresAz;
     std::shared_ptr<Data3D<T>> dataweight;
     bool modelset;
     bool vpgradset;
     bool rhogradset;
     bool wavgradset;
     bool sourceset;
-    bool dataPset, dataVzset;
-    bool datamodPset, datamodVzset;
-    bool dataresPset, dataresVzset;
+    bool dataPset, dataAzset;
+    bool datamodPset, datamodAzset;
+    bool dataresPset, dataresAzset;
     bool dataweightset;
 };
 

@@ -40,9 +40,6 @@ int sort_sr_0(void const *a, void const *b)
 	if( pa->z < pb->z) return -1;
 	if( pa->z > pb->z) return 1;
 
-	if( pa->ind < pb->ind) return -1;
-	if( pa->ind > pb->ind) return 1;
-
 	if( pa->foff < pb->foff) return -1;
 	if( pa->foff > pb->foff) return 1;
 
@@ -75,9 +72,6 @@ int sort_sr_1(void const *a, void const *b)
 	if( pa->z < pb->z) return -1;
 	if( pa->z > pb->z) return 1;
 
-	if( pa->ind < pb->ind) return -1;
-	if( pa->ind > pb->ind) return 1;
-
 	if( pa->foff < pb->foff) return -1;
 	if( pa->foff > pb->foff) return 1;
 
@@ -93,7 +87,7 @@ int sort_sr_1(void const *a, void const *b)
 	return 0;
 }
 
-//Sort with z as primary key and x as secondary key 
+//Sort with z as primary key and y as secondary key 
 int sort_sr_2(void const *a, void const *b)
 {
 	position_t *pa, *pb;
@@ -109,9 +103,6 @@ int sort_sr_2(void const *a, void const *b)
 
 	if( pa->y < pb->y) return -1;
 	if( pa->y > pb->y) return 1;
-
-	if( pa->ind < pb->ind) return -1;
-	if( pa->ind > pb->ind) return 1;
 
 	if( pa->foff < pb->foff) return -1;
 	if( pa->foff > pb->foff) return 1;
@@ -446,23 +437,16 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather()
                 Fdata->read(&gcoords[j].x, 1);
                 Fdata->read(&gcoords[j].y, 1);
             }else{
-               Fdata->read(&gcoords[j].x, 1);
-               Fdata->read(&gcoords[j].y, 1);
-               Fdata->read(&scoords[j].x, 1);
-               Fdata->read(&scoords[j].y, 1);
+                Fdata->read(&gcoords[j].x, 1);
+                Fdata->read(&gcoords[j].y, 1);
+                Fdata->read(&scoords[j].x, 1);
+                Fdata->read(&scoords[j].y, 1);
             }
             Fdata->read(&data[j*n1], n1);
-        }
-        // Set reciprocity flag
-        if(!this->getReciprocity()){
-           gather->setReciprocity(false);
-        }else{
-           gather->setReciprocity(true);
         }
 
         // Flag shot as running
         this->keymap[i].status = RUNNING;
-
         return gather;
     }else{
         // No shot available
@@ -520,12 +504,6 @@ std::shared_ptr<Data2D<T>> Sort<T>::get2DGather(size_t number)
         }
         Fdata->read(&data[j*n1], n1);
     }
-    // Set reciprocity flag
-    if(!this->getReciprocity()){
-       gather->setReciprocity(false);
-    }else{
-       gather->setReciprocity(true);
-    }
     // Flag shot as running
     this->keymap[number].status = RUNNING;
     return gather;
@@ -578,54 +556,6 @@ void Sort<T>::put2DGather(std::shared_ptr<Data2D<T>> data, size_t number)
 }
 
 template<typename T>
-void Sort<T>::put2DGather(std::shared_ptr<Data2D<T>> data, size_t number, Point2D<int> *mask)
-{
-    if(this->ngathers == 0 || this->ntraces == 0) rs_error("Sort::put2DGather: No sort map created.");
-    if(number > ngathers-1) rs_error("Sort::put2DGather: Trying to put a gather with number that is larger than ngathers");
-
-    bool status;
-    std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
-    status = Fdata->append(data->getFile());
-    if(status == FILE_ERR) rs_error("Sort::put2DGather: Error opening data file for appending: ", data->getFile());
-    rs_datatype datatype = Fdata->getType(); 
-    if(datatype != DATA2D) rs_error("Sort::put2DGather: Datafile must be of type Data2D.");
-    //Get gather size information
-    size_t n1 = Fdata->getN(1);
-    T d1 = Fdata->getD(1);
-    T o1 = Fdata->getO(1);
-    size_t n2 = this->keymap[number].n;
-    if(n1 != data->getNt()) rs_error("Sort::put2DGather: Number of samples in data and datafile mismatch.");
-    if(d1 != data->getDt()) rs_error("Sort::put2DGather: Sampling interval in data and datafile mismatch.");
-    if(o1 != data->getOt()) rs_error("Sort::put2DGather: Origin in data and datafile mismatch.");
-
-    //Write gather
-    Point2D<T> *scoords = (data->getGeom())->getScoords();
-    Point2D<T> *gcoords = (data->getGeom())->getGcoords();
-    T *tracedata = data->getData();
-    size_t traceno;
-    for (size_t j=0; j < n2; j++){
-        if(mask[j].x > 0 && mask[j].y > 0){
-            traceno = this->sortmap[this->keymap[number].i0 + j];
-            Fdata->seekp(Fdata->getStartofdata() + traceno*(n1+NHEAD2D)*sizeof(T));
-            if(!this->getReciprocity()){
-                Fdata->write(&scoords[j].x, 1);
-                Fdata->write(&scoords[j].y, 1);
-                Fdata->write(&gcoords[j].x, 1);
-                Fdata->write(&gcoords[j].y, 1);
-            }else{
-                Fdata->write(&gcoords[j].x, 1);
-                Fdata->write(&gcoords[j].y, 1);
-                Fdata->write(&scoords[j].x, 1);
-                Fdata->write(&scoords[j].y, 1);
-            }
-            Fdata->write(&tracedata[j*n1], n1);
-        }
-    }
-
-    if(Fdata->getFail()) rs_error("Sort::Put2DGather: Error writting gather to output file");
-}
-
-template<typename T>
 void Sort<T>::put3DGather(std::shared_ptr<Data3D<T>> data, size_t number)
 {
     if(this->ngathers == 0 || this->ntraces == 0) rs_error("Sort::put3DGather: No sort map created.");
@@ -670,58 +600,6 @@ void Sort<T>::put3DGather(std::shared_ptr<Data3D<T>> data, size_t number)
             Fdata->write(&scoords[j].z, 1);
         }
         Fdata->write(&tracedata[j*n1], n1);
-    }
-
-    if(Fdata->getFail()) rs_error("Sort::Put3DGather: Error writting gather to output file");
-}
-
-template<typename T>
-void Sort<T>::put3DGather(std::shared_ptr<Data3D<T>> data, size_t number, Point3D<int> *mask)
-{
-    if(this->ngathers == 0 || this->ntraces == 0) rs_error("Sort::put3DGather: No sort map created.");
-    if(number > ngathers-1) rs_error("Sort::put3DGather: Trying to put a gather with number that is larger than ngathers");
-
-    bool status;
-    std::shared_ptr<rockseis::File> Fdata (new rockseis::File());
-    status = Fdata->append(data->getFile());
-    if(status == FILE_ERR) rs_error("Sort::put3DGather: Error reading input data file.");
-    rs_datatype datatype = Fdata->getType(); 
-    if(datatype != DATA3D) rs_error("Sort::put3DGather: Datafile must be of type Data3D.");
-    //Get gather size information
-    size_t n1 = Fdata->getN(1);
-    T d1 = Fdata->getD(1);
-    T o1 = Fdata->getO(1);
-    size_t n2 = this->keymap[number].n;
-    if(n1 != data->getNt()) rs_error("Sort::put3DGather: Number of samples in data and datafile mismatch.");
-    if(d1 != data->getDt()) rs_error("Sort::put3DGather: Sampling interval in data and datafile mismatch.");
-    if(o1 != data->getOt()) rs_error("Sort::put3DGather: Origin in data and datafile mismatch.");
-
-    //Write gather
-    Point3D<T> *scoords = (data->getGeom())->getScoords();
-    Point3D<T> *gcoords = (data->getGeom())->getGcoords();
-    T *tracedata = data->getData();
-    size_t traceno;
-    for (size_t j=0; j < n2; j++){
-        if(mask[j].x > 0 && mask[j].y > 0 && mask[j].z > 0){
-            traceno = this->sortmap[this->keymap[number].i0 + j];
-            Fdata->seekp(Fdata->getStartofdata() + traceno*(n1+NHEAD3D)*sizeof(T));
-            if(!this->getReciprocity()){
-                Fdata->write(&scoords[j].x, 1);
-                Fdata->write(&scoords[j].y, 1);
-                Fdata->write(&scoords[j].z, 1);
-                Fdata->write(&gcoords[j].x, 1);
-                Fdata->write(&gcoords[j].y, 1);
-                Fdata->write(&gcoords[j].z, 1);
-            }else{
-                Fdata->write(&gcoords[j].x, 1);
-                Fdata->write(&gcoords[j].y, 1);
-                Fdata->write(&gcoords[j].z, 1);
-                Fdata->write(&scoords[j].x, 1);
-                Fdata->write(&scoords[j].y, 1);
-                Fdata->write(&scoords[j].z, 1);
-            }
-            Fdata->write(&tracedata[j*n1], n1);
-        }
     }
 
     if(Fdata->getFail()) rs_error("Sort::Put3DGather: Error writting gather to output file");
@@ -788,12 +666,6 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather()
         }
         // Flag shot as running
         this->keymap[i].status = RUNNING;
-        // Set reciprocity flag
-        if(!this->getReciprocity()){
-           gather->setReciprocity(false);
-        }else{
-           gather->setReciprocity(true);
-        }
         return gather;
     }else{
         // No shot available
@@ -855,12 +727,6 @@ std::shared_ptr<Data3D<T>> Sort<T>::get3DGather(size_t number)
     }
     // Flag shot as running
     this->keymap[number].status = RUNNING;
-    // Set reciprocity flag
-    if(!this->getReciprocity()){
-       gather->setReciprocity(false);
-    }else{
-       gather->setReciprocity(true);
-    }
     return gather;
 }
 

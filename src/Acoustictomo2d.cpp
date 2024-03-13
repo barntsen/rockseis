@@ -37,12 +37,6 @@ void evaluate(rockseis::OptInstancePtr instance)
     fatt->writeLog("Combining gradients");
     fatt->combineGradients();
 
-    // Apply Chain rule of logistic model
-    if(fatt->getConstrain()){
-       fatt->writeLog("Computing Chain rule");
-       fatt->applyChainrule(x);
-    }
-
     // Apply mute to gradient
     fatt->writeLog("Muting gradients");
     fatt->applyMute();

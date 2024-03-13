@@ -6,9 +6,8 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "utils.h"
 #include "geometry.h"
-#include "domain.h"
+#include "utils.h"
 #include "file.h"
 #include "data.h"
 
@@ -43,7 +42,6 @@ public:
     T getOy() { return geometry->getO(2); }		///< Get Oy
     T getOz() { return geometry->getO(3); }		///< Get Oz
     std::shared_ptr<Geometry<T>> getGeom() { return geometry; } ///< Get geometry
-    std::shared_ptr<Domain<T>> getDomain() { return domain; } ///< Get domain
     bool getRealized() { return realized; } ///< Check if model is allocated
     // Set functions
     void setNx(const int _nx) { geometry->setN(1, _nx); }	///< Set Nx
@@ -62,11 +60,6 @@ public:
     void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
     void setDim(const int _dim) { dim = _dim; } 	///< Set the dimension
     void setRealized(const bool val) { realized = val; } ///< Set if model is allocated
-
-
-    // Calculate local model sizes
-    void  getLocalsize2d(std::shared_ptr<Data2D<T>> data, T aperture, bool map, off_t *start, size_t *size);
-    void  getLocalsize3d(std::shared_ptr<Data3D<T>> data, T aperture_x, T aperture_y, bool map, off_t *start_x, size_t *size_x, off_t *start_y, size_t *size_y);
 
     // PADDING AND STAGGERING FUNCTIONS 
     /** Pads 1-D model.
@@ -109,7 +102,6 @@ private:
     int dim; 
     int lpml;
     std::shared_ptr<Geometry<T>> geometry;
-    std::shared_ptr<Domain<T>> domain;
     int nx_pml;
     int ny_pml;
     int nz_pml;
@@ -137,7 +129,7 @@ public:
     T *getL() { return L; }		///< Get L
     std::string getVelocityfile() { return Velocityfile; }
     void setVelocityfile(std::string name) { Velocityfile = name; }
-    std::shared_ptr<ModelEikonal2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
+    std::shared_ptr<rockseis::ModelEikonal2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
     T getMinvel() {return this->getMin(Velocity); } ///< Returns min of model
     T getMaxvel() {return this->getMax(Velocity); } ///< Returns max of model
 
@@ -177,7 +169,7 @@ public:
     T *getL() { return L; }		///< Get L
     std::string getVelocityfile() { return Velocityfile; }
     void setVelocityfile(std::string name) { Velocityfile = name; }
-    std::shared_ptr<ModelEikonal3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map);
+    std::shared_ptr<rockseis::ModelEikonal3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperturex, T aperturey, bool map);
     T getMinvel() {return this->getMin(Velocity); } ///< Returns min of model
     T getMaxvel() {return this->getMax(Velocity); } ///< Returns max of model
 
@@ -272,9 +264,7 @@ public:
     std::string getRfile() { return Rfile; }
     void setVpfile(std::string name) { Vpfile = name; }
     void setRfile(std::string name) { Rfile = name; }
-    std::shared_ptr<ModelAcoustic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
-    std::shared_ptr<ModelAcoustic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd, const int order); ///< Returns a model of a domain
-    std::shared_ptr<ModelAcoustic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int order); ///< Returns a model of a domain
+    std::shared_ptr<rockseis::ModelAcoustic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
     T getMinVp() {return this->getMin(Vp); } ///< Returns min Vp
     T getMinR() {return this->getMin(R); } ///< Returns min R
     T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
@@ -284,12 +274,12 @@ public:
     It creates the padded Rx, Rz and L from the non-padded models R and Vp. 
     */
     void staggerModels(); 
+    void staggerModels_Eikonal(); 
 
     /** Create model
     It creates an empty model of Vp and R
     */
     void createModel();
-    void createPaddedmodel();
     
 private:
     T *Vp;  ///< P-wave velocity
@@ -335,20 +325,18 @@ public:
     T getMaxVp() {return this->getMax(Vp); } ///< Returns max Vp
     T getMaxR() {return this->getMax(R); } ///< Returns max R
 
-    std::shared_ptr<ModelAcoustic3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map);
-    std::shared_ptr<ModelAcoustic3D<T>> getDomainmodel(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map, const int d, const int nd, const int order); ///< Returns a model of a domain
-    std::shared_ptr<ModelAcoustic3D<T>> getDomainmodel(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map, const int d, const int nd0, const int nd1, const int nd2, const int order); ///< Returns a model of a domain
+    std::shared_ptr<rockseis::ModelAcoustic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperturex, T aperturey, bool map);
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz and L from the non-padded models R and Vp. 
     */
     void staggerModels();
+    void staggerModels_Eikonal(); 
 
     /** Create model
     It creates an empty model of Vp and R
     */
     void createModel();
-    void createPaddedmodel();
 
 
 private:
@@ -407,14 +395,12 @@ public:
     It creates the padded Rx, Rz, L, L2M and M from the non-padded models R, Vp and Vs. 
     */
     void staggerModels();
-    std::shared_ptr<ModelElastic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
-    std::shared_ptr<ModelElastic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int order); ///< Returns a model of a domain
+    std::shared_ptr<rockseis::ModelElastic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
 
     /** Create model
     It creates an empty model of Vp, Vs and R
     */
     void createModel();
-    void createPaddedmodel();
 
 private:
     T *Vp;  // P-wave velocity
@@ -474,8 +460,7 @@ public:
     T getMaxVs() {return this->getMax(Vs); } ///< Returns max Vs
     T getMaxR() {return this->getMax(R); } ///< Returns max R
 
-    std::shared_ptr<ModelElastic3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperture_x, T aperture_y, bool map);
-    std::shared_ptr<ModelElastic3D<T>> getDomainmodel(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map, const int d, const int nd0, const int nd1, const int nd2, const int order); ///< Returns a model of a domain
+    std::shared_ptr<rockseis::ModelElastic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperture_x, T aperture_y, bool map);
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, Vp and Vs. 
@@ -486,7 +471,6 @@ public:
     It creates an empty model of Vp, Vs and R
     */
     void createModel();
-    void createPaddedmodel();
 
 private:
     T *Vp;  ///< P-wave velocity
@@ -522,10 +506,8 @@ public:
 
     void writeVp(); ///< Write only the Vp model to file
     void writeVs(); ///< Write only the Vs model to file
-    void writeQp(); ///< Write only the Qp model to file
-    void writeQs(); ///< Write only the Qs model to file
     void writeR(); ///< Write only the Density model to file
-    void writeModel() { writeVp(); writeVs(); writeQp(); writeQs(); writeR(); } ///< Write a model to file
+    void writeModel() { writeVp(); writeVs(); writeR(); } ///< Write a model to file
 
     // Get functions
     T *getVp() { return Vp; }	///< Get Vp
@@ -562,14 +544,12 @@ public:
     It creates the padded Rx, Rz, M_xz, L2M and M from the non-padded models R, Vp and Vs. 
     */
     void staggerModels();
-    std::shared_ptr<ModelViscoelastic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
-    std::shared_ptr<ModelViscoelastic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int order); ///< Returns a model of a domain
+    std::shared_ptr<rockseis::ModelViscoelastic2D<T>> getLocal(std::shared_ptr<rockseis::Data2D<T>>, T aperture, bool map);
 
     /** Create model
     It creates an empty model of Vp, Vs and R
     */
     void createModel();
-    void createPaddedmodel();
 
 private:
     T *Vp;  // P-wave velocity
@@ -649,8 +629,7 @@ public:
     T getMaxVs() {return this->getMax(Vs); } ///< Returns max Vs
     T getMaxR() {return this->getMax(R); } ///< Returns max R
 
-    std::shared_ptr<ModelViscoelastic3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperture_x, T aperture_y, bool map);
-    std::shared_ptr<ModelViscoelastic3D<T>> getDomainmodel(std::shared_ptr<Data3D<T>>,T aperture_x, T aperture_y, bool map, const int d, const int nd0, const int nd1, const int nd2, const int order); ///< Returns a model of a domain
+    std::shared_ptr<rockseis::ModelViscoelastic3D<T>> getLocal(std::shared_ptr<rockseis::Data3D<T>>, T aperture_x, T aperture_y, bool map);
 
     /** Stagger model functions. 
     It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, Vp and Vs. 
@@ -661,7 +640,6 @@ public:
     It creates an empty model of Vp, Vs and R
     */
     void createModel();
-    void createPaddedmodel();
 
 private:
     T *Vp;  ///< P-wave velocity
@@ -688,337 +666,6 @@ private:
     std::string Rfile; ///< Filename to density model
     std::string Qpfile; ///< Filename to P-wave Q model
     std::string Qsfile; ///< Filename to S-wave Q model
-};
-
-// =============== 2D VTI MODEL CLASS =============== //
-/** The 2D vti model class
- *
- */
-template<typename T>
-class ModelVti2D: public Model<T> {
-public:
-    ModelVti2D();	///< Constructor
-    ModelVti2D(const int _nx, const int _nz, const int lpml, const T _dx, const T _dz, const T _ox, const T _oz, const bool _fs);	///< Constructor
-    ModelVti2D(std::string _C11file, std::string _C13file, std::string _C33file, std::string _C55file, std::string _Rfile, const int lpml, const bool _fs);	///< Constructor
-    ~ModelVti2D();	///< Destructor
-    
-    // I/O functions
-    void readModel();	///< Read a model from file
-
-    void writeC11(); ///< Write only the C11 model to file
-    void writeC13(); ///< Write only the C13 model to file
-    void writeC33(); ///< Write only the C33 model to file
-    void writeC55(); ///< Write only the C55 model to file
-    void writeR(); ///< Write only the Density model to file
-    void writeModel() { writeC11(); writeC13(); writeC33(); writeC55();} ///< Write a model to file
-
-    // Get functions
-    T *getC11() { return C11; }	///< Get C11
-    T *getC13() { return C13; }	///< Get C13
-    T *getC33() { return C33; }	///< Get C33
-    T *getC55() { return C55; }	///< Get C55
-    T *getC11p() { return C11p; }	///< Get C11 padded
-    T *getC13p() { return C13p; }	///< Get C13 padded
-    T *getC33p() { return C33p; }	///< Get C33 padded
-    T *getC55p() { return C55p; }	///< Get C55 padded
-    T *getR() { return R; }		///< Get R
-    T *getRx() { return Rx; }		///< Get Rx
-    T *getRz() { return Rz; }		///< Get Rz
-    std::string getC11file() { return C11file; }
-    std::string getC13file() { return C13file; }
-    std::string getC33file() { return C33file; }
-    std::string getC55file() { return C55file; }
-    std::string getRfile() { return Rfile; }
-    void setC11file(std::string name) { C11file = name; }
-    void setC13file(std::string name) { C13file = name; }
-    void setC33file(std::string name) { C33file = name; }
-    void setC55file(std::string name) { C55file = name; }
-    void setRfile(std::string name) { Rfile = name; }
-    T getMinVp();  ///< Returns min Vp
-    T getMinVs();  ///< Returns min Vs
-    T getMinR() {return this->getMin(R); } ///< Returns min R
-    T getMaxVp();  ///< Returns max Vp
-    T getMaxVs(); ///< Returns max Vs
-    T getMaxR() {return this->getMax(R); } ///< Returns max R
-    /** Stagger model functions. 
-    It creates the padded Rx, Rz, L, L2M and M from the non-padded models R, Vp and Vs. 
-    */
-    void staggerModels();
-    std::shared_ptr<ModelVti2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
-    std::shared_ptr<ModelVti2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int order); ///< Returns a model of a domain
-
-    /** Create model
-    It creates an empty model of Vp, Vs and R
-    */
-    void createModel();
-    void createPaddedmodel();
-
-private:
-    T *C11;  // C11 stiffness
-    T *C13;  // C13 stiffness
-    T *C33;   // C33 stiffness
-    T *C55;  // C55 stiffness
-    T *C11p;   // C11 padded
-    T *C13p; // C13 padded
-    T *C33p; // C33 padded
-    T *C55p; // C55 padded
-    T *R;  // Density model
-    T *Rx;  // Staggered inverse of density in x (padded)
-    T *Rz;  // Staggered inverse of density in z (padded)
-    std::string C11file; ///< Filename to C11 model
-    std::string C13file; ///< Filename to C13 model
-    std::string C33file; ///< Filename to C33 model
-    std::string C55file; ///< Filename to C55 model
-    std::string Rfile; ///< Filename to density model
-};
-
-// =============== 3D ORTHOROMBIC MODEL CLASS =============== //
-/** The 3D orthorombic model class
- *
- */
-template<typename T>
-class ModelOrtho3D: public Model<T> {
-public:
-    ModelOrtho3D();	///< Constructor
-    ModelOrtho3D(const int _nx, const int _ny, const int _nz, const int _lpml, const T _dx, const T _dy, const T _dz, const T _ox, const T _oy, const T _oz, const bool _fs); ///< Constructor
-    ModelOrtho3D(std::string _C11file, std::string _C12file, std::string _C13file, std::string _C22file, std::string _C23file, std::string _C33file, std::string _C44file, std::string _C55file, std::string _C66file, std::string _Rfile, const int lpml, const bool _fs);	///< Constructor
-    ~ModelOrtho3D();	///< Destructor
-    
-    // I/O functions
-    void readModel();	///< Read a model from files
-    void writeC11(); ///< Write only the C11 model to file
-    void writeC12(); ///< Write only the C12 model to file
-    void writeC13(); ///< Write only the C13 model to file
-    void writeC22(); ///< Write only the C22 model to file
-    void writeC23(); ///< Write only the C23 model to file
-    void writeC33(); ///< Write only the C33 model to file
-    void writeC44(); ///< Write only the C44 model to file
-    void writeC55(); ///< Write only the C55 model to file
-    void writeC66(); ///< Write only the C66 model to file
-    void writeR(); ///< Write only the Density model to file
-    void writeModel() { writeC11(); writeC12(); writeC13(); writeC22(); writeC23(); writeC33(); writeC44(); writeC55(); writeC66(); writeR(); } ///< Write a model to file
-
-    // Get functions
-    T *getC11() { return C11; }	///< Get C11
-    T *getC12() { return C12; }	///< Get C12
-    T *getC13() { return C13; }	///< Get C13
-    T *getC22() { return C22; }	///< Get C22
-    T *getC23() { return C23; }	///< Get C23
-    T *getC33() { return C33; }	///< Get C33
-    T *getC44() { return C44; }	///< Get C44
-    T *getC55() { return C55; }	///< Get C55
-    T *getC66() { return C66; }	///< Get C66
-    T *getR() { return R; }		///< Get R
-    T *getC11p() { return C11p; }	///< Get C11 padded
-    T *getC12p() { return C12p; }	///< Get C12 padded
-    T *getC13p() { return C13p; }	///< Get C13 padded
-    T *getC22p() { return C22p; }	///< Get C22 padded
-    T *getC23p() { return C23p; }	///< Get C23 padded
-    T *getC33p() { return C33p; }	///< Get C33 padded
-    T *getC44p() { return C44p; }	///< Get C44 padded
-    T *getC55p() { return C55p; }	///< Get C55 padded
-    T *getC66p() { return C66p; }	///< Get C66 padded
-    T *getRx() { return Rx; }		///< Get Rx
-    T *getRy() { return Ry; }		///< Get Ry
-    T *getRz() { return Rz; }		///< Get Rz
-    std::string getC11file() { return C11file; }
-    std::string getC12file() { return C12file; }
-    std::string getC13file() { return C13file; }
-    std::string getC22file() { return C22file; }
-    std::string getC23file() { return C23file; }
-    std::string getC33file() { return C33file; }
-    std::string getC44file() { return C44file; }
-    std::string getC55file() { return C55file; }
-    std::string getC66file() { return C66file; }
-    std::string getRfile() { return Rfile; }
-    void setC11file(std::string name) { C11file = name; }
-    void setC12file(std::string name) { C12file = name; }
-    void setC13file(std::string name) { C13file = name; }
-    void setC22file(std::string name) { C22file = name; }
-    void setC23file(std::string name) { C23file = name; }
-    void setC33file(std::string name) { C33file = name; }
-    void setC44file(std::string name) { C44file = name; }
-    void setC55file(std::string name) { C55file = name; }
-    void setC66file(std::string name) { C66file = name; }
-    void setRfile(std::string name) { Rfile = name; }
-    T getMinVp();  ///< Returns min Vp
-    T getMinVs();  ///< Returns min Vs
-    T getMinR() {return this->getMin(R); } ///< Returns min R
-    T getMaxVp();  ///< Returns max Vp
-    T getMaxVs(); ///< Returns max Vs
-    T getMaxR() {return this->getMax(R); } ///< Returns max R
-
-    std::shared_ptr<ModelOrtho3D<T>> getLocal(std::shared_ptr<Data3D<T>>, T aperture_x, T aperture_y, bool map);
-    std::shared_ptr<ModelOrtho3D<T>> getDomainmodel(std::shared_ptr<Data3D<T>>, T aperturex, T aperturey, bool map, const int d, const int nd0, const int nd1, const int nd2, const int order); ///< Returns a model of a domain
-
-    /** Stagger model functions. 
-    It creates the padded Rx, Ry, Rz, L, L2M, M_xz, M_yz, M_xy from the non-padded models R, C11 and C44. 
-    */
-    void staggerModels();
-
-    /** Create model
-    It creates an empty model of C11, C12, C13, C22, C23, C33, C44, C55, C66  and R
-    */
-    void createModel();
-    void createPaddedmodel();
-
-private:
-    T *C11;  ///< C11 stiffness
-    T *C12;  ///< C12 stiffness
-    T *C13;  ///< C13 stiffness
-    T *C22;  ///< C22 stiffness
-    T *C23;  ///< C23 stiffness
-    T *C33;  ///< C33 stiffness
-    T *C44;  ///< C44 stiffness
-    T *C55;  ///< C55 stiffness
-    T *C66;  ///< C66 stiffness
-    T *R;   ///< Density 
-    T *C11p;  ///< C11 stiffness padded
-    T *C12p;  ///< C12 stiffness padded
-    T *C13p;  ///< C13 stiffness padded
-    T *C22p;  ///< C22 stiffness padded
-    T *C23p;  ///< C23 stiffness padded
-    T *C33p;  ///< C33 stiffness padded
-    T *C44p;  ///< C44 stiffness padded
-    T *C55p;  ///< C55 stiffness padded
-    T *C66p;  ///< C66 stiffness padded
-    T *Rx;  ///< Staggered inverse of density in x (padded)
-    T *Ry;  ///< Staggered inverse of density in y (padded)
-    T *Rz;  ///< Staggered inverse of density in z (padded)
-    std::string C11file; ///< Filename to C11 file
-    std::string C12file; ///< Filename to C12 file
-    std::string C13file; ///< Filename to C13 file
-    std::string C22file; ///< Filename to C22 file
-    std::string C23file; ///< Filename to C23 file
-    std::string C33file; ///< Filename to C33 file
-    std::string C44file; ///< Filename to C44 file
-    std::string C55file; ///< Filename to C55 file
-    std::string C66file; ///< Filename to C66 file
-    std::string Rfile; ///< Filename to density model
-};
-
-// =============== 2D POROELASTIC MODEL CLASS =============== //
-/** The 2D Poroelastic model class
- *
- */
-template<typename T>
-class ModelPoroelastic2D: public Model<T> {
-public:
-    ModelPoroelastic2D();	///< Constructor
-    ModelPoroelastic2D(const int _nx, const int _nz, const int lpml, const T _dx, const T _dz, const T _ox, const T _oz, const T _f0, const bool _fs);	///< Constructor
-    ModelPoroelastic2D(std::string _Rhofile, std::string _Rhoffile, std::string _Porfile, std::string _Kdfile, std::string _Ksfile,  std::string _Kffile, std::string _Mufile, std::string _Mobfile, std::string _Psifile, const int _lpml, const T _f0, const bool _fs);	///< Constructor
-    ~ModelPoroelastic2D();	///< Destructor
-    
-    // I/O functions
-    void readModel();	///< Read a model from file
-
-    void writeRho(); ///< Write only the Rho model to file
-    void writeRhof(); ///< Write only the Rhof model to file
-    void writePor(); ///< Write only the Por model to file
-    void writeKd(); ///< Write only the Kd model to file
-    void writeKs(); ///< Write only the Ks model to file
-    void writeKf(); ///< Write only the Kf model to file
-    void writeMu(); ///< Write only the Mu model to file
-    void writeMob(); ///< Write only the Mob model to file
-    void writePsi(); ///< Write only the Psi model to file
-    void writeModel() { writeRho(); writeRhof(); writePor(); writeKd(); writeKs(); writeKf(); writeMu(); writeMob(); writePsi(); } ///< Write a model to file
-
-    // Get functions
-    T *getRho() { return Rho; }	///< Get Rho
-    T *getRhof() { return Rhof; }	///< Get Rhof
-    T *getPor() { return Por; }	///< Get Por
-    T *getKd() { return Kd; }	///< Get Kd
-    T *getKs() { return Ks; }	///< Get Ks
-    T *getKf() { return Kf; }	///< Get Kf
-    T *getMu() { return Mu; }	///< Get Mu
-    T *getMob() { return Mob; }	///< Get Mob
-    T *getPsi() { return Psi; }	///< Get Psi
-    T *getLu() { return Lu; }		///< Get L undrained
-    T *getLuM() { return LuM; }		///< Get L2M undrained
-    T *getAlpha() { return Alpha; }		///< Get Alpha
-    T *getBeta() { return Beta; }		///< Get Beta
-    T *getM_xz() { return M_xz; }	///< Get M_xz staggered
-    T *getRho_x() { return Rho_x; }		///< Get Rho_x staggered
-    T *getRho_z() { return Rho_z; }		///< Get Rho_z staggered
-    T *getRhof_x() { return Rhof_x; }		///< Get Rhof_x staggered
-    T *getRhof_z() { return Rhof_z; }		///< Get Rhof_z staggered
-    T *getMob_x() { return Mob_x; }		///< Get Mob_x 
-    T *getMob_z() { return Mob_z; }		///< Get Mob_z 
-    T *getPsi_x() { return Psi_x; }		///< Get Psi_x 
-    T *getPsi_z() { return Psi_z; }		///< Get Psi_z 
-    T getF0() { return f0; } ///< Get the dominant frequency
-    std::string getRhofile() { return Rhofile; }
-    std::string getRhoffile() { return Rhoffile; }
-    std::string getPorfile() { return Porfile; }
-    std::string getKdfile() { return Kdfile; }
-    std::string getKsfile() { return Ksfile; }
-    std::string getKffile() { return Kffile; }
-    std::string getMufile() { return Mufile; }
-    std::string getMobfile() { return Mobfile; }
-    std::string getPsifile() { return Psifile; }
-    void setRhofile(std::string name) { Rhofile = name; }
-    void setRhoffile(std::string name) { Rhoffile = name; }
-    void setPorfile(std::string name) { Porfile = name; }
-    void setKdfile(std::string name) { Kdfile = name; }
-    void setKsfile(std::string name) { Ksfile = name; }
-    void setKffile(std::string name) { Kffile = name; }
-    void setMufile(std::string name) { Mufile = name; }
-    void setMobfile(std::string name) { Mobfile = name; }
-    void setPsifile(std::string name) { Psifile = name; }
-    void setF0(T val) { f0 = val; } ///< Set the dominant frequency
-    T getMinVp();  ///< Returns min Vp
-    T getMinVs();  ///< Returns min Vs
-    T getMinR() {return this->getMax(Rho); }  ///< Returns min R
-    T getMaxVp(); ///< Returns max Vp
-    T getMaxVs(); ///< Returns max Vs
-    T getMaxR() {return this->getMax(Rho); } ///< Returns max R
-   //
-    /** Stagger model functions. 
-    It creates the padded models and other poroelastic variables
-    */
-    std::shared_ptr<ModelPoroelastic2D<T>> getLocal(std::shared_ptr<Data2D<T>>, T aperture, bool map);
-    std::shared_ptr<ModelPoroelastic2D<T>> getDomainmodel(std::shared_ptr<Data2D<T>>, T aperture, bool map, const int d, const int nd0, const int nd1, const int order); ///< Returns a model of a domain
-
-    /** Create model
-    It creates an empty Poroelastic model
-    */
-    void createModel();
-    void createPaddedmodel();
-
-private:
-    T *Rho; 
-    T *Rhof; 
-    T *Por; 
-    T *Kd; 
-    T *Ks; 
-    T *Kf; 
-    T *Mu; 
-    T *Mob; 
-    T *Psi; 
-
-    T *Lu; // Lame undrained
-    T *LuM; // Lame + 2Mu undrained
-    T *Alpha; // Biot Willis constant
-    T *Beta;   // Beta parameter
-    T *M_xz; // Lame Mu  (staggered)
-    T *Rho_x;  // Staggered inverse of density in x (padded)
-    T *Rho_z;  // Staggered inverse of density in z (padded)
-    T *Rhof_x;  // Staggered inverse of fluid density in x (padded)
-    T *Rhof_z;  // Staggered inverse of fluid density in z (padded)
-    T *Mob_x;  // Mobility Staggered 
-    T *Mob_z;  // Mobility Staggered 
-    T *Psi_x;  // (1 - O)F - rhof/rho Staggered 
-    T *Psi_z;  // (1 - O)F - rhof/rho Staggered 
-    T f0; // Center frequency
-    std::string Rhofile; ///< Filename to Rho
-    std::string Rhoffile; ///< Filename to Rhof
-    std::string Porfile; ///< Filename to Por
-    std::string Kdfile; ///< Filename to Kd
-    std::string Ksfile; ///< Filename to Ks
-    std::string Kffile; ///< Filename to Kf
-    std::string Mufile; ///< Filename to Mu
-    std::string Mobfile; ///< Filename to Mob
-    std::string Psifile; ///< Filename to Psi
 };
 
 

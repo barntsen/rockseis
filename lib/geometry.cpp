@@ -14,7 +14,6 @@ Geometry<T>::Geometry()
         d[i] = 0.0;
         o[i] = 0.0;
     } 
-    verbose = false;
 }
 
 // Clear geometry
@@ -101,12 +100,12 @@ template<typename T>
 Geometry2D<T>::Geometry2D(size_t ntrace): Geometry<T>()
 {
     this->setN(1, ntrace);
-    scoords = (Point2D<T> *) calloc(ntrace,sizeof(Point2D<T>));
-    gcoords = (Point2D<T> *) calloc(ntrace,sizeof(Point2D<T>));
-    smap = (Point2D<int> *) calloc(ntrace,sizeof(Point2D<int>));
-    gmap = (Point2D<int> *) calloc(ntrace,sizeof(Point2D<int>));
-    sshift = (Point2D<T> *) calloc(ntrace,sizeof(Point2D<T>));
-    gshift = (Point2D<T> *) calloc(ntrace,sizeof(Point2D<T>));
+    scoords = (rockseis::Point2D<T> *) calloc(ntrace,sizeof(rockseis::Point2D<T>));
+    gcoords = (rockseis::Point2D<T> *) calloc(ntrace,sizeof(rockseis::Point2D<T>));
+    smap = (rockseis::Point2D<int> *) calloc(ntrace,sizeof(rockseis::Point2D<int>));
+    gmap = (rockseis::Point2D<int> *) calloc(ntrace,sizeof(rockseis::Point2D<int>));
+    sshift = (rockseis::Point2D<T> *) calloc(ntrace,sizeof(rockseis::Point2D<T>));
+    gshift = (rockseis::Point2D<T> *) calloc(ntrace,sizeof(rockseis::Point2D<T>));
     for (size_t i=0; i< ntrace; i++) 
     {
         scoords[i].x = 0;
@@ -132,50 +131,106 @@ Geometry2D<T>::~Geometry2D() {
     free(gshift);
 }
 
+
 // create map
 template<typename T>
-void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padhx, int padhy, T shiftx, T shifty) {
+void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
 	size_t n = this->getN(1);  //Get number of traces 
 	// Get regular model parameters
 	int nx = _geom->getN(1);
 	int ny = _geom->getN(3);
-	double dx = (double) _geom->getD(1);
-    double dy = (double) _geom->getD(3);
-    double ox = (double) _geom->getO(1);
-    double oy = (double) _geom->getO(3);
+	T dx = _geom->getD(1);
+	T dy = _geom->getD(3);
+	T ox = _geom->getO(1);
+	T oy = _geom->getO(3);
+	// Compute index smap
+	int pos;
+	for (size_t i = 0; i < n ; i++){
+		pos = this->mapfloor((scoords[i].x - ox)/dx);
+		if(pos >=0 && pos < nx)
+		{
+			smap[i].x  = pos; // index is within bounds
+            sshift[i].x = ((scoords[i].x - ox)/dx) - pos;
+		}else
+		{
+			smap[i].x  = -1;  // index is off bounds
+		}
+		pos = this->mapfloor((scoords[i].y - oy)/dy);
+		if(pos >=0 && pos < ny)
+		{
+			smap[i].y  = pos; // index is within bounds
+            sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
+		}else
+		{
+			smap[i].y  = -1;  // index is off bounds
+		}
+	}
+	// Compute index gmap
+	for (size_t i = 0; i < n ; i++){
+		pos = this->mapfloor((gcoords[i].x - ox)/dx);
+		if(pos >=0 && pos < nx)
+		{
+			gmap[i].x  = pos; // index is within bounds
+            gshift[i].x = ((gcoords[i].x - ox)/dx) - pos;
+		}else
+		{
+			gmap[i].x  = -1;  // index is off bounds
+		}
+		pos = this->mapfloor((gcoords[i].y - oy)/dy);
+		if(pos >=0 && pos < ny)
+		{
+			gmap[i].y  = pos; // index is within bounds
+            gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
+		}else
+		{
+			gmap[i].y  = -1;  // index is off bounds
+		}
+	}
+
+   // Issue a warning if all receivers are out of bounds
+    bool s_inbound = false;
+    bool g_inbound = false;
+    
+    for (size_t i =0; i < n; i++) 
+    {
+        if ((smap[i].x >= 0)  && (smap[i].y >= 0)) s_inbound = true;
+        if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)) g_inbound = true;
+    }
+    if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+    if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+}
+
+// create map
+template<typename T>
+void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
+	size_t n = this->getN(1);  //Get number of traces 
+	// Get regular model parameters
+	int nx = _geom->getN(1);
+	int ny = _geom->getN(3);
+	T dx = _geom->getD(1);
+	T dy = _geom->getD(3);
+    T ox = _geom->getO(1);
+    T oy = _geom->getO(3);
 
     int pos;
-    double res;
     if(map == SMAP)
     {
         // Compute index smap
         for (size_t i = 0; i < n ; i++){
-            res = ((double) scoords[i].x - ox + shiftx*dx)/dx;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dx*CTHRES) && (pos < padlx))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dx*CTHRES) && (pos >= (nx - padhx)))
-               pos -= 1;
-            if(pos >=padlx && pos < nx-padhx)
+            pos = this->mapfloor((scoords[i].x - ox)/dx);
+            if(pos >=0 && pos < nx)
             {
                 smap[i].x  = pos; // index is within bounds
-                sshift[i].x = (((double) scoords[i].x - ox + shiftx*dx)/dx) - pos;
+                sshift[i].x = ((scoords[i].x - ox)/dx) - pos;
             }else
             {
                 smap[i].x  = -1;  // index is off bounds
             }
-            res = ((double) scoords[i].y - oy + shifty*dy)/dy;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dy*CTHRES) && (pos < padly))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dy*CTHRES) && (pos >= (ny - padhy)))
-               pos -= 1;
-            if(pos >=padly && pos < ny-padhy)
+            pos = this->mapfloor((scoords[i].y - oy)/dy);
+            if(pos >=0 && pos < ny)
             {
                 smap[i].y  = pos; // index is within bounds
-                sshift[i].y = (((double) scoords[i].y - oy + shifty*dy)/dy) - pos;
+                sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
             }else
             {
                 smap[i].y  = -1;  // index is off bounds
@@ -187,37 +242,25 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         {
             if ((smap[i].x >= 0)  && (smap[i].y >= 0)) s_inbound = true;
         }
-        if (!s_inbound && this->getVerbose()) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+        if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
 
     }else{
         // Compute index gmap
         for (size_t i = 0; i < n ; i++){
-            res = ((double) gcoords[i].x - ox + shiftx*dx)/dx;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dx*CTHRES) && (pos < padlx))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dx*CTHRES) && (pos >= (nx - padhx)))
-               pos -= 1;
-            if(pos >=padlx && pos < nx-padhx)
+            pos = this->mapfloor((gcoords[i].x - ox)/dx);
+            if(pos >=0 && pos < nx)
             {
                 gmap[i].x  = pos; // index is within bounds
-                gshift[i].x = (((double) gcoords[i].x - ox + shiftx*dx)/dx) - pos;
+                gshift[i].x = ((gcoords[i].x - ox)/dx) - pos;
             }else
             {
                 gmap[i].x  = -1;  // index is off bounds
             }
-            res = ((double) gcoords[i].y - oy + shifty*dy)/dy;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dy*CTHRES) && (pos < padly))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dy*CTHRES) && (pos >= (ny - padhy)))
-               pos -= 1;
-            if(pos >=padly && pos < ny-padhy)
+            pos = this->mapfloor((gcoords[i].y - oy)/dy);
+            if(pos >=0 && pos < ny)
             {
                 gmap[i].y  = pos; // index is within bounds
-                gshift[i].y = (((double) gcoords[i].y - oy + shifty*dy)/dy) - pos;
+                gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
             }else
             {
                 gmap[i].y  = -1;  // index is off bounds
@@ -229,10 +272,11 @@ void Geometry2D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         {
             if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)) g_inbound = true;
         }
-        if (!g_inbound && this->getVerbose()) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+        if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
     }
 
 }
+
 
 // copy map
 template<typename T>
@@ -256,6 +300,8 @@ void Geometry2D<T>::copySmap2Gmap() {
     }
 }
 
+
+
 /// =============== 3D DATA GEOMETRY CLASS =============== //
 
 // constructor
@@ -263,12 +309,12 @@ template<typename T>
 Geometry3D<T>::Geometry3D(int ntrace): Geometry<T>()
 {
     this->setN(1, ntrace);
-    scoords = (Point3D<T> *) calloc(ntrace,sizeof(Point3D<T>));
-    gcoords = (Point3D<T> *) calloc(ntrace,sizeof(Point3D<T>));
-    smap = (Point3D<int> *) calloc(ntrace,sizeof(Point3D<int>));
-    gmap = (Point3D<int> *) calloc(ntrace,sizeof(Point3D<int>));
-    sshift = (Point3D<T> *) calloc(ntrace,sizeof(Point3D<T>));
-    gshift = (Point3D<T> *) calloc(ntrace,sizeof(Point3D<T>));
+    scoords = (rockseis::Point3D<T> *) calloc(ntrace,sizeof(rockseis::Point3D<T>));
+    gcoords = (rockseis::Point3D<T> *) calloc(ntrace,sizeof(rockseis::Point3D<T>));
+    smap = (rockseis::Point3D<int> *) calloc(ntrace,sizeof(rockseis::Point3D<int>));
+    gmap = (rockseis::Point3D<int> *) calloc(ntrace,sizeof(rockseis::Point3D<int>));
+    sshift = (rockseis::Point3D<T> *) calloc(ntrace,sizeof(rockseis::Point3D<T>));
+    gshift = (rockseis::Point3D<T> *) calloc(ntrace,sizeof(rockseis::Point3D<T>));
     for (size_t i=0; i< ntrace; i++) 
     {
         scoords[i].x = 0;
@@ -300,64 +346,132 @@ Geometry3D<T>::~Geometry3D() {
 
 // create map
 template<typename T>
-void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int padlx, int padly, int padlz, int padhx, int padhy, int padhz, T shiftx, T shifty, T shiftz) {
+void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom) {
+	size_t n = this->getN(1);  //Get number of traces 
+	// Get regular model parameters
+	int nx = _geom->getN(1);
+	int ny = _geom->getN(2);
+	int nz = _geom->getN(3);
+	T dx = _geom->getD(1);
+	T dy = _geom->getD(2);
+	T dz = _geom->getD(3);
+	T ox = _geom->getO(1);
+	T oy = _geom->getO(2);
+	T oz = _geom->getO(3);
+	// Compute index map
+	int pos;
+	for (size_t i = 0; i < n ; i++){
+		pos = this->mapfloor((scoords[i].x - ox)/dx);
+		if(pos >=0 && pos < nx)
+		{
+			smap[i].x  = pos; // index is within bounds
+            sshift[i].x = ((scoords[i].x - ox)/dx) - pos;
+		}else
+		{
+			smap[i].x  = -1;  // index is off bounds
+		}
+		pos = this->mapfloor((scoords[i].y - oy)/dy);
+		if(pos >=0 && pos < ny)
+		{
+			smap[i].y  = pos; // index is within bounds
+            sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
+		}else
+		{
+			smap[i].y  = -1;  // index is off bounds
+		}
+		pos = this->mapfloor((scoords[i].z - oz)/dz);
+		if(pos >=0 && pos < nz)
+		{
+			smap[i].z  = pos; // index is within bounds
+            sshift[i].z = ((scoords[i].z - oz)/dz) - pos;
+		}else
+		{
+			smap[i].z  = -1;  // index is off bounds
+		}
+	}
+	for (size_t i = 0; i < n ; i++){
+		pos = this->mapfloor((gcoords[i].x - ox)/dx);
+		if(pos >=0 && pos < nx)
+		{
+			gmap[i].x  = pos; // index is within bounds
+            gshift[i].x = ((gcoords[i].x - ox)/dx) - pos;
+		}else
+		{
+			gmap[i].x  = -1;  // index is off bounds
+		}
+		pos = this->mapfloor((gcoords[i].y - oy)/dy);
+		if(pos >=0 && pos < ny)
+		{
+			gmap[i].y  = pos; // index is within bounds
+            gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
+		}else
+		{
+			gmap[i].y  = -1;  // index is off bounds
+		}
+		pos = this->mapfloor((gcoords[i].z - oz)/dz);
+		if(pos >=0 && pos < nz)
+		{
+			gmap[i].z  = pos; // index is within bounds
+            gshift[i].z = ((gcoords[i].z - oz)/dz) - pos;
+		}else
+		{
+			gmap[i].z  = -1;  // index is off bounds
+		}
+	}
+    // Issue a warning if all receivers are out of bounds
+    bool s_inbound = false;
+    bool g_inbound = false;
+    
+    for (size_t i = 0; i < n; i++) 
+    {
+        if ((smap[i].x >= 0)  && (smap[i].y >= 0)  && (smap[i].z >= 0)) s_inbound = true;
+        if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)  && (gmap[i].z >= 0)) g_inbound = true;
+    }
+    if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+    if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+}
+
+// create map
+template<typename T>
+void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map) {
     size_t n = this->getN(1);  //Get number of traces 
     // Get regular model parameters
     int nx = _geom->getN(1);
     int ny = _geom->getN(2);
     int nz = _geom->getN(3);
-    double dx = (double) _geom->getD(1);
-    double dy = (double) _geom->getD(2);
-    double dz = (double) _geom->getD(3);
-    double ox = (double) _geom->getO(1);
-    double oy = (double) _geom->getO(2);
-    double oz = (double) _geom->getO(3);
+    T dx = _geom->getD(1);
+    T dy = _geom->getD(2);
+    T dz = _geom->getD(3);
+    T ox = _geom->getO(1);
+    T oy = _geom->getO(2);
+    T oz = _geom->getO(3);
     // Compute index map
     int pos;
-    double res;
     if(map == SMAP){
         for (size_t i = 0; i < n ; i++){
-            res = (scoords[i].x - ox + shiftx*dx)/dx;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dx*CTHRES) && (pos < padlx))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dx*CTHRES) && (pos >= (nx - padhx)))
-               pos -= 1;
-            if(pos >=padlx && pos < nx-padhx)
+            pos = this->mapfloor((scoords[i].x - ox)/dx);
+            if(pos >=0 && pos < nx)
             {
                 smap[i].x  = pos; // index is within bounds
-                sshift[i].x = ((scoords[i].x - ox + shiftx*dx)/dx) - pos;
+                sshift[i].x = ((scoords[i].x - ox)/dx) - pos;
             }else
             {
                 smap[i].x  = -1;  // index is off bounds
             }
-            res = (scoords[i].y - oy + shifty*dy)/dy;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dy*CTHRES) && (pos < padly))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dy*CTHRES) && (pos >= (ny - padhy)))
-               pos -= 1;
-            if(pos >=padly && pos < ny-padhy)
+            pos = this->mapfloor((scoords[i].y - oy)/dy);
+            if(pos >=0 && pos < ny)
             {
                 smap[i].y  = pos; // index is within bounds
-                sshift[i].y = ((scoords[i].y - oy + shifty*dy)/dy) - pos;
+                sshift[i].y = ((scoords[i].y - oy)/dy) - pos;
             }else
             {
                 smap[i].y  = -1;  // index is off bounds
             }
-            res = (scoords[i].z - oz + shiftz*dz)/dz;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dz*CTHRES) && (pos < padlz))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dz*CTHRES) && (pos >= (nz - padhz)))
-               pos -= 1;
-            if(pos >=padlz && pos < nz-padhz)
+            pos = this->mapfloor((scoords[i].z - oz)/dz);
+            if(pos >=0 && pos < nz)
             {
                 smap[i].z  = pos; // index is within bounds
-                sshift[i].z = ((scoords[i].z - oz + shiftz*dz)/dz) - pos;
+                sshift[i].z = ((scoords[i].z - oz)/dz) - pos;
             }else
             {
                 smap[i].z  = -1;  // index is off bounds
@@ -371,50 +485,32 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         {
             if ((smap[i].x >= 0)  && (smap[i].y >= 0)  && (smap[i].z >= 0)) s_inbound = true;
         }
-        if (!s_inbound && this->getVerbose()) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
+        if (!s_inbound) rs_warning("All source positions out of bounds, modelling might produce only zero output.");
     }else{
         for (size_t i = 0; i < n ; i++){
-            res = (gcoords[i].x - ox + shiftx*dx)/dx;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dx*CTHRES) && (pos < padlx))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dx*CTHRES) && (pos >= (nx - padhx)))
-               pos -= 1;
-            if(pos >=padlx && pos < nx-padhx)
+            pos = this->mapfloor((gcoords[i].x - ox)/dx);
+            if(pos >=0 && pos < nx)
             {
                 gmap[i].x  = pos; // index is within bounds
-                gshift[i].x = ((gcoords[i].x - ox + shiftx*dx)/dx) - pos;
+                gshift[i].x = ((gcoords[i].x - ox)/dx) - pos;
             }else
             {
                 gmap[i].x  = -1;  // index is off bounds
             }
-            res = (gcoords[i].y - oy + shifty*dy)/dy;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dy*CTHRES) && (pos < padly))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dy*CTHRES) && (pos >= (ny - padhy)))
-               pos -= 1;
-            if(pos >=padly && pos < ny-padhy)
+            pos = this->mapfloor((gcoords[i].y - oy)/dy);
+            if(pos >=0 && pos < ny)
             {
                 gmap[i].y  = pos; // index is within bounds
-                gshift[i].y = ((gcoords[i].y - oy + shifty*dy)/dy) - pos;
+                gshift[i].y = ((gcoords[i].y - oy)/dy) - pos;
             }else
             {
                 gmap[i].y  = -1;  // index is off bounds
             }
-            res = (gcoords[i].z - oz + shiftz*dz)/dz;
-            pos = (int) std::floor(res);
-            //Avoiding roundoff error issues in Domain decomposition
-            if(CLOSE(res-pos,1.0,dz*CTHRES) && (pos < padlz))
-               pos += 1;
-            if(CLOSE(res-pos,0.0,dz*CTHRES) && (pos >= (nz - padhz)))
-               pos -= 1;
-            if(pos >=padlz && pos < nz-padhz)
+            pos = this->mapfloor((gcoords[i].z - oz)/dz);
+            if(pos >=0 && pos < nz)
             {
                 gmap[i].z  = pos; // index is within bounds
-                gshift[i].z = ((gcoords[i].z - oz + shiftz*dz)/dz) - pos;
+                gshift[i].z = ((gcoords[i].z - oz)/dz) - pos;
             }else
             {
                 gmap[i].z  = -1;  // index is off bounds
@@ -428,10 +524,9 @@ void Geometry3D<T>::makeMap(std::shared_ptr<Geometry<T>> _geom, bool map, int pa
         {
             if ((gmap[i].x >= 0)  && (gmap[i].y >= 0)  && (gmap[i].z >= 0)) g_inbound = true;
         }
-        if (!g_inbound && this->getVerbose()) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
+        if (!g_inbound) rs_warning("All receiver positions are out of bounds, modelling might produce only zero output.");
     }
 }
-
 
 // copy map
 template<typename T>

@@ -30,15 +30,15 @@ int main()
     std::string Precordfile;
     std::shared_ptr<rockseis::Data2D<float>> Pdata;
 
-    bool Vxsnap=0, Vxrecord=0;
-    std::string Vxsnapfile;
-    std::string Vxrecordfile;
-    std::shared_ptr<rockseis::Data2D<float>> Vxdata;
+    bool Axsnap=0, Axrecord=0;
+    std::string Axsnapfile;
+    std::string Axrecordfile;
+    std::shared_ptr<rockseis::Data2D<float>> Axdata;
 
-    bool Vzsnap=0, Vzrecord=0;
-    std::string Vzsnapfile;
-    std::string Vzrecordfile;
-    std::shared_ptr<rockseis::Data2D<float>> Vzdata;
+    bool Azsnap=0, Azrecord=0;
+    std::string Azsnapfile;
+    std::string Azrecordfile;
+    std::shared_ptr<rockseis::Data2D<float>> Azdata;
 
 	// Parse parameters from file
 	config4cpp::Configuration *  cfg = config4cpp::Configuration::create();
@@ -129,56 +129,56 @@ int main()
         }
     }
    try {
-        Vxsnap = cfg->lookupBoolean(scope, "Vxsnap");
+        Axsnap = cfg->lookupBoolean(scope, "Axsnap");
     } catch(const config4cpp::ConfigurationException & ex) {
         std::cerr << ex.c_str() << std::endl;
         status = 1;
     }
-    if(Vxsnap){
+    if(Axsnap){
         try {
-            Vxsnapfile = cfg->lookupString(scope, "Vxsnapfile");
+            Axsnapfile = cfg->lookupString(scope, "Axsnapfile");
         } catch(const config4cpp::ConfigurationException & ex) {
             std::cerr << ex.c_str() << std::endl;
             status = 1;
         }
     }
     try {
-        Vxrecord = cfg->lookupBoolean(scope, "Vxrecord");
+        Axrecord = cfg->lookupBoolean(scope, "Axrecord");
     } catch(const config4cpp::ConfigurationException & ex) {
         std::cerr << ex.c_str() << std::endl;
         status = 1;
     }
-    if(Vxrecord){
+    if(Axrecord){
         try {
-            Vxrecordfile = cfg->lookupString(scope, "Vxrecordfile");
+            Axrecordfile = cfg->lookupString(scope, "Axrecordfile");
         } catch(const config4cpp::ConfigurationException & ex) {
             std::cerr << ex.c_str() << std::endl;
             status = 1;
         }
     }
    try {
-        Vzsnap = cfg->lookupBoolean(scope, "Vzsnap");
+        Azsnap = cfg->lookupBoolean(scope, "Azsnap");
     } catch(const config4cpp::ConfigurationException & ex) {
         std::cerr << ex.c_str() << std::endl;
         status = 1;
     }
-    if(Vzsnap){
+    if(Azsnap){
         try {
-            Vzsnapfile = cfg->lookupString(scope, "Vzsnapfile");
+            Azsnapfile = cfg->lookupString(scope, "Azsnapfile");
         } catch(const config4cpp::ConfigurationException & ex) {
             std::cerr << ex.c_str() << std::endl;
             status = 1;
         }
     }
     try {
-        Vzrecord = cfg->lookupBoolean(scope, "Vzrecord");
+        Azrecord = cfg->lookupBoolean(scope, "Azrecord");
     } catch(const config4cpp::ConfigurationException & ex) {
         std::cerr << ex.c_str() << std::endl;
         status = 1;
     }
-    if(Vzrecord){
+    if(Azrecord){
         try {
-            Vzrecordfile = cfg->lookupString(scope, "Vzrecordfile");
+            Azrecordfile = cfg->lookupString(scope, "Azrecordfile");
         } catch(const config4cpp::ConfigurationException & ex) {
             std::cerr << ex.c_str() << std::endl;
             status = 1;
@@ -202,11 +202,11 @@ int main()
     if(Psnap){
         modelling->setSnapP(Psnapfile);
     }
-    if(Vxsnap){
-        modelling->setSnapVx(Vxsnapfile);
+    if(Axsnap){
+        modelling->setSnapAx(Axsnapfile);
     }
-    if(Vzsnap){
-        modelling->setSnapVz(Vzsnapfile);
+    if(Azsnap){
+        modelling->setSnapAz(Azsnapfile);
     }
 
     // Setting Record
@@ -219,22 +219,22 @@ int main()
         modelling->setRecP(Pdata);
     }
     // Setting Record
-    if(Vxrecord){
-        Vxdata = std::make_shared<rockseis::Data2D<float>>(Vxrecordfile, source->getNt(), source->getDt(), 0.0);
-        Vxdata->setField(rockseis::VX);
+    if(Axrecord){
+        Axdata = std::make_shared<rockseis::Data2D<float>>(Axrecordfile, source->getNt(), source->getDt(), 0.0);
+        Axdata->setField(rockseis::VX);
         // Load data geometry from file
-        Vxdata->readCoords();
-        Vxdata->makeMap(model->getGeom());
-        modelling->setRecVx(Vxdata);
+        Axdata->readCoords();
+        Axdata->makeMap(model->getGeom());
+        modelling->setRecAx(Axdata);
     }
     // Setting Record
-    if(Vzrecord){
-        Vzdata = std::make_shared<rockseis::Data2D<float>>(Vzrecordfile, source->getNt(), source->getDt(), 0.0);
-        Vzdata->setField(rockseis::VZ);
+    if(Azrecord){
+        Azdata = std::make_shared<rockseis::Data2D<float>>(Azrecordfile, source->getNt(), source->getDt(), 0.0);
+        Azdata->setField(rockseis::VZ);
         // Load data geometry from file
-        Vzdata->readCoords();
-        Vzdata->makeMap(model->getGeom());
-        modelling->setRecVz(Vzdata);
+        Azdata->readCoords();
+        Azdata->makeMap(model->getGeom());
+        modelling->setRecAz(Azdata);
     }
 
 	// Read acoustic model
@@ -255,12 +255,12 @@ int main()
         Pdata->write();
     }
 
-    if(Vxrecord){
-        Vxdata->write();
+    if(Axrecord){
+        Axdata->write();
     }
 
-    if(Vzrecord){
-        Vzdata->write();
+    if(Azrecord){
+        Azdata->write();
     }
 
 

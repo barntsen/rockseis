@@ -42,7 +42,6 @@ public:
     void ddx_bw(T* f); ///< Backward derivative in x
     void ddy_bw(T* f); ///< Backward derivative in y
     void ddz_bw(T* f); ///< Backward derivative in z
-
 private:
     int nx;
     int ny;

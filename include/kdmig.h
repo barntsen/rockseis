@@ -27,7 +27,7 @@
 
 #define ki2D(i,j,k,l) ((l)*nhx*nz*nx + (k)*nx*nz + (j)*nx +(i))
 #define km2D(i,j) ((j)*nx + (i))
-#define kt2D(i,j) ((j)*nxt + (i))
+#define kt2D(i,j) ((j)*nx + (i))
 #define kres2D(i,j,k) ((k)*nz*nhx + (j)*nz + (i))
 
 #define ki3D(i,j,k,l,m,n) ((n)*nhy*nhx*nx*ny*nz + (m)*nhx*nx*ny*nz + (l)*nx*ny*nz + (k)*nx*ny + (j)*nx + (i))
@@ -73,10 +73,6 @@ public:
     void setMaxfreq(T val) {maxfreq = val;} ///< Set Maximum frequecy to migrate
     void setMinfreq(T val) {minfreq = val;} ///< Set Minimum frequecy to migrate
     void setRadius(T val) { rad = val; } ///< Set radius of traveltime interpolation 
-    void setIncore(bool val) { incore = val; } 
-    bool getIncore() { return incore; }
-    void setHomogen(bool val) { homogen = val; } 
-    bool getHomogen() { return homogen; }
 
     void writeProgressbar(int x, int n, int r, int w);
     void writeProgress(int x, int n, int r, int w);
@@ -90,8 +86,6 @@ private:
     T maxfreq;
     T minfreq;
     T rad; ///< Radius of interpolation 
-    bool incore; ///< Whether to compute the traveltimes on the fly
-    bool homogen; ///< Whether to use a contant velocity for computing traveltimes
 };
 
 /** The 2D Acoustic Kdmig class
@@ -110,16 +104,10 @@ public:
     void setTtable(std::shared_ptr<Ttable2D<T>> _ttable) { ttable = _ttable; ttableset = true; }
     void crossCorr_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
     void crossCorr_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
-    void crossCorr_td(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T* data, unsigned long nfs, T df, T ot, int pad);
     void calcAdjointsource(T *adj_sou, T *adj_rec, std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
-    void calcAdjointsource(T *adj_sou, T *adj_rec, std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T* cdata, unsigned long nfs, T df, T ot, int pad);
     void scaleGrad(std::shared_ptr<rockseis::ModelEikonal2D<T>> model, T *lam, T *grad);
-    void demigShot_fd(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
-    void demigShot_td(std::shared_ptr<Ttable2D<T>> ttable_sou, std::shared_ptr<Ttable2D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
-    void demigShot_td(std::shared_ptr<RaysAcoustic2D<T>> rays_sou, std::shared_ptr<RaysAcoustic2D<T>> rays_rec, T* data, unsigned long nfs, T df, T ot, int pad);
     int run();
     int run_adj();
-    int run_demig();
 
     ~KdmigAcoustic2D();	///< Destructor
 
@@ -135,46 +123,6 @@ private:
     bool pimageset;
     bool vpgradset;
 };
-
-/** The 3D Acoustic Kdmig class
- *
- */
-template<typename T>
-class KdmigAcoustic3D: public Kdmig<T> {
-public:
-    KdmigAcoustic3D();					///< Constructor
-    KdmigAcoustic3D(std::shared_ptr<ModelEikonal3D<T>> model, std::shared_ptr<Ttable3D<T>> ttable, std::shared_ptr<Data3D<T>> data, std::shared_ptr<Image3D<T>> pimage);					///< Constructor 
-    int solve(); ///< Runs forward eikonal solver
-    int solve_adj(); ///< Runs adjoint eikonal solver
-    void setModel(std::shared_ptr<ModelEikonal3D<T>> _model) { model = _model; modelset = true; }
-    void setData(std::shared_ptr<Data3D<T>> _data) { data = _data; dataset = true; }
-    void setVpgrad(std::shared_ptr<Image3D<T>> _vpgrad) { vpgrad = _vpgrad; vpgradset = true; }
-    void setTtable(std::shared_ptr<Ttable3D<T>> _ttable) { ttable = _ttable; ttableset = true; }
-    void crossCorr_td(std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
-    void crossCorr_td(std::shared_ptr<RaysAcoustic3D<T>> rays_sou, std::shared_ptr<RaysAcoustic3D<T>> rays_rec, T* data, unsigned long nfs, T df, T ot, int pad);
-    void demigShot_td(std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T* data, unsigned long nt, T dt, T ot);
-    void demigShot_td(std::shared_ptr<RaysAcoustic3D<T>> rays_sou, std::shared_ptr<RaysAcoustic3D<T>> rays_rec, T* data, unsigned long nfs, T df, T ot, int pad);
-    void calcAdjointsource(T *adj_sou, T *adj_rec, std::shared_ptr<Ttable3D<T>> ttable_sou, std::shared_ptr<Ttable3D<T>> ttable_rec, T* cdata, unsigned long nfs, T df, T ot);
-    void scaleGrad(std::shared_ptr<rockseis::ModelEikonal3D<T>> model, T *lam, T *grad);
-    int run();
-    int run_adj();
-    int run_demig();
-
-    ~KdmigAcoustic3D();	///< Destructor
-
-private:
-    std::shared_ptr<ModelEikonal3D<T>> model;
-    std::shared_ptr<Ttable3D<T>> ttable;
-    std::shared_ptr<Data3D<T>> data;
-    std::shared_ptr<Image3D<T>> pimage;
-    std::shared_ptr<Image3D<T>> vpgrad;
-    bool modelset;
-    bool dataset;
-    bool ttableset;
-    bool pimageset;
-    bool vpgradset;
-};
-
 
 /** The 2D Elastic Kdmig class
  *

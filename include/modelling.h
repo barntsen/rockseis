@@ -15,14 +15,13 @@
 #include "waves.h"
 #include "der.h"
 #include "snap.h"
+#include "parallel.h"
 
 #define MOD_OK 1
 #define MOD_ERR 0
 
 #define GMAP 1
 #define SMAP 0
-
-#define MAX(a,b) ((a)>(b) ? (a):(b))
 
 namespace rockseis {
 
@@ -50,6 +49,9 @@ public:
     void writeProgressbar(int x, int n, int r, int w);
     void writeProgress(int x, int n, int r, int w);
 
+    MPIdecomp * getMpi() { return mpi; } ///< Get mpi object
+    void setMpi(MPIdecomp *_mpi) { mpi=_mpi; mpiset=true; } ///< Set mpi object
+
     ~Modelling();	///< Destructor
 
 
@@ -58,7 +60,9 @@ private:
     int snapinc;  ///< Snap interval
     std::string logfile; ///< Log file name
     std::ofstream Flog; ///< Logfile
-    Progress prog; ///< Progress counter
+	Progress prog; ///< Progress counter
+    MPIdecomp *mpi;
+    bool mpiset;
 };
 
 /** The 2D Acoustic Modelling class
@@ -73,12 +77,12 @@ public:
     void setModel(std::shared_ptr<ModelAcoustic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setRecP(std::shared_ptr<Data2D<T>> _recP) { recP = _recP; recPset = true; }
-    void setRecVx(std::shared_ptr<Data2D<T>> _recVx) { recVx = _recVx; recVxset = true; }
-    void setRecVz(std::shared_ptr<Data2D<T>> _recVz) { recVz = _recVz; recVzset = true; }
+    void setRecAx(std::shared_ptr<Data2D<T>> _recAx) { recAx = _recAx; recAxset = true; }
+    void setRecAz(std::shared_ptr<Data2D<T>> _recAz) { recAz = _recAz; recAzset = true; }
 
     void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
-    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
-    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    void setSnapAx(std::string _snapAx) { snapAx = _snapAx; snapAxset = true; }
+    void setSnapAz(std::string _snapAz) { snapAz = _snapAz; snapAzset = true; }
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
@@ -88,13 +92,13 @@ private:
     std::shared_ptr<ModelAcoustic2D<T>> model;
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> recP;
-    std::shared_ptr<Data2D<T>> recVx;
-    std::shared_ptr<Data2D<T>> recVz;
+    std::shared_ptr<Data2D<T>> recAx;
+    std::shared_ptr<Data2D<T>> recAz;
     bool modelset;
     bool sourceset;
-    bool recPset, recVxset, recVzset;
-    std::string snapP, snapVx, snapVz;
-    bool snapPset, snapVxset, snapVzset;
+    bool recPset, recAxset, recAzset;
+    std::string snapP, snapAx, snapAz;
+    bool snapPset, snapAxset, snapAzset;
 };
 
 /** The 3D Acoustic Modelling class
@@ -109,14 +113,14 @@ public:
     void setModel(std::shared_ptr<ModelAcoustic3D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
     void setRecP(std::shared_ptr<Data3D<T>> _recP) { recP = _recP; recPset = true; }
-    void setRecVx(std::shared_ptr<Data3D<T>> _recVx) { recVx = _recVx; recVxset = true; }
-    void setRecVy(std::shared_ptr<Data3D<T>> _recVy) { recVy = _recVy; recVyset = true; }
-    void setRecVz(std::shared_ptr<Data3D<T>> _recVz) { recVz = _recVz; recVzset = true; }
+    void setRecAx(std::shared_ptr<Data3D<T>> _recAx) { recAx = _recAx; recAxset = true; }
+    void setRecAy(std::shared_ptr<Data3D<T>> _recAy) { recAy = _recAy; recAyset = true; }
+    void setRecAz(std::shared_ptr<Data3D<T>> _recAz) { recAz = _recAz; recAzset = true; }
 
     void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
-    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
-    void setSnapVy(std::string _snapVy) { snapVy = _snapVy; snapVyset = true; }
-    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
+    void setSnapAx(std::string _snapAx) { snapAx = _snapAx; snapAxset = true; }
+    void setSnapAy(std::string _snapAy) { snapAy = _snapAy; snapAyset = true; }
+    void setSnapAz(std::string _snapAz) { snapAz = _snapAz; snapAzset = true; }
     T getVpmax(); ///< Get Maximum vp
     bool checkStability(); ///< Check stability of finite difference modelling
 
@@ -126,14 +130,14 @@ private:
     std::shared_ptr<ModelAcoustic3D<T>> model;
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> recP;
-    std::shared_ptr<Data3D<T>> recVx;
-    std::shared_ptr<Data3D<T>> recVy;
-    std::shared_ptr<Data3D<T>> recVz;
+    std::shared_ptr<Data3D<T>> recAx;
+    std::shared_ptr<Data3D<T>> recAy;
+    std::shared_ptr<Data3D<T>> recAz;
     bool modelset;
     bool sourceset;
-    bool recPset, recVxset, recVyset, recVzset;
-    std::string snapP, snapVx, snapVy, snapVz;
-    bool snapPset, snapVxset, snapVyset, snapVzset;
+    bool recPset, recAxset, recAyset, recAzset;
+    std::string snapP, snapAx, snapAy, snapAz;
+    bool snapPset, snapAxset, snapAyset, snapAzset;
 };
 
 
@@ -391,148 +395,6 @@ private:
     std::string snapP, snapSxx, snapSyy, snapSzz, snapSyz, snapSxz, snapSxy, snapVx, snapVy, snapVz;
     bool snapPset, snapSxxset, snapSyyset, snapSzzset, snapSxzset, snapSyzset, snapSxyset, snapVxset, snapVyset, snapVzset;
 };
-
-/** The 2D Vti Modelling class
- *
- */
-template<typename T>
-class ModellingVti2D: public Modelling<T> {
-public:
-    ModellingVti2D();					///< Constructor
-    ModellingVti2D(std::shared_ptr<ModelVti2D<T>> model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);					///< Constructor 
-    int run(); ///< Runs modelling
-    void setModel(std::shared_ptr<ModelVti2D<T>> _model) { model = _model; modelset = true; }
-    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
-    void setRecP(std::shared_ptr<Data2D<T>> _recP) { recP = _recP; recPset = true; }
-    void setRecVx(std::shared_ptr<Data2D<T>> _recVx) { recVx = _recVx; recVxset = true; }
-    void setRecVz(std::shared_ptr<Data2D<T>> _recVz) { recVz = _recVz; recVzset = true; }
-
-    void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
-    void setSnapSxx(std::string _snapSxx) { snapSxx = _snapSxx; snapSxxset = true; }
-    void setSnapSzz(std::string _snapSzz) { snapSzz = _snapSzz; snapSzzset = true; }
-    void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
-    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
-    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
-    T getVpmax(); ///< Get Maximum vp
-    bool checkStability(); ///< Check stability of finite difference modelling
-
-    ~ModellingVti2D();	///< Destructor
-
-private:
-    std::shared_ptr<ModelVti2D<T>> model;
-    std::shared_ptr<Data2D<T>> source;
-    std::shared_ptr<Data2D<T>> recP;
-    std::shared_ptr<Data2D<T>> recVx;
-    std::shared_ptr<Data2D<T>> recVz;
-    bool modelset;
-    bool sourceset;
-    bool recPset, recVxset, recVzset;
-    std::string snapP, snapSxx, snapSzz, snapSxz, snapVx, snapVz;
-    bool snapPset, snapSxxset, snapSzzset, snapSxzset, snapVxset, snapVzset;
-};
-
-/** The 3D Orthorombic Modelling class
- *
- */
-template<typename T>
-class ModellingOrtho3D: public Modelling<T> {
-public:
-    ModellingOrtho3D();					///< Constructor
-    ModellingOrtho3D(std::shared_ptr<ModelOrtho3D<T>> model, std::shared_ptr<Data3D<T>> source, int order, int snapinc);					///< Constructor 
-    int run(); ///< Runs modelling
-    void setModel(std::shared_ptr<ModelOrtho3D<T>> _model) { model = _model; modelset = true; }
-    void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
-    void setRecP(std::shared_ptr<Data3D<T>> _recP) { recP = _recP; recPset = true; }
-    void setRecVx(std::shared_ptr<Data3D<T>> _recVx) { recVx = _recVx; recVxset = true; }
-    void setRecVy(std::shared_ptr<Data3D<T>> _recVy) { recVy = _recVy; recVyset = true; }
-    void setRecVz(std::shared_ptr<Data3D<T>> _recVz) { recVz = _recVz; recVzset = true; }
-
-    void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
-    void setSnapSxx(std::string _snapSxx) { snapSxx = _snapSxx; snapSxxset = true; }
-    void setSnapSyy(std::string _snapSyy) { snapSyy = _snapSyy; snapSyyset = true; }
-    void setSnapSzz(std::string _snapSzz) { snapSzz = _snapSzz; snapSzzset = true; }
-    void setSnapSyz(std::string _snapSyz) { snapSyz = _snapSyz; snapSyzset = true; }
-    void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
-    void setSnapSxy(std::string _snapSxy) { snapSxy = _snapSxy; snapSxyset = true; }
-    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
-    void setSnapVy(std::string _snapVy) { snapVy = _snapVy; snapVyset = true; }
-    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
-    T getVpmax(); ///< Get Maximum vp
-    bool checkStability(); ///< Check stability of finite difference modelling
-
-    ~ModellingOrtho3D();	///< Destructor
-
-private:
-    std::shared_ptr<ModelOrtho3D<T>> model;
-    std::shared_ptr<Data3D<T>> source;
-    std::shared_ptr<Data3D<T>> recP;
-    std::shared_ptr<Data3D<T>> recVx;
-    std::shared_ptr<Data3D<T>> recVy;
-    std::shared_ptr<Data3D<T>> recVz;
-    bool modelset;
-    bool sourceset;
-    bool recPset, recVxset, recVyset, recVzset;
-    std::string snapP, snapSxx, snapSyy, snapSzz, snapSyz, snapSxz, snapSxy, snapVx, snapVy, snapVz;
-    bool snapPset, snapSxxset, snapSyyset, snapSzzset, snapSxzset, snapSyzset, snapSxyset, snapVxset, snapVyset, snapVzset;
-};
-
-/** The 2D Poroelastic Modelling class
- *
- */
-template<typename T>
-class ModellingPoroelastic2D: public Modelling<T> {
-public:
-
-    ModellingPoroelastic2D();    ///< Constructors
-    ModellingPoroelastic2D(std::shared_ptr<ModelAcoustic2D<T>> acu_model, std::shared_ptr<ModelPoroelastic2D<T>> poro_model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);    ///< Constructors
-    ModellingPoroelastic2D(std::shared_ptr<ModelPoroelastic2D<T>> poro_model, std::shared_ptr<Data2D<T>> source, int order, int snapinc);    ///< Constructors
-    int run(); ///< Runs modelling
-    void setPoromodel(std::shared_ptr<ModelPoroelastic2D<T>> _model) { poro_model = _model; poro_modelset = true; }
-    void setAcumodel(std::shared_ptr<ModelAcoustic2D<T>> _model) { acu_model = _model; acu_modelset = true; }
-    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
-    void setRecP(std::shared_ptr<Data2D<T>> _recP) { recP = _recP; recPset = true; }
-    void setRecSzz(std::shared_ptr<Data2D<T>> _recSzz) { recSzz = _recSzz; recSzzset = true; }
-    void setRecVx(std::shared_ptr<Data2D<T>> _recVx) { recVx = _recVx; recVxset = true; }
-    void setRecVz(std::shared_ptr<Data2D<T>> _recVz) { recVz = _recVz; recVzset = true; }
-    void setRecQx(std::shared_ptr<Data2D<T>> _recQx) { recQx = _recQx; recQxset = true; }
-    void setRecQz(std::shared_ptr<Data2D<T>> _recQz) { recQz = _recQz; recQzset = true; }
-
-    void setSnapP(std::string _snapP) { snapP = _snapP; snapPset = true; }
-    void setSnapSxx(std::string _snapSxx) { snapSxx = _snapSxx; snapSxxset = true; }
-    void setSnapSzz(std::string _snapSzz) { snapSzz = _snapSzz; snapSzzset = true; }
-    void setSnapSxz(std::string _snapSxz) { snapSxz = _snapSxz; snapSxzset = true; }
-    void setSnapVx(std::string _snapVx) { snapVx = _snapVx; snapVxset = true; }
-    void setSnapVz(std::string _snapVz) { snapVz = _snapVz; snapVzset = true; }
-    void setSnapQx(std::string _snapQx) { snapQx = _snapQx; snapQxset = true; }
-    void setSnapQz(std::string _snapQz) { snapQz = _snapQz; snapQzset = true; }
-    T getPoro_vpmax(); ///< Get Maximum vp
-    T getAcu_vpmax(); ///< Get Maximum vp
-    bool getAcumodelset() { return acu_modelset; } ///< Get acoustic modelset
-    bool checkStability(); ///< Check stability of finite difference modelling
-    void Velocity_BC(T *wz, T *p1, T *vz, T *qz, T *p2, T *szz, int nx, int nz_acu, int lpml);
-    void Stress_BC(T *wz, T *p1, T *vz, T *qz, T *p2, T *szz, int nx, int nz_acu, int lpml);
-
-    ~ModellingPoroelastic2D();	///< Destructor
-
-private:
-    std::shared_ptr<ModelAcoustic2D<T>> acu_model;
-    std::shared_ptr<ModelPoroelastic2D<T>> poro_model;
-    std::shared_ptr<Data2D<T>> source;
-    std::shared_ptr<Data2D<T>> recSzz;
-    std::shared_ptr<Data2D<T>> recVx;
-    std::shared_ptr<Data2D<T>> recVz;
-    std::shared_ptr<Data2D<T>> recP;
-    std::shared_ptr<Data2D<T>> recQx;
-    std::shared_ptr<Data2D<T>> recQz;
-    bool acu_modelset;
-    bool poro_modelset;
-    bool sourceset;
-    bool recPset, recVxset, recVzset, recSzzset, recQxset, recQzset;
-    std::string snapP, snapSxx, snapSzz, snapSxz, snapVx, snapVz, snapQx, snapQz;
-    bool snapPset, snapSxxset, snapSzzset, snapSxzset, snapVxset, snapVzset, snapQxset, snapQzset;
-};
-
-
 
 
 }

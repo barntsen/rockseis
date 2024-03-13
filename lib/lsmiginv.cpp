@@ -353,11 +353,11 @@ void LsmiginvAcoustic2D<T>::runGrad() {
                 shotres2D->makeMap(lmodel->getGeom(), GMAP);
                 lsrtm->setDataresP(shotres2D);
 
-                // Hilbert transformed recorded data is stored in DataresVz
+                // Hilbert transformed recorded data is stored in DataresAz
                 shotres2Dh = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 shotres2Dh->copyCoords(shot2D);
                 shotres2Dh->makeMap(lmodel->getGeom(), GMAP);
-                lsrtm->setDataresVz(shotres2Dh);
+                lsrtm->setDataresAz(shotres2Dh);
 
                 // Interpolate weight
                 if(dataweight){
@@ -619,11 +619,11 @@ void LsmiginvAcoustic2D<T>::runGrad_Multiples() {
                 shotres2D->makeMap(lmodel->getGeom(), GMAP);
                 lsrtm->setDataresP(shotres2D);
 
-                // Hilbert transformed recorded data is stored in DataresVz
+                // Hilbert transformed recorded data is stored in DataresAz
                 shotres2Dh = std::make_shared<rockseis::Data2D<T>>(ntr, source->getNt(), source->getDt(), 0.0);
                 shotres2Dh->copyCoords(shot2D);
                 shotres2Dh->makeMap(lmodel->getGeom(), GMAP);
-                lsrtm->setDataresVz(shotres2Dh);
+                lsrtm->setDataresAz(shotres2Dh);
 
                 // Interpolate weight
                 if(dataweight){

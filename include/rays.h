@@ -29,7 +29,7 @@
 
 #define TMAX 99.0
 #define MINITER 0
-#define MAXITER 120
+#define MAXITER 30
 
 namespace rockseis {
 
@@ -74,7 +74,6 @@ public:
     void setOz(const T _oz) { geometry->setO(3, _oz); }	///< Set Oz
     void setDim(const int _dim) { dim = _dim; }		///< Set the dimension
     void setLpml(const int _lpml) { lpml = _lpml; }	///< Set lpml
-    void bubble_sort(T *a, T *b, int n); ///< Sort two collumns, where a is sorted in ascending order 
 
 private:
     int dim;
@@ -113,7 +112,6 @@ public:
     void insertImageresiduals(T *res); ///< Insert image residuals
     void createAdjsource(std::shared_ptr<Data2D<T>> source, bool maptype); ///< Create a mask for adjoint eikonal computation
     void clearTT(); ///< Reset traveltime array 
-    void copyTT(T *TTin); ///< Copy traveltime 
     void clearLam(); ///< Reset lambda array 
     void clearLam(T val); ///< Reset lambda array using value given by val
 
@@ -153,12 +151,9 @@ public:
     // Insert source functions
     int insertSource(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
     int insertSource(std::shared_ptr<Data3D<T>> source, bool maptype, size_t traceno); ///< Insert source position for a particular trace number
-    int solveHomogen(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert source position
-    int solveHomogen(std::shared_ptr<Data3D<T>> source, bool maptype, size_t traceno); ///< Insert source position for a particular trace number
     void insertResiduals(std::shared_ptr<Data3D<T>> source, bool maptype); ///< Insert traveltime residuals
     void insertImageresiduals(T *res); ///< Insert image residuals
     void clearTT(); ///< Reset traveltime array 
-    void copyTT(T *TTin); ///< Copy Traveltime 
     void clearLam(); ///< Reset lambda array 
     void clearLam(T val); ///< Reset lambda array using value given by val
 

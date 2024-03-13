@@ -83,9 +83,9 @@ int main(int argc, char** argv) {
 	std::shared_ptr<rockseis::ModelEikonal2D<float>> gmodel (new rockseis::ModelEikonal2D<float>(Vpfile, 10));
 
     // Test for problematic model sampling
-    //if(gmodel->getDx() != gmodel->getDz()){
-    //    rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dz).");
-    //}
+    if(gmodel->getDx() != gmodel->getDz()){
+        rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dz).");
+    }
 
     // Create an interpolation class
     std::shared_ptr<rockseis::Interp<float>> interp (new rockseis::Interp<float>(SINC));

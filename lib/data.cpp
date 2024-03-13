@@ -9,7 +9,6 @@ Data<T>::Data(const std::string file)
     field = PRESSURE;
     Fdata = std::make_shared<File>(); 
     allocated = false;
-    reciprocity = false;
 }
 
 template<typename T>
@@ -22,7 +21,6 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt)
     field = PRESSURE;
     Fdata = std::make_shared<File>(); 
     allocated = false;
-    reciprocity = false;
 }
 
 template<typename T>
@@ -35,7 +33,6 @@ Data<T>::Data(const int _ntrace, const int _nt, const T _dt, const T _ot)
     field = PRESSURE;
     Fdata = std::make_shared<File>(); 
     allocated = false;
-    reciprocity = false;
 }
 
 template<typename T>
@@ -433,30 +430,6 @@ Data2D<T>::Data2D(std::string datafile, const int _nt, const T _dt, const T _ot)
     if(data != NULL){
         this->setAlloc(true);
     }
-}
-
-
-template<typename T>
-void Data2D<T>::makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padhx, int padhy){
-   rs_field field = this->getField();
-   switch(field){
-      case VX:
-         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, -0.5, 0.0);
-         break;
-      case VZ:
-         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, 0.0, -0.5);
-         break;
-      case QX:
-         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, -0.5, 0.0);
-         break;
-      case QZ:
-         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, 0.0, -0.5);
-         break;
-
-      default:
-         geometry->makeMap(geom, map, padlx, padly, padhx, padhy, 0.0, 0.0);
-         break;
-   }
 }
 
 template<typename T>
@@ -864,22 +837,6 @@ void Data2D<T>::putTrace(std::string filename, size_t number)
 }
 
 template<typename T>
-void Data2D<T>::scale_data (T scale)
-{
-    int i,j;
-    unsigned long nt = this->getNt();
-    int ntr = this->getNtrace();
-	Index Idata(nt,ntr);
-    T *data = this->getData();
-
-    for(i=0; i< ntr; i++){
-        for(j=0; j<nt; j++){
-            data[Idata(j,i)] *= scale;
-        }
-    }
-}
-
-template<typename T>
 void Data2D<T>::apply_filter (T *freqs)
 {
     int i,j;
@@ -1110,34 +1067,6 @@ Data3D<T>::Data3D(std::string datafile, const int _nt, const T _dt, const T _ot)
 
     // Allocate the memory for the data
     data = (T *) calloc(ntrace*_nt, sizeof(T));
-}
-
-template<typename T>
-void Data3D<T>::makeMap(std::shared_ptr<Geometry<T>> geom, bool map,int padlx, int padly, int padlz, int padhx, int padhy, int padhz){
-   rs_field field = this->getField();
-   switch(field){
-      case VX:
-         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, -0.5, 0.0, 0.0);
-         break;
-      case VY:
-         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, -0.5, 0.0);
-         break;
-      case VZ:
-         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, 0.0, -0.5);
-         break;
-      case QX:
-         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, -0.5, 0.0, 0.0);
-         break;
-      case QY:
-         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, -0.5, 0.0);
-         break;
-      case QZ:
-         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, 0.0, -0.5);
-         break;
-      default:
-         geometry->makeMap(geom, map, padlx, padly, padlz, padhx, padhy, padhz, 0.0, 0.0, 0.0);
-         break;
-   }
 }
 
 template<typename T>
@@ -1529,22 +1458,6 @@ void Data3D<T>::putImage(std::string imagefile)
 
     // Free allocated array
     free(imagedata);
-}
-
-template<typename T>
-void Data3D<T>::scale_data (T scale)
-{
-    int i,j;
-    unsigned long nt = this->getNt();
-    int ntr = this->getNtrace();
-	Index Idata(nt,ntr);
-    T *data = this->getData();
-
-    for(i=0; i< ntr; i++){
-        for(j=0; j<nt; j++){
-            data[Idata(j,i)] *= scale;
-        }
-    }
 }
 
 template<typename T>

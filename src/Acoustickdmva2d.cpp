@@ -37,18 +37,12 @@ void evaluate(rockseis::OptInstancePtr instance)
     kdmva->writeLog("Combining gradients");
     kdmva->combineGradients();
 
-    // Apply Chain rule of logistic model
-    if(kdmva->getConstrain()){
-       kdmva->writeLog("Computing Chain rule");
-       kdmva->applyChainrule(x);
-    }
-
     // Apply mute to gradient
     kdmva->writeLog("Muting gradients");
     kdmva->applyMute();
 
     // Project gradient to B-spline 
-    if(kdmva->getParamtype() == PAR_BSPLINE || kdmva->getParamtype() == PAR_AVG)
+    if(kdmva->getParamtype() == PAR_BSPLINE)
     {
         kdmva->writeLog("Projecting gradient in B-spline grid");
         task = RUN_BS_PROJ;
@@ -163,7 +157,6 @@ int main(int argc, char** argv) {
             PRINT_DOC(max_linesearch = "5"; # maximum number of linesearches);
             PRINT_DOC(max_iterations = "20"; # maximum number of iterations);
             PRINT_DOC(constrain = "false";  # Constrain inversion requires Lboundfile and Uboundfile containing models with the bounds);
-            PRINT_DOC(incore = "false";  # Do all traveltime computation incore (No traveltime table storage));
 
             PRINT_DOC(optmethod = "1"; # 1-L-BFGS; 2-CG_FR; 3-STEEPEST DESCENT; 4-CG_PR);
             PRINT_DOC(linesearch = "3"; # 1-Decrease; 2-Armijo; 3-Wolfe; 4-Strong Wolfe);
@@ -181,7 +174,7 @@ int main(int argc, char** argv) {
             PRINT_DOC(nhz = "1"; # Subsurface offsets in z direction);
             PRINT_DOC();
             PRINT_DOC(#Parameterisation);
-            PRINT_DOC(paramtype = "1";  # 0- grid; 1- B-spline; 3- Average);
+            PRINT_DOC(paramtype = "1";  # 0- grid; 1- B-spline;);
             PRINT_DOC(dtx = "25.0"; # knot sampling in B-spline);
             PRINT_DOC(dtz = "25.0"; # knot sampling in B-spline);
             PRINT_DOC();
@@ -209,7 +202,7 @@ int main(int argc, char** argv) {
     bool constrain;
     bool outputhess;
     int _paramtype;
-    int misfit_type;
+	int misfit_type;
     float dtx=-1;
     float dtz=-1;
     float radius;
@@ -221,7 +214,6 @@ int main(int argc, char** argv) {
     int max_linesearch, max_iterations;
     int linesearch;
     int optmethod; 
-    bool incore;
     std::string Vpfile;
     std::string Misfitfile;
     std::string Precordfile;
@@ -243,14 +235,13 @@ int main(int argc, char** argv) {
     if(Inpar->getPar("paramtype", &_paramtype) == INPARSE_ERR) status = true;
     if(Inpar->getPar("outputhess", &outputhess) == INPARSE_ERR) status = true;
     rockseis::rs_paramtype paramtype = static_cast<rockseis::rs_paramtype>(_paramtype);
-    if(paramtype == PAR_BSPLINE || paramtype == PAR_AVG){
+    if(paramtype == PAR_BSPLINE){
         if(Inpar->getPar("dtx", &dtx) == INPARSE_ERR) status = true;
         if(Inpar->getPar("dtz", &dtz) == INPARSE_ERR) status = true;
     }
     if(Inpar->getPar("nhx", &nhx) == INPARSE_ERR) status = true;
     if(Inpar->getPar("nhz", &nhz) == INPARSE_ERR) status = true;
     if(Inpar->getPar("radius", &radius) == INPARSE_ERR) status = true;
-    if(Inpar->getPar("incore", &incore) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Souinc", &souinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("Recinc", &recinc) == INPARSE_ERR) status = true;
     if(Inpar->getPar("apertx", &apertx) == INPARSE_ERR) status = true;
@@ -320,7 +311,6 @@ int main(int argc, char** argv) {
     kdmva->setVpregalpha(vpregalpha);
 
     kdmva->setRadius(radius);
-    kdmva->setIncore(incore);
     kdmva->setSouinc(souinc);
     kdmva->setRecinc(recinc);
 

@@ -20,7 +20,6 @@ wxDEFINE_EVENT(SaveEvent, wxCommandEvent);
 wxDEFINE_EVENT(LoadEvent, wxCommandEvent);
 wxDEFINE_EVENT(Crosshair, wxCommandEvent);
 wxDEFINE_EVENT(MuteEvent, wxCommandEvent);
-wxDEFINE_EVENT(ZoomEvent, wxCommandEvent);
 
 // Class implementation of the app
 bool MyApp::OnInit()

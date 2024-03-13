@@ -22,7 +22,6 @@ Kdmva<T>::Kdmva() {
     nhy = 1;
     nhz = 1;
     fnorm = 0.0;
-    constrain = false;
     if(createLog() == KVA_ERR)
     {
         rs_error("Kdmva<T>::Kdmva(): Error creating logfile for writting.");
@@ -53,7 +52,6 @@ Kdmva<T>::Kdmva(MPImodeling *_mpi) {
     nhy = 1;
     nhz = 1;
     fnorm = 0.0;
-    constrain = false;
     if(createLog() == KVA_ERR)
     {
         rs_error("Kdmva<T>::Kdmva(): Error creating logfile for writting.");
@@ -214,7 +212,6 @@ template<typename T>
 void KdmvaAcoustic2D<T>::runGrad() {
     MPImodeling *mpi = this->getMpi();
     int nsoufin, nrecfin;
-    size_t ngathers;
     std::shared_ptr<rockseis::Data2D<T>> source;
     std::shared_ptr<rockseis::Data2D<T>> shot2D;
     std::shared_ptr<rockseis::RaysAcoustic2D<T>> rays;
@@ -234,6 +231,11 @@ void KdmvaAcoustic2D<T>::runGrad() {
     // Create a file to output data misfit values
     std::shared_ptr<rockseis::File> Fmisfit (new rockseis::File());
 
+    // Test for problematic model sampling
+    if(gmodel->getDx() != gmodel->getDz()){
+        rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dz).");
+    }
+
     // Read and expand global model
     gmodel->readVelocity();
     gmodel->Expand();
@@ -241,70 +243,67 @@ void KdmvaAcoustic2D<T>::runGrad() {
 	if(mpi->getRank() == 0) {
 		// Master
 
-        if(!this->getIncore()){
+    // -------------------------------------Calculate traveltimes
+        // Get number of receivers
+        Sort->createReceivermap(Precordfile); 
+        size_t nrecgath =  Sort->getNensemb();
 
-            // -------------------------------------Calculate traveltimes
-            // Get number of receivers
-            Sort->createReceivermap(Precordfile); 
-            size_t nrecgath =  Sort->getNensemb();
+        // Get number of shots
+        Sort->createShotmap(Precordfile); 
+        size_t nsougath =  Sort->getNensemb();
 
-            // Get number of shots
-            Sort->createShotmap(Precordfile); 
-            size_t nsougath =  Sort->getNensemb();
+        Sort->writeKeymap();
+        Sort->writeSortmap();
 
-            Sort->writeKeymap();
-            Sort->writeSortmap();
+        nsoufin = nsougath/this->getSouinc() + 1;
+        if(nsoufin > nsougath) nsoufin = nsougath;
 
-            nsoufin = nsougath/this->getSouinc() + 1;
-            if(nsoufin > nsougath) nsoufin = nsougath;
+        nrecfin = nrecgath/this->getRecinc() + 1;
+        if(nrecfin > nrecgath) nrecfin = nrecgath;
 
-            nrecfin = nrecgath/this->getRecinc() + 1;
-            if(nrecfin > nrecgath) nrecfin = nrecgath;
+        // -------------------------------------Create a travel time table class
+        size_t ngathers = nsoufin + nrecfin;
+        ttable = std::make_shared<rockseis::Ttable2D<T>> (gmodel, ngathers);
+        ttable->setFilename(Ttablefile);
+        ttable->createEmptyttable();
 
-            // -------------------------------------Create a travel time table class
-            ngathers = nsoufin + nrecfin;
-            ttable = std::make_shared<rockseis::Ttable2D<T>> (gmodel, ngathers);
-            ttable->setFilename(Ttablefile);
-            ttable->createEmptyttable();
+        /******************      Creating source side traveltime   ***********************/
+		// Create work queue
+		for(long int i=0; i<nsoufin; i++) {
+			// Work struct
+			std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
+			mpi->addWork(work);
+		}
 
-            /******************      Creating source side traveltime   ***********************/
-            // Create work queue
-            for(long int i=0; i<nsoufin; i++) {
-                // Work struct
-                std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
-                mpi->addWork(work);
-            }
+        // Broadcast nsoufin
+        MPI_Bcast(&nsoufin, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-            // Broadcast nsoufin
-            MPI_Bcast(&nsoufin, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		// Perform work in parallel
+		mpi->performWork();
 
-            // Perform work in parallel
-            mpi->performWork();
+        // Reset mpi 
+        mpi->clearWork();
 
-            // Reset mpi 
-            mpi->clearWork();
+        /******************       Creating receiver side traveltime    ***********************/
+        // Create new list of positions
+        Sort->createReceivermap(Precordfile); 
+        Sort->setReciprocity(true);
+        Sort->writeKeymap();
+        Sort->writeSortmap();
 
-            /******************       Creating receiver side traveltime    ***********************/
-            // Create new list of positions
-            Sort->createReceivermap(Precordfile); 
-            Sort->setReciprocity(true);
-            Sort->writeKeymap();
-            Sort->writeSortmap();
-
-            for(long int i=0; i<nrecfin; i++) {
-                // Work struct
-                std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
-                mpi->addWork(work);
-            }
-
-            // Perform work in parallel
-            mpi->performWork();
-
-            //Clear work vector 
-            mpi->clearWork();
+        for(long int i=0; i<nrecfin; i++) {
+            // Work struct
+            std::shared_ptr<workModeling_t> work = std::make_shared<workModeling_t>(workModeling_t{i,WORK_NOT_STARTED});
+            mpi->addWork(work);
         }
 
-        // -------------------------------------Migrate data
+        // Perform work in parallel
+        mpi->performWork();
+
+		//Clear work vector 
+		mpi->clearWork();
+
+    // -------------------------------------Migrate data
         Sort->setReciprocity(false);
         Sort->createShotmap(Precordfile); 
         Sort->writeKeymap();
@@ -367,108 +366,106 @@ void KdmvaAcoustic2D<T>::runGrad() {
         size_t number;
         std::shared_ptr<rockseis::Data2D<T>> Shotgeom;
 
-        if(!this->getIncore()){
-            // Receive nsoufin from master
-            MPI_Bcast(&nsoufin, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        // Receive nsoufin from master
+        MPI_Bcast(&nsoufin, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-            /******************             Creating source side     ***********************/
-            while(1) {
-                workModeling_t work = mpi->receiveWork();
+        /******************             Creating source side     ***********************/
+        while(1) {
+            workModeling_t work = mpi->receiveWork();
 
-                if(work.MPItag == MPI_TAG_DIE) {
-                    break;
-                }
-
-                if(work.MPItag == MPI_TAG_NO_WORK) {
-                    mpi->sendNoWork(0);
-                }
-                else {
-                    // Calculate traveltime
-                    Sort->readKeymap();
-                    Sort->readSortmap();
-
-                    number = work.id*this->getSouinc();
-                    if (number > Sort->getNensemb()-1) number = Sort->getNensemb()-1;
-                    Shotgeom = Sort->get2DGather(number);
-
-                    // Set shot coordinates and make a map
-                    source = std::make_shared<rockseis::Data2D<T>>(1, 1, 1.0, 0.0);
-                    source->copyCoords(Shotgeom);
-
-                    source->makeMap(gmodel->getGeom(), SMAP);
-
-                    // Run modelling 
-                    rays = std::make_shared<rockseis::RaysAcoustic2D<T>>(gmodel);
-
-                    /* initialize traveltime field at source positions */
-                    rays->insertSource(source, SMAP);
-                    rays->solve();
-
-                    // Create traveltime table
-                    ttable = std::make_shared<rockseis::Ttable2D<T>> (Ttablefile);
-                    ttable->fetchTtabledata(rays, source, work.id); //Get traveltime data
-                    ttable->writeTtable(work.id);
-                    ttable.reset();
-
-                    // Reset all classes
-                    source.reset();
-                    Shotgeom.reset();
-                    rays.reset();
-                    work.status = WORK_FINISHED;
-
-                    // Send result back
-                    mpi->sendResult(work);		
-                }
+            if(work.MPItag == MPI_TAG_DIE) {
+                break;
             }
-            /******************             Creating receiver side     ***********************/
-            while(1) {
-                workModeling_t work = mpi->receiveWork();
 
-                if(work.MPItag == MPI_TAG_DIE) {
-                    break;
-                }
+            if(work.MPItag == MPI_TAG_NO_WORK) {
+                mpi->sendNoWork(0);
+            }
+            else {
+                // Calculate traveltime
+                Sort->readKeymap();
+                Sort->readSortmap();
 
-                if(work.MPItag == MPI_TAG_NO_WORK) {
-                    mpi->sendNoWork(0);
-                }
-                else {
-                    // Do some work
-                    Sort->readKeymap();
-                    Sort->readSortmap();
+                number = work.id*this->getSouinc();
+                if (number > Sort->getNensemb()-1) number = Sort->getNensemb()-1;
+                Shotgeom = Sort->get2DGather(number);
 
-                    number = work.id*this->getRecinc();
-                    if (number > Sort->getNensemb()-1) number = Sort->getNensemb()-1;
-                    Shotgeom = Sort->get2DGather(number);
+                // Set shot coordinates and make a map
+	            source = std::make_shared<rockseis::Data2D<T>>(1, 1, 1.0, 0.0);
+                source->copyCoords(Shotgeom);
 
-                    // Set shot coordinates and make a map
-                    source = std::make_shared<rockseis::Data2D<T>>(1, 1, 1.0, 0.0);
-                    source->copyCoords(Shotgeom);
+                source->makeMap(gmodel->getGeom(), SMAP);
 
-                    source->makeMap(gmodel->getGeom(), SMAP);
+                // Run modelling 
+                rays = std::make_shared<rockseis::RaysAcoustic2D<T>>(gmodel);
 
-                    // Run modelling 
-                    rays = std::make_shared<rockseis::RaysAcoustic2D<T>>(gmodel);
+                /* initialize traveltime field at source positions */
+                rays->insertSource(source, SMAP);
+                rays->solve();
 
-                    /* initialize traveltime field at source positions */
-                    rays->insertSource(source, SMAP);
-                    rays->solve();
+                // Create traveltime table
+                ttable = std::make_shared<rockseis::Ttable2D<T>> (Ttablefile);
+                ttable->fetchTtabledata(rays, source, work.id); //Get traveltime data
+                ttable->writeTtable(work.id);
+                ttable.reset();
+                
+                // Reset all classes
+                source.reset();
+                Shotgeom.reset();
+                rays.reset();
+                work.status = WORK_FINISHED;
 
-                    // Create traveltime table
-                    ttable = std::make_shared<rockseis::Ttable2D<T>> (Ttablefile);
-                    ttable->fetchTtabledata(rays, source, work.id+nsoufin); //Get traveltime data
-                    ttable->writeTtable(work.id+nsoufin);
-                    ttable.reset();
+                // Send result back
+                mpi->sendResult(work);		
+            }
+        }
+        /******************             Creating receiver side     ***********************/
+        while(1) {
+            workModeling_t work = mpi->receiveWork();
 
-                    // Reset all classes
-                    source.reset();
-                    Shotgeom.reset();
-                    rays.reset();
-                    work.status = WORK_FINISHED;
+            if(work.MPItag == MPI_TAG_DIE) {
+                break;
+            }
 
-                    // Send result back
-                    mpi->sendResult(work);		
+            if(work.MPItag == MPI_TAG_NO_WORK) {
+                mpi->sendNoWork(0);
+            }
+            else {
+                // Do some work
+                Sort->readKeymap();
+                Sort->readSortmap();
 
-                }
+                number = work.id*this->getRecinc();
+                if (number > Sort->getNensemb()-1) number = Sort->getNensemb()-1;
+                Shotgeom = Sort->get2DGather(number);
+
+                // Set shot coordinates and make a map
+	            source = std::make_shared<rockseis::Data2D<T>>(1, 1, 1.0, 0.0);
+                source->copyCoords(Shotgeom);
+
+                source->makeMap(gmodel->getGeom(), SMAP);
+
+                // Run modelling 
+                rays = std::make_shared<rockseis::RaysAcoustic2D<T>>(gmodel);
+
+                /* initialize traveltime field at source positions */
+                rays->insertSource(source, SMAP);
+                rays->solve();
+
+                // Create traveltime table
+                ttable = std::make_shared<rockseis::Ttable2D<T>> (Ttablefile);
+                ttable->fetchTtabledata(rays, source, work.id+nsoufin); //Get traveltime data
+                ttable->writeTtable(work.id+nsoufin);
+                ttable.reset();
+                
+                // Reset all classes
+                source.reset();
+                Shotgeom.reset();
+                rays.reset();
+                work.status = WORK_FINISHED;
+
+                // Send result back
+                mpi->sendResult(work);		
+
             }
         }
         // ------------------------------------Migrate data
@@ -495,24 +492,15 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
                 lmodel->Expand();
 
-                // Map coordinates to model
-                shot2D->makeMap(lmodel->getGeom(), SMAP);
-                shot2D->makeMap(lmodel->getGeom(), GMAP);
-
                 // Make image class
                 pimage = std::make_shared<rockseis::Image2D<T>>(Pimagefile + "-" + std::to_string(work.id), lmodel, this->getNhx(), this->getNhz());
 
-                if(!this->getIncore()){
-                    // Create traveltime table class
-                    ttable = std::make_shared<rockseis::Ttable2D<T>>(Ttablefile);
-                    ttable->allocTtable();
-                }
+                // Create traveltime table class
+                ttable = std::make_shared<rockseis::Ttable2D<T>>(Ttablefile);
+                ttable->allocTtable();
 
                 // Create imaging class
                 kdmig = std::make_shared<rockseis::KdmigAcoustic2D<T>>(lmodel, ttable, shot2D, pimage);
-
-                // Set Incore
-                kdmig->setIncore(this->getIncore());
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(1);
@@ -570,26 +558,16 @@ void KdmvaAcoustic2D<T>::runGrad() {
                 lmodel = gmodel->getLocal(shot2D, apertx, SMAP);
                 lmodel->Expand();
 
-                // Map coordinates to model
-                shot2D->makeMap(lmodel->getGeom(), SMAP);
-                shot2D->makeMap(lmodel->getGeom(), GMAP);
-
                 // Make image class
                 pimage = std::make_shared<rockseis::Image2D<T>>(PIMAGERESFILE);
                 lpimage = pimage->getLocal(shot2D, apertx, SMAP);
 
                 // Create traveltime table class
-                if(!this->getIncore()){
-                    // Create traveltime table class
-                    ttable = std::make_shared<rockseis::Ttable2D<T>>(Ttablefile);
-                    ttable->allocTtable();
-                }
+                ttable = std::make_shared<rockseis::Ttable2D<T>>(Ttablefile);
+                ttable->allocTtable();
 
                 // Create imaging class
                 kdmig = std::make_shared<rockseis::KdmigAcoustic2D<T>>(lmodel, ttable, shot2D, lpimage);
-
-                // Set Incore
-                kdmig->setIncore(this->getIncore());
 
                 // Set frequency decimation 
                 kdmig->setFreqinc(1);
@@ -724,24 +702,10 @@ void KdmvaAcoustic2D<T>::runBsproj() {
 				spline->bisp(); // Evaluate spline for this coefficient
                 wrk = spline->getMod();
 				vpsum = 0.0;
-                                if(this->getParamtype() == PAR_AVG){
-                                   Index I2D(grad->getNx(), grad->getNz());
-                                   T vpint;
-                                   for(int ix=0; ix< grad->getNx(); ix++){
-                                      for(int iz=0; iz< grad->getNz(); iz++){
-                                         vpint = (vpgrad[I2D(ix,iz)]*(iz+1));
-                                         if((iz+1) < grad->getNz()){
-                                            vpint -= (vpgrad[I2D(ix,iz+1)]*(iz+1));
-                                         }
-                                         vpsum += wrk[I2D(ix,iz)]*vpint;
-                                      }
-                                   }
-                                }else{
-                                   for(long int i=0; i<grad->getNx()*grad->getNz(); i++){
-                                      vpsum += wrk[i]*vpgrad[i];
-                                   }
-                                }
-                                vpproj[work.id]=vpsum;
+				for(long int i=0; i<grad->getNx()*grad->getNz(); i++){
+						vpsum += wrk[i]*vpgrad[i];
+				}
+				vpproj[work.id]=vpsum;
 				c[work.id]=0.0; // Reset coefficient to 0
 			}
 
@@ -767,32 +731,9 @@ void KdmvaAcoustic2D<T>::runBsproj() {
 template<typename T>
 int KdmvaAcoustic2D<T>::setInitial(double *x, std::string vpfile)
 {
-    std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
     std::shared_ptr<rockseis::ModelEikonal2D<T>> model_in (new rockseis::ModelEikonal2D<T>(vpfile, 1));
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
-
-    // Read initial model
     model_in->readVelocity();  
-
-    // Check bounds 
-    if(this->getConstrain()){
-       bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
-       T *lbounddata;
-       T *ubounddata;
-       T *vp0;
-       bound->readModel();
-       long Nbound = (bound->getGeom())->getNtot();
-       long N = (long) (model_in->getGeom())->getNtot();
-       if(N != Nbound) rs_error("KdmvaAcoustic2D<T>::setInitial(): Geometry in Boundary files does not match geometry in the model.");
-       lbounddata = bound->getVp();
-       ubounddata = bound->getR();
-       vp0 = model_in->getVelocity();
-       for (long i=0; i< N; i++){
-          if(vp0[i] <= lbounddata[i]) vp0[i] = lbounddata[i] + 1e-1;
-          if(vp0[i] >= ubounddata[i]) vp0[i] = ubounddata[i] - 1e-1;
-       }
-    }
-
     // Write initial model files
     model_in->setVelocityfile(VP0FILE);
     model_in->writeVelocity();
@@ -857,9 +798,6 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
     T *vpmutedata;
     T *lbounddata;
     T *ubounddata;
-    T *x0;
-    double log_in, log_out, exp_in, exp_out;
-
     vp0 = model0->getVelocity(); 
     vpls = lsmodel->getVelocity(); 
     int i;
@@ -888,23 +826,17 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
         if(N != Nbound) rs_error("KdmvaAcoustic2D<T>::saveLinesearch(): Geometry in Boundary files does not match geometry in the model.");
         lbounddata = bound->getVp();
         ubounddata = bound->getR();
-        x0 = (T *) calloc(N, sizeof(T));
     }
     switch (this->getParamtype()){
         case PAR_GRID:
             N = (lsmodel->getGeom())->getNtot();
             for(i=0; i< N; i++)
             {
-               if(!this->getConstrain()){
-                  vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
-               }else{
-                  log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
-                  log_out = log(log_in);
-                  x0[i] =((T) log_out);
-                  exp_in = (double) (-(x[i]*vpmutedata[i]*kvp + x0[i]));
-                  exp_out = exp(exp_in);
-                  vpls[i] = lbounddata[i] + (ubounddata[i]-lbounddata[i])*(1.0/(1.0 + (T) exp_out));
-               }
+                vpls[i] = vp0[i] + x[i]*vpmutedata[i]*kvp;
+                if(this->getConstrain()){
+                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
+                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
+                }
             }
             lsmodel->writeVelocity();
             break;
@@ -922,16 +854,11 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
 
             for(i=0; i< Nmod; i++)
             {
-               if(!this->getConstrain()){
-                  vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
-               }else{
-                  log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
-                  log_out = log(log_in);
-                  x0[i] =((T) log_out);
-                  exp_in = (double) (-(mod[i]*vpmutedata[i]*kvp + x0[i]));
-                  exp_out = exp(exp_in);
-                  vpls[i] = lbounddata[i] + (ubounddata[i]-lbounddata[i])*(1.0/(1.0 + (T) exp_out));
-               }
+                vpls[i] = vp0[i] + mod[i]*vpmutedata[i]*kvp;
+                if(this->getConstrain()){
+                    if(vpls[i] < lbounddata[i]) vpls[i] = lbounddata[i];
+                    if(vpls[i] > ubounddata[i]) vpls[i] = ubounddata[i];
+                }
             }
             lsmodel->writeVelocity();
             break;
@@ -940,10 +867,7 @@ void KdmvaAcoustic2D<T>::saveLinesearch(double *x)
             break;
     }
     if(Modelmutefile.empty()){
-       free(vpmutedata);
-    }
-    if(this->getConstrain()){
-       free(x0);
+        free(vpmutedata);
     }
 }
 
@@ -1025,10 +949,9 @@ void KdmvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                         for (iz=1; iz<nz-1; iz++){
 						    wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
                         }
-                        for (iz=1; iz<nz-1; iz++){
+                        for (iz=0; iz<nz-1; iz++){
                             imagedata[ki2D(ix,iz,ihx,ihz)] = G2*wrk[iz];
                         }
-                        imagedata[ki2D(ix,0,ihx,ihz)] = 0.0;
                         imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
                     }
                 }
@@ -1063,10 +986,9 @@ void KdmvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                         for (iz=1; iz<nz-1; iz++){
 						    wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
                         }
-                        for (iz=1; iz<nz-1; iz++){
+                        for (iz=0; iz<nz-1; iz++){
                             imagedata[ki2D(ix,iz,ihx,ihz)] = -1.0*G2*wrk[iz];
                         }
-                        imagedata[ki2D(ix,0,ihx,ihz)] = 0.0;
                         imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
                     }
                 }
@@ -1117,10 +1039,9 @@ void KdmvaAcoustic2D<T>::computeMisfit(std::shared_ptr<rockseis::Image2D<T>> pim
                         for (iz=1; iz<nz-1; iz++){
                             wrk[iz] = imagedata[ki2D(ix,iz+1,ihx,ihz)] - 2.0*imagedata[ki2D(ix,iz,ihx,ihz)] + imagedata[ki2D(ix,iz-1,ihx,ihz)];
                         }	
-                        for (iz=1; iz<nz-1; iz++){
+                        for (iz=0; iz<nz-1; iz++){
                             imagedata[ki2D(ix,iz,ihx,ihz)] = (f1/(f2*f2))*G2*wrk[iz] - (((hx*hx) +  (hz*hz))*1.0/f2)*wrk[iz]; 
                         }	
-                        imagedata[ki2D(ix,0,ihx,ihz)] = 0.0;
                         imagedata[ki2D(ix,nz-1,ihx,ihz)] = 0.0;
                     }
                 }
@@ -1393,28 +1314,13 @@ void KdmvaAcoustic2D<T>::readGrad(double *g)
     std::shared_ptr<rockseis::Bspl2D<T>> spline;
     std::shared_ptr<rockseis::File> Fgrad;
     switch (this->getParamtype()){
-       case PAR_AVG:
-          spline = std::make_shared<rockseis::Bspl2D<T>>(modelgrad->getNx(), modelgrad->getNz(), modelgrad->getDx(), modelgrad->getDz(), this->getDtx(), this->getDtz(), 3, 3);
-          N = spline->getNc();
-          g_in = (float *) calloc(2*N, sizeof(float));
-          Fgrad = std::make_shared<rockseis::File>();
-          Fgrad->input(VPPROJGRADFILE);
-          Fgrad->read(&g_in[0], N, 0);
-          Fgrad->close();
-          for(i=0; i< N; i++)
-          {
-             g[i] = (g_in[i])*kvp;
-          }
-          // Free temporary array
-          free(g_in);
-          break;
         case PAR_GRID:
             modelgrad->readVelocity();
             N = (modelgrad->getGeom())->getNtot();
             gvp = modelgrad->getVelocity(); 
             for(i=0; i< N; i++)
             {
-                g[i] = (gvp[i])*kvp;
+                g[i] = gvp[i]*kvp;
             }
             break;
         case PAR_BSPLINE:
@@ -1427,7 +1333,7 @@ void KdmvaAcoustic2D<T>::readGrad(double *g)
             Fgrad->close();
             for(i=0; i< N; i++)
             {
-                g[i] = (g_in[i])*kvp;
+                g[i] = g_in[i]*kvp;
             }
             // Free temporary array
             free(g_in);
@@ -1465,103 +1371,6 @@ void KdmvaAcoustic2D<T>::combineGradients()
     grad->setVelocityfile(VPGRADCOMBFILE);
     grad->writeVelocity();
 }
-
-template<typename T>
-void KdmvaAcoustic2D<T>::applyChainrule(double *x)
-{
-   // Models
-   std::shared_ptr<rockseis::ModelEikonal2D<T>> model0 (new rockseis::ModelEikonal2D<T>(VP0FILE, 1));
-   std::shared_ptr<rockseis::ModelEikonal2D<T>> grad (new rockseis::ModelEikonal2D<T>(VPGRADCOMBFILE, 1));
-   std::shared_ptr<rockseis::Bspl2D<T>> spline;
-   std::shared_ptr<rockseis::ModelEikonal2D<T>> mute;
-   std::shared_ptr<rockseis::ModelAcoustic2D<T>> bound;
-
-   // Write linesearch model
-   model0->readVelocity();
-   grad->readVelocity();
-   T *vp0, *vpgrad;
-   T *c, *mod;
-   T *vpmutedata;
-   T *lbounddata;
-   T *ubounddata;
-   T *x0;
-   double log_in, log_out, exp_in, exp_out;
-
-   vp0 = model0->getVelocity(); 
-   vpgrad = grad->getVelocity(); 
-   int i;
-   int N, Nmod;
-
-   // If mute
-   if(!Modelmutefile.empty()){
-      mute = std::make_shared <rockseis::ModelEikonal2D<T>>(Modelmutefile, 1);
-      long Nmute = (mute->getGeom())->getNtot();
-      N = (grad->getGeom())->getNtot();
-      if(N != Nmute) rs_error("KdmvaAcoustic2D<T>::applyChainrule(): Geometry in Modelmutefile does not match geometry in the model.");
-      mute->readVelocity();
-      vpmutedata = mute->getVelocity();
-   }else{
-      N = (grad->getGeom())->getNtot();
-      vpmutedata = (T *) calloc(N, sizeof(T)); 
-      for(i=0; i < N; i++){
-         vpmutedata[i] = 1.0;
-      }
-   }
-   bound = std::make_shared <rockseis::ModelAcoustic2D<T>>(Lboundfile, Uboundfile, 1 ,0);
-   bound->readModel();
-   long Nbound = (bound->getGeom())->getNtot();
-   N = (grad->getGeom())->getNtot();
-   if(N != Nbound) rs_error("KdmvaAcoustic2D<T>::applyChainrule(): Geometry in Boundary files does not match geometry in the model.");
-   lbounddata = bound->getVp();
-   ubounddata = bound->getR();
-   x0 = (T *) calloc(N, sizeof(T));
-   switch (this->getParamtype()){
-      case PAR_GRID:
-         N = (grad->getGeom())->getNtot();
-         for(i=0; i< N; i++)
-         {
-            log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
-            log_out = log(log_in);
-            x0[i] =((T) log_out);
-            exp_in = (double) (-(x[i]*vpmutedata[i]*kvp + x0[i]));
-            exp_out = exp(exp_in);
-            vpgrad[i] *= kvp*(ubounddata[i]-lbounddata[i])*((T) exp_out/((1.0 + (T) exp_out)*(1.0 + (T) exp_out)));
-         }
-         grad->writeVelocity();
-         break;
-      case PAR_BSPLINE:
-         Nmod = (grad->getGeom())->getNtot();
-         spline = std::make_shared<rockseis::Bspl2D<T>>(model0->getNx(), model0->getNz(), model0->getDx(), model0->getDz(), this->getDtx(), this->getDtz(), 3, 3);
-         N = spline->getNc();
-         c = spline->getSpline();
-         for(i=0; i< N; i++)
-         {
-            c[i] = x[i];
-         }
-         spline->bisp();
-         mod = spline->getMod();
-
-         for(i=0; i< Nmod; i++)
-         {
-            log_in = (double) ((vp0[i] - lbounddata[i])/(ubounddata[i] - vp0[i]));
-            log_out = log(log_in);
-            x0[i] =((T) log_out);
-            exp_in = (double) (-(mod[i]*vpmutedata[i]*kvp + x0[i]));
-            exp_out = exp(exp_in);
-            vpgrad[i] *= kvp*(ubounddata[i]-lbounddata[i])*((T) exp_out/((1.0 + (T) exp_out)*(1.0 + (T) exp_out)));
-         }
-         grad->writeVelocity();
-         break;
-      default:
-         rs_error("KdmvaAcoustic2D<T>::applyChainrule(): Unknown parameterisation."); 
-         break;
-   }
-   if(Modelmutefile.empty()){
-      free(vpmutedata);
-   }
-   free(x0);
-}
-
 
 template<typename T>
 void KdmvaAcoustic2D<T>::applyMute()
@@ -1618,18 +1427,6 @@ void KdmvaAcoustic2D<T>::computeRegularisation(double *x)
     model->setVelocityfile(VPREGGRADFILE);
     vpgrad = model->getVelocity();
     switch (this->getParamtype()){
-       case PAR_AVG:
-            N = (model->getGeom())->getNtot();
-            for(i=0; i< N; i++)
-            {
-                dvpdx[i] = 0.0;
-            }
-            der->ddz_fw(x);
-            for(i=0; i< N; i++)
-            {
-                dvpdz[i] = 0.0;
-            }
-            break;
         case PAR_GRID:
             N = (model->getGeom())->getNtot();
             der->ddx_fw(x);
@@ -1668,7 +1465,7 @@ void KdmvaAcoustic2D<T>::computeRegularisation(double *x)
 
             break;
         default:
-            rs_error("KdmvaAcoustic2D<T>::computeRegularisation(): Unknown parameterisation."); 
+            rs_error("KdmvaAcoustic2D<T>::saveLinesearch(): Unknown parameterisation."); 
             break;
     }
     // Computing misfit
@@ -1725,6 +1522,9 @@ void KdmvaAcoustic2D<T>::computeRegularisation(double *x)
     free(dvpdz);
     free(gwrk);
 }
+
+
+
 
 // =============== INITIALIZING TEMPLATE CLASSES =============== //
 template class Kdmva<float>;

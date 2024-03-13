@@ -82,6 +82,11 @@ int main(int argc, char** argv) {
     // Create a global model class
 	std::shared_ptr<rockseis::ModelEikonal3D<float>> gmodel (new rockseis::ModelEikonal3D<float>(Vpfile, 10));
 
+    // Test for problematic model sampling
+    if(gmodel->getDx() != gmodel->getDz()){
+        rs_error("Input model has different dx and dz values. This is currently not allowed. Interpolate to a unique grid sampling value (i.e dx = dz).");
+    }
+
     // Create an interpolation class
     std::shared_ptr<rockseis::Interp<float>> interp (new rockseis::Interp<float>(SINC));
 
@@ -130,7 +135,7 @@ int main(int argc, char** argv) {
 
                 Shotgeom = Sort->get3DGather(work.id);
                 size_t ntr = Shotgeom->getNtrace();
-                lmodel = gmodel->getLocal(Shotgeom, -1.0*gmodel->getDx(),-1.0*gmodel->getDy(), SMAP);
+                lmodel = gmodel->getLocal(Shotgeom, -1.0*gmodel->getDx(),-1.0*gmodel->getDx(), SMAP);
                 lmodel->Expand();
 
                 // Set shot coordinates and make a map

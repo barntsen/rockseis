@@ -81,15 +81,6 @@ void remove_file(std::string filename) {
 	}
 }
 
-bool file_exists (std::string filename) {
-    if (FILE *file = fopen(filename.c_str(), "r")) {
-        fclose(file);
-        return true;
-    } else {
-        return false;
-    }   
-}
-
 
 // =============== INITIALIZING TEMPLATE STRUCTS =============== //
 template struct Point2D<int>;

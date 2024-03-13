@@ -208,13 +208,6 @@ void FatAcoustic2D<T>::scaleGrad(std::shared_ptr<rockseis::ModelEikonal2D<T>> mo
             }else{
                 grad[Igrad(i,j)] = -1.0*lam[Ilam(i+lpml,j+lpml)]/CUB(vp[Igrad(i,j)]);
             }
-
-            if(j == 0 || j == nz-1){
-                grad[Igrad(i,j)] = 0.0;
-            }
-            if(i == 0 || i == nx-1){
-                grad[Igrad(i,j)] = 0.0;
-            }
         }
     }
 }

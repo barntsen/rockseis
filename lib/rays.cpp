@@ -1,10 +1,9 @@
 // Include statements
 #include "rays.h"
 
-#define I2D(i,j) ((j)*nx + (i)) 
+#define I2D(i,j) ((i)*nx + (j)) 
 #define I3D(i,j,k) ((k)*nx*ny+(j)*nx + (i)) 
 #define S(i) (1.0/Vp[i]) 
-#define SWAPF(a,b,t) t = b; b = a; a = t;
 
 namespace rockseis {
 
@@ -45,25 +44,6 @@ Rays<T>::Rays(const int _dim, const int _nx, const int _ny, const int _nz, const
     dim = _dim;
     lpml = _lpml;
 
-}
-
-template<typename T>
-void Rays<T>::bubble_sort(T *a, T *b, int n) {
-   int i = 0, j = 0;
-   T tmp;
-   for (i = 0; i < n; i++) {   // loop n times - 1 per element
-      for (j = 0; j < n - i - 1; j++) { // last i elements are sorted already
-         if (a[j] > a[j + 1]) {  // swop if order is broken
-            tmp = a[j];
-            a[j] = a[j + 1];
-            a[j + 1] = tmp;
-
-            tmp = b[j];
-            b[j] = b[j + 1];
-            b[j + 1] = tmp;
-         }
-      }
-   }
 }
 
 // =============== 2D ACOUSTIC RAYS CLASS =============== //
@@ -180,57 +160,110 @@ RaysAcoustic2D<T>::~RaysAcoustic2D() {
 }
 
 template<typename T>
-void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int nz1, int nz2, int ndz)
+void RaysAcoustic2D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy)
 { 
 /*------------------------------------------------------------------------
  *  Solve eikonal equation by fast sweeping method according to Zhao (2004)
  *
+ *  D. Koehn
+ *  Kiel, 09/12/2015
  *  ----------------------------------------------------------------------*/
 
     int nx = model->getNx_pml();
-    int nz = model->getNz_pml();
-    T dx = model->getDx();
-    T dz = model->getDz();
+    int ny = model->getNz_pml();
+    T dh = model->getDx();
     T *TT = this->getTT();
     T *Vp = model->getL();
 
     /* local variables */
     int i, j, h, k;
-    T a, b, Tta, Ttb, Tt;
+    T a, b, Tt;
+
 
     /* sweep over FD-grid */
-    h = nz1;
-    for (j=0;j<nz;j++){	
-       k = nx1;
-       for (i=0;i<nx;i++){
-          b = 0 == k ? TT[I2D(1,h)] : ((nx - 1) == k) ? TT[I2D(nx-2,h)] : MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
-          a = 0 == h ? TT[I2D(k,1)] : ((nz - 1) == h) ? TT[I2D(k,nz-2)] : MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
+    h = nx1;
+    for (i=0;i<nx;i++){
+        k = ny1;
+        for (j=0;j<ny;j++){	
 
-          /* calculate solution */
-          Tta = a + S(I2D(k,h))*dz;
-          Ttb = b + S(I2D(k,h))*dx;
-          if(Tta <= b){
-             Tt = Tta;
-          }else if (Ttb <= a){
-             Tt = Ttb;
-          }else{
-             Tt = (a/SQ(dz) + b/SQ(dx) + sqrt((SQ(dx)+SQ(dz))*SQ(S(I2D(k,h))) - SQ(a-b))/(dx*dz))/(SQ(1./dx)+SQ(1./dz));
-          }
-          TT[I2D(k,h)] = MIN(TT[I2D(k,h)],Tt);
+            /* model interior */
+            if((h>0)&&(h<nx-1)&&(k>0)&&(k<ny-1)){
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
+            }
 
-          k += ndx;
-       }
-       h += ndz;
+            /* model borders */
+            /* left */
+            if((h==0)&&(k>0)&&(k<ny-1)){
+                a = MIN(TT[I2D(k,h)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
+            }
+
+            /* right */
+            if((h==nx-1)&&(k>0)&&(k<ny-1)){
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k+1,h)]);
+            }
+
+            /* top */
+            if((k==0)&&(h>0)&&(h<nx-1)){
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k,h)],TT[I2D(k+1,h)]);
+            }
+
+            /* bottom */
+            if((k==ny-1)&&(h>0)&&(h<nx-1)){
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k,h)]);
+            }
+
+            /* model corners */
+            /* upper-left */
+            if((h==0)&&(k==0)){
+                a = MIN(TT[I2D(k,h)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k,h)],TT[I2D(k+1,h)]);
+            }
+
+            /* lower-left */
+            if((h==0)&&(k==ny-1)){
+                a = MIN(TT[I2D(k,h)],TT[I2D(k,h+1)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k,h)]);
+            }
+
+            /* lower-right */
+            if((h==nx-1)&&(k==ny-1)){
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h)]);
+                b = MIN(TT[I2D(k-1,h)],TT[I2D(k,h)]);
+            }
+
+            /* upper-right */
+            if((h==nx-1)&&(k==0)){
+                a = MIN(TT[I2D(k,h-1)],TT[I2D(k,h)]);
+                b = MIN(TT[I2D(k,h)],TT[I2D(k+1,h)]);
+            }
+
+
+            /* calculate solution */
+            if(ABS(a-b)>=(S(I2D(k,h))*dh)){
+                Tt = MIN(a,b) + S(I2D(k,h))*dh;
+            }else{
+                Tt = (a + b + sqrt((2.0*pow(S(I2D(k,h)),2.0)*pow(dh,2.0)) - pow((a-b),2.0)))/2.0;
+            }
+
+            TT[I2D(k,h)] = MIN(TT[I2D(k,h)],Tt);
+
+            k += ndy;
+        }
+        h += ndx;
     }
 }
 
 template<typename T>
-void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int nz1, int nz2, int ndz)
+void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, int ndy)
 {
     int nx = model->getNx_pml();
-    int nz = model->getNz_pml();
-    T dx = model->getDx();
-    T dz = model->getDz();
+    int ny = model->getNz_pml();
+    T dh = model->getDx();
     T *TT = this->getTT();
     T *lam = this->getLam();
     T *adjsource = this->getAdjsource();
@@ -243,55 +276,39 @@ void RaysAcoustic2D<T>::sweep_adj(int nx1, int nx2, int ndx, int nz1, int nz2, i
     T lhs, rhs, lamt;
 
     /* sweep over FD-grid */
-    k = nx1;
+    h = nx1;
     for (i=1;i<nx-1;i++){
-       h = nz1;
-       for (j=1;j<nz-1;j++){
-          /* assemble equation (3.6) in Leung & Qian (2006) */
-          ap = -(TT[I2D(k,h+1)]-TT[I2D(k,h)])/dz;
-          am = -(TT[I2D(k,h)]-TT[I2D(k,h-1)])/dz;
+        k = ny1;
+        for (j=1;j<ny-1;j++){
+                /* assemble equation (3.6) in Leung & Qian (2006) */
+                ap = -(TT[I2D(k,h+1)]-TT[I2D(k,h)])/dh;
+                am = -(TT[I2D(k,h)]-TT[I2D(k,h-1)])/dh;
 
-          bp = -(TT[I2D(k+1,h)]-TT[I2D(k,h)])/dx;
-          bm = -(TT[I2D(k,h)]-TT[I2D(k-1,h)])/dx;
+                bp = -(TT[I2D(k+1,h)]-TT[I2D(k,h)])/dh;
+                bm = -(TT[I2D(k,h)]-TT[I2D(k-1,h)])/dh;
 
-          app = (ap + ABS(ap))/2.0;
-          apm = (ap - ABS(ap))/2.0;
+                app = (ap + ABS(ap))/2.0;
+                apm = (ap - ABS(ap))/2.0;
 
-          amp = (am + ABS(am))/2.0;
-          amm = (am - ABS(am))/2.0;
+                amp = (am + ABS(am))/2.0;
+                amm = (am - ABS(am))/2.0;
 
-          bpp = (bp + ABS(bp))/2.0;
-          bpm = (bp - ABS(bp))/2.0;
+                bpp = (bp + ABS(bp))/2.0;
+                bpm = (bp - ABS(bp))/2.0;
 
-          bmp = (bm + ABS(bm))/2.0;
-          bmm = (bm - ABS(bm))/2.0;
+                bmp = (bm + ABS(bm))/2.0;
+                bmm = (bm - ABS(bm))/2.0;
 
 
-          /* Leung & Qian (2006) */
-          lhs = (app-amm)/dz + (bpp-bmm)/dx;
-          rhs = (amp*lam[I2D(k,h-1)]-apm*lam[I2D(k,h+1)])/dz + (bmp*lam[I2D(k-1,h)]-bpm*lam[I2D(k+1,h)])/dx - adjsource[I2D(k,h)];
-          //
-          lamt = rhs*lhs/(SQ(lhs)+EPS_ADJ);
-          lam[I2D(k,h)] = MIN(lam[I2D(k,h)],lamt);
-          h += ndz;
-       }
-       k += ndx;
-    }
-}
-template<typename T>
-void RaysAcoustic2D<T>::copyTT(T *TTin) {
-    /* Copy traveltimes from other array */
-
-    int nx = model->getNx_pml();
-    int nz = model->getNz_pml();
-    int lpml = model->getLpml();
-    Index Irays(nx, nz);
-
-    /* Copy TT */
-    for(size_t ix=lpml; ix < nx-lpml; ix++){
-        for(size_t iz=lpml; iz < nz-lpml; iz++){
-            TT[Irays(ix, iz)] = TTin[Irays(ix, iz)]; 
+                /* Leung & Qian (2006) */
+                lhs = (app-amm)/dh + (bpp-bmm)/dh;
+                rhs = (amp*lam[I2D(k,h-1)]-apm*lam[I2D(k,h+1)])/dh + (bmp*lam[I2D(k-1,h)]-bpm*lam[I2D(k+1,h)])/dh - adjsource[I2D(k,h)];
+                //
+                lamt = rhs*lhs/(SQ(lhs)+EPS_ADJ);
+                lam[I2D(k,h)] = MIN(lam[I2D(k,h)],lamt);
+            k += ndy;
         }
+        h += ndx;
     }
 }
 
@@ -616,6 +633,22 @@ void RaysAcoustic2D<T>::insertImageresiduals(T *res){
             adjsource[Iray(lpml+ix, lpml+iz)] =  +res[Ires(ix,iz)];
         }
     }
+
+    //Left and right padding
+    for(ix=0; ix < lpml; ix++){
+        for(iz=0; iz < nz_pml; iz++){
+            adjsource[Iray(ix,iz)]=adjsource[Iray(lpml,iz)];
+            adjsource[Iray(nx_pml-lpml+ix,iz)]=adjsource[Iray(nx_pml-lpml-1,iz)];
+        }
+    }
+
+    //Top and bottom padding
+    for(ix=0; ix<nx_pml; ix++){
+        for(iz=0; iz<lpml; iz++){
+            adjsource[Iray(ix,iz)]=adjsource[Iray(ix,lpml)];
+            adjsource[Iray(ix,nz_pml-lpml+iz)]=adjsource[Iray(ix,nz_pml-lpml-1)];
+        }
+    }
 }
 
 template<typename T>
@@ -817,19 +850,19 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
     size_t nx = model->getNx_pml();
     size_t ny = model->getNy_pml();
     size_t nz = model->getNz_pml();
-    T dx = model->getDx();
-    T dy = model->getDy();
-    T dz = model->getDz();
+    T dh = model->getDx();
     T *TT = this->getTT();
     T *Vp = model->getL();
 
     /* local variables */
     size_t i, j, k, m, n, l;
-    T a[3], d[3];
+    T a[3];
+    a[0] = 0.0;
+    a[1] = 0.0;
+    a[2] = 0.0;
     T Tt;
 
     T slo;
-    T swap;
 
     /* sweep over FD-grid */
     m = nx1;
@@ -838,50 +871,216 @@ void RaysAcoustic3D<T>::sweep(int nx1, int nx2, int ndx, int ny1, int ny2, int n
         for (j=0;j<ny;j++){	
             l = nz1;
             for (k=0;k<nz;k++){	
-                a[0] = (0 == m) ? TT[I3D(1,n,l)] : ((nx - 1) == m) ? TT[I3D(nx-2,n,l)] :
-                    MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
 
-                a[1] = (0 == n) ? TT[I3D(m,1,l)] : ((ny - 1) == n) ? TT[I3D(m,ny-2,l)] :
-                    MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                /* model interior */
+                if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
 
-                a[2] = (0 == l) ? TT[I3D(m,n,1)] : ((nz - 1) == l) ? TT[I3D(m,n,nz-2)] :
-                    MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+             
+                /* model borders */
+                /* left */
+                if((m==0)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* right */
+                if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* top */
+                if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* bottom */
+                if((m>0)&&(m<nx-1)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+
+                /* front */
+                if((m>0)&&(m<nx-1)&&(n==0)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* back */
+                if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+
+                /* model edges */
+                /* upper-front */
+                if((m>0)&&(m<nx-1)&&(n==0)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-back */
+                if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* lower-front */
+                if((m>0)&&(m<nx-1)&&(n==0)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* lower-back */
+                if((m>0)&&(m<nx-1)&&(n==ny-1)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* left-front */
+                if((m==0)&&(n==0)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* left-back */
+                if((m==0)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* right-front */
+                if((m==nx-1)&&(n==0)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* right-back */
+                if((m==nx-1)&&(n==ny-1)&&(l>0)&&(l<nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-left */
+                if((m==0)&&(n>0)&&(n<ny-1)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                 /* upper-right */
+                if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* lower-left */
+                if((m==0)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                 /* lower-right */
+                if((m==nx-1)&&(n>0)&&(n<ny-1)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* model corners */
+                /* upper-left-front */
+                if((m==0)&&(n==0)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-left-back */
+                if((m==0)&&(n==ny-1)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-right-front */
+                if((m==nx-1)&&(n==0)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* upper-right-back */
+                if((m==nx-1)&&(n==ny-1)&&(l==0)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n,l+1)]);
+                }
+
+                /* lower-left-front */
+                if((m==0)&&(n==0)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* lower-left-back */
+                if((m==0)&&(n==ny-1)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m,n,l)],TT[I3D(m+1,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* lower-right-front */
+                if((m==nx-1)&&(n==0)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n,l)],TT[I3D(m,n+1,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
+
+                /* lower-right-back */
+                if((m==nx-1)&&(n==ny-1)&&(l==nz-1)){
+                    a[0] = MIN(TT[I3D(m-1,n,l)],TT[I3D(m,n,l)]);
+                    a[1] = MIN(TT[I3D(m,n-1,l)],TT[I3D(m,n,l)]);
+                    a[2] = MIN(TT[I3D(m,n,l-1)],TT[I3D(m,n,l)]);
+                }
 
 
                 /* calculate solution */
-                slo = S(I3D(m,n,l));
-                d[0] = dx;
-                d[1] = dy;
-                d[2] = dz;
-                if (a[0] > a[2]) {
-                    SWAPF (a[0], a[2], swap)
-                    SWAPF (d[0], d[2], swap)
-                }
-                if (a[0] > a[1]) {
-                    SWAPF (a[0], a[1], swap)
-                    SWAPF (d[0], d[1], swap)
-                }
-                if (a[1] > a[2]) {
-                    SWAPF (a[1], a[2], swap)
-                    SWAPF (d[1], d[2], swap)
+                std::sort(a,a+3);
+                while(1){
+                    slo = S(I3D(m,n,l))*dh;
+                    Tt = a[0] + slo;
+                    if(Tt <= a[1]) break;
+                    Tt = 0.5*(a[0]+a[1]+sqrt(2.*slo*slo - (a[0]-a[1])*(a[0]-a[1])));
+                    if(Tt <= a[2]) break;
+                    Tt = 1./3. * ((a[0] + a[1] + a[2]) + sqrt(-2.*a[0]*a[0] + 2.*a[0]*a[1] - 2.*a[1]*a[1] + 2.*a[0]*a[2] + 2.*a[1]*a[2] - 2.*a[2]*a[2] + 3.*slo*slo));
+                    break;
                 }
 
-                Tt = a[0] + d[0]*slo;
-                if(Tt > a[1]){
-                    Tt = (d[0] * d[1] * sqrt ((SQ(d[0]) + SQ(d[1])) * slo * slo - (a[0] - a[1]) * (a[0] - a[1])) +
-                            a[0] * SQ(d[1]) + a[1] * SQ(d[0])) / (SQ(d[0]) + SQ(d[1]));
-                    if(Tt > a[2]){
-                        Tt = (d[0] * d[1] * d[2] * sqrt ((SQ(d[1]) * SQ(d[2]) + SQ(d[0]) * SQ(d[2]) + SQ(d[0]) * SQ(d[1])) * slo * slo
-                                    + 2.0 * SQ(d[2]) * a[0] * a[1]
-                                    + 2.0 * SQ(d[1]) * a[0] * a[2]
-                                    + 2.0 * SQ(d[0]) * a[1] * a[2]
-                                    - (SQ(d[2]) + SQ(d[1])) * a[0] * a[0]
-                                    - (SQ(d[2]) + SQ(d[0])) * a[1] * a[1]
-                                    - (SQ(d[1]) + SQ(d[0])) * a[2] * a[2])
-                                + SQ(d[0]) * SQ(d[1]) * a[2] + SQ(d[0]) * SQ(d[2]) * a[1] + SQ(d[1]) * SQ(d[2]) * a[0])
-                            / (SQ(d[1]) * SQ(d[2]) + SQ(d[0]) * SQ(d[2]) + SQ(d[0]) * SQ(d[1]));
-                    }
-                }
+
                 TT[I3D(m,n,l)] = MIN(TT[I3D(m,n,l)],Tt);
                 l += ndz;
             }
@@ -897,9 +1096,7 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
     int nx = model->getNx_pml();
     int ny = model->getNy_pml();
     int nz = model->getNz_pml();
-    T dx = model->getDx();
-    T dy = model->getDy();
-    T dz = model->getDz();
+    T dh = model->getDx();
     T *TT = this->getTT();
     T *lam = this->getLam();
     T *adjsource = this->getAdjsource();
@@ -920,14 +1117,14 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
             l = nz1;
             for (k=1;k<nz-1;k++){
                     /* assemble equation (3.6) in Leung & Qian (2006) */
-                    ap = -(TT[I3D(m+1,n,l)]-TT[I3D(m,n,l)])/dx;
-                    am = -(TT[I3D(m,n,l)]-TT[I3D(m-1,n,l)])/dx;
+                    ap = -(TT[I3D(m+1,n,l)]-TT[I3D(m,n,l)])/dh;
+                    am = -(TT[I3D(m,n,l)]-TT[I3D(m-1,n,l)])/dh;
 
-                    bp = -(TT[I3D(m,n+1,l)]-TT[I3D(m,n,l)])/dy;
-                    bm = -(TT[I3D(m,n,l)]-TT[I3D(m,n-1,l)])/dy;
+                    bp = -(TT[I3D(m,n+1,l)]-TT[I3D(m,n,l)])/dh;
+                    bm = -(TT[I3D(m,n,l)]-TT[I3D(m,n-1,l)])/dh;
 
-                    cp = -(TT[I3D(m,n,l+1)]-TT[I3D(m,n,l)])/dz;
-                    cm = -(TT[I3D(m,n,l)]-TT[I3D(m,n,l-1)])/dz;
+                    cp = -(TT[I3D(m,n,l+1)]-TT[I3D(m,n,l)])/dh;
+                    cm = -(TT[I3D(m,n,l)]-TT[I3D(m,n,l-1)])/dh;
 
                     app = (ap + ABS(ap))/2.0;
                     apm = (ap - ABS(ap))/2.0;
@@ -949,8 +1146,8 @@ void RaysAcoustic3D<T>::sweep_adj(int nx1, int nx2, int ndx, int ny1, int ny2, i
 
 
                     /* Leung & Qian (2006) */
-                    lhs = (app-amm)/dx + (bpp-bmm)/dy + (cpp-cmm)/dz;
-                    rhs = (amp*lam[I3D(m-1,n,l)]-apm*lam[I3D(m+1,n,l)])/dx + (bmp*lam[I3D(m,n-1,l)]-bpm*lam[I3D(m,n+1,l)])/dy + (cmp*lam[I3D(m,n,l-1)]-cpm*lam[I3D(m,n,l+1)])/dz - adjsource[I3D(m,n,l)];
+                    lhs = (app-amm)/dh + (bpp-bmm)/dh + (cpp-cmm)/dh;
+                    rhs = (amp*lam[I3D(m-1,n,l)]-apm*lam[I3D(m+1,n,l)])/dh + (bmp*lam[I3D(m,n-1,l)]-bpm*lam[I3D(m,n+1,l)])/dh + (cmp*lam[I3D(m,n,l-1)]-cpm*lam[I3D(m,n,l+1)])/dh - adjsource[I3D(m,n,l)];
 
                     lamt = rhs*lhs/(SQ(lhs)+EPS_ADJ);
                     lam[I3D(m,n,l)] = MIN(lam[I3D(m,n,l)],lamt);
@@ -980,7 +1177,7 @@ void RaysAcoustic3D<T>::solve()
     T lnorm1 = 10.0 * tmax;
 
     /* apply fast sweeping method to solve the eikonal equation */
-    while((lnorm1>=TTNORM)){
+    while(lnorm1>=TTNORM){
 
         /* save old TT values */
         for (i=0; i<nx*ny*nz; i++){
@@ -988,12 +1185,12 @@ void RaysAcoustic3D<T>::solve()
         }
 
         sweep(0, nx-1, 1,  0, ny-1, 1,  0, nz-1, 1);
-        sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
-        sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
-        sweep(0, nx-1, 1,  ny-1, 0, -1,  nz-1, 0, -1);
         sweep(nx-1, 0, -1,  0, ny-1, 1,  0, nz-1, 1);
-        sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
+        sweep(0, nx-1, 1,  ny-1, 0, -1,  0, nz-1, 1);
         sweep(nx-1, 0, -1,  ny-1, 0, -1,  0, nz-1, 1);
+        sweep(0, nx-1, 1,  0, ny-1, 1,  nz-1, 0, -1);
+        sweep(nx-1, 0, -1,  0, ny-1, 1,  nz-1, 0, -1);
+        sweep(0, nx-1, 1,  ny-1, 0, -1,  nz-1, 0, -1);
         sweep(nx-1, 0, -1,  ny-1, 0, -1,  nz-1, 0, -1);
 
         /* calculate l1 norm of TT - TTold */
@@ -1191,136 +1388,6 @@ int RaysAcoustic3D<T>::insertSource(std::shared_ptr<rockseis::Data3D<T>> source,
 }
 
 template<typename T>
-int RaysAcoustic3D<T>::solveHomogen(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype){
-    Point3D<int> *map;
-    Point3D<T> *shift;
-    size_t ntrace = source->getNtrace();
-    size_t nx, ny, nz;
-    T dx, dy, dz;
-    int nr = 0;
-    int lpml;
-
-    lpml = this->getLpml();
-    nx = this->getNx_pml();
-    ny = this->getNy_pml();
-    nz = this->getNz_pml();
-
-    dx = this->getDx();
-    dy = this->getDy();
-    dz = this->getDz();
-
-    T x,y,z;
-    T *V = model->getL();
-
-
-    // Get correct map (source or receiver mapping)
-    if(maptype == SMAP) {
-        map = (source->getGeom())->getSmap();
-        shift = (source->getGeom())->getSshift();
-    }else{
-        map = (source->getGeom())->getGmap();
-        shift = (source->getGeom())->getGshift();
-    }
-
-    size_t i;
-    int isx, isy, isz;
-    int nxi,nyi,nzi;
-    nxi = (int) nx;
-    nyi = (int) ny;
-    nzi = (int) nz;
-    //Indexes 
-    Index I(nx, ny, nz); //Model and Field indexes
-    for (i=0; i < ntrace; i++) 
-    {
-        if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-        { 
-            for(isx = -map[i].x; isx < (nxi-map[i].x) ; isx++)
-                {
-                if(((map[i].x + isx + lpml) >= 0) && ((map[i].x + isx + lpml) < nx)){
-                    x = shift[i].x -  isx;
-                    for(isy = -map[i].y; isy < (nyi-map[i].y) ; isy++){
-                        if(((map[i].y + isy + lpml) >= 0) && ((map[i].y + isy + lpml) < ny)){
-                            y = shift[i].y -  isy;
-                            for(isz = -map[i].z; isz < (nzi-map[i].z) ; isz++){
-                                if(((map[i].z + isz + lpml) >= 0) && ((map[i].z + isz + lpml) < nz)){
-                                    z = shift[i].z -  isz;
-                                    TT[I(lpml+map[i].x + isx, lpml+map[i].y + isy, lpml+map[i].z + isz)] = sqrt(SQ(x*dx) + SQ(y*dy) + SQ(z*dz))/V[I(lpml, lpml, lpml)];
-                                    nr++;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return nr;
-}
-
-template<typename T>
-int RaysAcoustic3D<T>::solveHomogen(std::shared_ptr<rockseis::Data3D<T>> source, bool maptype, size_t traceno){
-    Point3D<int> *map;
-    Point3D<T> *shift;
-    size_t nx, ny, nz;
-    T dx, dy, dz;
-    int nr = 0;
-    int lpml;
-
-    lpml = this->getLpml();
-    nx = this->getNx_pml();
-    ny = this->getNy_pml();
-    nz = this->getNz_pml();
-
-    dx = this->getDx();
-    dy = this->getDy();
-    dz = this->getDz();
-
-    T x,y,z;
-    T *V = model->getL();
-
-
-    // Get correct map (source or receiver mapping)
-    if(maptype == SMAP) {
-        map = (source->getGeom())->getSmap();
-        shift = (source->getGeom())->getSshift();
-    }else{
-        map = (source->getGeom())->getGmap();
-        shift = (source->getGeom())->getGshift();
-    }
-
-    size_t i = traceno;
-    int isx, isy, isz;
-    int nxi,nyi,nzi;
-    nxi = (int) nx;
-    nyi = (int) ny;
-    nzi = (int) nz;
-    //Indexes 
-    Index I(nx, ny, nz); //Model and Field indexes
-    if(map[i].x >= 0 && map[i].y >=0 && map[i].z >=0)
-    { 
-        for(isx = -map[i].x; isx < (nxi-map[i].x) ; isx++)
-        {
-            if(((map[i].x + isx + lpml) >= 0) && ((map[i].x + isx + lpml) < nx)){
-                x = shift[i].x -  isx;
-                for(isy = -map[i].y; isy < (nyi-map[i].y) ; isy++){
-                    if(((map[i].y + isy + lpml) >= 0) && ((map[i].y + isy + lpml) < ny)){
-                        y = shift[i].y -  isy;
-                        for(isz = -map[i].z; isz < (nzi-map[i].z) ; isz++){
-                            if(((map[i].z + isz + lpml) >= 0) && ((map[i].z + isz + lpml) < nz)){
-                                z = shift[i].z -  isz;
-                                TT[I(lpml+map[i].x + isx, lpml+map[i].y + isy, lpml+map[i].z + isz)] = sqrt(SQ(x*dx) + SQ(y*dy) + SQ(z*dz))/V[I(lpml, lpml, lpml)];
-                                nr++;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return nr;
-}
-
-template<typename T>
 void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bool maptype){
     Point3D<int> *map;
     Point3D<T> *shift;
@@ -1363,26 +1430,6 @@ void RaysAcoustic3D<T>::recordData(std::shared_ptr<rockseis::Data3D<T>> data, bo
         }
     }
 
-}
-
-template<typename T>
-void RaysAcoustic3D<T>::copyTT(T *TTin) {
-    /* Copy traveltimes from other array */
-
-    int nx = model->getNx_pml();
-    int ny = model->getNy_pml();
-    int nz = model->getNz_pml();
-    int lpml = model->getLpml();
-    Index Irays(nx, ny, nz);
-
-    /* Copy TT */
-    for(size_t ix=lpml; ix < nx-lpml; ix++){
-        for(size_t iy=lpml; iy < ny-lpml; iy++){
-            for(size_t iz=lpml; iz < nz-lpml; iz++){
-                TT[Irays(ix, iy, iz)] = TTin[Irays(ix, iy, iz)]; 
-            }
-        }
-    }
 }
 
 template<typename T>

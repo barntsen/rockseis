@@ -100,8 +100,6 @@ public:
     int enddiff;
     int snapit; 
     int snapinc;
-    int pad[6]; ///< Padding of domain
-    bool snapswitch; ///< Switches snapshoting on or off
 };
 
 
@@ -111,10 +109,8 @@ public:
     Snapshot2D(std::shared_ptr<ModelEikonal2D<T>> model, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesAcoustic2D<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesElastic2D<T>> waves, int snapinc); 	///< Constructor
-    Snapshot2D(std::shared_ptr<WavesPoroelastic2D<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesElastic2D_DS<T>> waves, int snapinc); 	///< Constructor
     Snapshot2D(std::shared_ptr<WavesViscoelastic2D<T>> waves, int snapinc); 	///< Constructor
-    Snapshot2D(std::shared_ptr<WavesVti2D<T>> waves, int snapinc); 	///< Constructor
     ~Snapshot2D();       	///< Destructor
 
     void writeSnap(const int it); ///< Write snapshot
@@ -132,7 +128,6 @@ public:
     Snapshot3D(std::shared_ptr<WavesElastic3D<T>> waves, int snapinc); 	///< Constructor
     Snapshot3D(std::shared_ptr<WavesElastic3D_DS<T>> waves, int snapinc); 	///< Constructor
     Snapshot3D(std::shared_ptr<WavesViscoelastic3D<T>> waves, int snapinc); 	///< Constructor
-    Snapshot3D(std::shared_ptr<WavesOrtho3D<T>> waves, int snapinc); 	///< Constructor
     ~Snapshot3D();       	///< Destructor
 
     void writeSnap(const int it); ///< Write snapshot

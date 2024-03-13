@@ -34,8 +34,6 @@
 #define ks3D(i,j,k) ((k)*nxs*nys + (j)*nxs + (i))
 #define kr3D(i,j,k) ((k)*nxr*nyr + (j)*nxr + (i))
 
-#define MAX(a,b) ((a)>(b) ? (a):(b))
-
 namespace rockseis {
 
 // =============== ENUMS =============== //
@@ -104,7 +102,7 @@ public:
     void setModel(std::shared_ptr<ModelAcoustic2D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
     void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
-    void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setDataAz(std::shared_ptr<Data2D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *ws, int pads, T* wr, int padr);
 
@@ -115,11 +113,11 @@ private:
     std::shared_ptr<Image2D<T>> pimage;
     std::shared_ptr<Data2D<T>> source;
     std::shared_ptr<Data2D<T>> dataP;
-    std::shared_ptr<Data2D<T>> dataVz;
+    std::shared_ptr<Data2D<T>> dataAz;
     bool modelset;
     bool pimageset;
     bool sourceset;
-    bool dataPset, dataVxset, dataVzset;
+    bool dataPset, dataAxset, dataAzset;
 };
 
 /** The 3D Acoustic Rtm class
@@ -135,7 +133,7 @@ public:
     void setModel(std::shared_ptr<ModelAcoustic3D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
     void setDataP(std::shared_ptr<Data3D<T>> _dataP) { dataP = _dataP; dataPset = true; }
-    void setDataVz(std::shared_ptr<Data3D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setDataAz(std::shared_ptr<Data3D<T>> _dataAz) { dataAz = _dataAz; dataAzset = true; }
     bool checkStability(); ///< Check stability of finite difference modelling
     void crossCorr(T *ws, int pads, T* wr, int padr);
 
@@ -146,11 +144,11 @@ private:
     std::shared_ptr<Image3D<T>> pimage;
     std::shared_ptr<Data3D<T>> source;
     std::shared_ptr<Data3D<T>> dataP;
-    std::shared_ptr<Data3D<T>> dataVz;
+    std::shared_ptr<Data3D<T>> dataAz;
     bool modelset;
     bool pimageset;
     bool sourceset;
-    bool dataPset, dataVxset, dataVyset, dataVzset;
+    bool dataPset, dataAxset, dataAyset, dataAzset;
 };
 
 /** The 2D Elastic Rtm class
@@ -195,21 +193,18 @@ template<typename T>
 class RtmElastic3D: public Rtm<T> {
 public:
     RtmElastic3D();					///< Constructor
-    RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataP, std::shared_ptr<Data3D<T>> dataVx, std::shared_ptr<Data3D<T>> dataVy, std::shared_ptr<Data3D<T>> dataVz, int order, int snapinc);					///< Constructor 
-    T getVpmax(); ///< Get Maximum vp
+    RtmElastic3D(std::shared_ptr<ModelElastic3D<T>> model, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataVx, std::shared_ptr<Data3D<T>> dataVy, std::shared_ptr<Data3D<T>> dataVz, int order, int snapinc);					///< Constructor 
     int run(); ///< Runs rtm with full snapshoting
     int run_optimal(); ///< Runs rtm with optimal checkpointing
     void setModel(std::shared_ptr<ModelElastic3D<T>> _model) { model = _model; modelset = true; }
     void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
-    void setDataP(std::shared_ptr<Data3D<T>> _dataP) { dataP = _dataP; dataPset = true; }
-    void setDataVx(std::shared_ptr<Data3D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
-    void setDataVy(std::shared_ptr<Data3D<T>> _dataVy) { dataVy = _dataVy; dataVyset = true; }
-    void setDataVz(std::shared_ptr<Data3D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
+    void setDataUx(std::shared_ptr<Data3D<T>> _dataUx) { dataUx = _dataUx; dataUxset = true; }
+    void setDataUy(std::shared_ptr<Data3D<T>> _dataUy) { dataUy = _dataUy; dataUyset = true; }
+    void setDataUz(std::shared_ptr<Data3D<T>> _dataUz) { dataUz = _dataUz; dataUzset = true; }
     void setPimage(std::shared_ptr<Image3D<T>> _pimage) { pimage = _pimage; pimageset = true; }
     void setSimage(std::shared_ptr<Image3D<T>> _simage) { simage = _simage; simageset = true; }
     bool checkStability(); ///< Check stability of finite difference modelling
-    void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesElastic3D<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
-    void crossCorr(std::shared_ptr<WavesElastic3D<T>> waves_fw, std::shared_ptr<WavesElastic3D<T>> waves_bw, std::shared_ptr<ModelElastic3D<T>> model, int it);
+    void crossCorr(T *wsx, T *wsy, T *wsz, int pads, T* wrx, T *wry, T* wrz, int padr, T* Vp, T* Vs, T* Rho);
 
 
     ~RtmElastic3D();	///< Destructor
@@ -219,96 +214,16 @@ private:
     std::shared_ptr<Image3D<T>> pimage;
     std::shared_ptr<Image3D<T>> simage;
     std::shared_ptr<Data3D<T>> source;
-    std::shared_ptr<Data3D<T>> dataP;
-    std::shared_ptr<Data3D<T>> dataVx;
-    std::shared_ptr<Data3D<T>> dataVy;
-    std::shared_ptr<Data3D<T>> dataVz;
+    std::shared_ptr<Data3D<T>> dataUx;
+    std::shared_ptr<Data3D<T>> dataUy;
+    std::shared_ptr<Data3D<T>> dataUz;
     bool modelset;
     bool pimageset;
     bool simageset;
     bool sourceset;
-    bool dataPset, dataVxset, dataVyset, dataVzset;
+    bool dataUxset, dataUyset, dataUzset;
 };
 
-/** The 2D Vti Rtm class
- *
- */
-template<typename T>
-class RtmVti2D: public Rtm<T> {
-public:
-    RtmVti2D();					///< Constructor
-    RtmVti2D(std::shared_ptr<ModelVti2D<T>> model, std::shared_ptr<Data2D<T>> source, std::shared_ptr<Data2D<T>> dataP, std::shared_ptr<Data2D<T>> dataVx, std::shared_ptr<Data2D<T>> dataVz, int order, int snapinc);					///< Constructor 
-    int run(); ///< Runs rtm with full snapshoting using velocity
-    int run_optimal(); ///< Runs rtm with optimal checkpointing velocity
-    void setModel(std::shared_ptr<ModelVti2D<T>> _model) { model = _model; modelset = true; }
-    void setSource(std::shared_ptr<Data2D<T>> _source) { source = _source; sourceset = true; }
-    void setDataP(std::shared_ptr<Data2D<T>> _dataP) { dataP = _dataP; dataPset = true; }
-    void setDataVx(std::shared_ptr<Data2D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
-    void setDataVz(std::shared_ptr<Data2D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
-    void setPimage(std::shared_ptr<Image2D<T>> _pimage) { pimage = _pimage; pimageset = true; }
-    void setSimage(std::shared_ptr<Image2D<T>> _simage) { simage = _simage; simageset = true; }
-    T getVpmax(); ///< Get Maximum vp
-    bool checkStability(); ///< Check stability of finite difference modelling
-    void crossCorr(T *wsx, T *wsz, int pads,std::shared_ptr<WavesVti2D<T>> waves_bw, std::shared_ptr<ModelVti2D<T>> model, int it);
-    void crossCorr(std::shared_ptr<WavesVti2D<T>> waves_fw, std::shared_ptr<WavesVti2D<T>> waves_bw, std::shared_ptr<ModelVti2D<T>> model, int it);
-    ~RtmVti2D();	///< Destructor
-
-private:
-    std::shared_ptr<ModelVti2D<T>> model;
-    std::shared_ptr<Image2D<T>> pimage;
-    std::shared_ptr<Image2D<T>> simage;
-    std::shared_ptr<Data2D<T>> source;
-    std::shared_ptr<Data2D<T>> dataP;
-    std::shared_ptr<Data2D<T>> dataVx;
-    std::shared_ptr<Data2D<T>> dataVz;
-    bool modelset;
-    bool pimageset;
-    bool simageset;
-    bool sourceset;
-    bool dataPset, dataVxset, dataVzset;
-};
-
-/** The 3D Ortho Rtm class
- *
- */
-template<typename T>
-class RtmOrtho3D: public Rtm<T> {
-public:
-    RtmOrtho3D();					///< Constructor
-    RtmOrtho3D(std::shared_ptr<ModelOrtho3D<T>> model, std::shared_ptr<Data3D<T>> source, std::shared_ptr<Data3D<T>> dataP, std::shared_ptr<Data3D<T>> dataVx, std::shared_ptr<Data3D<T>> dataVy, std::shared_ptr<Data3D<T>> dataVz, int order, int snapinc);					///< Constructor 
-    T getVpmax(); ///< Get Maximum vp
-    int run(); ///< Runs rtm with full snapshoting
-    int run_optimal(); ///< Runs rtm with optimal checkpointing
-    void setModel(std::shared_ptr<ModelOrtho3D<T>> _model) { model = _model; modelset = true; }
-    void setSource(std::shared_ptr<Data3D<T>> _source) { source = _source; sourceset = true; }
-    void setDataP(std::shared_ptr<Data3D<T>> _dataP) { dataP = _dataP; dataPset = true; }
-    void setDataVx(std::shared_ptr<Data3D<T>> _dataVx) { dataVx = _dataVx; dataVxset = true; }
-    void setDataVy(std::shared_ptr<Data3D<T>> _dataVy) { dataVy = _dataVy; dataVyset = true; }
-    void setDataVz(std::shared_ptr<Data3D<T>> _dataVz) { dataVz = _dataVz; dataVzset = true; }
-    void setPimage(std::shared_ptr<Image3D<T>> _pimage) { pimage = _pimage; pimageset = true; }
-    void setSimage(std::shared_ptr<Image3D<T>> _simage) { simage = _simage; simageset = true; }
-    bool checkStability(); ///< Check stability of finite difference modelling
-    void crossCorr(T *wsx, T*wsy, T *wsz, int pads, std::shared_ptr<WavesOrtho3D<T>> waves_bw, std::shared_ptr<ModelOrtho3D<T>> model, int it);
-    void crossCorr(std::shared_ptr<WavesOrtho3D<T>> waves_fw, std::shared_ptr<WavesOrtho3D<T>> waves_bw, std::shared_ptr<ModelOrtho3D<T>> model, int it);
-
-
-    ~RtmOrtho3D();	///< Destructor
-
-private:
-    std::shared_ptr<ModelOrtho3D<T>> model;
-    std::shared_ptr<Image3D<T>> pimage;
-    std::shared_ptr<Image3D<T>> simage;
-    std::shared_ptr<Data3D<T>> source;
-    std::shared_ptr<Data3D<T>> dataP;
-    std::shared_ptr<Data3D<T>> dataVx;
-    std::shared_ptr<Data3D<T>> dataVy;
-    std::shared_ptr<Data3D<T>> dataVz;
-    bool modelset;
-    bool pimageset;
-    bool simageset;
-    bool sourceset;
-    bool dataPset, dataVxset, dataVyset, dataVzset;
-};
 
 }
 #endif //RTM_H

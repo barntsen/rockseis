@@ -15,6 +15,30 @@ if(env['TEST']):
     hello_argparse = env.Program(prefix + 'hello_argparse','hello_argparse.cpp')
     env.Install('../bin/',hello_argparse)
 
+    hello_models = env.Program(prefix + 'hello_models','hello_models.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'fft', 'hilbert'])
+    env.Install('../bin/',hello_models)
+
+    hello_der = env.Program(prefix + 'hello_der','hello_der.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'fft'])
+    env.Install('../bin/',hello_der)
+    
+    hello_acoustic = env.Program(prefix + 'hello_acoustic','hello_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'snap', 'config4cpp', 'fft'])
+    env.Install('../bin/',hello_acoustic)
+    
+    hello_artm = env.Program(prefix + 'hello_artm','hello_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'rtm', 'image', 'snap', 'config4cpp', 'fft'])
+    env.Install('../bin/',hello_artm)
+    
+    hello3d_artm = env.Program(prefix + 'hello3d_artm','hello3d_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'rtm', 'image', 'snap', 'config4cpp', 'fft'])
+    env.Install('../bin/',hello3d_artm)
+    
+    hello_elastic = env.Program(prefix + 'hello_elastic','hello_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'modelling', 'snap', 'config4cpp', 'fft'])
+    env.Install('../bin/',hello_elastic)
+    
+    hello3d_acoustic = env.Program(prefix + 'hello3d_acoustic','hello3d_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'snap', 'config4cpp', 'fft'])
+    env.Install('../bin/',hello3d_acoustic)
+    
+    hello3d_elastic = env.Program(prefix + 'hello3d_elastic','hello3d_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'snap', 'config4cpp', 'fft'])
+    env.Install('../bin/',hello3d_elastic)
+    
     hello_mada = env.Program(prefix + 'hello_mada','hello_mada.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'sort', 'config4cpp', 'rsfcpp', 'rsfc'])
     env.Install('../bin/',hello_mada)
     
@@ -29,9 +53,6 @@ if(env['TEST']):
 
     #hello_jacob = env.Program(prefix + 'hello_jacob','hello_jacob.cpp', LIBS=['lbfgs', 'file', 'utils', 'geometry', 'model', 'data', 'inparse', 'image'], LIBPATH=['../build', '../config4cpp/lib'])
     #env.Install('../bin',hello_jacob)
-    #
-    hello_fft = env.Program(prefix + 'hello_fft','hello_fft.cpp',LIBS=['fft'])
-    env.Install('../bin/',hello_fft)
     
 rsf2rss = env.Program(prefix + 'rsf2rss','rsf2rss.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'config4cpp', 'sort', 'rsfcpp','rsfc'])
 env.Install('../bin/',rsf2rss)
@@ -60,14 +81,24 @@ env.Install('../bin/',window)
 bandpass = env.Program(prefix + 'bandpass','bandpass.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
 env.Install('../bin/',bandpass)
 
-mutedata = env.Program(prefix + 'mutedata','mutedata.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
-env.Install('../bin/',mutedata)
-
 st1d = env.Program(prefix + 'st1d','st1d.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
 env.Install('../bin/',st1d)
 
 makesurvey = env.Program(prefix + 'makesurvey','makesurvey.cpp',LIBS=['file', 'utils','geometry', 'data', 'inparse', 'fft'])
 env.Install('../bin/',makesurvey)
+
+
+Acousticmod2d = env.Program(prefix + 'Acousticmod2d','Acousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'interp', 'inparse', 'snap','fft'])
+env.Install('../bin/',Acousticmod2d)
+
+Acousticmod3d = env.Program(prefix + 'Acousticmod3d','Acousticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'interp', 'inparse', 'snap','fft'])
+env.Install('../bin/',Acousticmod3d)
+
+Elasticmod2d = env.Program(prefix + 'Elasticmod2d','Elasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'interp', 'inparse', 'snap','fft'])
+env.Install('../bin/',Elasticmod2d)
+
+Elasticmod3d = env.Program(prefix + 'Elasticmod3d','Elasticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'interp', 'inparse', 'snap','fft'])
+env.Install('../bin/',Elasticmod3d)
 
 if(env['FFTW']):
     hello_fftw = env.Program(prefix + 'hello_fftw','hello_fftw.cpp',LIBS=['fftw3'],LIBPATH=['../build', '../../fftw-3.3.6-pl2/fftw-build/lib/'])
@@ -78,46 +109,11 @@ if(env['MPI']):
         mpidbg = mpi.Program(prefix + 'mpidbg','mpidbg.cpp',LIBS=['parallel', 'utils'])
         mpi.Install('../bin/',mpidbg)
 
-# hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl','fft'])
-#       mpi.Install('../bin/',hello_fdgrad)
+        hello_fdgrad = mpi.Program(prefix + 'hello_fdgrad','hello_fdgrad.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'bspl','fft'])
+        mpi.Install('../bin/',hello_fdgrad)
 
-        hello3d_acoustic = mpi.Program(prefix + 'hello3d_acoustic','hello3d_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'modelling', 'snap', 'config4cpp', 'fft'])
-        mpi.Install('../bin/',hello3d_acoustic)
-
-        hello3d_artm = mpi.Program(prefix + 'hello3d_artm','hello3d_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'parallel', 'sort', 'rtm', 'image', 'snap', 'config4cpp', 'fft'])
-        mpi.Install('../bin/',hello3d_artm)
-
-        hello_models = mpi.Program(prefix + 'hello_models','hello_models.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'parallel', 'sort', 'modelling', 'fft', 'hilbert'])
-        mpi.Install('../bin/',hello_models)
-
-        hello_der = mpi.Program(prefix + 'hello_der','hello_der.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'parallel', 'sort', 'modelling', 'fft'])
-        mpi.Install('../bin/',hello_der)
-
-        hello_acoustic = mpi.Program(prefix + 'hello_acoustic','hello_acoustic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'parallel', 'sort', 'modelling', 'snap', 'config4cpp', 'fft'])
-        mpi.Install('../bin/',hello_acoustic)
-
-        hello_artm = mpi.Program(prefix + 'hello_artm','hello_artm.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'parallel', 'sort', 'rtm', 'image', 'snap', 'config4cpp', 'fft'])
-        mpi.Install('../bin/',hello_artm)
-
-
-        hello_elastic = mpi.Program(prefix + 'hello_elastic','hello_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'data', 'parallel', 'sort', 'modelling', 'snap', 'config4cpp', 'fft'])
-        mpi.Install('../bin/',hello_elastic)
-
-        hello3d_elastic = mpi.Program(prefix + 'hello3d_elastic','hello3d_elastic.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'modelling', 'snap', 'config4cpp', 'fft'])
-        mpi.Install('../bin/',hello3d_elastic)
-
-
-    Acousticmod2d = mpi.Program(prefix + 'Acousticmod2d','Acousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'modelling', 'interp', 'inparse', 'snap','fft'])
-    mpi.Install('../bin/',Acousticmod2d)
-
-    Acousticmod3d = mpi.Program(prefix + 'Acousticmod3d','Acousticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'modelling', 'interp', 'inparse', 'snap','fft'])
-    mpi.Install('../bin/',Acousticmod3d)
-
-    Elasticmod2d = mpi.Program(prefix + 'Elasticmod2d','Elasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'modelling', 'interp', 'inparse', 'snap','fft'])
-    mpi.Install('../bin/',Elasticmod2d)
-
-    Elasticmod3d = mpi.Program(prefix + 'Elasticmod3d','Elasticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'modelling', 'interp', 'inparse', 'snap','fft'])
-    mpi.Install('../bin/',Elasticmod3d)
+        hello_fft = env.Program(prefix + 'hello_fft','hello_fft.cpp',LIBS=['fft'])
+        env.Install('../bin/',hello_fft)
 
     Acousticfwi2d = mpi.Program(prefix + 'Acousticfwi2d','Acousticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
     mpi.Install('../bin/',Acousticfwi2d)
@@ -130,10 +126,6 @@ if(env['MPI']):
 
     Elasticfwi3d = mpi.Program(prefix + 'Elasticfwi3d','Elasticfwi3d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
     mpi.Install('../bin/',Elasticfwi3d)
-
-    Velasticfwi2d = mpi.Program(prefix + 'Velasticfwi2d','Velasticfwi2d.cpp',LIBS=['inversion', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'fwi', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft'])
-    mpi.Install('../bin/',Velasticfwi2d)
-
 
     Acousticwemva2d = mpi.Program(prefix + 'Acousticwemva2d','Acousticwemva2d.cpp',LIBS=['wemva', 'file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'mva', 'parallel', 'interp', 'inparse', 'snap', 'image', 'opt', 'bspl','fft', 'hilbert'])
     mpi.Install('../bin/',Acousticwemva2d)
@@ -162,38 +154,29 @@ if(env['MPI']):
     mpiAcousticfat3d = mpi.Program(prefix + 'mpiAcousticfat3d','mpiAcousticfat3d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticfat3d)
 
-    mpiAcousticredat2d = mpi.Program(prefix + 'mpiAcousticredat2d','mpiAcousticredat2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
-    mpi.Install('../bin/',mpiAcousticredat2d)
-    
     mpiAcousticmod2d = mpi.Program(prefix + 'mpiAcousticmod2d','mpiAcousticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticmod2d)
 
+    mpiAcousticredat2d = mpi.Program(prefix + 'mpiAcousticredat2d','mpiAcousticredat2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
+    mpi.Install('../bin/',mpiAcousticredat2d)
+    
     mpiAcousticmod3d = mpi.Program(prefix + 'mpiAcousticmod3d','mpiAcousticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticmod3d)
 
     mpiAcousticredat3d = mpi.Program(prefix + 'mpiAcousticredat3d','mpiAcousticredat3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiAcousticredat3d)
-
+    
     mpiElasticmod2d = mpi.Program(prefix + 'mpiElasticmod2d','mpiElasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiElasticmod2d)
 
-    mpiVtimod2d = mpi.Program(prefix + 'mpiVtimod2d','mpiVtimod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
-    mpi.Install('../bin/',mpiVtimod2d)
-
     mpiVelasticmod2d = mpi.Program(prefix + 'mpiVelasticmod2d','mpiVelasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiVelasticmod2d)
-
-    mpiPoroelasticmod2d = mpi.Program(prefix + 'mpiPoroelasticmod2d','mpiPoroelasticmod2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
-    mpi.Install('../bin/',mpiPoroelasticmod2d)
     
     mpiElasticmod3d = mpi.Program(prefix + 'mpiElasticmod3d','mpiElasticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiElasticmod3d)
 
     mpiVelasticmod3d = mpi.Program(prefix + 'mpiVelasticmod3d','mpiVelasticmod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
     mpi.Install('../bin/',mpiVelasticmod3d)
-
-    mpiOrthomod3d = mpi.Program(prefix + 'mpiOrthomod3d','mpiOrthomod3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'modelling', 'parallel', 'interp', 'inparse', 'snap', 'fft'])
-    mpi.Install('../bin/',mpiOrthomod3d)
     
     mpiAcousticrtm2d = mpi.Program(prefix + 'mpiAcousticrtm2d','mpiAcousticrtm2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
     mpi.Install('../bin/',mpiAcousticrtm2d)
@@ -210,17 +193,8 @@ if(env['MPI']):
     mpiElasticrtm3d = mpi.Program(prefix + 'mpiElasticrtm3d','mpiElasticrtm3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
     mpi.Install('../bin/',mpiElasticrtm3d)
 
-    mpiVtirtm2d = mpi.Program(prefix + 'mpiVtirtm2d','mpiVtirtm2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
-    mpi.Install('../bin/',mpiVtirtm2d)
-
-    mpiOrthortm3d = mpi.Program(prefix + 'mpiOrthortm3d','mpiOrthortm3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'geometry', 'sort', 'data', 'rtm', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft'])
-    mpi.Install('../bin/',mpiOrthortm3d)
-
     mpiAcousticttable2d = mpi.Program(prefix + 'mpiAcousticttable2d','mpiAcousticttable2d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'ttable', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'fft', 'kdtree'])
     mpi.Install('../bin/',mpiAcousticttable2d)
-
-    mpiAcousticttable3d = mpi.Program(prefix + 'mpiAcousticttable3d','mpiAcousticttable3d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'ttable', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'fft', 'kdtree'])
-    mpi.Install('../bin/',mpiAcousticttable3d)
 
     mpiElasticttable2d = mpi.Program(prefix + 'mpiElasticttable2d','mpiElasticttable2d.cpp',LIBS=['file', 'model', 'waves', 'pml', 'rays', 'ttable', 'utils', 'der', 'geometry', 'sort', 'data', 'parallel', 'interp', 'inparse', 'snap', 'fft', 'kdtree'])
     mpi.Install('../bin/',mpiElasticttable2d)
@@ -228,14 +202,5 @@ if(env['MPI']):
     mpiAcoustickdmig2d = mpi.Program(prefix + 'mpiAcoustickdmig2d','mpiAcoustickdmig2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'ttable', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft', 'kdtree'])
     mpi.Install('../bin/',mpiAcoustickdmig2d)
 
-    mpiAcoustickdmig3d = mpi.Program(prefix + 'mpiAcoustickdmig3d','mpiAcoustickdmig3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'ttable', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft', 'kdtree'])
-    mpi.Install('../bin/',mpiAcoustickdmig3d)
-
     mpiElastickdmig2d = mpi.Program(prefix + 'mpiElastickdmig2d','mpiElastickdmig2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'ttable', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft', 'kdtree'])
     mpi.Install('../bin/',mpiElastickdmig2d)
-
-    mpiAcoustickddemig2d = mpi.Program(prefix + 'mpiAcoustickddemig2d','mpiAcoustickddemig2d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'ttable', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft', 'kdtree'])
-    mpi.Install('../bin/',mpiAcoustickddemig2d)
-
-    mpiAcoustickddemig3d = mpi.Program(prefix + 'mpiAcoustickddemig3d','mpiAcoustickddemig3d.cpp',LIBS=['file', 'model', 'pml', 'waves', 'utils', 'der', 'ttable', 'geometry', 'sort', 'data', 'kdmig', 'parallel', 'interp', 'inparse', 'snap', 'image', 'fft', 'kdtree'])
-    mpi.Install('../bin/',mpiAcoustickddemig3d)

@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
     }
 
     std::shared_ptr<rockseis::Data2D<float>> Shotgeom;
-    std::shared_ptr<rockseis::ModellingElastic2D<float>> modelling;
+    std::shared_ptr<rockseis::ModellingElastic2D_DS<float>> modelling;
 
     for(unsigned long int i=0; i<ngathers; i++) {
         Sort->readKeymap();
@@ -186,27 +186,25 @@ int main(int argc, char** argv) {
         // Read wavelet data, set shot coordinates and make a map
         source->read();
         source->copyCoords(Shotgeom);
+        source->makeMap(lmodel->getGeom(), SMAP);
 
         //Setting sourcetype 
         switch(stype){
             case 0:
-               source->setField(PRESSURE);
-               source->makeMap(lmodel->getGeom(), SMAP);
-               break;
+                source->setField(PRESSURE);
+                break;
             case 1:
-               source->setField(VX);
-               source->makeMap(lmodel->getGeom(), SMAP);
-               break;
+                source->setField(VX);
+                break;
             case 3:
-               source->setField(VZ);
-               source->makeMap(lmodel->getGeom(), SMAP);
-               break;
+                source->setField(VZ);
+                break;
             default:
-               rs_error("Unknown source type: ", std::to_string(stype));
-               break;
+                rs_error("Unknown source type: ", std::to_string(stype));
+                break;
         }
 
-        modelling = std::make_shared<rockseis::ModellingElastic2D<float>>(lmodel, source, order, snapinc);
+        modelling = std::make_shared<rockseis::ModellingElastic2D_DS<float>>(lmodel, source, order, snapinc);
 
         // Set logfile
         modelling->setLogfile("log.txt-" + std::to_string(i));
@@ -216,10 +214,10 @@ int main(int argc, char** argv) {
             modelling->setSnapP(Psnapfile + "-" + std::to_string(i));
         }
         if(Vxsnap){
-            modelling->setSnapVx(Vxsnapfile + "-" + std::to_string(i));
+            modelling->setSnapUx(Vxsnapfile + "-" + std::to_string(i));
         }
         if(Vzsnap){
-            modelling->setSnapVz(Vzsnapfile + "-" + std::to_string(i));
+            modelling->setSnapUz(Vzsnapfile + "-" + std::to_string(i));
         }
 
         // Setting Record
@@ -228,7 +226,7 @@ int main(int argc, char** argv) {
             Pdata2D->setField(rockseis::PRESSURE);
             // Copy geometry to Data
             Pdata2D->copyCoords(Shotgeom);
-            Pdata2D->makeMap(lmodel->getGeom(),GMAP);
+            Pdata2D->makeMap(lmodel->getGeom());
             modelling->setRecP(Pdata2D);
         }
         if(Vxrecord){
@@ -236,16 +234,16 @@ int main(int argc, char** argv) {
             Vxdata2D->setField(rockseis::VX);
             // Copy geometry to Data
             Vxdata2D->copyCoords(Shotgeom);
-            Vxdata2D->makeMap(lmodel->getGeom(),GMAP);
-            modelling->setRecVx(Vxdata2D);
+            Vxdata2D->makeMap(lmodel->getGeom());
+            modelling->setRecUx(Vxdata2D);
         }
         if(Vzrecord){
             Vzdata2D = std::make_shared<rockseis::Data2D<float>>(ntr, source->getNt(), source->getDt(), 0.0);
             Vzdata2D->setField(rockseis::VZ);
             // Copy geometry to Data
             Vzdata2D->copyCoords(Shotgeom);
-            Vzdata2D->makeMap(lmodel->getGeom(),GMAP);
-            modelling->setRecVz(Vzdata2D);
+            Vzdata2D->makeMap(lmodel->getGeom());
+            modelling->setRecUz(Vzdata2D);
         }
 
         // Stagger model
