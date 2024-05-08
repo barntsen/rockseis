@@ -433,6 +433,8 @@ if mpi['ON'] == True :
 #------------------------------------------------------------------
 # Multi node gpu programs 
 #------------------------------------------------------------------
+if gpu['ON'] is True :
+
     libs                     = ['file',     'model',   'pml',      'modellingpu', 
                                 'wavesgpu', 'utils',   'dergpu',   'derd', 'geometry', 
                                 'sort',     'data',    'parallel', 'pml',
