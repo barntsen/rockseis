@@ -40,7 +40,7 @@ mpi['ON'] = True
 
 #--- Create GPU environment
 gpu = env.Clone(CXX='nvcc', CPPFLAGS='-x cu -arch=sm_60')
-gpu['ON'] = True
+gpu['ON'] = False
 
 #--- Create clean environment
 envc = Environment(ENV=os.environ, CC ='gcc', CXX='g++', CPPFLAGS='-g')
